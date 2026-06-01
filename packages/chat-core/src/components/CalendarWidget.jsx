@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, X, Calendar, CheckCircle2, Circle, ChevronLeft, ChevronRight, Target, RefreshCw } from 'lucide-react';
-import {
-  fetchEntries, completeEntry, deleteEntry, createEntry, fetchCalendar
-} from '../../utils/tasksApi';
+import { tasksApi } from 'exo-shared';
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
 
@@ -50,8 +48,8 @@ export default function CalendarWidget() {
   const load = useCallback(() => {
     setLoading(true);
     Promise.all([
-      fetchEntries({ status: 'active' }),
-      fetchCalendar().catch(() => ({ events: [] })),
+      tasksApi.listTasks({ status: 'active' }),
+      tasksApi.getCalendarSnapshot().catch(() => ({ events: [] })),
     ])
       .then(([entryData, calData]) => {
         setEntries(Array.isArray(entryData) ? entryData : []);
@@ -71,7 +69,7 @@ export default function CalendarWidget() {
       due_date: form.deadline || selectedDate,
       description: form.note.trim() || null,
     };
-    createEntry(payload)
+    tasksApi.createTask(payload)
       .then(newEntry => {
         setEntries(prev => [newEntry, ...prev]);
         setForm(EmptyForm);
@@ -81,14 +79,14 @@ export default function CalendarWidget() {
   };
 
   const handleToggle = (id) => {
-    completeEntry(id)
+    tasksApi.completeTask(id)
       .then(() => load())
       .catch(err => console.error('任务完成操作失败:', err));
   };
 
   const handleDelete = (id) => {
     if (!window.confirm('确定要删除此任务吗？')) return;
-    deleteEntry(id)
+    tasksApi.deleteTask(id)
       .then(() => setEntries(prev => prev.filter(e => e.id !== id)))
       .catch(err => console.error('任务删除失败:', err));
   };
