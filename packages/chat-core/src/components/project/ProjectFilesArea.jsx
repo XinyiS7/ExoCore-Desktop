@@ -3,7 +3,7 @@ import {
   HardDrive, RefreshCw, UploadCloud, Activity, FileBox,
   FileText, FileImage, FileType2, FolderOpen
 } from 'lucide-react';
-import { baseUrl, getCsrfToken } from '../../utils/api';
+import { baseUrl, getCsrfToken } from 'exo-shared';
 import WorkDirModal from './WorkDirModal';
 
 const ProjectFilesArea = ({ projectId, projects, setProjects, openDestructor }) => {

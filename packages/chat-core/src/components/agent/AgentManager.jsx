@@ -3,7 +3,7 @@ import {
   BrainCircuit, Cpu, Hash, Edit3, Trash2,
   GripVertical, Play, Sparkles, Clock, Camera
 } from 'lucide-react';
-import { baseUrl } from '../../utils/api';
+import { baseUrl } from 'exo-shared';
 import { getAgentAvatarUrl } from '../../utils/avatar';
 import EditPresetModal from '../modals/EditPresetModal';
 import AvatarCropModal from '../modals/AvatarCropModal';

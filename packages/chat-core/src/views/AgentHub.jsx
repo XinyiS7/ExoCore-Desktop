@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ArrowLeft, Star, Zap, Cpu, GripVertical } from 'lucide-react';
 import { getAgentAvatarUrl } from '../../../utils/avatar';
-import { baseUrl } from '../../../utils/api';
+import { baseUrl } from 'exo-shared';
 import { getAgentHubOrder, isSuperiorType } from '../../../utils/presets';
 import MemoryAnchorTicker from '../../../components/agent/MemoryAnchorTicker';
 

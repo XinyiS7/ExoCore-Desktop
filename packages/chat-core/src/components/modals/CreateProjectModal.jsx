@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FolderPlus, X } from 'lucide-react';
-import { baseUrl, getCsrfToken } from '../../utils/api';
+import { baseUrl, getCsrfToken } from 'exo-shared';
 
 const CreateProjectModal = ({ isOpen, onClose, setProjects }) => {
   const [name, setName] = useState('');

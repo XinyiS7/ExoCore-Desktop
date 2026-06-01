@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Edit2, Trash2 } from 'lucide-react';
 import React from 'react';
-import { baseUrl, getCsrfToken } from '../utils/api';
+import { conversationsApi } from 'exo-shared';
 
 /**
  * Reusable right-click/long-press context menu for session items.
@@ -103,16 +103,9 @@ export default function useSessionContextMenu({
       setContextMenu(null);
       const newName = prompt('Rename:', conv.name);
       if (newName && newName !== conv.name) {
-        fetch(`${baseUrl}/api/agents/conversations/${conv.id}/`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-          credentials: 'include',
-          body: JSON.stringify({ name: newName }),
-        }).then(r => {
-          if (r.ok && setSessions) {
-            setSessions(p => p.map(c => c.id === conv.id ? { ...c, name: newName } : c));
-          }
-        });
+        conversationsApi.updateConversation(conv.id, { name: newName })
+          .then(() => { if (setSessions) setSessions(p => p.map(c => c.id === conv.id ? { ...c, name: newName } : c)); })
+          .catch(() => {});
       }
     },
     handleDelete: (e, conv) => {
@@ -121,20 +114,12 @@ export default function useSessionContextMenu({
       openDestructor({
         title: conv.name,
         onDelete: () => {
-          fetch(`${baseUrl}/api/agents/conversations/${conv.id}/`, {
-            method: 'DELETE',
-            headers: { 'X-CSRFToken': getCsrfToken() },
-            credentials: 'include',
-          }).then(r => {
-            if (r.ok) {
-              if (setSessions) {
-                setSessions(p => p.filter(c => c.id !== conv.id));
-              }
-              if (activeSessionId === conv.id && setActiveSessionId) {
-                setActiveSessionId(null);
-              }
-            }
-          });
+          conversationsApi.deleteConversation(conv.id)
+            .then(() => {
+              if (setSessions) setSessions(p => p.filter(c => c.id !== conv.id));
+              if (activeSessionId === conv.id && setActiveSessionId) setActiveSessionId(null);
+            })
+            .catch(() => {});
         },
       });
     },

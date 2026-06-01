@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import { getUserAvatarUrl } from '../../../utils/avatar';
 import AvatarCropModal from '../../../components/modals/AvatarCropModal';
-import { baseUrl, MODEL_REGISTRY } from '../../../utils/api';
+import { telemetryApi, MODEL_REGISTRY } from 'exo-shared';
 
 // ─── Chart helpers ──────────────────────────────────────────────────────────────
 const MODEL_COLOR_MAP = Object.fromEntries(MODEL_REGISTRY.map(m => [m.id, m.color]));
@@ -147,10 +147,7 @@ export default function UserProfile({ appState, setView, goBack }) {
     setIsLoadingStats(true);
     setStatsError(false);
     try {
-      const params = new URLSearchParams({ mode, from: toDateStr(anchor) });
-      const res = await fetch(`${baseUrl}/api/telemetry/usage/?${params}`, { credentials: 'include' });
-      if (!res.ok) throw new Error('stats_unavailable');
-      const data = await res.json();
+      const data = await telemetryApi.getDailyUsage({ mode, from: toDateStr(anchor) });
       setRawData(data);
     } catch {
       setStatsError(true);

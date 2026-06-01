@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Activity, Save, History, Tag, Clock, Zap, BookOpen, AlertCircle } from 'lucide-react';
-import { baseUrl, getCsrfToken } from '../../utils/api';
+import { baseUrl, getCsrfToken } from 'exo-shared';
 
 const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack }) => {
   const [topicLabel, setTopicLabel] = useState(proposal?.topic || '');

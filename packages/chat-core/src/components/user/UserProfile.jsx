@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Activity, CornerDownLeft, Camera } from 'lucide-react';
-import { baseUrl, getCsrfToken } from '../utils/api';
+import { baseUrl, getCsrfToken } from 'exo-shared';
 import { getUserAvatarUrl, getAgentAvatarUrl } from '../utils/avatar';
 import AvatarCropModal from './modals/AvatarCropModal';
 

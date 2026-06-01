@@ -5,7 +5,7 @@ import {
   ShieldAlert, ChevronLast, PanelLeftClose, PanelLeftOpen, Users,
   Search, MessageSquare
 } from 'lucide-react';
-import { baseUrl, getCsrfToken, getConvProjectId } from '../../utils/api';
+import { conversationsApi, projectsApi, getConvProjectId } from 'exo-shared';
 import useSessionContextMenu from '../../hooks/useSessionContextMenu';
 
 const ConversationList = ({
@@ -45,19 +45,13 @@ const ConversationList = ({
   const handleRenameProject = (proj) => {
     const newName = prompt('Rename project:', proj.name);
     if (!newName || newName === proj.name) return;
-    fetch(`${baseUrl}/api/core/projects/${proj.id}/`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-      credentials: 'include',
-      body: JSON.stringify({ name: newName }),
-    }).then(r => {
-      if (r.ok) setProjects?.(prev => prev.map(p => p.id === proj.id ? { ...p, name: newName } : p));
-    });
+    projectsApi.updateProject(proj.id, { name: newName })
+      .then(() => setProjects?.(prev => prev.map(p => p.id === proj.id ? { ...p, name: newName } : p)))
+      .catch(() => {});
   };
 
   useEffect(() => {
-    fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
-      .then(res => res.json())
+    conversationsApi.listConversations()
       .then(data => {
         const sortedData = data.sort((a, b) => new Date(b.last_message_at || b.created_at) - new Date(a.last_message_at || a.created_at));
         setConversations(sortedData);

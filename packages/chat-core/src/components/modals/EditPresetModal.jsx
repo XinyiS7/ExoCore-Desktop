@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Edit3, X, Activity, Save } from 'lucide-react';
-import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from '../../utils/api';
+import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from 'exo-shared';
 
 const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
   const [form, setForm] = useState({ name: '', description: '', default_model: '', system_prompt: '' });

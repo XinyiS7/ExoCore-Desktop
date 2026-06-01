@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, MessageSquare, Hash } from 'lucide-react';
-import { baseUrl, getConvProjectId } from '../../../utils/api';
+import { conversationsApi, getConvProjectId } from 'exo-shared';
 
 export default function ProjectHome({ appState, setView }) {
   const { openNewSession, setActiveSessionId } = appState;
   const [unassignedSessions, setUnassignedSessions] = useState([]);
 
   useEffect(() => {
-    fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
-      .then(res => res.json())
+    conversationsApi.listConversations()
       .then(data => {
         const unassigned = (Array.isArray(data) ? data : [])
           .filter(c => getConvProjectId(c) === null)

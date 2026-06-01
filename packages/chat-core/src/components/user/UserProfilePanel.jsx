@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import { getUserAvatarUrl } from '../utils/avatar';
 import AvatarCropModal from './modals/AvatarCropModal';
-import { baseUrl, MODEL_REGISTRY } from '../utils/api';
+import { baseUrl, MODEL_REGISTRY } from 'exo-shared';
 
 // ─── Derived from MODEL_REGISTRY — edit models in src/utils/api.js ───────────
 const MODEL_COLOR_MAP = Object.fromEntries(MODEL_REGISTRY.map(m => [m.id, m.color]));

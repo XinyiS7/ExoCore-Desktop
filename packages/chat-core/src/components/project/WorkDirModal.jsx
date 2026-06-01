@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FolderOpen, X } from 'lucide-react';
-import { baseUrl, getCsrfToken } from '../../utils/api';
+import { baseUrl, getCsrfToken } from 'exo-shared';
 
 const WorkDirModal = ({ projectId, currentWorkDir, setProjects, isOpen, onClose }) => {
   const [workDirDraft, setWorkDirDraft] = useState('');

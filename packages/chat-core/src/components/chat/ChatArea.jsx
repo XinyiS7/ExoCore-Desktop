@@ -3,7 +3,7 @@ import {
   Save, Plus, RefreshCw, X, FileText,
   Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2, SlidersHorizontal
 } from 'lucide-react';
-import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from '../../utils/api';
+import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from 'exo-shared';
 import { getUserAvatarUrl, getAgentAvatarUrl } from '../../utils/avatar';
 import { filesToAttachmentData, saveAttachments, enrichMessages, uploadFilesToAttachments } from '../../utils/attachmentStorage';
 import { formatDateSeparator, isDifferentDay } from '../../utils/time';

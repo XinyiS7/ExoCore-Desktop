@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Folder, FolderOpen, Edit2, Plus, ChevronRight } from 'lucide-react';
-import { baseUrl, getCsrfToken, getConvProjectId } from '../../../utils/api';
+import { conversationsApi, projectsApi, getConvProjectId } from 'exo-shared';
 import ProjectHome from './ProjectHome';
 import ProjectDetail from './ProjectDetail';
 
@@ -10,8 +10,7 @@ export default function ProjectList({ appState, setView, goBack, viewParams }) {
 
   // Fetch all conversations to count sessions per project
   useEffect(() => {
-    fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
-      .then(res => res.json())
+    conversationsApi.listConversations()
       .then(data => setConversations(Array.isArray(data) ? data : []))
       .catch(() => setConversations([]));
   }, [appState.refreshKey]);
@@ -28,14 +27,9 @@ export default function ProjectList({ appState, setView, goBack, viewParams }) {
   const handleRenameProject = (proj) => {
     const newName = prompt('Rename project:', proj.name);
     if (!newName || newName === proj.name) return;
-    fetch(`${baseUrl}/api/core/projects/${proj.id}/`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-      credentials: 'include',
-      body: JSON.stringify({ name: newName }),
-    }).then(r => {
-      if (r.ok) setProjects(prev => prev.map(p => p.id === proj.id ? { ...p, name: newName } : p));
-    });
+    projectsApi.updateProject(proj.id, { name: newName })
+      .then(() => setProjects(prev => prev.map(p => p.id === proj.id ? { ...p, name: newName } : p)))
+      .catch(() => {});
   };
 
   // If a project is selected in viewParams, show its detail

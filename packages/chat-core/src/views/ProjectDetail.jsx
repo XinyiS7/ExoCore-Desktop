@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Plus, MessageSquare, FileText, Upload, Trash2, Hash, FolderOpen, ChevronUp } from 'lucide-react';
-import { baseUrl, getCsrfToken, getConvProjectId } from '../../../utils/api';
+import { conversationsApi, projectsApi, getConvProjectId } from 'exo-shared';
 import WorkDirModal from '../../../components/project/WorkDirModal';
 import useSessionContextMenu from '../../../hooks/useSessionContextMenu';
 
@@ -29,8 +29,7 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
   // Fetch sessions belonging to this project
   useEffect(() => {
     if (!projectId) return;
-    fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
-      .then(res => res.json())
+    conversationsApi.listConversations()
       .then(data => {
         const projectSessions = (Array.isArray(data) ? data : [])
           .filter(c => getConvProjectId(c) === Number(projectId))
@@ -45,8 +44,7 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
   // Fetch project files
   const fetchFiles = () => {
     if (!projectId) return;
-    fetch(`${baseUrl}/api/core/projects/${projectId}/files/`, { credentials: 'include' })
-      .then(res => res.json())
+    projectsApi.listProjectFiles(projectId)
       .then(data => setFiles(Array.isArray(data) ? data : []))
       .catch(() => setFiles([]));
   };
@@ -62,12 +60,7 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
     const formData = new FormData();
     formData.append('file', file);
     try {
-      await fetch(`${baseUrl}/api/core/projects/${projectId}/files/`, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCsrfToken() },
-        credentials: 'include',
-        body: formData,
-      });
+      await projectsApi.uploadProjectFile(projectId, formData);
       fetchFiles();
     } catch (err) {
       console.error('Upload failed', err);
@@ -81,11 +74,9 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
     openDestructor({
       title: file.name || file.file_name,
       onDelete: () => {
-        fetch(`${baseUrl}/api/core/projects/${projectId}/files/${file.id}/`, {
-          method: 'DELETE',
-          headers: { 'X-CSRFToken': getCsrfToken() },
-          credentials: 'include',
-        }).then(r => { if (r.ok) fetchFiles(); });
+        projectsApi.deleteProjectFile(projectId, file.id)
+          .then(() => fetchFiles())
+          .catch(() => {});
       },
     });
   };
@@ -165,12 +156,7 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
                   if (promptDraft === (project?.prompt || '')) { setEditingPrompt(false); return; }
                   setSavingPrompt(true);
                   try {
-                    await fetch(`${baseUrl}/api/core/projects/${projectId}/`, {
-                      method: 'PATCH',
-                      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-                      credentials: 'include',
-                      body: JSON.stringify({ prompt: promptDraft }),
-                    });
+                    await projectsApi.updateProject(projectId, { prompt: promptDraft });
                     appState.setProjects?.(prev =>
                       prev.map(p => p.id === projectId ? { ...p, prompt: promptDraft } : p)
                     );

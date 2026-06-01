@@ -1,5 +1,54 @@
+@import 'exo-shared/styles/base.css';
+@import 'exo-shared/styles/transitions.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Chat Core theme styles — expanded in Phase 3 */
+@layer base {
+  body {
+    background-color: #0a0a0f;
+    color: #e2e8f0;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  }
+
+  .glass-panel {
+    background: rgba(17, 17, 24, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+  }
+
+  .glow-border {
+    border: 1px solid rgba(192, 57, 43, 0.3);
+    box-shadow: 0 0 1px #c0392b, 0 0 8px rgba(192, 57, 43, 0.4), 0 0 20px rgba(192, 57, 43, 0.1);
+  }
+
+  .prose {
+    --tw-prose-body: #e2e8f0;
+    --tw-prose-headings: #c0392b;
+    --tw-prose-links: #e74c3c;
+    --tw-prose-code: #c0392b;
+    --tw-prose-pre-bg: #111118;
+  }
+}
+
+@layer components {
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-md text-chat-muted hover:text-chat-text hover:bg-white/5 transition-colors;
+  }
+  .nav-item.active {
+    @apply text-chat-accent bg-chat-accent/10 border-l-2 border-chat-accent;
+  }
+
+  .msg-bubble {
+    @apply glass-panel px-4 py-3 max-w-[85%];
+  }
+}
+
+@layer utilities {
+  .text-glow-accent {
+    text-shadow: 0 0 8px rgba(192, 57, 43, 0.6);
+  }
+}

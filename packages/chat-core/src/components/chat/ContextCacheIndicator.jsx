@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { createPortal } from 'react-dom';
-import { baseUrl, getCsrfToken } from '../../utils/api';
+import { baseUrl, getCsrfToken } from 'exo-shared';
 
 const CACHE_TTL = 1500;  // matches ContextCacheManager DEFAULT_TTL_SECONDS (25min)
 const POLL_INTERVAL = 30000;

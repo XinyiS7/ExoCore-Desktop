@@ -1,5 +1,5 @@
 import { useRef, useCallback } from 'react';
-import { baseUrl, getCsrfToken } from '../utils/api';
+import { baseUrl, getCsrfToken } from 'exo-shared';
 
 export const usePollingChat = () => {
   const isPollingRef = useRef(false);

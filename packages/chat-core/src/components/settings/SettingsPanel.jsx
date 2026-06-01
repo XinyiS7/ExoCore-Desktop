@@ -3,7 +3,7 @@ import {
   BookOpen, FolderOpen, Folder, ChevronDown, ChevronRight,
   FileText, Edit3, MessageSquare, Brain, PanelLeftClose, PanelLeftOpen, UserCircle
 } from 'lucide-react';
-import { baseUrl } from '../../utils/api';
+import { baseUrl } from 'exo-shared';
 import { getUserTimezone } from '../../utils/time';
 import KnowledgeEditModal from '../modals/KnowledgeEditModal';
 import ProposalEditPanel from '../memory/ProposalEditPanel';

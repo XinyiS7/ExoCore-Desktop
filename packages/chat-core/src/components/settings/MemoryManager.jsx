@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tag, Edit3, Trash2, RefreshCw, ChevronDown, ChevronUp, Plus, Brain } from 'lucide-react';
-import { baseUrl, getCsrfToken } from '../../utils/api';
+import { baseUrl, getCsrfToken } from 'exo-shared';
 import { sortPresets } from '../../utils/presets';
 
 const MemoryManager = ({ presets, openDestructor, presetId }) => {

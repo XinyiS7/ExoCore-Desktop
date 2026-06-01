@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, X, Activity, Save } from 'lucide-react';
-import { baseUrl, getCsrfToken } from '../../utils/api';
+import { baseUrl, getCsrfToken } from 'exo-shared';
 
 const KnowledgeEditModal = ({ isOpen, onClose, knowledgeId }) => {
   const [data, setData] = useState(null);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BrainCircuit, FolderKanban, Building2, CheckSquare, Search, ArrowRight, MessageSquare } from 'lucide-react';
 import CalendarWidget from '../../../components/home/CalendarWidget';
-import { baseUrl } from '../../../utils/api';
+import { conversationsApi } from 'exo-shared';
 import useSessionContextMenu from '../../../hooks/useSessionContextMenu';
 
 const WELCOME_SENTENCES = [
@@ -49,8 +49,7 @@ export default function Dashboard({ appState, setView }) {
   });
 
   useEffect(() => {
-    fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
-      .then(res => res.json())
+    conversationsApi.listConversations()
       .then(data => {
         const sorted = (Array.isArray(data) ? data : []).sort(
           (a, b) => new Date(b.last_message_at || b.created_at) - new Date(a.last_message_at || a.created_at)
@@ -73,8 +72,7 @@ export default function Dashboard({ appState, setView }) {
   const handleSearchFocus = () => {
     setShowResults(true);
     if (allConversations.length === 0) {
-      fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
-        .then(res => res.json())
+      conversationsApi.listConversations()
         .then(data => setAllConversations(Array.isArray(data) ? data : []))
         .catch(() => {});
     }

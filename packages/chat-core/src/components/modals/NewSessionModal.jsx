@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, X, Activity, Folder, Check, MessageSquare, Code2 } from 'lucide-react';
-import { baseUrl, getCsrfToken } from '../../utils/api';
+import { baseUrl, getCsrfToken } from 'exo-shared';
 import { sortPresets, isSuperiorType } from '../../utils/presets';
 
 const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, onSuccess }) => {

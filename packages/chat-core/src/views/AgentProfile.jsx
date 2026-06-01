@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, MessageSquare, Plus, Pencil } from 'lucide-react';
 import { getAgentAvatarUrl } from '../../../utils/avatar';
-import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from '../../../utils/api';
+import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from 'exo-shared';
 import EditPresetModal from '../../../components/modals/EditPresetModal';
 import AvatarCropModal from '../../../components/modals/AvatarCropModal';
 import useSessionContextMenu from '../../../hooks/useSessionContextMenu';
