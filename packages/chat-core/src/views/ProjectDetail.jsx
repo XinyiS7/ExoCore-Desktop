@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Plus, MessageSquare, FileText, Upload, Trash2, Hash, FolderOpen, ChevronUp } from 'lucide-react';
 import { conversationsApi, projectsApi, getConvProjectId } from 'exo-shared';
-import WorkDirModal from '../../../components/project/WorkDirModal';
-import useSessionContextMenu from '../../../hooks/useSessionContextMenu';
+import WorkDirModal from '../components/project/WorkDirModal';
+import useSessionContextMenu from '../hooks/useSessionContextMenu';
 
 export default function ProjectDetail({ appState, setView, goBack, viewParams }) {
   const { projects, openNewSession, openDestructor, setActiveSessionId } = appState;

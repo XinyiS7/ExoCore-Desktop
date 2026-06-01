@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, MessageSquare, Plus, Pencil } from 'lucide-react';
-import { getAgentAvatarUrl } from '../../../utils/avatar';
+import { getAgentAvatarUrl } from '../utils/avatar';
 import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from 'exo-shared';
-import EditPresetModal from '../../../components/modals/EditPresetModal';
-import AvatarCropModal from '../../../components/modals/AvatarCropModal';
-import useSessionContextMenu from '../../../hooks/useSessionContextMenu';
+import EditPresetModal from '../components/modals/EditPresetModal';
+import AvatarCropModal from '../components/modals/AvatarCropModal';
+import useSessionContextMenu from '../hooks/useSessionContextMenu';
 
 export default function AgentProfile({ appState, setView, goBack, viewParams }) {
   const { presets, setActiveSessionId, openNewSession, refreshKey, refreshPresets } = appState;

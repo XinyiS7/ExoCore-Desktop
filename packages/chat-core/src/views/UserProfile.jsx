@@ -4,8 +4,8 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer
 } from 'recharts';
-import { getUserAvatarUrl } from '../../../utils/avatar';
-import AvatarCropModal from '../../../components/modals/AvatarCropModal';
+import { getUserAvatarUrl } from '../utils/avatar';
+import AvatarCropModal from '../components/modals/AvatarCropModal';
 import { telemetryApi, MODEL_REGISTRY } from 'exo-shared';
 
 // ─── Chart helpers ──────────────────────────────────────────────────────────────

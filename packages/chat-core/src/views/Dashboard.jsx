@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BrainCircuit, FolderKanban, Building2, CheckSquare, Search, ArrowRight, MessageSquare } from 'lucide-react';
-import CalendarWidget from '../../../components/home/CalendarWidget';
+import CalendarWidget from '../components/CalendarWidget';
 import { conversationsApi } from 'exo-shared';
-import useSessionContextMenu from '../../../hooks/useSessionContextMenu';
+import useSessionContextMenu from '../hooks/useSessionContextMenu';
 
 const WELCOME_SENTENCES = [
   'Neural link established. All systems nominal.',

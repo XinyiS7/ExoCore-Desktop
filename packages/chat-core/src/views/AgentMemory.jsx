@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
-import MemoryManager from '../../../components/settings/MemoryManager';
+import MemoryManager from '../components/settings/MemoryManager';
 
 export default function AgentMemory({ appState, setView, goBack, viewParams }) {
   const { presets, openDestructor } = appState;
