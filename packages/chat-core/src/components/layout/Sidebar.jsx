@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   MessageSquare, BrainCircuit, ScrollText, Settings, Hexagon,
-  PanelLeftOpen, PanelLeftClose, List,
+  PanelLeftOpen, PanelLeftClose,
   LayoutGrid, Calendar
 } from 'lucide-react';
 import { getUserAvatarUrl } from '../../utils/avatar';
@@ -114,26 +114,6 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isE
           <NavIcon icon={ScrollText} title="时间线" label="时间线" isActive={currentTab === 'timeline'} isExpanded={isExpanded} onClick={() => { setCurrentTab('timeline'); }} />
           <NavIcon icon={Calendar} title="日历" label="日历" isActive={currentTab === 'calendar'} isExpanded={isExpanded} onClick={() => setCurrentTab('calendar')} />
           
-          {/* List Toggle for Chat/Council Mode */}
-          {(['chat', 'council', 'project'].includes(currentTab)) && (
-            <button
-              onClick={() => setShowConvList(!showConvList)}
-              className={`flex items-center gap-3 w-full p-2.5 transition-all group/list relative ${
-                showConvList ? 'text-exo-accent' : 'text-exo-muted hover:text-exo-text'
-              }`}
-            >
-              <div className={`p-2 rounded-[4px] transition-all shrink-0 ${
-                showConvList ? 'bg-exo-accent/10' : 'group-hover/list:bg-white/5'
-              }`}>
-                <List size={20} />
-              </div>
-              <span className={`text-sm font-medium whitespace-nowrap transition-all duration-300 overflow-hidden hidden md:block ${
-                isExpanded ? 'opacity-100 w-32' : 'opacity-0 w-0'
-              }`}>
-                {showConvList ? '隐藏列表' : '显示列表'}
-              </span>
-            </button>
-          )}
         </div>
       </div>
 
