@@ -1,4 +1,4 @@
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 use std::process::{Child, Command};
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -32,7 +32,6 @@ pub fn spawn_django(app: &AppHandle) {
     // For now, assume Django is running on port 8000 and we just health-check.
     let app_handle = app.clone();
     std::thread::spawn(move || {
-        // Health check loop
         let max_attempts = 30; // 15 seconds at 500ms intervals
         for _ in 0..max_attempts {
             if let Ok(resp) = reqwest::blocking::get("http://127.0.0.1:8000/api/health/") {

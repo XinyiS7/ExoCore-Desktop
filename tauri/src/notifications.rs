@@ -1,4 +1,5 @@
 use tauri::AppHandle;
+use tauri_plugin_notification::NotificationExt;
 
 /// Send an OS-native notification. Called from web views via Tauri invoke.
 #[tauri::command]
@@ -10,7 +11,6 @@ pub fn send_notification(
 ) -> Result<(), String> {
     let module_tag = module.unwrap_or_else(|| "exocore".to_string());
 
-    // Use tauri's built-in notification (wraps notify-rust on desktop)
     app.notification()
         .builder()
         .title(&title)

@@ -1,10 +1,9 @@
 // Prevents additional console window on Windows in release
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{
-    AppHandle, CustomMenuItem, Manager, PhysicalPosition, PhysicalSize,
-    SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
-};
+use tauri::{AppHandle, Manager};
+use tauri::menu::{MenuBuilder, MenuItemBuilder};
+use tauri::tray::{TrayIconBuilder, TrayIconEvent, MouseButton};
 use std::sync::Mutex;
 
 mod sidecar;
@@ -16,54 +15,63 @@ struct AppState {
 }
 
 fn main() {
-    let tray_menu = SystemTrayMenu::new()
-        .add_item(CustomMenuItem::new("show", "Show/Hide ExoCore"))
-        .add_item(CustomMenuItem::new("council", "Open Council Workspace"))
-        .add_item(CustomMenuItem::new("chronicle", "Toggle Chronicle Panel"))
-        .add_native_item(SystemTrayMenuItem::Separator)
-        .add_item(CustomMenuItem::new("restart", "Restart Backends"))
-        .add_native_item(SystemTrayMenuItem::Separator)
-        .add_item(CustomMenuItem::new("exit", "Exit ExoCore"));
-
-    let tray = SystemTray::new().with_menu(tray_menu);
-
     tauri::Builder::default()
-        .system_tray(tray)
+        .plugin(tauri_plugin_notification::init())
         .manage(AppState {
             log_buffer: Mutex::new(logger::RingBuffer::new(5000)),
         })
         .setup(|app| {
+            // Build tray menu items
+            let show_item = MenuItemBuilder::with_id("show", "Show/Hide ExoCore").build(app)?;
+            let council_item = MenuItemBuilder::with_id("council", "Open Council Workspace").build(app)?;
+            let chronicle_item = MenuItemBuilder::with_id("chronicle", "Toggle Chronicle Panel").build(app)?;
+            let restart_item = MenuItemBuilder::with_id("restart", "Restart Backends").build(app)?;
+            let exit_item = MenuItemBuilder::with_id("exit", "Exit ExoCore").build(app)?;
+
+            let menu = MenuBuilder::new(app)
+                .item(&show_item)
+                .item(&council_item)
+                .item(&chronicle_item)
+                .separator()
+                .item(&restart_item)
+                .separator()
+                .item(&exit_item)
+                .build()?;
+
+            // Build tray icon
+            let handle = app.handle().clone();
+            let _tray = TrayIconBuilder::new()
+                .menu(&menu)
+                .on_menu_event(move |app, event| {
+                    handle_menu_event(app, event.id().as_ref());
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click { button: MouseButton::Left, .. } = event {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("chat-core") {
+                            if window.is_visible().unwrap_or(false) {
+                                let _ = window.hide();
+                            } else {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                    }
+                })
+                .build(app)?;
+
             // Spawn sidecars silently
-            let app_handle = app.handle();
+            let app_handle = app.handle().clone();
             sidecar::spawn_django(&app_handle);
             sidecar::spawn_wez_bridge(&app_handle);
-
-            // Start log streaming
             logger::start_log_stream(&app_handle);
 
             Ok(())
         })
-        .on_system_tray_event(|app, event| match event {
-            SystemTrayEvent::LeftClick { .. } => {
-                let window = app.get_window("chat-core").unwrap();
-                if window.is_visible().unwrap_or(false) {
-                    window.hide().unwrap();
-                } else {
-                    window.show().unwrap();
-                    window.set_focus().unwrap();
-                }
-            }
-            SystemTrayEvent::MenuItemClick { id, .. } => {
-                handle_tray_event(app, &id);
-            }
-            _ => {}
-        })
-        .on_window_event(|event| {
-            // Close -> hide instead of exit
-            if event.event() == tauri::WindowEvent::CloseRequested {
-                if event.window().label() == "chat-core" {
-                    event.window().hide().unwrap();
-                    let _ = event.window().emit("window-hidden", ());
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { .. } = event {
+                if window.label() == "chat-core" {
+                    let _ = window.hide();
                 }
             }
         })
@@ -75,27 +83,27 @@ fn main() {
         .expect("error while running ExoCore");
 }
 
-fn handle_tray_event(app: &AppHandle, id: &str) {
+fn handle_menu_event(app: &AppHandle, id: &str) {
     match id {
         "show" => {
-            let window = app.get_window("chat-core").unwrap();
-            if window.is_visible().unwrap_or(false) {
-                window.hide().unwrap();
-            } else {
-                window.show().unwrap();
-                window.set_focus().unwrap();
+            if let Some(window) = app.get_webview_window("chat-core") {
+                if window.is_visible().unwrap_or(false) {
+                    let _ = window.hide();
+                } else {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
             }
         }
         "council" => {
-            use tauri::WindowBuilder;
-            if let Some(window) = app.get_window("council") {
-                window.show().unwrap();
-                window.set_focus().unwrap();
+            if let Some(window) = app.get_webview_window("council") {
+                let _ = window.show();
+                let _ = window.set_focus();
             } else {
-                let _ = WindowBuilder::new(
+                let _ = tauri::WebviewWindowBuilder::new(
                     app,
                     "council",
-                    tauri::WindowUrl::External("http://localhost:5175".parse().unwrap()),
+                    tauri::WebviewUrl::External("http://localhost:5175".parse().unwrap()),
                 )
                 .title("ExoCore // Council")
                 .inner_size(1000.0, 700.0)
@@ -104,18 +112,17 @@ fn handle_tray_event(app: &AppHandle, id: &str) {
             }
         }
         "chronicle" => {
-            use tauri::WindowBuilder;
-            if let Some(window) = app.get_window("chronicle") {
+            if let Some(window) = app.get_webview_window("chronicle") {
                 if window.is_visible().unwrap_or(false) {
-                    window.hide().unwrap();
+                    let _ = window.hide();
                 } else {
-                    window.show().unwrap();
+                    let _ = window.show();
                 }
             } else {
-                let _ = WindowBuilder::new(
+                let _ = tauri::WebviewWindowBuilder::new(
                     app,
                     "chronicle",
-                    tauri::WindowUrl::External("http://localhost:5174".parse().unwrap()),
+                    tauri::WebviewUrl::External("http://localhost:5174".parse().unwrap()),
                 )
                 .title("ExoCore // Chronicle")
                 .inner_size(380.0, 600.0)

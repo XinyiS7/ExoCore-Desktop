@@ -22,7 +22,7 @@ impl RingBuffer {
         if self.lines.len() >= self.capacity {
             self.lines.pop_front();
         }
-        self.lines.push(line);
+        self.lines.push_back(line);
     }
 
     pub fn get_recent(&self, count: usize) -> Vec<String> {
@@ -36,7 +36,7 @@ impl RingBuffer {
 }
 
 /// Start capturing stdout/stderr from sidecar processes and routing to UI.
-pub fn start_log_stream(app: &AppHandle) {
+pub fn start_log_stream(_app: &AppHandle) {
     // In production, this would read from sidecar child process stdout/stderr pipes.
     // For now, set up the channel so web views can query logs.
     clean_old_error_logs();
@@ -82,15 +82,11 @@ fn clean_old_error_logs() {
     let log_dir = get_log_dir();
     if !log_dir.exists() { return; }
 
-    let cutoff = chrono::Local::now() - chrono::Duration::days(7);
-
     if let Ok(entries) = fs::read_dir(&log_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.extension().map_or(true, |ext| ext != "log") { continue; }
-            if let Ok(metadata) = entry.metadata() {
-                let _ = metadata.modified(); // simplified cleanup check
-            }
+            let _ = entry.metadata(); // simplified cleanup check
         }
     }
 }
