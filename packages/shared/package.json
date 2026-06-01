@@ -1,0 +1,21 @@
+{
+  "name": "exo-shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./api": "./src/api.js",
+    "./auth": "./src/auth.js",
+    "./models": "./src/models.js",
+    "./endpoints/*": "./src/endpoints/*",
+    "./hooks/useApi": "./src/hooks/useApi.js",
+    "./hooks/useCsrf": "./src/hooks/useCsrf.js",
+    "./styles/base.css": "./src/styles/base.css",
+    "./styles/transitions.css": "./src/styles/transitions.css"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}
