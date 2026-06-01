@@ -8,8 +8,8 @@
 
 **Tech Stack:** React 19, Vite 8, Tailwind CSS 3, React Router 6, Tauri 2.x (Rust), pnpm workspaces, optional Turborepo
 
-**Source repo:** `D:\Alicia\ExoCore_Project\ExoCore-ui` (existing V2 code)
-**Target repo:** `D:\Alicia\ExoCore_Project\ExoCore-Desktop` (empty, .git initialized, CLAUDE.md present)
+**API contract reference:** `D:\Alicia\ExoCore_Project\ExoCore-Desktop\ReactSheet_Reorganized.md` (verified 2026-06-01)
+**Revision:** v1.1 — corrected all endpoint paths, renamed modules, added missing endpoints per ReactSheet audit.
 
 ---
 
@@ -31,14 +31,16 @@ ExoCore-Desktop/
 │   │       ├── auth.js             # getCsrfToken, auth helpers
 │   │       ├── models.js           # MODEL_REGISTRY, AVAILABLE_MODELS
 │   │       ├── endpoints/
-│   │       │   ├── agents.js       # /api/agents/*
-│   │       │   ├── sessions.js     # /api/sessions/*
+│   │       │   ├── agents.js       # /api/agents/presets/*, chat, triggered-notes
+│   │       │   ├── conversations.js# /api/agents/conversations/*, cache, attachments, history_chunks
+│   │       │   ├── chronicle.js    # /api/agents/chronicle/*
 │   │       │   ├── projects.js     # /api/core/projects/*
-│   │       │   ├── memory.js       # /api/memory/*
-│   │       │   ├── tasks.js        # /api/tasks/*
-│   │       │   ├── calendar.js     # /api/calendar/*
-│   │       │   ├── timeline.js     # /api/timeline/*
-│   │       │   └── system.js       # /api/v1/system/*
+│   │       │   ├── tweets.js       # /api/core/tweets/*
+│   │       │   ├── config.js       # /api/core/config/*, /api/core/models/*
+│   │       │   ├── memory.js       # /api/memory/portraits/*, knowledge/*, scope-keywords/*
+│   │       │   ├── tasks.js        # /api/tasks/entries/*, completions/*, calendar/*
+│   │       │   ├── telemetry.js    # /api/telemetry/*
+│   │       │   └── system.js       # /api/health/*, /api/v1/system/*
 │   │       ├── hooks/
 │   │       │   ├── useApi.js       # generic { data, loading, error, refetch }
 │   │       │   └── useCsrf.js      # CSRF token availability
@@ -913,12 +915,13 @@ export const baseUrl = API_BASE_URL.replace(/\/+$/, '');
 export const getCsrfToken = () =>
   document.cookie.split('; ').find(r => r.startsWith('csrftoken='))?.split('=')[1] ?? '';
 
+// Model registry is fetched dynamically from GET /api/core/models/ (see config.js endpoint).
+// Static fallback for offline/bootstrap scenarios — always prefer the API response.
 export const MODEL_REGISTRY = [
-  { id: 'gemini-3-flash-preview',  label: 'Gemini 3 Flash',   color: '#d36c34', platform: 'gemini' },
-  { id: 'gemini-3.1-pro-preview',  label: 'Gemini 3.1 Pro',   color: '#ffbe00', platform: 'gemini' },
-  { id: 'gemini-3.5-flash',        label: 'Gemini 3.5 Flash', color: '#50c30c', platform: 'gemini' },
-  { id: 'deepseek-v4-flash',       label: 'DeepSeek V4 Flash',color: '#0c3ca3', platform: 'deepseek' },
-  { id: 'deepseek-v4-pro',         label: 'DeepSeek V4 Pro',  color: '#ae4fff', platform: 'deepseek' },
+  { provider: 'gemini',   id: 'gemini-3.1-pro-preview', roles: ['main'] },
+  { provider: 'gemini',   id: 'gemini-2.5-flash',       roles: ['sub_agent'] },
+  { provider: 'deepseek', id: 'deepseek-v4-pro',        roles: ['main'] },
+  { provider: 'deepseek', id: 'deepseek-v4-flash',      roles: ['sub_agent'] },
 ];
 
 export const AVAILABLE_MODELS = MODEL_REGISTRY.map(m => m.id);
@@ -1023,12 +1026,13 @@ git commit -m "feat(shared): add auth helpers (fetchCurrentUser, isAuthenticated
 - [ ] **Step 1: Write models.js**
 
 ```js
+// Re-export static fallback. Prefer configApi.listModels() for the live registry.
 export { MODEL_REGISTRY, AVAILABLE_MODELS } from './api';
 
-/** Map model ID to display label and color. */
+/** Map model ID to display info. Falls back to raw ID if unknown. */
 export function getModelInfo(modelId) {
   const found = MODEL_REGISTRY.find(m => m.id === modelId);
-  return found || { label: modelId, color: '#888', platform: 'unknown' };
+  return found || { provider: 'unknown', id: modelId, label: modelId, roles: [] };
 }
 ```
 
@@ -1043,101 +1047,158 @@ git commit -m "feat(shared): add model info helpers"
 
 ### Task 2.4: Endpoint modules
 
-**Files:**
-- Create: `packages/shared/src/endpoints/agents.js`
-- Create: `packages/shared/src/endpoints/sessions.js`
-- Create: `packages/shared/src/endpoints/projects.js`
-- Create: `packages/shared/src/endpoints/memory.js`
-- Create: `packages/shared/src/endpoints/tasks.js`
-- Create: `packages/shared/src/endpoints/calendar.js`
-- Create: `packages/shared/src/endpoints/timeline.js`
-- Create: `packages/shared/src/endpoints/system.js`
+> **API contract reference:** `ReactSheet_Reorganized.md` — all paths verified against the actual Django backend.
 
-- [ ] **Step 1: Write agents.js**
+**Files:**
+- Create: `packages/shared/src/endpoints/agents.js`        — presets CRUD, chat, triggered-notes
+- Create: `packages/shared/src/endpoints/conversations.js` — conversation CRUD, cache, attachments, history_chunks
+- Create: `packages/shared/src/endpoints/chronicle.js`     — ChronicleEntry CRUD (§1.9)
+- Create: `packages/shared/src/endpoints/projects.js`      — project CRUD, files
+- Create: `packages/shared/src/endpoints/tweets.js`        — tweet/timeline CRUD (§4.1-4.3)
+- Create: `packages/shared/src/endpoints/config.js`        — SystemConfig, Model Registry (§5.1-5.2)
+- Create: `packages/shared/src/endpoints/memory.js`        — portraits, knowledge, scope-keywords, history_chunks
+- Create: `packages/shared/src/endpoints/tasks.js`         — entries CRUD, completions, calendar snapshots, GCal sync
+- Create: `packages/shared/src/endpoints/telemetry.js`     — usage stats (§7.1-7.4)
+- Create: `packages/shared/src/endpoints/system.js`        — health check, logs
+
+- [ ] **Step 1: Write agents.js** — presets + chat + triggered notes
 
 ```js
 import { apiFetch } from '../api';
 
+// ── Presets ──
 export function listPresets() {
   return apiFetch('/api/agents/presets/', { method: 'GET' });
 }
-
 export function getPreset(presetId) {
   return apiFetch(`/api/agents/presets/${presetId}/`, { method: 'GET' });
 }
-
 export function createPreset(data) {
   return apiFetch('/api/agents/presets/', { method: 'POST', body: data });
 }
-
 export function updatePreset(presetId, data) {
   return apiFetch(`/api/agents/presets/${presetId}/`, { method: 'PATCH', body: data });
 }
-
 export function deletePreset(presetId) {
   return apiFetch(`/api/agents/presets/${presetId}/`, { method: 'DELETE' });
 }
 
-export function chatWithAgent(presetId, body) {
-  return apiFetch(`/api/agents/chat/${presetId}/`, { method: 'POST', body });
+// ── Chat ──
+export function chatWithAgent(sessionId, body, mode = 'sse') {
+  return apiFetch(`/api/agents/chat/${sessionId}/?mode=${mode}`, { method: 'POST', body });
 }
 
-/** SSE streaming chat — returns the raw fetch Response for ReadableStream consumption. */
-export async function chatWithAgentStream(presetId, body) {
+/** SSE streaming chat — returns raw fetch Response for ReadableStream consumption. */
+export async function chatWithAgentStream(sessionId, body) {
   const { baseUrl, getCsrfToken } = await import('../api');
-  const res = await fetch(`${baseUrl}/api/agents/chat/${presetId}/`, {
+  const res = await fetch(`${baseUrl}/api/agents/chat/${sessionId}/?mode=sse`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': getCsrfToken(),
-    },
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
     credentials: 'include',
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    const err = new Error(`Chat stream failed: ${res.status}`);
-    err.status = res.status;
-    throw err;
-  }
+  if (!res.ok) { const err = new Error(`Chat stream failed: ${res.status}`); err.status = res.status; throw err; }
   return res;
 }
 
+/** Poll async chat status — GET /api/agents/chat/<sid>/status/?message_id=<token>&cursor=<n> */
+export function pollChatStatus(sessionId, messageId, cursor = 0) {
+  return apiFetch(`/api/agents/chat/${sessionId}/status/`, { method: 'GET', params: { message_id: messageId, cursor } });
+}
+
+// ── Triggered Notes ──
 export function getTriggeredNotesSnapshot(presetId) {
   return apiFetch(`/api/agents/presets/${presetId}/triggered-notes/snapshot/`, { method: 'GET' });
 }
 ```
 
-- [ ] **Step 2: Write sessions.js**
+- [ ] **Step 2: Write conversations.js** — conversation CRUD + cache + attachments + history_chunks
 
 ```js
 import { apiFetch } from '../api';
 
-export function listSessions(params = {}) {
-  return apiFetch('/api/sessions/', { method: 'GET', params });
+// ── Conversation CRUD (§1.1-1.2) ──
+export function listConversations(params = {}) {
+  return apiFetch('/api/agents/conversations/', { method: 'GET', params });
+}
+export function getConversation(convId) {
+  return apiFetch(`/api/agents/conversations/${convId}/`, { method: 'GET' });
+}
+export function createConversation(data) {
+  return apiFetch('/api/agents/conversations/', { method: 'POST', body: data });
+}
+export function updateConversation(convId, data) {
+  return apiFetch(`/api/agents/conversations/${convId}/`, { method: 'PATCH', body: data });
+}
+export function deleteConversation(convId) {
+  return apiFetch(`/api/agents/conversations/${convId}/`, { method: 'DELETE' });
 }
 
-export function getSession(sessionId) {
-  return apiFetch(`/api/sessions/${sessionId}/`, { method: 'GET' });
+// ── Messages (§1.2) ──
+export function getConversationMessages(convId) {
+  return apiFetch(`/api/agents/chat/${convId}/`, { method: 'GET' });
 }
 
-export function createSession(data) {
-  return apiFetch('/api/sessions/', { method: 'POST', body: data });
+// ── History Chunks (§1.4-1.5) ──
+export function listHistoryChunks(convId) {
+  return apiFetch(`/api/agents/conversations/${convId}/history_chunks/`, { method: 'GET' });
+}
+export function getHistoryChunk(chunkId) {
+  return apiFetch(`/api/memory/history_chunks/${chunkId}/`, { method: 'GET' });
+}
+export function updateHistoryChunk(chunkId, data) {
+  // PATCH allowed fields: topic_label, keywords, unresolved
+  return apiFetch(`/api/memory/history_chunks/${chunkId}/`, { method: 'PATCH', body: data });
 }
 
-export function updateSession(sessionId, data) {
-  return apiFetch(`/api/sessions/${sessionId}/`, { method: 'PATCH', body: data });
+// ── Context Cache (§1.6) ──
+export function getCacheStatus(convId) {
+  return apiFetch(`/api/agents/conversations/${convId}/cache/`, { method: 'GET' });
+}
+export function renewCache(convId) {
+  return apiFetch(`/api/agents/conversations/${convId}/cache/renew/`, { method: 'POST' });
+}
+export function deleteCache(convId) {
+  return apiFetch(`/api/agents/conversations/${convId}/cache/`, { method: 'DELETE' });
 }
 
-export function deleteSession(sessionId) {
-  return apiFetch(`/api/sessions/${sessionId}/`, { method: 'DELETE' });
+// ── Attachments (§1.7) ──
+export function listAttachments(convId) {
+  return apiFetch(`/api/agents/conversations/${convId}/attachments/`, { method: 'GET' });
 }
-
-export function getSessionMessages(sessionId) {
-  return apiFetch(`/api/sessions/${sessionId}/messages/`, { method: 'GET' });
+export function uploadAttachment(convId, formData) {
+  return apiFetch(`/api/agents/conversations/${convId}/attachments/`, { method: 'POST', body: formData });
+}
+export function deleteAttachment(convId, source, id) {
+  return apiFetch(`/api/agents/conversations/${convId}/attachments/delete/`, { method: 'DELETE', body: { source, id } });
 }
 ```
 
-- [ ] **Step 3: Write projects.js**
+- [ ] **Step 3: Write chronicle.js** — ChronicleEntry CRUD (§1.9)
+
+```js
+import { apiFetch } from '../api';
+
+export function listChronicleEntries(params = {}) {
+  return apiFetch('/api/agents/chronicle/', { method: 'GET', params });
+}
+export function getChronicleEntry(entryId) {
+  return apiFetch(`/api/agents/chronicle/${entryId}/`, { method: 'GET' });
+}
+export function createChronicleEntry(data) {
+  // data: { preset, event_time, content, scope?, keywords? }
+  return apiFetch('/api/agents/chronicle/', { method: 'POST', body: data });
+}
+export function updateChronicleEntry(entryId, data) {
+  // PATCH allowed: event_time, content, scope, keywords
+  return apiFetch(`/api/agents/chronicle/${entryId}/`, { method: 'PATCH', body: data });
+}
+export function deleteChronicleEntry(entryId) {
+  return apiFetch(`/api/agents/chronicle/${entryId}/`, { method: 'DELETE' });
+}
+```
+
+- [ ] **Step 4: Write projects.js** — project CRUD + files (§3.1-3.2)
 
 ```js
 import { apiFetch } from '../api';
@@ -1145,139 +1206,215 @@ import { apiFetch } from '../api';
 export function listProjects() {
   return apiFetch('/api/core/projects/', { method: 'GET' });
 }
-
 export function getProject(projectId) {
   return apiFetch(`/api/core/projects/${projectId}/`, { method: 'GET' });
 }
-
 export function createProject(data) {
   return apiFetch('/api/core/projects/', { method: 'POST', body: data });
 }
-
 export function updateProject(projectId, data) {
+  // PATCH allowed: name, description, prompt, work_dir
   return apiFetch(`/api/core/projects/${projectId}/`, { method: 'PATCH', body: data });
 }
-
 export function deleteProject(projectId) {
   return apiFetch(`/api/core/projects/${projectId}/`, { method: 'DELETE' });
 }
 
+// ── Project Files (§3.1) ──
 export function listProjectFiles(projectId) {
   return apiFetch(`/api/core/projects/${projectId}/files/`, { method: 'GET' });
 }
-
 export function uploadProjectFile(projectId, formData) {
   return apiFetch(`/api/core/projects/${projectId}/files/`, { method: 'POST', body: formData });
 }
-
 export function deleteProjectFile(projectId, fileId) {
   return apiFetch(`/api/core/projects/${projectId}/files/${fileId}/`, { method: 'DELETE' });
 }
 ```
 
-- [ ] **Step 4: Write memory.js**
+- [ ] **Step 5: Write tweets.js** — timeline/tweets CRUD (§4.1-4.3)
 
 ```js
 import { apiFetch } from '../api';
 
-export function listMemoryPortraits(params = {}) {
+/** Paginated tweet list. Pass { before_id } for infinite scroll. */
+export function listTweets(params = {}) {
+  return apiFetch('/api/core/tweets/', { method: 'GET', params });
+}
+export function createTweet(data) {
+  // { content: "..." }
+  return apiFetch('/api/core/tweets/', { method: 'POST', body: data });
+}
+export function replyToTweet(tweetId, data) {
+  // { content: "..." }
+  return apiFetch(`/api/core/tweets/${tweetId}/reply/`, { method: 'POST', body: data });
+}
+export function deleteTweet(tweetId) {
+  return apiFetch(`/api/core/tweets/${tweetId}/`, { method: 'DELETE' });
+}
+```
+
+- [ ] **Step 6: Write config.js** — SystemConfig + Model Registry (§5.1-5.2)
+
+```js
+import { apiFetch } from '../api';
+
+// ── System Config (§5.1) ──
+export function getConfig() {
+  return apiFetch('/api/core/config/', { method: 'GET' });
+}
+export function updateConfig(data) {
+  // PATCH: any subset of fields. API key fields with "****" prefix are ignored.
+  return apiFetch('/api/core/config/', { method: 'PATCH', body: data });
+}
+
+// ── Model Registry (§5.2) — dynamic, prefer over static fallback ──
+export function listModels() {
+  return apiFetch('/api/core/models/', { method: 'GET' });
+}
+```
+
+- [ ] **Step 7: Write memory.js** — portraits, knowledge, scope-keywords (§2.1-2.3)
+
+```js
+import { apiFetch } from '../api';
+
+// ── UserPortrait (§2.2) ──
+export function listPortraits(params = {}) {
+  // params: preset_id, scope, source, is_processed
   return apiFetch('/api/memory/portraits/', { method: 'GET', params });
 }
-
-export function createMemoryPortrait(data) {
+export function createPortrait(data) {
+  // preset_id or message_id (mutually exclusive), content, scope?, tags?
   return apiFetch('/api/memory/portraits/', { method: 'POST', body: data });
 }
-
-export function updateMemoryPortrait(portraitId, data) {
+export function updatePortrait(portraitId, data) {
+  // PATCH: content (only preset_id=2), scope, tags
   return apiFetch(`/api/memory/portraits/${portraitId}/`, { method: 'PATCH', body: data });
 }
-
-export function deleteMemoryPortrait(portraitId) {
+export function deletePortrait(portraitId) {
   return apiFetch(`/api/memory/portraits/${portraitId}/`, { method: 'DELETE' });
 }
+export function listPortraitTags(presetId) {
+  // GET /api/memory/portraits/tags/?preset_id=<id> — must match BEFORE /portraits/<pk>/
+  return apiFetch('/api/memory/portraits/tags/', { method: 'GET', params: { preset_id: presetId } });
+}
+
+// ── KnowledgeFragment (§2.1) ──
+export function listKnowledge(params = {}) {
+  // params: topic, project; paginated page_size=50
+  return apiFetch('/api/memory/knowledge/', { method: 'GET', params });
+}
+export function getKnowledge(knowledgeId) {
+  return apiFetch(`/api/memory/knowledge/${knowledgeId}/`, { method: 'GET' });
+}
+export function updateKnowledge(knowledgeId, data) {
+  // PATCH: abstract, keywords
+  return apiFetch(`/api/memory/knowledge/${knowledgeId}/`, { method: 'PATCH', body: data });
+}
+
+// ── Scope Keywords (§2.3) ──
+export function getScopeKeywords() {
+  return apiFetch('/api/memory/scope-keywords/', { method: 'GET' });
+}
+export function updateScopeKeywords(data) {
+  // PUT: full replacement { scope: [keywords...], ... }
+  return apiFetch('/api/memory/scope-keywords/', { method: 'PUT', body: data });
+}
 ```
 
-- [ ] **Step 5: Write tasks.js**
+- [ ] **Step 8: Write tasks.js** — entries, completions, calendar snapshots, GCal (§6.1-6.4)
 
 ```js
 import { apiFetch } from '../api';
 
-export function listTasks() {
-  return apiFetch('/api/tasks/', { method: 'GET' });
+// ── ScheduleEntry CRUD (§6.1) ──
+export function listTasks(params = {}) {
+  // params: status, entry_type, is_pinned
+  return apiFetch('/api/tasks/entries/', { method: 'GET', params });
 }
-
 export function getTask(taskId) {
-  return apiFetch(`/api/tasks/${taskId}/`, { method: 'GET' });
+  return apiFetch(`/api/tasks/entries/${taskId}/`, { method: 'GET' });
 }
-
 export function createTask(data) {
-  return apiFetch('/api/tasks/', { method: 'POST', body: data });
+  // entry_type (required): "todo" | "periodic" | "goal"; plus type-specific fields
+  return apiFetch('/api/tasks/entries/', { method: 'POST', body: data });
 }
-
 export function updateTask(taskId, data) {
-  return apiFetch(`/api/tasks/${taskId}/`, { method: 'PATCH', body: data });
+  return apiFetch(`/api/tasks/entries/${taskId}/`, { method: 'PATCH', body: data });
 }
-
 export function deleteTask(taskId) {
-  return apiFetch(`/api/tasks/${taskId}/`, { method: 'DELETE' });
+  // Soft-delete: status → "archived"
+  return apiFetch(`/api/tasks/entries/${taskId}/`, { method: 'DELETE' });
 }
 
-export function toggleTaskComplete(taskId, completed) {
-  return apiFetch(`/api/tasks/${taskId}/`, { method: 'PATCH', body: { completed } });
+// ── Entry Actions (§6.2) ──
+export function completeTask(taskId, note) {
+  return apiFetch(`/api/tasks/entries/${taskId}/complete/`, { method: 'POST', body: note ? { note } : {} });
+}
+export function suspendTask(taskId) {
+  return apiFetch(`/api/tasks/entries/${taskId}/suspend/`, { method: 'POST' });
+}
+export function resumeTask(taskId) {
+  return apiFetch(`/api/tasks/entries/${taskId}/resume/`, { method: 'POST' });
+}
+
+// ── GCal Sync (§6.3) ──
+export function syncTaskToGCal(taskId) {
+  return apiFetch(`/api/tasks/entries/${taskId}/gcal/`, { method: 'POST' });
+}
+export function unlinkTaskGCal(taskId) {
+  return apiFetch(`/api/tasks/entries/${taskId}/gcal/`, { method: 'DELETE' });
+}
+
+// ── Completions (§6.5) ──
+export function listCompletions(entryId) {
+  return apiFetch('/api/tasks/completions/', { method: 'GET', params: { entry: entryId } });
+}
+
+// ── Calendar Snapshots (§6.4) ──
+export function getCalendarSnapshot() {
+  // 90-day full snapshot: GET /api/tasks/calendar/
+  return apiFetch('/api/tasks/calendar/', { method: 'GET' });
+}
+export function getTodaySnapshot() {
+  // 48h window: GET /api/tasks/calendar/today/
+  return apiFetch('/api/tasks/calendar/today/', { method: 'GET' });
 }
 ```
 
-- [ ] **Step 6: Write calendar.js**
+- [ ] **Step 9: Write telemetry.js** — usage statistics (§7.1-7.4)
 
 ```js
 import { apiFetch } from '../api';
 
-export function listCalendarEvents(params = {}) {
-  return apiFetch('/api/calendar/events/', { method: 'GET', params });
+/** Daily usage for charts. mode: "week" (7d) | "month" (30d). from: YYYY-MM-DD. */
+export function getDailyUsage(params = {}) {
+  return apiFetch('/api/telemetry/usage/', { method: 'GET', params });
 }
 
-export function getCalendarEvent(eventId) {
-  return apiFetch(`/api/calendar/events/${eventId}/`, { method: 'GET' });
+/** Weekly aggregated usage. params: weeks, from (Monday). */
+export function getWeeklyUsage(params = {}) {
+  return apiFetch('/api/telemetry/weekly/', { method: 'GET', params });
 }
 
-/** V3 rework target: create a calendar event that syncs to Google Calendar. */
-export function createCalendarEvent(data) {
-  return apiFetch('/api/calendar/events/', { method: 'POST', body: data });
+/** Monthly aggregated usage. params: months, from (YYYY-MM). */
+export function getMonthlyUsage(params = {}) {
+  return apiFetch('/api/telemetry/monthly/', { method: 'GET', params });
 }
 
-export function updateCalendarEvent(eventId, data) {
-  return apiFetch(`/api/calendar/events/${eventId}/`, { method: 'PATCH', body: data });
-}
-
-export function deleteCalendarEvent(eventId) {
-  return apiFetch(`/api/calendar/events/${eventId}/`, { method: 'DELETE' });
+/** Raw daily_summary.json snapshot (debug). */
+export function getDailyRaw() {
+  return apiFetch('/api/telemetry/daily/', { method: 'GET' });
 }
 ```
 
-- [ ] **Step 7: Write timeline.js**
+- [ ] **Step 10: Write system.js** — health + logs
 
 ```js
 import { apiFetch } from '../api';
 
-export function listTimelinePosts(params = {}) {
-  return apiFetch('/api/timeline/', { method: 'GET', params });
-}
-
-export function createTimelinePost(data) {
-  return apiFetch('/api/timeline/', { method: 'POST', body: data });
-}
-
-export function deleteTimelinePost(postId) {
-  return apiFetch(`/api/timeline/${postId}/`, { method: 'DELETE' });
-}
-```
-
-- [ ] **Step 8: Write system.js**
-
-```js
-import { apiFetch } from '../api';
-
-/** Health check — used by Tauri sidecar readiness detection. */
+/** Health check — Tauri sidecar readiness detection. */
 export function healthCheck() {
   return apiFetch('/api/health/', { method: 'GET' });
 }
@@ -1288,11 +1425,11 @@ export function getRecentLogs(lines = 200) {
 }
 ```
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
 git add packages/shared/src/endpoints/
-git commit -m "feat(shared): add endpoint modules for agents, sessions, projects, memory, tasks, calendar, timeline, system"
+git commit -m "feat(shared): add endpoint modules for agents, conversations, chronicle, projects, tweets, config, memory, tasks, telemetry, system"
 ```
 
 ---
@@ -1479,21 +1616,23 @@ export { useApi } from './hooks/useApi';
 export { useCsrf } from './hooks/useCsrf';
 
 // Endpoints (namespaced re-exports to avoid collisions)
-export * as agentsApi from './endpoints/agents';
-export * as sessionsApi from './endpoints/sessions';
-export * as projectsApi from './endpoints/projects';
-export * as memoryApi from './endpoints/memory';
-export * as tasksApi from './endpoints/tasks';
-export * as calendarApi from './endpoints/calendar';
-export * as timelineApi from './endpoints/timeline';
-export * as systemApi from './endpoints/system';
+export * as agentsApi        from './endpoints/agents';
+export * as conversationsApi from './endpoints/conversations';
+export * as chronicleApi     from './endpoints/chronicle';
+export * as projectsApi      from './endpoints/projects';
+export * as tweetsApi        from './endpoints/tweets';
+export * as configApi        from './endpoints/config';
+export * as memoryApi        from './endpoints/memory';
+export * as tasksApi         from './endpoints/tasks';
+export * as telemetryApi     from './endpoints/telemetry';
+export * as systemApi        from './endpoints/system';
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
 git add packages/shared/src/index.js
-git commit -m "feat(shared): complete barrel export for all endpoints"
+git commit -m "feat(shared): complete barrel export for all 10 endpoint modules"
 ```
 
 ---
@@ -1613,7 +1752,16 @@ import { agentsApi } from 'exo-shared'
 agentsApi.listPresets()
 ```
 
-Apply this pattern for all `/api/agents/*`, `/api/sessions/*`, `/api/core/projects/*`, `/api/memory/*` calls.
+Apply this pattern for all `/api/agents/*`, `/api/agents/conversations/*`, `/api/core/projects/*`, `/api/memory/*`, `/api/core/tweets/*`, `/api/tasks/*` calls. Reference the corrected endpoint modules:
+
+| Old pattern | New import |
+|---|---|
+| `fetch('/api/sessions/...')` | `conversationsApi.listConversations()` |
+| `fetch('/api/timeline/...')` | `tweetsApi.listTweets()` |
+| `fetch('/api/tasks/...')` | `tasksApi.listTasks()` etc. |
+| `fetch('/api/calendar/...')` | `tasksApi.getCalendarSnapshot()` |
+| `fetch('/api/core/config/...')` | `configApi.getConfig()` |
+| `fetch('/api/core/models/...')` | `configApi.listModels()` |
 
 - [ ] **Step 4: Update hook imports for useAppState decomposition**
 
@@ -2061,7 +2209,14 @@ git commit -m "feat(chronicle): copy timeline, task, and calendar components fro
 
 - [ ] **Step 2: Replace endpoint-specific fetch calls**
 
-Replace raw `fetch()` with `tasksApi`, `calendarApi`, `timelineApi` from `exo-shared`.
+Replace raw `fetch()` with the corrected endpoint modules from `exo-shared`:
+
+| Old pattern | New import |
+|---|---|
+| `fetch('/api/timeline/...')` | `tweetsApi.listTweets()` / `tweetsApi.createTweet()` |
+| `fetch('/api/tasks/...')` | `tasksApi.listTasks()` / `tasksApi.createTask()` |
+| `fetch('/api/calendar/...')` | `tasksApi.getCalendarSnapshot()` / `tasksApi.getTodaySnapshot()` |
+| `fetch('/api/agents/chronicle/...')` | `chronicleApi.listChronicleEntries()` |
 
 - [ ] **Step 3: Remove any council or agent-specific references**
 
@@ -2124,7 +2279,7 @@ export function useTasks() {
 
 ```js
 import { useState, useEffect } from 'react';
-import { timelineApi } from 'exo-shared';
+import { tweetsApi } from 'exo-shared';
 
 export function useTimeline() {
   const [posts, setPosts] = useState([]);
@@ -2132,7 +2287,7 @@ export function useTimeline() {
 
   const fetchPosts = () => {
     setLoading(true);
-    timelineApi.listTimelinePosts()
+    tweetsApi.listTweets()
       .then(setPosts)
       .catch(err => console.error('Timeline load failed', err))
       .finally(() => setLoading(false));
@@ -2148,7 +2303,7 @@ export function useTimeline() {
 
 ```js
 import { useState, useEffect, useCallback } from 'react';
-import { calendarApi } from 'exo-shared';
+import { tasksApi } from 'exo-shared';
 
 export function useCalendar() {
   const [events, setEvents] = useState([]);
@@ -2156,8 +2311,8 @@ export function useCalendar() {
 
   const fetchEvents = useCallback((params = {}) => {
     setLoading(true);
-    calendarApi.listCalendarEvents(params)
-      .then(setEvents)
+    tasksApi.getCalendarSnapshot(params)
+      .then(data => setEvents(data.events || []))
       .catch(err => console.error('Calendar events load failed', err))
       .finally(() => setLoading(false));
   }, []);
@@ -3022,7 +3177,7 @@ git commit -m "chore: finalize V3 frontend split implementation"
 | Phase | Tasks | Description |
 |---|---|---|
 | **1: Scaffolding** | 1.1–1.6 | Root workspace + 4 packages (shared, chat-core, chronicle, council) + pnpm install |
-| **2: shared** | 2.1–2.7 | apiFetch wrapper, auth, models, 8 endpoint modules, useApi/useCsrf hooks, shared styles |
+| **2: shared** | 2.1–2.7 | apiFetch wrapper, auth, models, 10 endpoint modules (verified against ReactSheet), useApi/useCsrf hooks, shared styles |
 | **3: chat-core** | 3.1–3.5 | Copy 25+ components from V2, fix imports, decompose useAppState, add routing, obsidian theme |
 | **4: chronicle** | 4.1–4.5 | Copy 7 components from V2, fix imports, add hooks, add routing, paper-like theme |
 | **5: Tauri** | 5.1–5.6 | Tauri init, config, main.rs (windows + tray), sidecar.rs, notifications.rs, logger.rs |
