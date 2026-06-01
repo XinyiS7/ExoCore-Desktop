@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   MessageSquare, BrainCircuit, ScrollText, Settings, Hexagon,
-  PanelLeftOpen, PanelLeftClose,
   LayoutGrid, Calendar
 } from 'lucide-react';
 import { getUserAvatarUrl } from '../../utils/avatar';
@@ -44,7 +43,8 @@ const NavIcon = ({ icon: Icon, isActive, onClick, title, label, isExpanded, show
   </button>
 );
 
-const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isExpanded, setIsExpanded, onOpenProfile }) => {
+const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, onOpenProfile }) => {
+  const isExpanded = true;
   const [userAvatarUrl, setUserAvatarUrl] = useState(() => getUserAvatarUrl());
   const [userNick, setUserNick] = useState(() => localStorage.getItem('exo_user_nick') || 'Exo User');
 
@@ -97,15 +97,6 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isE
           </button>
         </div>
 
-        {/* Toggle Button */}
-        <button 
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="p-2 text-exo-muted hover:text-exo-accent transition-colors self-center mb-2"
-        >
-          {isExpanded ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
-        </button>
-
-        <div className="w-full h-px bg-exo-mist-6 mx-2" />
 
         <div className="flex flex-col items-center w-full gap-1">
           <NavIcon icon={LayoutGrid} title="概览" label="控制中心" isActive={currentTab === 'home'} isExpanded={isExpanded} onClick={() => setCurrentTab('home')} />
