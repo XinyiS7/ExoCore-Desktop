@@ -1,0 +1,18 @@
+/* Shared transition/animation tokens. Modules compose these into their own CSS. */
+:root {
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+}
+
+/* Shared fade-in — can be composed by any module */
+@keyframes shared-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-shared-fade-in {
+  animation: shared-fade-in var(--duration-normal) var(--ease-out-expo) forwards;
+}
