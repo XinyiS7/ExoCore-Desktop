@@ -1,0 +1,16 @@
+{
+  "name": "exocore-desktop",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev:chat": "pnpm --filter exo-chat-core dev",
+    "dev:chronicle": "pnpm --filter exo-chronicle dev",
+    "dev:council": "pnpm --filter exo-council dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
