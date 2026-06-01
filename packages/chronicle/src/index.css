@@ -1,5 +1,37 @@
+@import 'exo-shared/styles/base.css';
+@import 'exo-shared/styles/transitions.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Chronicle theme styles — expanded in Phase 4 */
+@layer base {
+  body {
+    background-color: #1a1a14;
+    color: #d4c5a9;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  }
+
+  .paper-card {
+    background: #222218;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+}
+
+@layer components {
+  .task-row {
+    @apply paper-card px-4 py-3 flex items-center gap-3 cursor-pointer transition-colors hover:bg-white/[0.03];
+  }
+  .task-row.completed {
+    @apply opacity-50;
+  }
+  .task-row.completed .task-title {
+    @apply line-through;
+  }
+
+  .timeline-post {
+    @apply paper-card px-4 py-4 mb-3;
+  }
+}

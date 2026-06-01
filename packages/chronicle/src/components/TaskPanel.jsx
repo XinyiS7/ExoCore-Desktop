@@ -3,10 +3,11 @@ import { Plus, Filter, X } from 'lucide-react';
 import MiniCalendar from './MiniCalendar';
 import TaskCreateModal from './TaskCreateModal';
 import TaskRow from './TaskRow';
-import {
-  fetchEntries, completeEntry, updateEntry, deleteEntry,
-  suspendEntry, resumeEntry, syncGcal, unsyncGcal, fetchCalendar,
-} from '../../utils/tasksApi';
+import { tasksApi } from 'exo-shared';
+const {
+  listTasks: fetchEntries, completeTask: completeEntry, updateTask: updateEntry, deleteTask: deleteEntry,
+  suspendTask: suspendEntry, resumeTask: resumeEntry, syncTaskToGCal: syncGcal, unlinkTaskGCal: unsyncGcal, getCalendarSnapshot: fetchCalendar,
+} = tasksApi;
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 

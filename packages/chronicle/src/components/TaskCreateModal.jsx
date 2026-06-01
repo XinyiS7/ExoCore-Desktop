@@ -1,7 +1,9 @@
 // src/components/tasks/TaskCreateModal.jsx
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { createEntry, updateEntry } from '../../utils/tasksApi';
+import { tasksApi } from 'exo-shared';
+const createEntry = tasksApi.createTask;
+const updateEntry = tasksApi.updateTask;
 
 const TYPES        = [{ value: 'todo', label: 'Todo' }, { value: 'periodic', label: '周期任务' }, { value: 'goal', label: '目标' }];
 const UNITS        = [{ value: 'day', label: '天' }, { value: 'week', label: '周' }, { value: 'month', label: '月' }];

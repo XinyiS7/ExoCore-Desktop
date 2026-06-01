@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Send, Activity, X, ChevronLeft, CornerDownLeft, Check, Plus } from 'lucide-react';
-import MiniCalendar from '../../../components/tasks/MiniCalendar';
-import TaskCreateModal from '../../../components/tasks/TaskCreateModal';
-import TaskRow from '../../../components/tasks/TaskRow';
-import {
-  fetchEntries, completeEntry, updateEntry, deleteEntry,
-  suspendEntry, resumeEntry, syncGcal, unsyncGcal,
-} from '../../../utils/tasksApi';
-import { baseUrl, getCsrfToken } from '../../../utils/api';
-import { getUserAvatarUrl, getAgentAvatarUrl } from '../../../utils/avatar';
+import MiniCalendar from '../components/MiniCalendar';
+import TaskCreateModal from '../components/TaskCreateModal';
+import TaskRow from '../components/TaskRow';
+import { tweetsApi, tasksApi } from 'exo-shared';
+const fetchEntries = tasksApi.listTasks;
+const completeEntry = tasksApi.completeTask;
+const updateEntry = tasksApi.updateTask;
+const deleteEntry = tasksApi.deleteTask;
+const suspendEntry = tasksApi.suspendTask;
+const resumeEntry = tasksApi.resumeTask;
+const syncGcal = tasksApi.syncTaskToGCal;
+const unsyncGcal = tasksApi.unlinkTaskGCal;
 
 const formatTime = (dateStr) => {
   if (!dateStr) return '';
@@ -49,8 +52,10 @@ export default function TaskPanel({ appState }) {
   const [modalEntry, setModalEntry] = useState(null);
   const [completingId, setCompletingId] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
-  const userAvatarUrl = getUserAvatarUrl();
   const userNick = localStorage.getItem('exo_user_nick') || 'You';
+  const userAvatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(userNick)}`;
+  const getAgentAvatarUrl = (presetId, name) =>
+    `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${name ? `agent-${name}` : `agent-${presetId}`}`;
 
   // Fetch tasks
   const loadTasks = useCallback(() => {
@@ -95,8 +100,7 @@ export default function TaskPanel({ appState }) {
   // Fetch tweets
   const fetchTweets = useCallback(async () => {
     try {
-      const res = await fetch(`${baseUrl}/api/core/tweets/`, { credentials: 'include' });
-      const data = await res.json();
+      const data = await tweetsApi.listTweets();
       setTweets(data.tweets || []);
     } catch (err) {
       console.error('Timeline fetch failed', err);
@@ -112,19 +116,9 @@ export default function TaskPanel({ appState }) {
     setIsPosting(true);
     setPostContent('');
     try {
-      const res = await fetch(`${baseUrl}/api/core/tweets/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ content }),
-      });
-      if (res.ok) {
-        const newTweet = await res.json();
-        setTweets(prev => [{ ...newTweet, replies: newTweet.replies || [] }, ...prev]);
-        setSelectedDate(today);
-      } else {
-        setPostContent(content);
-      }
+      const newTweet = await tweetsApi.createTweet({ content });
+      setTweets(prev => [{ ...newTweet, replies: newTweet.replies || [] }, ...prev]);
+      setSelectedDate(today);
     } catch (err) {
       console.error('Post failed', err);
       setPostContent(content);
@@ -159,16 +153,8 @@ export default function TaskPanel({ appState }) {
     setReplyContent('');
     setReplyingToId(null);
     try {
-      const res = await fetch(`${baseUrl}/api/core/tweets/${parentId}/reply/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ content }),
-      });
-      if (res.ok) {
-        const newReply = await res.json();
-        setTweets(prev => addReplyToTree(prev, parentId, newReply));
-      }
+      const newReply = await tweetsApi.replyToTweet(parentId, { content });
+      setTweets(prev => addReplyToTree(prev, parentId, newReply));
     } catch (err) {
       console.error('Reply failed', err);
     } finally {

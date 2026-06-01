@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, X, Calendar, CheckCircle2, Circle, ChevronLeft, ChevronRight, Target, RefreshCw } from 'lucide-react';
-import {
-  fetchEntries, completeEntry, deleteEntry, createEntry, fetchCalendar
-} from '../../utils/tasksApi';
+import { tasksApi } from 'exo-shared';
+const fetchEntries = tasksApi.listTasks;
+const completeEntry = tasksApi.completeTask;
+const deleteEntry = tasksApi.deleteTask;
+const createEntry = tasksApi.createTask;
+const fetchCalendar = tasksApi.getCalendarSnapshot;
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
 

@@ -5,7 +5,8 @@ import {
   MoreHorizontal, Check, ExternalLink, Pin, PinOff,
   Edit2, Pause, Play, Trash2,
 } from 'lucide-react';
-import { fetchCompletions } from '../../utils/tasksApi';
+import { tasksApi } from 'exo-shared';
+const fetchCompletions = tasksApi.listCompletions;
 
 const TYPE_CFG = {
   todo:     { Icon: Circle,    label: 'Todo', color: 'text-blue-400',   bg: 'bg-blue-400/10'   },

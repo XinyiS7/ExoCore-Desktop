@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Activity, CornerDownLeft } from 'lucide-react';
-import { baseUrl, getCsrfToken } from '../utils/api';
-import { getUserAvatarUrl, getAgentAvatarUrl } from '../utils/avatar';
+import { tweetsApi } from 'exo-shared';
 
 const formatTime = (dateStr) => {
   if (!dateStr) return '';
@@ -30,17 +29,14 @@ const Timeline = ({ presets }) => {
   const [replyingToId, setReplyingToId] = useState(null);
   const [replyContent, setReplyContent] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
-  const [userAvatarUrl, setUserAvatarUrl] = useState(() => getUserAvatarUrl());
   const bottomRef = useRef(null);
 
   const userNick = localStorage.getItem('exo_user_nick') || 'You';
 
-  // Keep avatar in sync if updated from UserProfilePanel
-  useEffect(() => {
-    const handler = () => setUserAvatarUrl(getUserAvatarUrl());
-    window.addEventListener('user-avatar-updated', handler);
-    return () => window.removeEventListener('user-avatar-updated', handler);
-  }, []);
+  // Simple avatar generator — inline to avoid cross-module dependency
+  const userAvatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(userNick)}`;
+  const getAgentAvatarUrl = (presetId) =>
+    `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=agent-${presetId}`;
 
   const getAuthorInfo = (tweet) => {
     if (tweet.author === 'user') {
@@ -49,14 +45,13 @@ const Timeline = ({ presets }) => {
     const presetId = parseInt(tweet.author.split(':')[1]);
     const preset = presets?.find(p => p.id === presetId);
     const name = preset?.name || 'G045';
-    return { name, avatar: getAgentAvatarUrl(presetId, name), isUser: false };
+    return { name, avatar: getAgentAvatarUrl(presetId), isUser: false };
   };
 
   const fetchTweets = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${baseUrl}/api/core/tweets/`, { credentials: 'include' });
-      const data = await res.json();
+      const data = await tweetsApi.listTweets();
       setTweets(data.tweets || []);
       setHasMore(data.has_more);
       setNextBeforeId(data.next_before_id);
@@ -71,8 +66,7 @@ const Timeline = ({ presets }) => {
     if (!nextBeforeId || isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
     try {
-      const res = await fetch(`${baseUrl}/api/core/tweets/?before_id=${nextBeforeId}`, { credentials: 'include' });
-      const data = await res.json();
+      const data = await tweetsApi.listTweets({ before_id: nextBeforeId });
       setTweets(prev => [...prev, ...(data.tweets || [])]);
       setHasMore(data.has_more);
       setNextBeforeId(data.next_before_id);
@@ -102,18 +96,8 @@ const Timeline = ({ presets }) => {
     setIsPosting(true);
     setNewPostContent('');
     try {
-      const res = await fetch(`${baseUrl}/api/core/tweets/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ content }),
-      });
-      if (res.ok) {
-        const newTweet = await res.json();
-        setTweets(prev => [{ ...newTweet, replies: newTweet.replies || [] }, ...prev]);
-      } else {
-        setNewPostContent(content);
-      }
+      const newTweet = await tweetsApi.createTweet({ content });
+      setTweets(prev => [{ ...newTweet, replies: newTweet.replies || [] }, ...prev]);
     } catch (err) {
       console.error('Post failed', err);
       setNewPostContent(content);
@@ -147,16 +131,8 @@ const Timeline = ({ presets }) => {
     setReplyContent('');
     setReplyingToId(null);
     try {
-      const res = await fetch(`${baseUrl}/api/core/tweets/${parentId}/reply/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ content }),
-      });
-      if (res.ok) {
-        const newReply = await res.json();
-        setTweets(prev => addReplyToTree(prev, parentId, newReply));
-      }
+      const newReply = await tweetsApi.replyToTweet(parentId, { content });
+      setTweets(prev => addReplyToTree(prev, parentId, newReply));
     } catch (err) {
       console.error('Reply failed', err);
     } finally {
