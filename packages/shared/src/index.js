@@ -1,5 +1,5 @@
 // API core
-export { baseUrl, getCsrfToken, apiFetch, MODEL_REGISTRY, AVAILABLE_MODELS, getConvProjectId } from './api';
+export { baseUrl, getCsrfToken, apiFetch, MODEL_REGISTRY, AVAILABLE_MODELS, MAIN_MODEL_IDS, getConvProjectId } from './api';
 
 // Auth
 export { fetchCurrentUser, isAuthenticated } from './auth';

@@ -10,13 +10,20 @@ export const getCsrfToken = () =>
 // Model registry is fetched dynamically from GET /api/core/models/ (see config.js endpoint).
 // Static fallback for offline/bootstrap scenarios — always prefer the API response.
 export const MODEL_REGISTRY = [
-  { provider: 'gemini',   id: 'gemini-3.1-pro-preview', roles: ['main'] },
-  { provider: 'gemini',   id: 'gemini-2.5-flash',       roles: ['sub_agent'] },
-  { provider: 'deepseek', id: 'deepseek-v4-pro',        roles: ['main'] },
-  { provider: 'deepseek', id: 'deepseek-v4-flash',      roles: ['sub_agent'] },
+  { provider: 'gemini',   id: 'gemini-3.1-pro-preview', roles: ['main'],       color: '#4285F4' },
+  { provider: 'gemini',   id: 'gemini-3.5-flash',       roles: ['main'],       color: '#34A853' },
+  { provider: 'gemini',   id: 'gemini-3-flash-preview', roles: ['main'],       color: '#FBBC04' },
+  { provider: 'gemini',   id: 'gemini-2.5-flash',       roles: ['sub_agent'],  color: '#FF6D01' },
+  { provider: 'deepseek', id: 'deepseek-v4-pro',        roles: ['main'],       color: '#6C5CE7' },
+  { provider: 'deepseek', id: 'deepseek-v4-flash',      roles: ['main', 'sub_agent'], color: '#00CEC9' },
 ];
 
 export const AVAILABLE_MODELS = MODEL_REGISTRY.map(m => m.id);
+
+/** Model IDs filtered to only main-role models (for primary conversation dropdowns). */
+export const MAIN_MODEL_IDS = MODEL_REGISTRY
+  .filter(m => m.roles.includes('main'))
+  .map(m => m.id);
 
 /** Safely extract project ID from a conversation object, handling number, string, or nested object forms. */
 export const getConvProjectId = (conv) => {

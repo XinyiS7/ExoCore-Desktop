@@ -78,7 +78,7 @@ export default function ChatShell({
   const chatKey = resolvedSessionId ? `chat-${resolvedSessionId}` : 'chat-empty';
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-chat-bg relative">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-chat-bg relative">
       {/* Stage Header */}
       <StageHeader
         onToggleSidebar={onToggleSidebar}

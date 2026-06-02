@@ -8,18 +8,20 @@ import { getUserAvatarUrl } from '../../utils/avatar';
 import AvatarCropModal from './modals/AvatarCropModal';
 import { baseUrl, MODEL_REGISTRY } from 'exo-shared';
 
-// ─── Derived from MODEL_REGISTRY — edit models in src/utils/api.js ───────────
-const MODEL_COLOR_MAP = Object.fromEntries(MODEL_REGISTRY.map(m => [m.id, m.color]));
+// ─── Color map — seeded from static MODEL_REGISTRY, enriched from API response ──
+const STATIC_COLOR_MAP = Object.fromEntries(MODEL_REGISTRY.map(m => [m.id, m.color]));
 const DEFAULT_COLOR = '#94a3b8';
-const modelColor = (model) => MODEL_COLOR_MAP[model] ?? DEFAULT_COLOR;
+const MODEL_PALETTE = ['#4285F4', '#34A853', '#FBBC04', '#EA4335', '#FF6D01', '#6C5CE7', '#00CEC9', '#AB47BC'];
+let _paletteIdx = 0;
+const nextAutoColor = () => MODEL_PALETTE[_paletteIdx++ % MODEL_PALETTE.length];
 
-const PLATFORM_KEYS = ['all', ...new Set(MODEL_REGISTRY.map(m => m.platform))];
+const PLATFORM_KEYS = ['all', ...new Set(MODEL_REGISTRY.map(m => m.provider))];
 const PLATFORM_LABELS = { all: '全部', gemini: 'Gemini', deepseek: 'DeepSeek' };
-const PLATFORMS = PLATFORM_KEYS.map(key => ({ key, label: PLATFORM_LABELS[key] ?? key }));
+const PLATFORMS = PLATFORM_KEYS.filter(Boolean).map(key => ({ key, label: PLATFORM_LABELS[key] ?? key }));
 
-const modelMatchesPlatform = (model, platform) => {
+const modelMatchesPlatform = (model, platform, modelProviderMap) => {
   if (platform === 'all') return true;
-  return MODEL_REGISTRY.find(m => m.id === model)?.platform === platform;
+  return modelProviderMap[model] === platform;
 };
 
 const toDateStr = (d) => d.toISOString().slice(0, 10);
@@ -42,7 +44,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 // ─── Stats summary below chart ────────────────────────────────────────────────
-const ChartSummary = ({ data, models, valueKey, label }) => {
+const ChartSummary = ({ data, models, valueKey, label, modelColor }) => {
   if (!data?.length) return null;
 
   return (
@@ -85,6 +87,41 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [statsError, setStatsError] = useState(false);
 
+  // Dynamic model registry state (color map + provider map)
+  const [modelColorMap, setModelColorMap] = useState(() => ({ ...STATIC_COLOR_MAP }));
+  const [modelProviderMap, setModelProviderMap] = useState(() => {
+    const map = {};
+    MODEL_REGISTRY.forEach(m => { map[m.id] = m.provider; });
+    return map;
+  });
+
+  // Resolve model → color, falling back through palette for unknown models
+  const modelColor = useCallback((model) => {
+    if (modelColorMap[model]) return modelColorMap[model];
+    // Assign next palette colour for models not yet seen
+    const c = nextAutoColor();
+    setModelColorMap(prev => ({ ...prev, [model]: c }));
+    return c;
+  }, [modelColorMap]);
+
+  // ── Fetch model registry (for live colors) ──
+  const fetchModelRegistry = useCallback(async () => {
+    try {
+      const res = await fetch(`${baseUrl}/api/core/models/`, { credentials: 'include' });
+      if (!res.ok) return;
+      const models = await res.json();
+      const colorMap = { ...STATIC_COLOR_MAP };
+      const provMap = {};
+      models.forEach(m => {
+        if (m.color) colorMap[m.id] = m.color;
+        if (m.provider) provMap[m.id] = m.provider;
+      });
+      setModelColorMap(colorMap);
+      setModelProviderMap(prev => ({ ...prev, ...provMap }));
+      _paletteIdx = 0; // reset palette after getting live data
+    } catch { /* keep static fallback */ }
+  }, []);
+
   // Hover summary state
   const [activeInputPoint, setActiveInputPoint] = useState(null);
   const [activeOutputPoint, setActiveOutputPoint] = useState(null);
@@ -109,8 +146,8 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
   }, [anchor, mode]);
 
   useEffect(() => {
-    if (isOpen) fetchStats();
-  }, [isOpen, fetchStats]);
+    if (isOpen) { fetchStats(); fetchModelRegistry(); }
+  }, [isOpen, fetchStats, fetchModelRegistry]);
 
   // ── Avatar ──
   const handleAvatarChange = (e) => {
@@ -158,7 +195,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
     const modelSet = new Set();
     rawData.daily.forEach(day => {
       (day.models || []).forEach(m => {
-        if (modelMatchesPlatform(m.model, platform)) modelSet.add(m.model);
+        if (modelMatchesPlatform(m.model, platform, modelProviderMap)) modelSet.add(m.model);
       });
     });
     const models = Array.from(modelSet);
@@ -176,7 +213,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
     });
 
     return { chartData: data, allModels: models };
-  }, [rawData, platform]);
+  }, [rawData, platform, modelProviderMap]);
 
   const hasData = chartData.length > 0 && allModels.length > 0;
 
@@ -357,6 +394,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
                   valueKey="input"
                   onActivate={setActiveInputPoint}
                   activePoint={activeInputPoint}
+                  modelColor={modelColor}
                 />
 
                 {/* Output tokens chart */}
@@ -367,6 +405,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
                   valueKey="output"
                   onActivate={setActiveOutputPoint}
                   activePoint={activeOutputPoint}
+                  modelColor={modelColor}
                 />
 
                 {/* Cached tokens chart */}
@@ -377,6 +416,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
                   valueKey="cached"
                   onActivate={setActiveCachedPoint}
                   activePoint={activeCachedPoint}
+                  modelColor={modelColor}
                 />
               </>
             )}
@@ -388,7 +428,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
 };
 
 // ─── Single chart block ───────────────────────────────────────────────────────
-const ChartBlock = ({ title, data, models, valueKey, onActivate, activePoint }) => {
+const ChartBlock = ({ title, data, models, valueKey, onActivate, activePoint, modelColor }) => {
   return (
     <div className="shrink-0">
       <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-exo-muted mb-3">{title}</p>
@@ -435,6 +475,7 @@ const ChartBlock = ({ title, data, models, valueKey, onActivate, activePoint }) 
         models={models}
         valueKey={valueKey}
         label={title}
+        modelColor={modelColor}
       />
     </div>
   );

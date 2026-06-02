@@ -38,7 +38,7 @@ export default function StageHeader({
   const showFilesButton = from === 'project';
 
   return (
-    <div className="flex items-center justify-between h-12 px-4 border-b border-white/5 bg-chat-panel/60 backdrop-blur-md flex-shrink-0">
+    <div className="hidden md:flex items-center justify-between h-12 px-4 border-b border-white/5 bg-chat-panel/60 backdrop-blur-md flex-shrink-0">
       <div className="flex items-center gap-3 min-w-0">
         {/* Sidebar toggle — desktop only */}
         <button

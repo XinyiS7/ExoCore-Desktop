@@ -3,7 +3,7 @@ import {
   Save, Plus, RefreshCw, X, FileText,
   Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2, SlidersHorizontal
 } from 'lucide-react';
-import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from 'exo-shared';
+import { baseUrl, getCsrfToken, MAIN_MODEL_IDS } from 'exo-shared';
 import { getUserAvatarUrl, getAgentAvatarUrl } from '../../utils/avatar';
 import { filesToAttachmentData, saveAttachments, enrichMessages, uploadFilesToAttachments } from '../../utils/attachmentStorage';
 import { formatDateSeparator, isDifferentDay } from '../../utils/time';
@@ -229,7 +229,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
           setThinkingLevel(current.thinking_level || "auto");
           setTemperature(current.temperature || 1.0);
           const p = presets.find(x => x.id === current.agent_preset_id);
-          setCurrentModel(p ? p.default_model : (AVAILABLE_MODELS[0] || ""));
+          setCurrentModel(p ? p.default_model : (MAIN_MODEL_IDS[0] || ""));
         }
       });
 
@@ -630,7 +630,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   }, []);
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col h-full bg-exo-bg relative">
+    <div className="flex-1 min-w-0 flex flex-col min-h-0 bg-exo-bg relative">
       <div className="relative flex-shrink-0">
         {/* v1 standalone header: back + session name + ID */}
         {!onBack && (
@@ -739,7 +739,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         )}
       </div>
 
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-8 scrollbar-hide">
+      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-8 scrollbar-hide">
         <div ref={topSentinelRef} className="h-px" />
         {isLoadingMore && (
           <div className="flex justify-center py-3">
@@ -784,7 +784,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         isSubmitting={isBranching}
       />
 
-      <div className="p-4 border-t border-exo-mist-10 bg-exo-pure/80 backdrop-blur-xl flex flex-col gap-2">
+      <div className="flex-shrink-0 p-4 border-t border-exo-mist-10 bg-exo-pure/80 backdrop-blur-xl flex flex-col gap-2">
         {editingMessageId && (
           <div className="flex items-center justify-between px-3 py-1.5 bg-exo-accent/10 border border-exo-accent/20 rounded-[2px] animate-fade-in">
             <div className="flex items-center gap-2 text-exo-accent text-[10px] font-mono uppercase tracking-widest">
@@ -804,7 +804,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
               onChange={(e) => updatePreference({ model: e.target.value })}
               className="bg-transparent outline-none text-[11px] font-sans text-white/50 cursor-pointer max-w-[110px] truncate hover:text-white/80 transition-colors"
             >
-              {AVAILABLE_MODELS.map(m => (
+              {MAIN_MODEL_IDS.map(m => (
                 <option key={m} value={m} className="bg-exo-pure text-white">{m}</option>
               ))}
             </select>
