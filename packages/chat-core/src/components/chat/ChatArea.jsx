@@ -641,15 +641,23 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
           </div>
         )}
 
-        {/* v2 minimal header: status + agent name (left) | cache + tools (right) */}
+        {/* v2 minimal header: status + agent name · session name (left) | cache + docs (right) */}
         {onBack && (
           <div className="border-b border-exo-mist-10 bg-exo-pure/40 backdrop-blur-md z-20 px-4 md:px-6 py-2 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
               <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isGenerating ? 'bg-exo-accent animate-blink-sharp' : 'bg-green-500/50'}`} />
               {sessionInfo?.agent_preset_id && presets.find(x => x.id === sessionInfo.agent_preset_id) && (
-                <span className="text-[10px] font-sans text-exo-muted/30 truncate">
+                <span className="text-[11px] font-medium text-exo-text/80 truncate">
                   {presets.find(x => x.id === sessionInfo.agent_preset_id)?.name}
                 </span>
+              )}
+              {sessionInfo?.name && (
+                <>
+                  <span className="text-exo-muted/20 font-light">·</span>
+                  <span className="text-[11px] font-light text-exo-muted/60 truncate">
+                    {sessionInfo.name}
+                  </span>
+                </>
               )}
             </div>
             <div className="flex items-center gap-0.5 flex-shrink-0 ml-2">
@@ -664,8 +672,6 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
                   <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-exo-accent" />
                 )}
               </button>
-              <button onClick={handleCompress} className="p-1 text-exo-muted/20 hover:text-exo-muted/50 transition-colors hidden sm:block" title="Save & Compress"><Save size={14} strokeWidth={1.5} /></button>
-              <button onClick={() => openNewSession()} className="p-1 text-exo-muted/20 hover:text-exo-muted/50 transition-colors hidden sm:block" title="New Session"><Plus size={14} strokeWidth={1.5} /></button>
             </div>
           </div>
         )}

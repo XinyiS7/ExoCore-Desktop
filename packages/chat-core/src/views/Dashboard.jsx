@@ -59,7 +59,7 @@ export default function Dashboard({ appState, setView }) {
 
   const handleSessionClick = (convo) => {
     setActiveSessionId(convo.id);
-    setView('chat', { sessionId: convo.id, sessionTitle: convo.name });
+    setView('chat', { from: 'projects', sessionId: convo.id, sessionTitle: convo.name });
   };
 
   const getAgentName = (presetId) => {
@@ -130,7 +130,7 @@ export default function Dashboard({ appState, setView }) {
                       setSearchTerm('');
                       setShowResults(false);
                       setActiveSessionId(convo.id);
-                      setView('chat', { sessionId: convo.id, sessionTitle: convo.name });
+                      setView('chat', { from: 'projects', sessionId: convo.id, sessionTitle: convo.name });
                     }}
                     className="flex items-center gap-3 w-full px-4 py-3 hover:bg-white/5 transition-all text-left"
                   >

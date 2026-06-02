@@ -1,0 +1,57 @@
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { BrainCircuit, FolderKanban, Database } from 'lucide-react';
+import { getUserAvatarUrl } from '../../utils/avatar';
+
+const BOTTOM_ITEMS = [
+  { route: '/projects',  icon: FolderKanban, label: 'Projects' },
+  { route: '/agent-hub', icon: BrainCircuit,  label: 'Agents' },
+  { route: '/memory',    icon: Database,      label: 'Memory' },
+];
+
+export default function MobileBottomBar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const userAvatarUrl = getUserAvatarUrl();
+
+  const isActive = (route) => {
+    if (route === '/projects') return location.pathname.startsWith('/project') || location.pathname === '/';
+    if (route === '/agent-hub') return location.pathname.startsWith('/agent');
+    if (route === '/memory') return location.pathname.startsWith('/memory');
+    return false;
+  };
+
+  return (
+    <div className="md:hidden flex-shrink-0 h-12 bg-chat-panel border-t border-white/5 flex items-center justify-around px-2">
+      {BOTTOM_ITEMS.map(({ route, icon: Icon, label }) => {
+        const active = isActive(route);
+        return (
+          <button
+            key={route}
+            onClick={() => navigate(route)}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 transition-all duration-150 active:scale-95 ${
+              active ? 'text-chat-accent' : 'text-chat-muted opacity-60 hover:opacity-100'
+            }`}
+          >
+            <Icon size={17} strokeWidth={1.5} />
+            <span className="text-[8px] font-medium tracking-wider uppercase">{label}</span>
+          </button>
+        );
+      })}
+      {/* User avatar */}
+      <button
+        onClick={() => navigate('/user')}
+        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 transition-all duration-150 active:scale-95 ${
+          location.pathname === '/user' ? 'text-chat-accent' : 'text-chat-muted opacity-60 hover:opacity-100'
+        }`}
+      >
+        <img
+          src={userAvatarUrl}
+          className="w-[17px] h-[17px] rounded-sm border border-white/10 object-cover"
+          alt="User"
+        />
+        <span className="text-[8px] font-medium tracking-wider uppercase">You</span>
+      </button>
+    </div>
+  );
+}

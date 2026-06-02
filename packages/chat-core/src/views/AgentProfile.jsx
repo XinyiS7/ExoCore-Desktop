@@ -179,7 +179,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
 
   const handleSessionClick = (session) => {
     setActiveSessionId(session.id);
-    setView('chat', { sessionId: session.id, agentId: preset.id, agentName: preset.name, sessionTitle: session.name });
+    setView('chat', { from: 'agent', sessionId: session.id, agentId: preset.id, agentName: preset.name, sessionTitle: session.name });
   };
 
   const formatLastActive = (dateStr) => {

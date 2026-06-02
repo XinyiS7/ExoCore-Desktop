@@ -83,7 +83,7 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
 
   const handleSessionClick = (session) => {
     setActiveSessionId(session.id);
-    setView('chat', { sessionId: session.id, sessionTitle: session.name });
+    setView('chat', { from: 'project', sessionId: session.id, sessionTitle: session.name, projectId, projectName: project?.name });
   };
 
   const getFileIcon = (mimeType) => {

@@ -1,4 +1,4 @@
-import { baseUrl, getCsrfToken } from './api';
+import { baseUrl, getCsrfToken } from 'exo-shared';
 
 // 移除对 localStorage 的持久化依赖，仅保留用于前端本地临时预览生成的方法
 
