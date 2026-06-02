@@ -12,7 +12,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 # V3 Frontend Split
 
-ExoCore-Desktop is a **monorepo** containing three independent SPAs + a Rust/Tauri desktop shell. All data is served by a single Django backend (port 8000).
+ExoCore-Desktop is a **monorepo** containing three independent SPAs. Each runs on its own port as a standalone PWA, sharing a single Django backend (port 8000). Tauri shell is shelved.
 
 ## Architecture
 
