@@ -1,1 +1,580 @@
-<!DOCTYPE html><html lang="zh-CN"><head>    <meta charset="UTF-8">    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>ExoCore - Crucible Glass Theme (Plasma Fluid)</title>    <style>        :root {            /* 护眼暗渊底色 - Ink Black 950 */            --bg-base: rgb(8 19 28);            /* 边框与暗部装饰 - Midnight Violet 900 / Charcoal Blue 800 */            --border-dark: rgb(24 62 78);            --border-glow: rgba(80, 195, 226, 0.3);            /* 强调色：赛博青 - Sky Blue 400 */            --accent-primary: rgb(80 195 226);            /* 悬浮态：Sky Blue 300 */            --accent-hover: rgb(123 210 234);            /* 次级强调：Midnight Violet 500 */            --accent-secondary: rgb(140 32 32);            /* 警告/高亮点缀：Cinnabar 500 */            --accent-alert: rgb(161 103 3);            /* 文字颜色 - Ink Black 50 / 300 */            --text-main: rgb(183 190 197);            --text-muted: rgb(136 184 221);            /* 界面毛玻璃容器 - Charcoal Blue 950 */            --glass-bg: rgba(9, 22, 27, 0.7);            --glass-border: rgba(80, 195, 226, 0.15);        }        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace, sans-serif; }        body {            background-color: var(--bg-base);            color: var(--text-main);            height: 100vh;            display: flex;            overflow: hidden;            position: relative;        }        /* =========================================           流体呼吸光晕底板 (Cyberpunk Fluid Core)           ========================================= */        .plasma-container {            position: fixed;            top: 0; left: 0; width: 100vw; height: 100vh;            z-index: 0;            overflow: hidden;            pointer-events: none;            opacity: 0;            transition: opacity 2s ease-in-out;        }        body.is-thinking .plasma-container { opacity: 1; }        .plasma-blob {            position: absolute;            filter: blur(130px);            border-radius: 50%;            opacity: 0.35;            mix-blend-mode: screen;            will-change: transform;        }        /* 核心一：深邃幽蓝 (Ink Black 600) */        .blob-1 {            width: 45vw; height: 45vw;            background: rgb(2 25 76 / 0.3);            top: 15%; left: 20%;            animation: float1 12s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);        }        /* 核心二：午夜霓虹紫 (Midnight Violet 700) */        .blob-2 {            width: 55vw; height: 55vw;            background: rgb(73 33 122 / 0.25);            bottom: 5%; right: 15%;            animation: float2 18s infinite alternate ease-in-out;        }        /* 游走点缀：亮青色 (Sky Blue 500) */        .blob-3 {            width: 40vw; height: 40vw;            background: rgb(142 243 235 / 0.79);            top: 35%; left: 45%;            animation: float3 15s infinite alternate ease-in-out;        }        @keyframes float1 { 0% { transform: translate(0, 0) scale(0.8); } 100% { transform: translate(25%, -15%) scale(1.2); } }        @keyframes float2 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-20%, -25%) scale(0.9); } }        @keyframes float3 { 0% { transform: translate(-30%, 20%) scale(0.9); } 100% { transform: translate(30%, -30%) scale(1.3); } }        body.is-thinking .plasma-container { opacity: 1; }        .plasma-blob {            position: absolute;            filter: blur(130px); /* 从 90px 提升，彻底虚化边缘形成气态感 */            border-radius: 50%;            opacity: 0.35; /* 从 0.7 降权，削弱视觉压迫 */            mix-blend-mode: screen; /* 核心机制：让色块交集处产生光学融合 */            will-change: transform; /* 硬件加速，防止交融计算掉帧 */        }        /* 核心一：深邃幽蓝 */        .blob-1 {            width: 45vw; height: 45vw; /* 放大体积以增加交集面积 */            background: rgb(6 35 66);            top: 15%; left: 20%;            animation: float1 12s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);        }        /* 核心二：暗哑湖绿（拉低饱和度） */        .blob-2 {            width: 55vw; height: 55vw;            background: rgb(35 90 88 / 0.25);            bottom: 5%; right: 15%;            animation: float2 18s infinite alternate ease-in-out;        }        /* 游走点缀：冷青光斑 */        .blob-3 {            width: 40vw; height: 40vw;            background: rgb(255 59 0);            top: 35%; left: 45%;            animation: float3 15s infinite alternate ease-in-out;        }        /* 扩大位移半径，确保三个色块在游走时有充分的重叠相交 */        @keyframes float1 { 0% { transform: translate(0, 0) scale(0.8); } 100% { transform: translate(25%, -15%) scale(1.2); } }        @keyframes float2 { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-20%, -25%) scale(0.9); } }        @keyframes float3 { 0% { transform: translate(-30%, 20%) scale(0.9); } 100% { transform: translate(30%, -30%) scale(1.3); } }        /* =========================================           UI 层级 (确保在光晕之上)           ========================================= */        .global-nav, .sidebar, .main-stage { z-index: 10; }        .glass-panel {            background: var(--glass-bg);            backdrop-filter: blur(20px);            -webkit-backdrop-filter: blur(20px);            border: 1px solid var(--glass-border);        }        .global-nav { width: 60px; display: flex; flex-direction: column; align-items: center; padding-top: 20px; border-right: 1px solid var(--garnet-dark); }        .nav-item { width: 40px; height: 40px; margin-bottom: 15px; border-radius: 8px; display: flex; justify-content: center; align-items: center; cursor: pointer; color: var(--text-muted); font-weight: bold; transition: 0.3s; }        .nav-item:hover, .nav-item.active { background-color: var(--garnet-dark); color: var(--accent-goldred); }        .sidebar { width: 260px; display: flex; flex-direction: column; transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-right: 1px solid var(--garnet-dark); }        .sidebar.collapsed { width: 0; border-right: none; }        .sidebar-header { padding: 20px; font-weight: 600; border-bottom: 1px solid var(--garnet-dark); display: flex; justify-content: space-between; align-items: center;}        .list-item { padding: 12px; margin: 8px; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; transition: 0.2s; border: 1px solid transparent;}        .list-item:hover { background-color: rgba(58, 11, 18, 0.5); }        .list-item.active { background-color: rgba(255, 94, 0, 0.05); border: 1px solid var(--accent-goldred); }        .badge { font-size: 10px; color: var(--accent-goldred); border: 1px solid var(--accent-goldred); padding: 2px 6px; border-radius: 4px; display: inline-block; width: max-content; margin-bottom: 4px;}        .main-stage { flex: 1; display: flex; flex-direction: column; }        .stage-header { height: 60px; border-bottom: 1px solid var(--garnet-dark); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; }        .btn-icon { background: transparent; border: 1px solid var(--text-muted); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; }        .btn-icon:hover { border-color: var(--accent-goldred); color: var(--accent-goldred); }        .chat-flow { flex: 1; overflow-y: auto; padding: 40px 15%; display: flex; flex-direction: column; gap: 24px; }        .message { display: flex; flex-direction: column; gap: 8px; }        .msg-user { align-items: flex-end; }        .msg-agent { align-items: flex-start; }        /* =========================================           气泡与UI           ========================================= */        /* 将原有的 garnet-dark 替换为 border-dark */        .global-nav, .sidebar, .sidebar-header, .stage-header, .input-area {            border-color: var(--border-dark) !important;        }        .nav-item:hover, .nav-item.active { background-color: var(--border-dark); color: var(--accent-primary); }        .list-item:hover { background-color: rgba(24, 62, 78, 0.5); /* Charcoal Blue 800 */ }        .list-item.active { background-color: rgba(80, 195, 226, 0.05); border: 1px solid var(--accent-primary); }        .badge { color: var(--accent-secondary); border-color: var(--accent-secondary); }        .btn-icon:hover { border-color: var(--accent-primary); color: var(--accent-primary); }        .btn-primary { background: var(--accent-primary); color: rgb(5 25 31); /* Sky Blue 950 */ }        .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 15px rgba(80, 195, 226, 0.4); }        .thinking-indicator { color: var(--accent-primary); }        /* 用户气泡：午夜紫暗色 (Midnight Violet 900) */        .msg-user .bubble {            background-color: rgb(21 16 35 / 0.85);            border: 1px solid rgb(140 80 175 / 0.2);        }        /* Agent气泡：深邃墨黑 (Ink Black 900) */        .msg-agent .bubble {            background-color: rgba(11, 27, 40, 0.9);            border: 1px solid rgba(80, 195, 226, 0.1);        }        /* 输入框获取焦点时的泛光 */        .input-box:focus { border-color: var(--accent-primary); box-shadow: inset 0 2px 10px rgba(0,0,0,0.5), 0 0 15px rgba(80, 195, 226, 0.1); }    </style></head><body>    <div class="plasma-container">        <div class="plasma-blob blob-1"></div>        <div class="plasma-blob blob-2"></div>        <div class="plasma-blob blob-3"></div>    </div>    <div class="global-nav glass-panel">        <div class="nav-item active">P</div>        <div class="nav-item">A</div>        <div class="nav-item">M</div>    </div>    <div class="sidebar glass-panel" id="sidebar">        <div class="sidebar-header">            <span>Sessions</span>            <button class="btn-icon" onclick="toggleSidebar()" style="padding: 2px 8px; border: none;">◀</button>        </div>        <div style="flex:1; overflow-y:auto; padding: 10px;">            <div class="list-item active">                <span class="badge">Alessandro</span>                <span>Ligand Docking Logic</span>            </div>            <div class="list-item">                <span style="font-size: 10px; color: var(--text-muted); border: 1px solid var(--text-muted); padding: 2px 6px; border-radius: 4px; display: inline-block; width: max-content; margin-bottom: 4px;">Bio-Agent</span>                <span style="color: var(--text-muted);">SMARTS Pattern Build</span>            </div>        </div>    </div>    <div class="main-stage">        <div class="stage-header glass-panel">            <div>                <button class="btn-icon" onclick="toggleSidebar()" style="margin-right: 15px; border: none;">☰</button>                <strong style="color: var(--accent-goldred);">Alessandro</strong> / Ligand Docking Logic            </div>            <button class="btn-icon" onclick="toggleThinking()" style="border-color: var(--accent-goldred); color: var(--accent-goldred);">                ⟁ 模拟后台推演 (Thinking)            </button>        </div>        <div class="chat-flow">            <div class="message msg-user">                <div class="bubble">你能检查一下我们刚刚用 C++ 写的那段片段生长的逻辑吗？感觉在内存处理上有点不干净。</div>            </div>            <div class="message msg-agent">                <div class="thinking-indicator">⚡ Alessandro is thinking & scanning context...</div>                <div class="bubble" id="agent-reply">                    这段逻辑确实存在隐患。作为主权级系统，我不建议依赖编译器的默认回收。你在 <code>FragmentGrower</code> 析构时漏掉了指针的显式置空。                    <div class="code-block">// Fix memory leak in growing logicvoid FragmentGrower::reset() {    if (current_ligand_ != nullptr) {        delete current_ligand_;        current_ligand_ = nullptr;    }}                    </div>                </div>            </div>        </div>        <div class="input-area glass-panel">            <textarea class="input-box" placeholder="输入指令 (@ 挂载文件)..."></textarea>            <div class="action-bar">                <button class="btn-icon" style="border:none;">📎 附加文件</button>                <button class="btn-primary">Execute ↵</button>            </div>        </div>    </div>    <script>        function toggleSidebar() {            document.getElementById('sidebar').classList.toggle('collapsed');        }        function toggleThinking() {            const body = document.body;            body.classList.toggle('is-thinking');        }    </script></body></html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExoCore — Burning Sunset Aurora</title>
+<style>
+/* ============================================================
+   BURNING SUNSET PALETTE
+   ============================================================ */
+:root {
+  --obsidian:    #0a0200;
+  --garnet-500:  #621708;
+  --garnet-600:  #ae290e;
+  --oxblood-400: #751609;
+  --oxblood-500: #941b0c;
+  --oxblood-600: #d32811;
+  --rusty-500:   #bc3908;
+  --rusty-600:   #f54a0c;
+  --rusty-700:   #f77749;
+  --orange-400:  #d48d09;
+  --orange-500:  #f6aa1c;
+  --orange-600:  #f7bb4b;
+  --orange-700:  #f9cc78;
+
+  --surface-bg:     rgba(10, 2, 0, 0.70);
+  --surface-border: rgba(148, 27, 12, 0.12);
+  --text-main:      #c4b5ab;
+  --text-dim:       #8a7060;
+  --text-bright:    #e8c9a0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--obsidian);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  display: flex;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   AURORA PLASMA STAGE
+   ── Philosophy: slow, directional ribbon drift with gentle wave
+   ── Each ribbon moves in one dominant direction with a soft
+      sinusoidal vertical component, like silk in a slow current.
+   ── No darting. No flickering. Just breathing.
+   ============================================================ */
+.plasma-stage {
+  position: fixed; inset: 0;
+  z-index: 0; pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+body.thinking .plasma-stage { opacity: 1; }
+
+/* faint idle glow */
+.plasma-stage::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 65% 45% at 50% 42%,
+    rgba(148, 27, 12, 0.04) 0%, transparent 70%);
+  transition: opacity 1s;
+}
+body.thinking .plasma-stage::after { opacity: 0; }
+
+/* ── Gooey metaball wrapper ── */
+.plasma-goo {
+  position: absolute; inset: -8%;
+  filter: blur(48px) contrast(1.2);
+}
+
+/* ── Shared shape base ── */
+.ribbon {
+  position: absolute;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AURORA RIBBONS — wide horizontal ellipses
+   Each ribbon drifts in ONE dominant direction.
+   BIG displacement (40-60vw) so movement is VISIBLE through blur.
+   ═══════════════════════════════════════════════════════════ */
+
+/* R1 — Deepest oxblood, bottom, rightward, 10s */
+.r1 {
+  width: 180vw; height: 28vh;
+  border-radius: 48% 52% 42% 58% / 50% 50% 55% 45%;
+  background: var(--oxblood-400);
+  top: 56%; left: -60%;
+  animation: drift-right 10.0s ease-in-out infinite;
+}
+
+/* R2 — Oxblood mid-low, leftward, 9s */
+.r2 {
+  width: 170vw; height: 24vh;
+  border-radius: 52% 48% 58% 42% / 45% 55% 48% 52%;
+  background: var(--oxblood-500);
+  top: 40%; left: -55%;
+  animation: drift-left 9.0s ease-in-out infinite;
+  animation-delay: -2.5s;
+}
+
+/* R3 — Garnet middle band, rightward + wave, 7.5s */
+.r3 {
+  width: 165vw; height: 20vh;
+  border-radius: 45% 55% 42% 58% / 55% 45% 50% 50%;
+  background: var(--garnet-600);
+  top: 24%; left: -55%;
+  animation: drift-right-wave 7.5s ease-in-out infinite;
+  animation-delay: -4.0s;
+}
+
+/* R4 — Rusty spice upper-mid, rightward + wave, 6.5s */
+.r4 {
+  width: 155vw; height: 16vh;
+  border-radius: 50% 50% 55% 45% / 48% 52% 45% 55%;
+  background: var(--rusty-500);
+  top: 10%; left: -50%;
+  animation: drift-right-wave 6.5s ease-in-out infinite;
+  animation-delay: -1.2s;
+}
+
+/* R5 — Bright rusty upper ribbon, leftward + wave, 5.5s */
+.r5 {
+  width: 150vw; height: 13vh;
+  border-radius: 55% 45% 48% 52% / 52% 48% 55% 45%;
+  background: var(--rusty-600);
+  top: 3%; left: -48%;
+  animation: drift-left-wave 5.5s ease-in-out infinite;
+  animation-delay: -3.0s;
+}
+
+/* R6 — Golden top ribbon, leftward + wave, 4.5s */
+.r6 {
+  width: 140vw; height: 10vh;
+  border-radius: 48% 52% 50% 50% / 55% 45% 48% 52%;
+  background: var(--orange-500);
+  top: 0%; left: -42%;
+  animation: drift-left-wave 4.5s ease-in-out infinite;
+  animation-delay: -0.8s;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DEPTH BLOBS — large, visible wander
+   ═══════════════════════════════════════════════════════════ */
+
+/* B1 — Large oxblood core, 10s */
+.blob-deep {
+  width: 50vw; height: 50vw;
+  border-radius: 38% 62% 48% 52% / 55% 42% 55% 45%;
+  background: var(--oxblood-500);
+  top: 28%; left: 10%;
+  animation: deep-breathe 10.0s ease-in-out infinite;
+  animation-delay: -1.5s;
+}
+
+/* B2 — Medium warm glow, right side, 8s */
+.blob-warm {
+  width: 35vw; height: 35vw;
+  border-radius: 60% 40% 48% 52% / 42% 58% 45% 55%;
+  background: var(--rusty-500);
+  top: 42%; left: 50%;
+  animation: warm-float 8.0s ease-in-out infinite;
+  animation-delay: -4.0s;
+}
+
+/* B3 — Golden glow, upper, 7s */
+.blob-gold {
+  width: 22vw; height: 22vw;
+  border-radius: 52% 48% 55% 45% / 48% 52% 45% 55%;
+  background: var(--orange-400);
+  top: 22%; left: 35%;
+  animation: gold-rise 7.0s ease-in-out infinite;
+  animation-delay: -2.0s;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KEYFRAMES — Ribbons
+   Each ribbon drifts ~30vw horizontally with gentle vertical wave.
+   Direction is consistent throughout the cycle.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Rightward drift — 65vw travel, visible through blur */
+@keyframes drift-right {
+  0%   { transform: translate(-20vw, 0) scale(1);       opacity: 0.12; }
+  25%  { transform: translate(5vw, -8vh) scale(1.12);   opacity: 0.48; }
+  50%  { transform: translate(30vw, -3vh) scale(1.04);  opacity: 0.28; }
+  75%  { transform: translate(50vw, -10vh) scale(1.14); opacity: 0.52; }
+  100% { transform: translate(-20vw, 0) scale(1);       opacity: 0.12; }
+}
+
+/* Leftward drift — 65vw travel */
+@keyframes drift-left {
+  0%   { transform: translate(15vw, 0) scale(1);        opacity: 0.12; }
+  25%  { transform: translate(-10vw, -6vh) scale(1.10); opacity: 0.46; }
+  50%  { transform: translate(-35vw, -10vh) scale(1.02); opacity: 0.25; }
+  75%  { transform: translate(-55vw, -3vh) scale(1.13); opacity: 0.50; }
+  100% { transform: translate(15vw, 0) scale(1);        opacity: 0.12; }
+}
+
+/* Rightward + vertical wave — 78vw travel, 18vh wave */
+@keyframes drift-right-wave {
+  0%   { transform: translate(-25vw, 0) scale(1);        opacity: 0.10; }
+  20%  { transform: translate(0vw, -14vh) scale(1.16);   opacity: 0.46; }
+  40%  { transform: translate(25vw, 8vh) scale(0.88);    opacity: 0.20; }
+  60%  { transform: translate(45vw, -14vh) scale(1.14);  opacity: 0.50; }
+  80%  { transform: translate(60vw, 4vh) scale(0.92);    opacity: 0.26; }
+  100% { transform: translate(-25vw, 0) scale(1);        opacity: 0.10; }
+}
+
+/* Leftward + vertical wave — 75vw travel, 15vh wave */
+@keyframes drift-left-wave {
+  0%   { transform: translate(20vw, 0) scale(1);         opacity: 0.10; }
+  20%  { transform: translate(-5vw, -12vh) scale(1.14);  opacity: 0.44; }
+  40%  { transform: translate(-30vw, 6vh) scale(0.90);   opacity: 0.18; }
+  60%  { transform: translate(-50vw, -15vh) scale(1.16); opacity: 0.48; }
+  80%  { transform: translate(-65vw, 3vh) scale(0.88);   opacity: 0.24; }
+  100% { transform: translate(20vw, 0) scale(1);         opacity: 0.10; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KEYFRAMES — Depth blobs (15-25vw, visible breathing)
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes deep-breathe {
+  0%   { transform: translate(0, 0) scale(1);         opacity: 0.18; }
+  25%  { transform: translate(12vw, -10vh) scale(1.18); opacity: 0.50; }
+  50%  { transform: translate(-5vw, -16vh) scale(0.85); opacity: 0.24; }
+  75%  { transform: translate(16vw, -5vh) scale(1.16); opacity: 0.48; }
+  100% { transform: translate(0, 0) scale(1);          opacity: 0.18; }
+}
+
+@keyframes warm-float {
+  0%   { transform: translate(0, 0) scale(1);          opacity: 0.16; }
+  30%  { transform: translate(-16vw, -10vh) scale(1.18); opacity: 0.45; }
+  55%  { transform: translate(8vw, -18vh) scale(0.82);  opacity: 0.20; }
+  80%  { transform: translate(-12vw, -4vh) scale(1.14); opacity: 0.42; }
+  100% { transform: translate(0, 0) scale(1);           opacity: 0.16; }
+}
+
+@keyframes gold-rise {
+  0%   { transform: translate(0, 0) scale(1);         opacity: 0.10; }
+  25%  { transform: translate(10vw, -12vh) scale(1.22); opacity: 0.44; }
+  50%  { transform: translate(-7vw, -8vh) scale(0.84);  opacity: 0.20; }
+  75%  { transform: translate(14vw, -16vh) scale(1.18); opacity: 0.42; }
+  100% { transform: translate(0, 0) scale(1);          opacity: 0.10; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GRAIN + VIGNETTE
+   ═══════════════════════════════════════════════════════════ */
+.plasma-grain {
+  position: absolute; inset: 0;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  pointer-events: none;
+}
+
+.plasma-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 62% 52% at 50% 38%, transparent 0%, rgba(10,2,0,0.45) 70%, rgba(10,2,0,0.72) 100%);
+  pointer-events: none;
+}
+
+/* ============================================================
+   UI LAYER
+   ============================================================ */
+.global-nav, .sidebar, .main-stage { z-index: 10; position: relative; }
+
+.glass {
+  background: var(--surface-bg);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+}
+
+/* ── Global Nav ── */
+.global-nav {
+  width: 56px; flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center;
+  padding-top: 18px; gap: 6px;
+  border-right: 1px solid rgba(148, 27, 12, 0.14);
+}
+.nav-dot {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--text-dim); cursor: pointer;
+  transition: all 0.22s;
+}
+.nav-dot:hover { color: var(--text-bright); background: rgba(148, 27, 12, 0.18); }
+.nav-dot.active {
+  color: var(--rusty-600);
+  box-shadow: 0 0 12px rgba(245, 74, 12, 0.28), inset 0 0 0 1px rgba(245, 74, 12, 0.3);
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 260px; flex-shrink: 0; display: flex; flex-direction: column;
+  border-right: 1px solid rgba(148, 27, 12, 0.14);
+  transition: width 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s;
+  overflow: hidden;
+}
+.sidebar.closed { width: 0; min-width: 0; opacity: 0; border-right: none; }
+.sidebar-header {
+  padding: 16px 18px; display: flex; align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(148, 27, 12, 0.11);
+  flex-shrink: 0;
+}
+.sidebar-header h2 {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--text-dim);
+}
+.sidebar-scroll { flex: 1; overflow-y: auto; padding: 8px; }
+
+.session-card {
+  padding: 10px 12px; margin: 4px 0; border-radius: 6px;
+  cursor: pointer; transition: all 0.18s;
+  border: 1px solid transparent;
+}
+.session-card:hover { background: rgba(148, 27, 12, 0.10); }
+.session-card.active {
+  background: rgba(245, 74, 12, 0.05);
+  border-color: rgba(245, 74, 12, 0.22);
+}
+.session-card .tag {
+  display: inline-block; font-size: 9px; font-weight: 600;
+  letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--rusty-600); margin-bottom: 4px;
+  padding: 1px 6px; border: 1px solid rgba(245, 74, 12, 0.28);
+  border-radius: 3px;
+}
+.session-card .title {
+  font-size: 13px; color: var(--text-main);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Main Stage ── */
+.main-stage { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.stage-header {
+  height: 52px; flex-shrink: 0; display: flex; align-items: center;
+  padding: 0 20px; justify-content: space-between;
+  border-bottom: 1px solid rgba(148, 27, 12, 0.14);
+}
+.stage-header .breadcrumb {
+  display: flex; align-items: center; gap: 8px; font-size: 13px;
+}
+.stage-header .breadcrumb strong { color: var(--text-bright); }
+.stage-header .breadcrumb span { color: var(--text-dim); }
+
+.btn {
+  padding: 5px 13px; border-radius: 5px; font-size: 11px; font-weight: 500;
+  cursor: pointer; transition: all 0.18s;
+  border: 1px solid rgba(148, 27, 12, 0.22);
+  background: transparent; color: var(--text-dim);
+  letter-spacing: 0.02em;
+}
+.btn:hover { border-color: var(--rusty-600); color: var(--rusty-600); }
+
+.btn-ignite {
+  border-color: var(--rusty-600) !important;
+  color: var(--rusty-600) !important;
+  background: rgba(245, 74, 12, 0.05);
+  font-weight: 600; letter-spacing: 0.05em;
+  position: relative; overflow: hidden;
+}
+.btn-ignite:hover {
+  background: rgba(245, 74, 12, 0.14) !important;
+  box-shadow: 0 0 18px rgba(245, 74, 12, 0.18), 0 0 36px rgba(246, 170, 28, 0.06);
+}
+.btn-ignite::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 38%, rgba(246,170,28,0.10) 44%, transparent 50%);
+  animation: sheen 3.0s ease-in-out infinite;
+}
+@keyframes sheen {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+}
+
+/* ── Chat ── */
+.chat-flow {
+  flex: 1; overflow-y: auto; padding: 32px 12%;
+  display: flex; flex-direction: column; gap: 22px;
+}
+.message { display: flex; flex-direction: column; gap: 6px; max-width: 85%; }
+.msg-user { align-self: flex-end; }
+.msg-agent { align-self: flex-start; max-width: 100%; }
+
+.bubble {
+  padding: 12px 16px; border-radius: 8px; font-size: 13px; line-height: 1.6;
+}
+.msg-user .bubble {
+  background: rgba(98, 23, 8, 0.28);
+  border: 1px solid rgba(174, 41, 14, 0.22);
+  border-radius: 10px 10px 2px 10px;
+}
+.msg-agent .bubble {
+  background: rgba(10, 2, 0, 0.58);
+  border: 1px solid rgba(148, 27, 12, 0.10);
+  border-radius: 10px 10px 10px 2px;
+}
+
+.think-badge {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.10em;
+  text-transform: uppercase; color: var(--rusty-600);
+  padding: 4px 0;
+}
+.think-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--rusty-600);
+  animation: think-blink 0.75s ease-in-out infinite;
+}
+.think-dot:nth-child(2) { animation-delay: 0.14s; }
+.think-dot:nth-child(3) { animation-delay: 0.28s; }
+@keyframes think-blink {
+  0%, 100% { opacity: 0.25; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1.3); box-shadow: 0 0 7px var(--rusty-600); }
+}
+
+.code-block {
+  margin-top: 8px; padding: 10px 14px;
+  background: rgba(10, 2, 0, 0.78);
+  border: 1px solid rgba(148, 27, 12, 0.18);
+  border-radius: 4px; font-family: "JetBrains Mono","Fira Code","Cascadia Code",monospace;
+  font-size: 11px; line-height: 1.5; color: var(--text-bright);
+  overflow-x: auto;
+}
+
+/* ── Input ── */
+.input-area {
+  flex-shrink: 0; border-top: 1px solid rgba(148, 27, 12, 0.14);
+  padding: 14px 20px; display: flex; flex-direction: column; gap: 10px;
+}
+.input-box {
+  width: 100%; min-height: 34px; max-height: 120px;
+  background: transparent; border: none; outline: none;
+  color: var(--text-main); font-size: 13px; font-family: inherit;
+  resize: none;
+}
+.input-box::placeholder { color: var(--text-dim); opacity: 0.5; }
+.action-bar { display: flex; justify-content: space-between; align-items: center; }
+
+.btn-primary {
+  padding: 7px 20px; border-radius: 5px;
+  background: var(--rusty-600); color: #fff;
+  border: none; font-size: 12px; font-weight: 600;
+  cursor: pointer; letter-spacing: 0.04em;
+  transition: all 0.18s;
+}
+.btn-primary:hover {
+  background: var(--rusty-700);
+  box-shadow: 0 0 16px rgba(245, 74, 12, 0.38);
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(148, 27, 12, 0.28); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(148, 27, 12, 0.45); }
+
+@media (max-width: 900px) {
+  .sidebar { width: 200px; }
+  .chat-flow { padding: 24px 5%; }
+}
+</style>
+</head>
+<body class="thinking">
+
+<!-- ═════════════════════ AURORA STAGE ═════════════════════ -->
+<div class="plasma-stage">
+  <div class="plasma-goo">
+    <!-- Ribbons — horizontal aurora curtains, each drifting one direction -->
+    <div class="ribbon r1"></div>
+    <div class="ribbon r2"></div>
+    <div class="ribbon r3"></div>
+    <div class="ribbon r4"></div>
+    <div class="ribbon r5"></div>
+    <div class="ribbon r6"></div>
+
+    <!-- Depth blobs — large, ambient, barely moving -->
+    <div class="ribbon blob-deep"></div>
+    <div class="ribbon blob-warm"></div>
+    <div class="ribbon blob-gold"></div>
+  </div>
+  <div class="plasma-grain"></div>
+  <div class="plasma-vignette"></div>
+</div>
+
+<!-- ═════════════════════ UI LAYER ═════════════════════ -->
+
+<nav class="global-nav glass">
+  <div class="nav-dot active">P</div>
+  <div class="nav-dot">A</div>
+  <div class="nav-dot">M</div>
+</nav>
+
+<aside class="sidebar glass" id="sidebar">
+  <div class="sidebar-header">
+    <h2>会话</h2>
+    <button class="btn" onclick="toggleSidebar()" style="padding:2px 8px;border:none;font-size:13px;">◀</button>
+  </div>
+  <div class="sidebar-scroll">
+    <div class="session-card active">
+      <div class="tag">Alessandro</div>
+      <div class="title">Ligand Docking Logic</div>
+    </div>
+    <div class="session-card">
+      <div class="tag" style="color:var(--text-dim);border-color:rgba(196,181,171,0.22);">Bio-Agent</div>
+      <div class="title" style="color:var(--text-dim);">SMARTS Pattern Build</div>
+    </div>
+  </div>
+</aside>
+
+<main class="main-stage">
+  <header class="stage-header glass">
+    <div class="breadcrumb">
+      <strong>Alessandro</strong>
+      <span>/</span>
+      <span>Ligand Docking Logic</span>
+    </div>
+    <button class="btn btn-ignite" onclick="toggleThinking()" id="igniteBtn">
+      ⟁ 关闭极光
+    </button>
+  </header>
+
+  <div class="chat-flow">
+    <div class="message msg-user">
+      <div class="bubble">你能检查一下我们刚刚用 C++ 写的那段片段生长的逻辑吗？感觉在内存处理上有点不干净。</div>
+    </div>
+    <div class="message msg-agent">
+      <div class="think-badge">
+        <div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div>
+        <span>Alessandro is thinking & scanning context...</span>
+      </div>
+      <div class="bubble">
+        这段逻辑确实存在隐患。作为主权级系统，我不建议依赖编译器的默认回收。你在 <code>FragmentGrower</code> 析构时漏掉了指针的显式置空。
+        <div class="code-block">
+<span style="color:var(--text-dim);">// Fix memory leak in growing logic</span>
+<span style="color:#f77749;">void</span> <span style="color:#f9cc78;">FragmentGrower</span>::<span style="color:#f7bb4b;">reset</span>() {
+    <span style="color:#f77749;">if</span> (current_ligand_ != <span style="color:#f9cc78;">nullptr</span>) {
+        <span style="color:#f77749;">delete</span> current_ligand_;
+        current_ligand_ = <span style="color:#f9cc78;">nullptr</span>;
+    }
+}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area glass">
+    <textarea class="input-box" placeholder="输入指令 (@ 挂载文件)..."></textarea>
+    <div class="action-bar">
+      <button class="btn" style="border:none;">📎 附加文件</button>
+      <button class="btn-primary">Execute ↵</button>
+    </div>
+  </div>
+</main>
+
+<script>
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('closed');
+}
+function toggleThinking() {
+  const b = document.body, btn = document.getElementById('igniteBtn');
+  b.classList.toggle('thinking');
+  btn.innerHTML = b.classList.contains('thinking') ? '⟁ 关闭极光' : '⟁ 点燃极光';
+}
+</script>
+</body>
+</html>
