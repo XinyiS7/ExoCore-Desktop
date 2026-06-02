@@ -1,5 +1,6 @@
 node_modules/
 dist/
-target/          # Tauri Rust build
+target/          # root Rust build (if any)
+**/target/       # any nested target/ dirs (Tauri, etc.)
 *.log
 .DS_Store
