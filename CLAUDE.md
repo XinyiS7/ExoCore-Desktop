@@ -2,9 +2,11 @@
 
 This file provides guidance to Claude Code when working with code in this repository.
 
-**Parent spec:** `../ExoCore-ui/Plan/V3_FRONTEND_SPLIT_DESIGN.md` — approved V3 frontend split design.
-**API contract reference:** `../ExoCore/ReactSheet.txt` and (when available) `../ExoCore/.agent/insight/backend.yaml`
-**Cross-module context:** `../.agent/project.md` and `../AGENT.md`
+**Parent spec:** `../ReactSheet_Reorganized.md` — API contract (reorganized, this is the active reference).
+**API contract (legacy):** `../ExoCore/ReactSheet.txt` — original flat spec, superseded by ReactSheet_Reorganized.md.
+**Cross-module context:** `../AGENT.md` and `../.agent/project.md`
+**Nginx deployment:** `../nginx/nginx.conf` — reverse proxy config for hybrid deployment
+**Startup script:** `../hybrid_start.ps1` — unified pgvector + Django + nginx launcher
 
 **Shell environment:** Git Bash (Windows). Use Bash tool for shell commands, not PowerShell.
 
