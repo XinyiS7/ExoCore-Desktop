@@ -1,0 +1,221 @@
+/* ============================================================
+   AuroraBackground — Burning Sunset Plasma
+   Activated when AI is generating (thinking).
+   ═══════════════════════════════════════════════════════════ */
+
+.aurora-stage {
+  --obsidian:    #0a0200;
+  --garnet-600:  #ae290e;
+  --oxblood-400: #751609;
+  --oxblood-500: #941b0c;
+  --rusty-500:   #bc3908;
+  --rusty-600:   #f54a0c;
+  --orange-400:  #d48d09;
+  --orange-500:  #f6aa1c;
+
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aurora-stage.aurora-active { opacity: 1; }
+
+/* Faint warm glow when idle */
+.aurora-stage::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 65% 45% at 50% 42%,
+    rgba(148, 27, 12, 0.04) 0%, transparent 70%);
+  transition: opacity 1s;
+}
+.aurora-stage.aurora-active::after { opacity: 0; }
+
+/* ── Gooey metaball wrapper ── */
+.aurora-goo {
+  position: absolute;
+  inset: -8%;
+  filter: blur(48px) contrast(1.2);
+}
+
+/* ── Shared shape base ── */
+.aurora-ribbon {
+  position: absolute;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+
+/* ═══════════════════════════════════════════════════
+   AURORA RIBBON CURTAINS
+   ═══════════════════════════════════════════════════ */
+
+.aurora-r1 {
+  width: 180vw; height: 28vh;
+  border-radius: 48% 52% 42% 58% / 50% 50% 55% 45%;
+  background: var(--oxblood-400);
+  top: 56%; left: -60%;
+  animation: aurora-drift-right 10.0s ease-in-out infinite;
+}
+
+.aurora-r2 {
+  width: 170vw; height: 24vh;
+  border-radius: 52% 48% 58% 42% / 45% 55% 48% 52%;
+  background: var(--oxblood-500);
+  top: 40%; left: -55%;
+  animation: aurora-drift-left 9.0s ease-in-out infinite;
+  animation-delay: -2.5s;
+}
+
+.aurora-r3 {
+  width: 165vw; height: 20vh;
+  border-radius: 45% 55% 42% 58% / 55% 45% 50% 50%;
+  background: var(--garnet-600);
+  top: 24%; left: -55%;
+  animation: aurora-drift-right-wave 7.5s ease-in-out infinite;
+  animation-delay: -4.0s;
+}
+
+.aurora-r4 {
+  width: 155vw; height: 16vh;
+  border-radius: 50% 50% 55% 45% / 48% 52% 45% 55%;
+  background: var(--rusty-500);
+  top: 10%; left: -50%;
+  animation: aurora-drift-right-wave 6.5s ease-in-out infinite;
+  animation-delay: -1.2s;
+}
+
+.aurora-r5 {
+  width: 150vw; height: 13vh;
+  border-radius: 55% 45% 48% 52% / 52% 48% 55% 45%;
+  background: var(--rusty-600);
+  top: 3%; left: -48%;
+  animation: aurora-drift-left-wave 5.5s ease-in-out infinite;
+  animation-delay: -3.0s;
+}
+
+.aurora-r6 {
+  width: 140vw; height: 10vh;
+  border-radius: 48% 52% 50% 50% / 55% 45% 48% 52%;
+  background: var(--orange-500);
+  top: 0%; left: -42%;
+  animation: aurora-drift-left-wave 4.5s ease-in-out infinite;
+  animation-delay: -0.8s;
+}
+
+/* ═══════════════════════════════════════════════════
+   DEPTH BLOBS
+   ═══════════════════════════════════════════════════ */
+
+.aurora-blob-deep {
+  width: 50vw; height: 50vw;
+  border-radius: 38% 62% 48% 52% / 55% 42% 55% 45%;
+  background: var(--oxblood-500);
+  top: 28%; left: 10%;
+  animation: aurora-deep-breathe 10.0s ease-in-out infinite;
+  animation-delay: -1.5s;
+}
+
+.aurora-blob-warm {
+  width: 35vw; height: 35vw;
+  border-radius: 60% 40% 48% 52% / 42% 58% 45% 55%;
+  background: var(--rusty-500);
+  top: 42%; left: 50%;
+  animation: aurora-warm-float 8.0s ease-in-out infinite;
+  animation-delay: -4.0s;
+}
+
+.aurora-blob-gold {
+  width: 22vw; height: 22vw;
+  border-radius: 52% 48% 55% 45% / 48% 52% 45% 55%;
+  background: var(--orange-400);
+  top: 22%; left: 35%;
+  animation: aurora-gold-rise 7.0s ease-in-out infinite;
+  animation-delay: -2.0s;
+}
+
+/* ═══════════════════════════════════════════════════
+   KEYFRAMES — Ribbons
+   ═══════════════════════════════════════════════════ */
+
+@keyframes aurora-drift-right {
+  0%   { transform: translate(-20vw, 0) scale(1);       opacity: 0.12; }
+  25%  { transform: translate(5vw, -8vh) scale(1.12);   opacity: 0.48; }
+  50%  { transform: translate(30vw, -3vh) scale(1.04);  opacity: 0.28; }
+  75%  { transform: translate(50vw, -10vh) scale(1.14); opacity: 0.52; }
+  100% { transform: translate(-20vw, 0) scale(1);       opacity: 0.12; }
+}
+
+@keyframes aurora-drift-left {
+  0%   { transform: translate(15vw, 0) scale(1);        opacity: 0.12; }
+  25%  { transform: translate(-10vw, -6vh) scale(1.10); opacity: 0.46; }
+  50%  { transform: translate(-35vw, -10vh) scale(1.02); opacity: 0.25; }
+  75%  { transform: translate(-55vw, -3vh) scale(1.13); opacity: 0.50; }
+  100% { transform: translate(15vw, 0) scale(1);        opacity: 0.12; }
+}
+
+@keyframes aurora-drift-right-wave {
+  0%   { transform: translate(-25vw, 0) scale(1);        opacity: 0.10; }
+  20%  { transform: translate(0vw, -14vh) scale(1.16);   opacity: 0.46; }
+  40%  { transform: translate(25vw, 8vh) scale(0.88);    opacity: 0.20; }
+  60%  { transform: translate(45vw, -14vh) scale(1.14);  opacity: 0.50; }
+  80%  { transform: translate(60vw, 4vh) scale(0.92);    opacity: 0.26; }
+  100% { transform: translate(-25vw, 0) scale(1);        opacity: 0.10; }
+}
+
+@keyframes aurora-drift-left-wave {
+  0%   { transform: translate(20vw, 0) scale(1);         opacity: 0.10; }
+  20%  { transform: translate(-5vw, -12vh) scale(1.14);  opacity: 0.44; }
+  40%  { transform: translate(-30vw, 6vh) scale(0.90);   opacity: 0.18; }
+  60%  { transform: translate(-50vw, -15vh) scale(1.16); opacity: 0.48; }
+  80%  { transform: translate(-65vw, 3vh) scale(0.88);   opacity: 0.24; }
+  100% { transform: translate(20vw, 0) scale(1);         opacity: 0.10; }
+}
+
+/* ═══════════════════════════════════════════════════
+   KEYFRAMES — Depth blobs
+   ═══════════════════════════════════════════════════ */
+
+@keyframes aurora-deep-breathe {
+  0%   { transform: translate(0, 0) scale(1);          opacity: 0.18; }
+  25%  { transform: translate(12vw, -10vh) scale(1.18); opacity: 0.50; }
+  50%  { transform: translate(-5vw, -16vh) scale(0.85); opacity: 0.24; }
+  75%  { transform: translate(16vw, -5vh) scale(1.16);  opacity: 0.48; }
+  100% { transform: translate(0, 0) scale(1);           opacity: 0.18; }
+}
+
+@keyframes aurora-warm-float {
+  0%   { transform: translate(0, 0) scale(1);           opacity: 0.16; }
+  30%  { transform: translate(-16vw, -10vh) scale(1.18); opacity: 0.45; }
+  55%  { transform: translate(8vw, -18vh) scale(0.82);   opacity: 0.20; }
+  80%  { transform: translate(-12vw, -4vh) scale(1.14);  opacity: 0.42; }
+  100% { transform: translate(0, 0) scale(1);            opacity: 0.16; }
+}
+
+@keyframes aurora-gold-rise {
+  0%   { transform: translate(0, 0) scale(1);          opacity: 0.10; }
+  25%  { transform: translate(10vw, -12vh) scale(1.22); opacity: 0.44; }
+  50%  { transform: translate(-7vw, -8vh) scale(0.84);  opacity: 0.20; }
+  75%  { transform: translate(14vw, -16vh) scale(1.18); opacity: 0.42; }
+  100% { transform: translate(0, 0) scale(1);           opacity: 0.10; }
+}
+
+/* ═══════════════════════════════════════════════════
+   GRAIN + VIGNETTE
+   ═══════════════════════════════════════════════════ */
+
+.aurora-grain {
+  position: absolute; inset: 0;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  pointer-events: none;
+}
+
+.aurora-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 62% 52% at 50% 38%, transparent 0%, rgba(10,2,0,0.45) 70%, rgba(10,2,0,0.72) 100%);
+  pointer-events: none;
+}

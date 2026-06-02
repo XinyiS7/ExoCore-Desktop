@@ -11,6 +11,7 @@ import MessageBubble from './MessageBubble';
 import BranchSessionModal from '../modals/BranchSessionModal';
 import ContextCacheIndicator from './ContextCacheIndicator';
 import { usePollingChat } from '../../hooks/usePollingChat';
+import AuroraBackground from './AuroraBackground';
 
 const MSGS_PER_PAGE = 40;
 
@@ -631,7 +632,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
 
   return (
     <div className="flex-1 min-w-0 flex flex-col min-h-0 bg-exo-bg relative">
-      <div className="relative flex-shrink-0">
+      <AuroraBackground active={isGenerating} />
+      <div className="relative z-10 flex-shrink-0">
         {/* v1 standalone header: back + session name + ID */}
         {!onBack && (
           <div className="border-b border-exo-mist-10 bg-exo-pure/40 backdrop-blur-md z-20 px-4 md:px-6 py-2 flex items-center gap-2 min-w-0">
@@ -739,7 +741,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         )}
       </div>
 
-      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-8 scrollbar-hide">
+      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-8 scrollbar-hide relative z-10">
         <div ref={topSentinelRef} className="h-px" />
         {isLoadingMore && (
           <div className="flex justify-center py-3">
@@ -784,7 +786,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         isSubmitting={isBranching}
       />
 
-      <div className="flex-shrink-0 p-4 border-t border-exo-mist-10 bg-exo-pure/80 backdrop-blur-xl flex flex-col gap-2">
+      <div className="flex-shrink-0 p-4 border-t border-exo-mist-10 bg-exo-pure/80 backdrop-blur-xl flex flex-col gap-2 relative z-10">
         {editingMessageId && (
           <div className="flex items-center justify-between px-3 py-1.5 bg-exo-accent/10 border border-exo-accent/20 rounded-[2px] animate-fade-in">
             <div className="flex items-center gap-2 text-exo-accent text-[10px] font-mono uppercase tracking-widest">
