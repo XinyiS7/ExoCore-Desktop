@@ -44,8 +44,10 @@ export default function TaskPanel({ openDestructor }) {
 
   const load = useCallback(() => {
     setLoading(true);
+    const params = { status: statusFilter };
+    if (typeFilter !== 'all') params.entry_type = typeFilter;
     Promise.all([
-      fetchEntries({ status: statusFilter }),
+      fetchEntries(params),
       fetchCalendar().catch(() => ({ events: [] })),
     ])
       .then(([entryData, calData]) => {
@@ -54,7 +56,7 @@ export default function TaskPanel({ openDestructor }) {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [statusFilter]);
+  }, [statusFilter, typeFilter]);
 
   useEffect(() => { load(); }, [load]);
 

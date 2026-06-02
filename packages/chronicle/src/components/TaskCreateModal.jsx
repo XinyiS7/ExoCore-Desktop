@@ -1,6 +1,6 @@
 // src/components/tasks/TaskCreateModal.jsx
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Pin } from 'lucide-react';
 import { tasksApi } from 'exo-shared';
 const createEntry = tasksApi.createTask;
 const updateEntry = tasksApi.updateTask;
@@ -13,9 +13,9 @@ const END_TYPES    = [{ value: 'never', label: '永不' }, { value: 'count', lab
 const today = () => new Date().toISOString().slice(0, 10);
 
 const DEFAULTS = {
-  todo:     { entry_type: 'todo',     title: '', description: '', start_date: today(), tags: '', due_date: '' },
-  periodic: { entry_type: 'periodic', title: '', description: '', start_date: today(), tags: '', interval_unit: 'day', interval_value: 1, end_type: 'never', end_count: '', end_date: '' },
-  goal:     { entry_type: 'goal',     title: '', description: '', start_date: today(), tags: '', goal_count: 3, goal_period: 'week', cycle_start: today(), cycle_due: '' },
+  todo:     { entry_type: 'todo',     title: '', description: '', start_date: today(), tags: '', due_date: '', is_pinned: false },
+  periodic: { entry_type: 'periodic', title: '', description: '', start_date: today(), tags: '', interval_unit: 'day', interval_value: 1, end_type: 'never', end_count: '', end_date: '', is_pinned: false },
+  goal:     { entry_type: 'goal',     title: '', description: '', start_date: today(), tags: '', goal_count: 3, goal_period: 'week', cycle_start: today(), cycle_due: '', is_pinned: false },
 };
 
 const toForm = (e) => ({
@@ -34,11 +34,12 @@ const toForm = (e) => ({
   goal_period:    e.goal_period    ?? 'week',
   cycle_start:    e.cycle_start    ?? today(),
   cycle_due:      e.cycle_due      ?? '',
+  is_pinned:      e.is_pinned      ?? false,
 });
 
 const toPayload = (f) => {
   const tags = f.tags ? f.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
-  const base = { title: f.title.trim(), description: f.description.trim(), start_date: f.start_date, tags };
+  const base = { title: f.title.trim(), description: f.description.trim(), start_date: f.start_date, tags, is_pinned: f.is_pinned };
   if (f.entry_type === 'todo') return { ...base, entry_type: 'todo', due_date: f.due_date || null };
   if (f.entry_type === 'periodic') return {
     ...base, entry_type: 'periodic',
@@ -143,6 +144,23 @@ export default function TaskCreateModal({ entry, onClose, onSave }) {
           <div>
             <label className={lbl}>描述</label>
             <input value={form.description} onChange={e => set('description', e.target.value)} placeholder="可选" className={inp} />
+          </div>
+
+          {/* is_pinned toggle */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => set('is_pinned', !form.is_pinned)}
+              className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border transition-all ${
+                form.is_pinned
+                  ? 'border-exo-accent/40 bg-exo-accent/10 text-exo-accent'
+                  : 'border-white/5 text-exo-muted/50 hover:border-white/10 hover:text-exo-muted'
+              }`}
+            >
+              <Pin size={12} className={form.is_pinned ? 'fill-exo-accent' : ''} />
+              {form.is_pinned ? '已置顶' : '置顶 / Pin'}
+            </button>
+            <span className="text-[9px] text-exo-muted/30">置顶任务始终显示在列表顶部</span>
           </div>
 
           {/* ── Todo fields ── */}

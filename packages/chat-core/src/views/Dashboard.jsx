@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { BrainCircuit, FolderKanban, Building2, CheckSquare, Search, ArrowRight, MessageSquare } from 'lucide-react';
+import { BrainCircuit, FolderKanban, Search, ArrowRight, MessageSquare } from 'lucide-react';
 import CalendarWidget from '../components/CalendarWidget';
 import { conversationsApi } from 'exo-shared';
 import useSessionContextMenu from '../hooks/useSessionContextMenu';
@@ -13,10 +13,8 @@ const WELCOME_SENTENCES = [
 ];
 
 const QUICK_LINKS = [
-  { id: 'agent_hub', icon: BrainCircuit, label: '代理中枢', desc: 'Agent 管理与配置' },
-  { id: 'project', icon: FolderKanban, label: '工程项目', desc: '长线任务与文件' },
-  { id: 'council', icon: Building2, label: '理事会', desc: '多 Agent 协同' },
-  { id: 'task', icon: CheckSquare, label: '任务与时序', desc: '日程与时间线' },
+  { id: 'agent_hub', icon: BrainCircuit, label: 'Agent Hub', desc: 'Manage AI agents & presets' },
+  { id: 'project', icon: FolderKanban, label: 'Projects', desc: 'Long-running tasks & files' },
 ];
 
 export default function Dashboard({ appState, setView }) {

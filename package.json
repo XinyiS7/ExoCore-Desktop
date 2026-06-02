@@ -4,6 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "dev": "pnpm tauri dev",
+    "dev:web": "node scripts/dev-servers.js",
     "dev:chat": "pnpm --filter exo-chat-core dev",
     "dev:chronicle": "pnpm --filter exo-chronicle dev",
     "dev:council": "pnpm --filter exo-council dev",
@@ -12,5 +14,11 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "concurrently": "^10.0.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.2"
   }
 }

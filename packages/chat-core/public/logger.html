@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ExoCore // Logger</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    background: #0a0a0f;
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', ui-monospace, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* ── Header ── */
+  #header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #111118;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+    user-select: none;
+  }
+  #header .title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #c0392b;
+    margin-right: auto;
+  }
+  #header .status {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 6px #22c55e;
+  }
+  #header .status.paused { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+  .btn {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #94a3b8;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font: inherit;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .btn:hover { background: rgba(255,255,255,0.08); color: #e2e8f0; }
+  .btn.active { background: #c0392b; border-color: #c0392b; color: #fff; }
+  .btn-group { display: flex; gap: 2px; }
+  /* ── Log area ── */
+  #log-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+  #log-container::-webkit-scrollbar { width: 4px; }
+  #log-container::-webkit-scrollbar-track { background: transparent; }
+  #log-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+  .log-line {
+    padding: 1px 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+  }
+  .log-line .ts { color: #64748b; margin-right: 8px; }
+  .log-line.error { color: #ef4444; }
+  .log-line.warn  { color: #f59e0b; }
+  .log-line.info  { color: #94a3b8; }
+  .log-line.debug { color: #475569; }
+  /* ── Footer ── */
+  #footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #111118;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+    font-size: 10px;
+    color: #64748b;
+  }
+  #footer .count { margin-right: auto; }
+  .empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #475569;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="status" id="status-dot"></div>
+  <span class="title">Logger</span>
+  <div class="btn-group" id="level-filters">
+    <button class="btn active" data-level="all">All</button>
+    <button class="btn" data-level="ERROR">Errors</button>
+    <button class="btn" data-level="WARN">Warn</button>
+    <button class="btn" data-level="INFO">Info</button>
+  </div>
+  <button class="btn" id="btn-pause" onclick="togglePause()">⏯ Pause</button>
+  <button class="btn" id="btn-clear" onclick="clearLogs()">Clear</button>
+</div>
+
+<div id="log-container">
+  <div class="empty-state" id="empty-state">
+    Waiting for logs...<br/>
+    <small style="color:#475569;margin-top:6px;display:block">
+      Use <code style="color:#c0392b">push_log(level, message)</code> from any webview or backend to feed logs.
+    </small>
+  </div>
+</div>
+
+<div id="footer">
+  <span class="count" id="line-count">0 lines</span>
+  <span>Polling every 1s</span>
+</div>
+
+<script>
+const IN_TAURI = typeof window.__TAURI__ !== 'undefined';
+
+let paused = false;
+let currentFilter = 'all';
+let seenCount = 0;
+
+const container = document.getElementById('log-container');
+const emptyState = document.getElementById('empty-state');
+const lineCount = document.getElementById('line-count');
+const statusDot = document.getElementById('status-dot');
+const levelFilters = document.getElementById('level-filters');
+
+// ── Level filter buttons ──
+levelFilters.addEventListener('click', (e) => {
+  if (e.target.tagName === 'BUTTON') {
+    levelFilters.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentFilter = e.target.dataset.level;
+    seenCount = 0; // force full refresh
+    fetchLogs();
+  }
+});
+
+// ── Log polling ──
+async function fetchLogs() {
+  if (paused) return;
+
+  try {
+    let logs;
+    if (IN_TAURI) {
+      const { invoke } = window.__TAURI__.core;
+      const filterArg = currentFilter === 'all' ? null : currentFilter;
+      logs = await invoke('get_recent_logs', { lines: 500, levelFilter: filterArg });
+    } else {
+      // Browser dev mode — show demo note
+      if (!container.querySelector('.no-tauri-note')) {
+        container.innerHTML = '';
+        const div = document.createElement('div');
+        div.className = 'empty-state no-tauri-note';
+        div.innerHTML = `
+          Logger requires Tauri runtime.<br/>
+          <small style="color:#c0392b;margin-top:6px;display:block">
+            Open from the system tray in the desktop app.
+          </small>`;
+        container.appendChild(div);
+      }
+      return;
+    }
+
+    // Only re-render if new lines arrived
+    if (logs.length === seenCount && logs.length > 0) return;
+    seenCount = logs.length;
+
+    if (logs.length === 0) {
+      container.innerHTML = '';
+      container.appendChild(emptyState.cloneNode(true));
+      lineCount.textContent = '0 lines';
+      return;
+    }
+
+    // Render log lines
+    // Preserve scroll position if user scrolled up
+    const wasAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 20;
+
+    container.innerHTML = '';
+    for (const line of logs) {
+      const div = document.createElement('div');
+      div.className = 'log-line';
+      // Parse level from format: [HH:MM:SS.mmm] [LEVEL] message
+      const match = line.match(/^\[([^\]]+)\]\s+\[(\w+)\]/);
+      const ts = match ? match[1] : '';
+      const level = match ? match[2] : '';
+      const message = match ? line.slice(match[0].length) : line;
+
+      if (level === 'ERROR') div.className += ' error';
+      else if (level === 'WARN') div.className += ' warn';
+      else if (level === 'INFO') div.className += ' info';
+      else if (level === 'DEBUG') div.className += ' debug';
+
+      div.innerHTML = `<span class="ts">${ts}</span>${message}`;
+      container.appendChild(div);
+    }
+
+    lineCount.textContent = `${logs.length} lines`;
+
+    if (wasAtBottom) {
+      container.scrollTop = container.scrollHeight;
+    }
+  } catch (err) {
+    console.error('Logger fetch error:', err);
+  }
+}
+
+function togglePause() {
+  paused = !paused;
+  document.getElementById('btn-pause').textContent = paused ? '▶ Resume' : '⏯ Pause';
+  statusDot.classList.toggle('paused', paused);
+  if (!paused) { seenCount = 0; fetchLogs(); }
+}
+
+function clearLogs() {
+  seenCount = 0;
+  container.innerHTML = '';
+  container.appendChild(emptyState.cloneNode(true));
+  lineCount.textContent = '0 lines';
+}
+
+// ── Start polling ──
+fetchLogs();
+setInterval(fetchLogs, 1000);
+</script>
+
+</body>
+</html>
