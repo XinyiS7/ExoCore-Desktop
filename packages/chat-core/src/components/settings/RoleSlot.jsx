@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { configApi } from 'exo-shared';
-import { Save, Trash2, AlertCircle, Check } from 'lucide-react';
+import { Save, Trash2, AlertCircle } from 'lucide-react';
+import Toast from './Toast';
 
 const ROLE_LABELS = {
   system:     'System Default',
@@ -256,7 +257,7 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
         )}
       </div>
 
-      {/* Save button + feedback */}
+      {/* Save button */}
       <div className="flex items-center justify-between pt-1">
         <button
           onClick={handleSave}
@@ -270,16 +271,14 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
           )}
           保存
         </button>
-
-        {feedback && (
-          <span className={`text-[11px] font-mono flex items-center gap-1 ${
-            feedback.type === 'success' ? 'text-green-400' : 'text-red-400'
-          }`}>
-            {feedback.type === 'success' ? <Check size={12} /> : <AlertCircle size={12} />}
-            {feedback.msg}
-          </span>
-        )}
       </div>
+
+      {/* Toast notification */}
+      <Toast
+        type={feedback?.type}
+        message={feedback?.msg}
+        onClose={clearFeedback}
+      />
     </div>
   );
 }
