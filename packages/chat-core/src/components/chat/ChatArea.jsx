@@ -13,6 +13,7 @@ import ContextCacheIndicator from './ContextCacheIndicator';
 import { usePollingChat } from '../../hooks/usePollingChat';
 import AuroraBackground from './AuroraBackground';
 import ControlsDrawer from './ControlsDrawer';
+import { DEFAULT_PALETTE_ID, getPalette } from './palettes';
 
 const MSGS_PER_PAGE = 40;
 
@@ -36,6 +37,10 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const sessionTelemetryRef = useRef({ totalInput: 0, totalOutput: 0, totalCached: 0, totalTools: 0, requests: 0 });
   const [telemetryExpanded, setTelemetryExpanded] = useState(false);
   const [controlsExpanded, setControlsExpanded] = useState(false);
+  const [paletteId, setPaletteId] = useState(() =>
+    activeSessionId ? localStorage.getItem(`exo_session_theme_${activeSessionId}`) || DEFAULT_PALETTE_ID : DEFAULT_PALETTE_ID
+  );
+  const [livePalette, setLivePalette] = useState(null); // { colors: {...} } from live preview
   const [inputFocused, setInputFocused] = useState(false);
   const [userNick, setUserNick] = useState(() => localStorage.getItem('exo_user_nick') || 'You');
   const [userAvatarUrl] = useState(() => getUserAvatarUrl());
@@ -218,6 +223,10 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     setIsAddingAttach(false);
     setNewAttachPath('');
     setNewAttachName('');
+
+    // Restore per-session color palette
+    const savedPalette = localStorage.getItem(`exo_session_theme_${activeSessionId}`);
+    setPaletteId(savedPalette || DEFAULT_PALETTE_ID);
 
     const savedDraft = localStorage.getItem(`exo_draft_${activeSessionId}`);
     setInputValue(savedDraft ?? '');
@@ -526,6 +535,23 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     }
   };
 
+  const handlePaletteChange = useCallback((arg) => {
+    if (typeof arg === 'string') {
+      // Selecting a named palette (built-in or custom)
+      setPaletteId(arg);
+      setLivePalette(null);
+      if (activeSessionId) {
+        localStorage.setItem(`exo_session_theme_${activeSessionId}`, arg);
+      }
+    } else if (arg && arg.liveColors) {
+      // Live preview from 3-keypoint pickers
+      setLivePalette(arg.liveColors);
+    }
+  }, [activeSessionId]);
+
+  // Resolve the effective colors to pass to AuroraBackground
+  const paletteColors = livePalette || getPalette(paletteId)?.colors || {};
+
   const updatePreference = (updates) => {
     if (updates.model !== undefined) setCurrentModel(updates.model);
     if (updates.thinking_level !== undefined) setThinkingLevel(updates.thinking_level);
@@ -636,8 +662,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
 
   return (
     <div className="flex-1 min-w-0 flex flex-col min-h-0 bg-exo-bg relative">
-      <AuroraBackground active={isGenerating} />
-      <div className="relative z-10 flex-shrink-0">
+      <AuroraBackground active={isGenerating} paletteId={paletteId} colors={paletteColors} />
+      <div className="relative z-20 flex-shrink-0">
         {/* v1 standalone header: back + session name + ID */}
         {!onBack && (
           <div className="border-b border-exo-mist-10 bg-exo-pure/40 backdrop-blur-md z-20 px-4 md:px-6 py-2 flex items-center gap-2 min-w-0">
@@ -647,23 +673,15 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
           </div>
         )}
 
-        {/* v2 minimal header: status + agent name · session name (left) | cache + docs (right) */}
+        {/* v2 header: status dot · session name (left) | cache + docs (right) */}
         {onBack && (
           <div className="border-b border-exo-mist-10 bg-exo-pure/40 backdrop-blur-md z-20 px-4 md:px-6 py-2 flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
-              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isGenerating ? 'bg-exo-accent animate-blink-sharp' : 'bg-green-500/50'}`} />
-              {sessionInfo?.agent_preset_id && presets.find(x => x.id === sessionInfo.agent_preset_id) && (
-                <span className="text-[11px] font-medium text-exo-text/80 truncate">
-                  {presets.find(x => x.id === sessionInfo.agent_preset_id)?.name}
-                </span>
-              )}
+              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors duration-500 ${isGenerating ? 'breathing-status' : 'bg-[#00509d]/30'}`} />
               {sessionInfo?.name && (
-                <>
-                  <span className="text-exo-muted/20 font-light">·</span>
-                  <span className="text-[11px] font-light text-exo-muted/60 truncate">
-                    {sessionInfo.name}
-                  </span>
-                </>
+                <span className="text-[11px] font-light text-exo-muted/60 truncate">
+                  {sessionInfo.name}
+                </span>
               )}
             </div>
             <div className="flex items-center gap-0.5 flex-shrink-0 ml-2">
@@ -809,6 +827,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
             temperature={temperature}
             chatMode={chatMode}
             sessionId={activeSessionId}
+            paletteId={paletteId}
+            onPaletteChange={handlePaletteChange}
             lastTelemetry={lastTelemetry}
             sessionTelemetryRef={sessionTelemetryRef}
             telemetryExpanded={telemetryExpanded}

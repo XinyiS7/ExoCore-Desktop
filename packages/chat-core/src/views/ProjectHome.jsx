@@ -19,7 +19,7 @@ export default function ProjectHome({ appState, setView }) {
 
   const handleSessionClick = (session) => {
     setActiveSessionId(session.id);
-    setView('chat', { from: 'project', sessionId: session.id, sessionTitle: session.name });
+    setView('chat', { from: 'projects', sessionId: session.id, sessionTitle: session.name });
   };
 
   return (

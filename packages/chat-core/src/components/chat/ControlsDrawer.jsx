@@ -1,6 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { configApi, MODEL_REGISTRY, MAIN_MODEL_IDS } from 'exo-shared';
-import { Cpu, Key, Palette } from 'lucide-react';
+import { Cpu, Key, Palette, Check, X } from 'lucide-react';
+import { getCustomPalettes, saveCustomPalette, deleteCustomPalette, computeStops, getPalette, DEFAULT_PALETTE_ID, STOP_NAMES } from './palettes';
+import BUILTIN from './palettes';
+
+const MAX_CUSTOM = 3;
 
 export default function ControlsDrawer({
   currentModel,
@@ -8,6 +12,8 @@ export default function ControlsDrawer({
   temperature,
   chatMode,
   sessionId,
+  paletteId,
+  onPaletteChange,
   lastTelemetry,
   sessionTelemetryRef,
   telemetryExpanded,
@@ -70,6 +76,72 @@ export default function ControlsDrawer({
       localStorage.setItem(`exo_session_key_${sessionId}`, alias);
     }
   };
+
+  // ── Color scheme state ──
+  const currentPalette = getPalette(paletteId);
+  const [keyShadow, setKeyShadow] = useState(currentPalette.colors['--obsidian'] || '#0a0200');
+  const [keyMid, setKeyMid] = useState(currentPalette.colors['--oxblood-500'] || '#941b0c');
+  const [keyHighlight, setKeyHighlight] = useState(currentPalette.colors['--orange-500'] || '#f8bf74');
+  const [customName, setCustomName] = useState('');
+  const [showSaveInput, setShowSaveInput] = useState(false);
+  const [customPalettes, setCustomPalettes] = useState(getCustomPalettes);
+  const paletteSelectRef = useRef(null);
+
+  // Sync pickers when paletteId changes externally
+  useEffect(() => {
+    const p = getPalette(paletteId);
+    if (p?.colors) {
+      setKeyShadow(p.colors['--obsidian'] || '#0a0200');
+      setKeyMid(p.colors['--oxblood-500'] || '#941b0c');
+      setKeyHighlight(p.colors['--orange-500'] || '#f8bf74');
+    }
+    setShowSaveInput(false);
+    setCustomName('');
+    setCustomPalettes(getCustomPalettes());
+  }, [paletteId]);
+
+  // Live-preview a key-color change
+  const emitLiveColors = (s, m, h) => {
+    if (!onPaletteChange) return;
+    const stops = computeStops(s, m, h);
+    onPaletteChange({ liveColors: stops });
+  };
+
+  const handleShadowChange = (v) => { setKeyShadow(v); emitLiveColors(v, keyMid, keyHighlight); };
+  const handleMidChange = (v) => { setKeyMid(v); emitLiveColors(keyShadow, v, keyHighlight); };
+  const handleHighlightChange = (v) => { setKeyHighlight(v); emitLiveColors(keyShadow, keyMid, v); };
+
+  // Save current live colors as a named custom palette
+  const handleSaveCustom = () => {
+    const name = customName.trim();
+    if (!name) return;
+    const stops = computeStops(keyShadow, keyMid, keyHighlight);
+    const saved = saveCustomPalette(name, stops);
+    if (saved) {
+      setCustomPalettes(getCustomPalettes());
+      setShowSaveInput(false);
+      setCustomName('');
+      onPaletteChange && onPaletteChange(saved.id);
+    }
+  };
+
+  // Delete a custom palette
+  const handleDeleteCustom = (id) => {
+    deleteCustomPalette(id);
+    setCustomPalettes(getCustomPalettes());
+    // If the deleted palette was active, switch to default
+    if (paletteId === id && onPaletteChange) {
+      onPaletteChange(DEFAULT_PALETTE_ID);
+    }
+  };
+
+  // Check if current live colors differ from the selected palette
+  const liveStops = computeStops(keyShadow, keyMid, keyHighlight);
+  const isDirty = !currentPalette?.colors ||
+    Object.entries(liveStops).some(([k, v]) => currentPalette.colors[k] !== v);
+
+  const isCustomSelected = paletteId && paletteId.startsWith('custom-');
+  const customCount = customPalettes.length;
 
   return (
     <div className="px-4 pt-3 pb-1 border-t border-exo-mist-10 bg-exo-pure/60 backdrop-blur-md space-y-3 animate-fade-in">
@@ -192,13 +264,135 @@ export default function ControlsDrawer({
         )}
       </div>
 
-      {/* Row 3: Color Scheme (disabled placeholder) */}
-      <div className="flex items-center gap-3 opacity-30">
-        <Palette size={10} className="text-exo-muted/25 flex-shrink-0" />
-        <span className="text-[10px] font-mono uppercase tracking-wider text-exo-muted/40 flex-shrink-0">
-          Color Scheme
-        </span>
-        <span className="text-[10px] text-exo-muted/30 italic">Coming soon</span>
+      {/* Row 3: Color Scheme */}
+      <div className="space-y-2">
+        {/* Selector row */}
+        <div className="flex items-center gap-3">
+          <Palette size={10} className="text-exo-muted/25 flex-shrink-0" />
+          <span className="text-[10px] font-mono uppercase tracking-wider text-exo-muted/40 flex-shrink-0">
+            Palette
+          </span>
+          <select
+            ref={paletteSelectRef}
+            value={paletteId || DEFAULT_PALETTE_ID}
+            onChange={e => onPaletteChange && onPaletteChange(e.target.value)}
+            className="bg-transparent outline-none text-[11px] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors max-w-[140px] truncate"
+          >
+            {BUILTIN.map(p => (
+              <option key={p.id} value={p.id} className="bg-exo-pure text-white">{p.label}</option>
+            ))}
+            {customPalettes.length > 0 && (
+              <option disabled className="bg-exo-pure text-exo-muted/30">───── Custom ─────</option>
+            )}
+            {customPalettes.map(p => (
+              <option key={p.id} value={p.id} className="bg-exo-pure text-white">◆ {p.label}</option>
+            ))}
+          </select>
+          {/* Delete custom palette */}
+          {isCustomSelected && (
+            <button
+              onClick={() => handleDeleteCustom(paletteId)}
+              className="p-0.5 text-exo-muted/30 hover:text-red-400 transition-colors"
+              title="Delete this custom palette"
+            >
+              <X size={11} />
+            </button>
+          )}
+          {isDirty && !isCustomSelected && (
+            <span className="text-[9px] text-exo-accent/50 font-mono animate-fade-in">modified</span>
+          )}
+        </div>
+
+        {/* 3-Keypoint color pickers */}
+        <div className="flex items-center gap-3 pl-5">
+          <span className="text-[9px] font-mono uppercase tracking-wider text-exo-muted/30 w-8 flex-shrink-0">Key</span>
+          <div className="flex items-center gap-2">
+            <label className="flex flex-col items-center gap-0.5">
+              <input
+                type="color"
+                value={keyShadow}
+                onChange={e => handleShadowChange(e.target.value)}
+                className="w-6 h-6 rounded-[2px] border border-exo-mist-10 bg-transparent cursor-pointer p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch]:rounded-[2px]"
+                title="Shadow — deepest tone"
+              />
+              <span className="text-[7px] font-mono text-exo-muted/25 tracking-tighter">SHD</span>
+            </label>
+            <label className="flex flex-col items-center gap-0.5">
+              <input
+                type="color"
+                value={keyMid}
+                onChange={e => handleMidChange(e.target.value)}
+                className="w-6 h-6 rounded-[2px] border border-exo-mist-10 bg-transparent cursor-pointer p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch]:rounded-[2px]"
+                title="Mid-glow — middle tone"
+              />
+              <span className="text-[7px] font-mono text-exo-muted/25 tracking-tighter">MID</span>
+            </label>
+            <label className="flex flex-col items-center gap-0.5">
+              <input
+                type="color"
+                value={keyHighlight}
+                onChange={e => handleHighlightChange(e.target.value)}
+                className="w-6 h-6 rounded-[2px] border border-exo-mist-10 bg-transparent cursor-pointer p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch]:rounded-[2px]"
+                title="Highlight — brightest tone"
+              />
+              <span className="text-[7px] font-mono text-exo-muted/25 tracking-tighter">HI</span>
+            </label>
+          </div>
+
+          {/* Interpolated stops mini-preview */}
+          <div className="flex items-center gap-[2px] ml-2">
+            {Object.values(liveStops).map((hex, i) => (
+              <span
+                key={i}
+                className="w-2.5 h-2.5 rounded-[1px] border border-white/10 flex-shrink-0"
+                style={{ backgroundColor: hex }}
+                title={STOP_NAMES[i]}
+              />
+            ))}
+          </div>
+
+          {/* Save controls */}
+          {isDirty && (
+            <div className="flex items-center gap-1.5 animate-fade-in">
+              {showSaveInput ? (
+                <>
+                  <input
+                    value={customName}
+                    onChange={e => setCustomName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleSaveCustom(); if (e.key === 'Escape') { setShowSaveInput(false); setCustomName(''); } }}
+                    placeholder="name..."
+                    autoFocus
+                    maxLength={24}
+                    className="w-20 bg-exo-bg border border-exo-mist-10 rounded-[2px] px-1.5 py-0.5 text-[10px] text-white outline-none focus:border-exo-accent/50 font-mono"
+                  />
+                  <button
+                    onClick={handleSaveCustom}
+                    disabled={!customName.trim() || customCount >= MAX_CUSTOM}
+                    className="p-0.5 text-green-400/60 hover:text-green-400 disabled:opacity-20 transition-colors"
+                    title="Save"
+                  >
+                    <Check size={12} />
+                  </button>
+                  <button
+                    onClick={() => { setShowSaveInput(false); setCustomName(''); }}
+                    className="p-0.5 text-exo-muted/40 hover:text-white transition-colors"
+                  >
+                    <X size={11} />
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setShowSaveInput(true)}
+                  disabled={customCount >= MAX_CUSTOM}
+                  className="text-[9px] font-mono uppercase tracking-wider text-exo-accent/60 hover:text-exo-accent disabled:opacity-20 transition-colors"
+                  title={customCount >= MAX_CUSTOM ? `Max ${MAX_CUSTOM} custom palettes` : 'Save as custom palette'}
+                >
+                  {customCount >= MAX_CUSTOM ? `[${MAX_CUSTOM}/${MAX_CUSTOM}]` : '+ Save'}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

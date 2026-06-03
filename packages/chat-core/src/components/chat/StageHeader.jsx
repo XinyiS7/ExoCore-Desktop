@@ -5,9 +5,10 @@ import { ArrowLeft, FolderKanban, Menu } from 'lucide-react';
 /**
  * StageHeader — the shell's top bar, context-aware.
  *
- * Context A (from agent):   [☰] [<- AgentName]
- * Context B (from project): [☰] [<- ProjectName]              [📁 Project Files]
- * Context C (from projects):[☰] [<- Project Hub]
+ * Context A (from home):     [☰] [<- Home]
+ * Context B (from agent):    [☰] [<- AgentName]
+ * Context C (from projects): [☰] [<- Project Hub]
+ * Context D (from project):  [☰] [<- ProjectName]              [📁 Project Files]
  *
  * Session name is NOT shown here — it lives inside ChatArea's v2 header.
  */
@@ -25,6 +26,7 @@ export default function StageHeader({
     from === 'agent'    ? state.agentName || 'Agent' :
     from === 'project'  ? state.projectName || 'Project' :
     from === 'projects' ? 'Project Hub' :
+    from === 'home'     ? 'Home' :
     /* fallback */        'Back';
 
   const handleBack = () => {
