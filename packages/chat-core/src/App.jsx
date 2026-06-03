@@ -22,6 +22,7 @@ import ProjectDetail from './views/ProjectDetail';
 import UserProfile from './views/UserProfile';
 import SettingsView from './views/SettingsView';
 import KeyManagePanel from './components/settings/KeyManagePanel';
+import NotificationsPanel from './components/settings/NotificationsPanel';
 import MemoryConsole from './views/MemoryConsole';
 
 // Icons
@@ -203,6 +204,10 @@ function KeyManageRoute() {
   return <KeyManagePanel />;
 }
 
+function NotificationsRoute() {
+  return <NotificationsPanel />;
+}
+
 function RoutinePlaceholderRoute() {
   return (
     <div className="flex items-center justify-center h-full">
@@ -240,6 +245,7 @@ export default function App() {
         <Route path="settings" element={<SettingsRoute />}>
           <Route index element={<Navigate to="keys" replace />} />
           <Route path="keys" element={<KeyManageRoute />} />
+          <Route path="notifications" element={<NotificationsRoute />} />
           <Route path="routine" element={<RoutinePlaceholderRoute />} />
         </Route>
       </Route>

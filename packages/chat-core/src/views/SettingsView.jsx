@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Key, Clock } from 'lucide-react';
+import { Key, Clock, Bell } from 'lucide-react';
 
 const NAV_ITEMS = [
   {
@@ -8,6 +8,13 @@ const NAV_ITEMS = [
     label: 'Key Manage',
     icon: Key,
     route: '/settings/keys',
+    enabled: true,
+  },
+  {
+    id: 'notifications',
+    label: 'Notifications',
+    icon: Bell,
+    route: '/settings/notifications',
     enabled: true,
   },
   {

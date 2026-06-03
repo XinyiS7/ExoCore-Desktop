@@ -12,6 +12,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       devOptions: { enabled: false },
       workbox: {
+        importScripts: ['/push-notification.js'],
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
         navigateFallback: '/index.html',
         runtimeCaching: [

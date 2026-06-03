@@ -1,19 +1,18 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, FolderKanban, Menu } from 'lucide-react';
+import { ArrowLeft, FolderKanban } from 'lucide-react';
 
 /**
  * StageHeader — the shell's top bar, context-aware.
  *
- * Context A (from home):     [☰] [<- Home]
- * Context B (from agent):    [☰] [<- AgentName]
- * Context C (from projects): [☰] [<- Project Hub]
- * Context D (from project):  [☰] [<- ProjectName]              [📁 Project Files]
+ * Context A (from home):     [<- Home]
+ * Context B (from agent):    [<- AgentName]
+ * Context C (from projects): [<- Project Hub]
+ * Context D (from project):  [<- ProjectName]              [📁 Project Files]
  *
  * Session name is NOT shown here — it lives inside ChatArea's v2 header.
  */
 export default function StageHeader({
-  onToggleSidebar,
   onToggleFilesDrawer,
   project,
 }) {
@@ -42,15 +41,6 @@ export default function StageHeader({
   return (
     <div className="hidden md:flex items-center justify-between h-12 px-4 border-b border-white/5 bg-chat-panel/60 backdrop-blur-md flex-shrink-0">
       <div className="flex items-center gap-3 min-w-0">
-        {/* Sidebar toggle — desktop only */}
-        <button
-          onClick={onToggleSidebar}
-          className="hidden md:block p-1 text-chat-muted/40 hover:text-chat-muted transition-colors"
-          title="Toggle sidebar"
-        >
-          <Menu size={16} strokeWidth={1.5} />
-        </button>
-
         {/* Back button */}
         <button
           onClick={handleBack}

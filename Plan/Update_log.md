@@ -2,6 +2,58 @@
 
 ---
 
+## 2026-06-03 — Web Push 通知：Service Worker + 前端订阅 + 后端 API
+
+**署名：** Claude (Frontend) / Claude (Backend) / Alicia — 2026-06-03
+
+### 完成项
+
+#### Service Worker 层（三个包 `public/push-notification.js`）
+- **push 事件监听** — 接收 JSON payload，解析 title/body/icon/actions/vibrate 等字段，调用 `self.registration.showNotification()` 弹出系统通知
+- **notificationclick 事件** — 点击通知 → 聚焦已有窗口或打开新标签页，支持 `data.url` 自定义跳转
+- **pushsubscriptionchange 事件** — 订阅过期/刷新时自动重订阅并上报后端
+- **降级处理** — JSON 解析失败时 fallback 为纯文本通知
+
+#### Vite 配置（三个包 `vite.config.js`）
+- Workbox `importScripts: ['/push-notification.js']` — 生成的 SW 自动加载 push 处理脚本
+
+#### 前端订阅工具（`packages/shared/src/endpoints/push.js`）
+- `isPushSupported()` — 浏览器能力检测（serviceWorker + PushManager + Notification）
+- `getCurrentSubscription()` / `getNotificationPermission()` — 状态查询
+- `requestNotificationPermission()` — 请求用户授权
+- `subscribeToPush()` — 完整订阅流程：请求权限 → 等待 SW ready → `pushManager.subscribe()` → POST 凭证到后端
+- `unsubscribeFromPush()` — 取消订阅 + 通知后端清理
+- `usePushSubscription()` — React hook：`{ isSubscribed, isLoading, permission, subscribe, unsubscribe }`
+
+#### Shared 包导出
+- `packages/shared/src/index.js` 新增 `pushApi` 命名空间导出
+
+#### 后端 API（Django — 隔壁 Claude 实现）
+- `POST /api/push/subscribe/` — 接收 `{ subscription: { endpoint, keys: { p256dh, auth } } }` → upsert 存储 → 201
+- `POST /api/push/unsubscribe/` — 接收 `{ endpoint }` → 停用/删除订阅 → 204（幂等）
+- `send_physical_notification(title, body)` — G045 工具，通过 VAPID 私钥 + pywebpush 签发 push 消息 → FCM/Mozilla → 浏览器弹窗
+
+### 关键设计决策
+- **VAPID 密钥对** — 公钥硬编码在前端和 SW 中用于订阅，私钥仅在后端控制台使用，前端永远不接触私钥
+- **订阅凭证存储** — 按 endpoint 去重（upsert），同一浏览器重复订阅不报错
+- **SW 脚本独立于 Workbox** — `push-notification.js` 通过 `importScripts` 注入，与 Workbox 预缓存逻辑解耦
+- **每个包独立 SW** — 三个端口各自维护自己的 service worker 和 push subscription，互不干扰
+- **后端工具放在 Django 侧** — 不在 core app 内，由后端 Claude 独立设计 model 位置
+
+### 待办
+- [x] Settings 页通知开关 UI（调用 `usePushSubscription` hook）— 2026-06-03 完成
+
+### 缺陷修复（2026-06-03）
+
+#### `push.js` — `body` 预序列化导致 Content-Type 缺失
+- **问题：** `subscribeToPush()` 和 `unsubscribeFromPush()` 将 body 提前 `JSON.stringify()` 为字符串传入 `apiFetch`。`apiFetch` 只在 `typeof body === 'object'` 时自动设置 `Content-Type: application/json`，传入字符串时跳过 → POST 携带 `text/plain` → Django DRF 无法解析 → 400/415
+- **症状：** 浏览器端 `pushManager.subscribe()` 成功，UI 显示「已订阅」；但 POST 到 `/api/push/subscribe/` 时报错被 catch 吞掉，数据库无记录（count=0）
+- **修复：** 将 `body: JSON.stringify({...})` 改为 `body: {...}`，由 `apiFetch` 负责序列化和设置 Content-Type
+- **CSRF 验证：** 确认 `CSRF_TRUSTED_ORIGINS` 已包含 `localhost:5173` / `127.0.0.1:5173` / `192.168.178.25:5173`，无 CSRF 阻断
+- **后端端点验证：** `curl -X POST http://127.0.0.1:8000/api/push/subscribe/` 返回 201，端点正常
+
+---
+
 ## 2026-06-03 — Key Management：设置页 API Key 管理 + ChatArea 会话 Key 选择器
 
 **署名：** Claude / Alicia — 2026-06-03

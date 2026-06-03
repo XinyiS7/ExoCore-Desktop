@@ -21,7 +21,6 @@ export default function ChatShell({
   setRefreshKey,
   openNewSession,
   openDestructor,
-  onToggleSidebar,
 }) {
   const { sessionId } = useParams();
   const location = useLocation();
@@ -81,7 +80,6 @@ export default function ChatShell({
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-chat-bg relative">
       {/* Stage Header */}
       <StageHeader
-        onToggleSidebar={onToggleSidebar}
         onToggleFilesDrawer={() => setFilesDrawerOpen(v => !v)}
         project={project}
       />

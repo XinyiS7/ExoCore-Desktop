@@ -1,12 +1,14 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { BrainCircuit, FolderKanban, Database } from 'lucide-react';
+import { Home, Settings, BrainCircuit, FolderKanban, Database } from 'lucide-react';
 import { getUserAvatarUrl } from '../../utils/avatar';
 
 const BOTTOM_ITEMS = [
-  { route: '/projects',  icon: FolderKanban, label: 'Projects' },
-  { route: '/agent-hub', icon: BrainCircuit,  label: 'Agents' },
-  { route: '/memory',    icon: Database,      label: 'Memory' },
+  { route: '/',         icon: Home,          label: 'Home' },
+  { route: '/projects', icon: FolderKanban,  label: 'Projects' },
+  { route: '/agent-hub',icon: BrainCircuit,  label: 'Agents' },
+  { route: '/memory',   icon: Database,      label: 'Memory' },
+  { route: '/settings', icon: Settings,      label: 'Settings' },
 ];
 
 export default function MobileBottomBar() {
@@ -15,9 +17,11 @@ export default function MobileBottomBar() {
   const userAvatarUrl = getUserAvatarUrl();
 
   const isActive = (route) => {
-    if (route === '/projects') return location.pathname.startsWith('/project') || location.pathname === '/';
+    if (route === '/') return location.pathname === '/';
+    if (route === '/projects') return location.pathname.startsWith('/project') || location.pathname === '/projects';
     if (route === '/agent-hub') return location.pathname.startsWith('/agent');
     if (route === '/memory') return location.pathname.startsWith('/memory');
+    if (route === '/settings') return location.pathname.startsWith('/settings');
     return false;
   };
 

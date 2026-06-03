@@ -22,3 +22,4 @@ export * as memoryApi        from './endpoints/memory';
 export * as tasksApi         from './endpoints/tasks';
 export * as telemetryApi     from './endpoints/telemetry';
 export * as systemApi        from './endpoints/system';
+export * as pushApi          from './endpoints/push';
