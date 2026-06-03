@@ -20,7 +20,7 @@ Two interrelated features:
 See ReactSheet_Reorganized.md §5.3–5.4 for full request/response shapes. Summary:
 
 | Endpoint | Method | Purpose |
-|---|---|---|
+|----------|--------|---------|
 | `/api/core/apikeys/` | GET | List keys, optional `?platform=` filter |
 | `/api/core/apikeys/` | POST | Create key `{ alias, platform, key_value }` |
 | `/api/core/apikeys/<id>/` | PATCH | Update alias only `{ alias }` |
@@ -37,7 +37,7 @@ See ReactSheet_Reorganized.md §5.3–5.4 for full request/response shapes. Summ
 ## 3. File Changes
 
 | Action | File | Purpose |
-|---|---|---|
+|--------|------|---------|
 | **Replace** | `views/SettingsView.jsx` | Full rewrite: left nav (A-layout) + right content area |
 | **New** | `components/settings/KeyManagePanel.jsx` | Platform tabs (B-layout) + 4 role slots per platform |
 | **New** | `hooks/useApiKeys.js` | Data-fetching hook for api keys list |
@@ -83,7 +83,7 @@ See ReactSheet_Reorganized.md §5.3–5.4 for full request/response shapes. Summ
 ### 4.3 Left Nav Items
 
 | Label | Route | State |
-|---|---|---|
+|-------|-------|-------|
 | Key Manage | `/settings/keys` | Active, implemented |
 | Routine Manage | — | Disabled, greyed out |
 
@@ -100,7 +100,7 @@ See ReactSheet_Reorganized.md §5.3–5.4 for full request/response shapes. Summ
 ### 5.2 Role Slots
 
 | Role | Required | Behavior |
-|---|---|---|
+|------|----------|----------|
 | System Default | **Yes** | alias + key both required on first create |
 | Session Default | No | Falls back to system if unset |
 | Sub-agent Default | No | Falls back to system if unset |
@@ -123,12 +123,18 @@ Initial load
 
 ### 5.4 Independent Save per Slot
 
-Each of the 4 slots has its own **[Save]** button. Three operations per slot:
+Each of the 4 slots has its own **[Save]** button. Three operations per slot.
+
+**Frontend pre-validation (all save paths):**
+- If alias is empty → block, show inline hint "Alias is required".
+- If key_value is empty (create / overwrite) → block, show inline hint "Key is required".
+- Both must be present before any POST / PUT / PATCH is fired.
 
 **Create (first time):**
-1. `POST /api/core/apikeys/` with `{ alias, platform, key_value }`
-2. On 201 → `PUT /api/core/config/key-map/` with updated role→id mapping
-3. Both 200 → show "保存成功" ✅, refresh display
+1. Frontend validates alias + key_value both non-empty.
+2. `POST /api/core/apikeys/` with `{ alias, platform, key_value }`
+3. On 201 → `PUT /api/core/config/key-map/` with updated role→id mapping
+4. Both 200 → show "保存成功" ✅, refresh display
 
 **Update alias:**
 1. `PATCH /api/core/apikeys/<id>/` with `{ alias }`
@@ -206,7 +212,7 @@ Replace the current inline `controlsExpanded` row with a **drawer panel** that s
 New key:
 
 | Key | Value | Scope |
-|---|---|---|
+|-----|-------|-------|
 | `exo_session_key_${sessionId}` | alias string | Per-session key selection |
 
 Existing keys unchanged.
