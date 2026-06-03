@@ -12,6 +12,7 @@ import BranchSessionModal from '../modals/BranchSessionModal';
 import ContextCacheIndicator from './ContextCacheIndicator';
 import { usePollingChat } from '../../hooks/usePollingChat';
 import AuroraBackground from './AuroraBackground';
+import ControlsDrawer from './ControlsDrawer';
 
 const MSGS_PER_PAGE = 40;
 
@@ -336,6 +337,9 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         model: currentModel,
         thinking_level: thinkingLevel,
         temperature: temperature,
+        ...(activeSessionId && localStorage.getItem(`exo_session_key_${activeSessionId}`)
+          ? { api_key_alias: localStorage.getItem(`exo_session_key_${activeSessionId}`) }
+          : {}),
         ...(currentPending.length > 0 || composeAttachments.some(e => e.attachmentId != null)
           ? { pending_attachments: [
               ...currentPending.map(a => typeof a === 'object' ? a.id : a),
@@ -797,92 +801,24 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
           </div>
         )}
 
-        {/* Collapsible controls panel */}
+        {/* Controls drawer — replaces old inline row */}
         {controlsExpanded && (
-          <div className="flex items-center gap-2.5 px-1 text-exo-muted overflow-x-auto scrollbar-hide flex-shrink-0 h-6 animate-fade-in">
-            <Cpu size={10} className="text-exo-muted/25 flex-shrink-0" />
-            <select
-              value={currentModel}
-              onChange={(e) => updatePreference({ model: e.target.value })}
-              className="bg-transparent outline-none text-[11px] font-sans text-white/50 cursor-pointer max-w-[110px] truncate hover:text-white/80 transition-colors"
-            >
-              {MAIN_MODEL_IDS.map(m => (
-                <option key={m} value={m} className="bg-exo-pure text-white">{m}</option>
-              ))}
-            </select>
-
-            <span className="text-exo-muted/12 text-[9px] select-none flex-shrink-0">|</span>
-
-            <select value={chatMode} onChange={(e) => {
-              const mode = e.target.value;
+          <ControlsDrawer
+            currentModel={currentModel}
+            thinkingLevel={thinkingLevel}
+            temperature={temperature}
+            chatMode={chatMode}
+            sessionId={activeSessionId}
+            lastTelemetry={lastTelemetry}
+            sessionTelemetryRef={sessionTelemetryRef}
+            telemetryExpanded={telemetryExpanded}
+            setTelemetryExpanded={setTelemetryExpanded}
+            onPreferenceChange={updatePreference}
+            onChatModeChange={(mode) => {
               setChatMode(mode);
               localStorage.setItem('exo_chat_mode', mode);
-            }} className="bg-transparent outline-none text-[11px] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors">
-              <option value="sse" className="bg-exo-pure">SSE</option>
-              <option value="async" className="bg-exo-pure">Async</option>
-            </select>
-
-            <span className="text-exo-muted/12 text-[9px] select-none flex-shrink-0">|</span>
-
-            <select value={thinkingLevel} onChange={(e) => updatePreference({ thinking_level: e.target.value })} className="bg-transparent outline-none text-[11px] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors">
-              <option value="off" className="bg-exo-pure">Off</option>
-              <option value="auto" className="bg-exo-pure">Auto</option>
-              <option value="low" className="bg-exo-pure">Low</option>
-              <option value="medium" className="bg-exo-pure">Med</option>
-              <option value="high" className="bg-exo-pure">High</option>
-            </select>
-
-            <span className="text-exo-muted/12 text-[9px] select-none flex-shrink-0">|</span>
-
-            <select value={temperature} onChange={(e) => updatePreference({ temperature: e.target.value })} className="bg-transparent outline-none text-[11px] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors">
-              <option value="1.0" className="bg-exo-pure">1.0</option>
-              <option value="1.3" className="bg-exo-pure">1.3</option>
-              <option value="1.8" className="bg-exo-pure">1.8</option>
-            </select>
-
-            {lastTelemetry && (
-              <div className="ml-auto flex items-center gap-2 relative flex-shrink-0">
-                <button
-                  onClick={() => setTelemetryExpanded(v => !v)}
-                  className="font-sans text-[10px] text-exo-muted/25 tabular-nums tracking-wider hover:text-exo-accent/50 transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                >
-                  <span className="inline-block w-1 h-1 rounded-full bg-exo-accent/50" />
-                  <span className="text-exo-muted/35">{lastTelemetry.model_name || lastTelemetry.platform}</span>
-                  <span>TX:{lastTelemetry.input_chars?.toLocaleString()}</span>
-                  <span>RX:{lastTelemetry.output_chars?.toLocaleString()}</span>
-                  {lastTelemetry.cached_input_chars > 0 && (
-                    <span>CACHE:{Math.round(lastTelemetry.cached_input_chars / (lastTelemetry.input_chars || 1) * 100)}%</span>
-                  )}
-                  {lastTelemetry.tool_calls > 0 && (
-                    <span>TOOLS:{lastTelemetry.tool_calls}</span>
-                  )}
-                </button>
-                {telemetryExpanded && (
-                  <div className="absolute bottom-full right-0 mb-2 px-4 py-3 bg-exo-panel border border-exo-border rounded-[4px] font-mono text-[10px] text-exo-muted shadow-xl z-50 min-w-[260px] animate-fade-in">
-                    <div className="text-exo-accent/60 text-[9px] uppercase tracking-[0.2em] mb-2 font-bold">Session Totals</div>
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-                      <span className="opacity-50">Requests</span>
-                      <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.requests}</span>
-                      <span className="opacity-50">Total TX</span>
-                      <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalInput.toLocaleString()}</span>
-                      <span className="opacity-50">Total RX</span>
-                      <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalOutput.toLocaleString()}</span>
-                      <span className="opacity-50">Total Cached</span>
-                      <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalCached.toLocaleString()}</span>
-                      <span className="opacity-50">Cache Hit Rate</span>
-                      <span className="text-white/80 tabular-nums text-right">
-                        {sessionTelemetryRef.current.totalInput > 0
-                          ? Math.round(sessionTelemetryRef.current.totalCached / sessionTelemetryRef.current.totalInput * 100)
-                          : 0}%
-                      </span>
-                      <span className="opacity-50">Tool Calls</span>
-                      <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalTools}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+            }}
+          />
         )}
 
         <div className={`flex flex-col bg-exo-pure border rounded-[4px] transition-all overflow-hidden ${inputFocused || inputValue ? 'border-exo-accent/40 shadow-glow-gold' : 'border-exo-mist-10'}`}>
