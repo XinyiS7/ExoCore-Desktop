@@ -1,10 +1,11 @@
 ========================================================
   ExoCore — React 前端接口数据格式速查表（重整版）
-  最后更新：2026-05-29（§1.6 cache endpoint 新增 platform 字段；统一路径回退）
+  最后更新：2026-06-03（§5.3-5.4 ApiKey 管理 + key_map；§1.3 api_key_alias 字段）
 ========================================================
 
-本文件按 API 领域重新组织，替代原 ReactSheet.txt 的跳跃编号。
-原始 ReactSheet.txt 仍保留作为历史参考。
+本文是纯数据格式速查，不是后端行为说明书。
+只包含 Request / Response 的字段、类型、枚举值。
+后端回落逻辑、DB 写入细节、内部调用链请参考 CLAUDE.md 和源码。
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -80,9 +81,12 @@
   "thinking_level": "medium",
   "temperature": 1.0,
   "model": null,                    // 可选模型覆盖
+  "api_key_alias": null,            // 可选 API Key 别名；null = 使用默认 key
   "files": [],                      // 可选上传文件
   "pending_attachments": []         // 可选附件 ID
 }
+
+// api_key_alias: 可选，传入 ApiKey 别名
 
 // Response (200) — 立即返回:
 {
@@ -158,31 +162,29 @@
   "start_index": 0,       // 对应 Message.index_in_session 起始（用于加载原始消息）
   "end_index": 9,         // 对应 Message.index_in_session 结束
 
-  // 可编辑字段（来源：metadata_json / DB 字段双写）
-  "topic_label": "量子纠缠基本原理",   // LLM 提炼的主题标签，用户可修改
-  "keywords": ["量子纠缠", "EPR"],     // 检索关键词，用户可修改
-  "unresolved": false,                 // 是否有未竟事宜，用户可 toggle
+  // 可编辑
+  "topic_label": "量子纠缠基本原理",
+  "keywords": ["量子纠缠", "EPR"],
+  "unresolved": false,
 
-  // 只读上下文（来源：metadata_json，LLM 推断）
-  "time_ref": "3月某个下午",           // 时间背景
-  "emotion": "好奇/探索",              // 情感基调
-  "entities": ["量子纠缠", "EPR悖论"], // 涉及的实体
-  "importance": 0.8,                   // 重要度评分 0.0-1.0
+  // 只读
+  "time_ref": "3月某个下午",
+  "emotion": "好奇/探索",
+  "entities": ["量子纠缠", "EPR悖论"],
+  "importance": 0.8,
 
   "created_at": "2026-03-10T15:00:00Z"
 }
 
 // PATCH 请求体（只允许以下三个字段）：
 {
-  "topic_label": "新的话题标签",   // 同步写入 metadata_json.topic_label
-  "keywords": ["新关键词"],        // 同步写入 keywords 字段 + metadata_json.keywords
-  "unresolved": true               // 同步写入 unresolved 字段 + metadata_json.unresolved
+  "topic_label": "新的话题标签",
+  "keywords": ["新关键词"],
+  "unresolved": true
 }
 
-// PATCH 响应（updated 列表反映实际写入的 DB 字段）：
-// 仅改 topic_label → { "msg": "已保存。", "updated": ["metadata_json"] }
-// 改 keywords     → { "msg": "已保存。", "updated": ["keywords", "metadata_json"] }
-// 改 unresolved   → { "msg": "已保存。", "updated": ["unresolved", "metadata_json"] }
+// PATCH 响应:
+{ "msg": "已保存。", "updated": ["topic_label"] }
 
 
 1.6  GET/POST/DELETE /api/agents/conversations/{pk}/cache/  — 会话缓存 & 快照
@@ -232,17 +234,15 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 { "error": "no active cache" }
 
 // ── 1.6c. DELETE .../cache/  — 手动释放缓存/快照
-// Gemini: 删除远端缓存 + 本地快照，异步重建快照 → 204
-// DeepSeek / 非 Gemini: 仅删除本地快照，下次请求 _build_fresh() → 204
+// → 204 No Content
 // 无缓存也无快照: 404 { "error": "当前无活跃缓存或快照" }
 
 
 1.7  POST/GET/DELETE /api/agents/conversations/{id}/attachments/  — 附件管理
 ─────────────────────────────────────────────────────────────
 
-设计原则：附件是 message 级资源，每个附件绑定在创建它的用户消息上，
-通过 user_msg.attachment_ids 关联。当该消息在历史窗口中时，
-_build_msg_dict() → get_parts_for_message() 加载附件 Part。
+附件是消息级的，绑定在发送它们的用户消息上。
+附件随消息在历史窗口中自然升降 —— 消息滚出窗口时附件也随之消失。
 
 ┌─────────────────────┬──────────────────────────────────────────┐
 │ 来源                │ 行为                                      │
@@ -282,27 +282,10 @@ _build_msg_dict() → get_parts_for_message() 加载附件 Part。
 
 // ── 1.7d. DELETE .../attachments/delete/
 // Body: { "source": "user"|"tool_collection", "id": <int|str> }
-// - source "user" → 删除 SessionAttachment DB 记录
-// - source "tool_collection" → 从 ToolCollectionCache 注册表移除
 // 返回: 204 No Content
 
-// ── 消息级加载机制 ──
-// 附件不参与 conversation 级自动注入。
-// 加载路径只有一条：_build_msg_dict() 遍历历史消息时，
-// 对每条 msg.attachment_ids 调用 get_parts_for_message() 加载 Part。
+// 附件是消息级的，绑定在发送它们的用户消息上。
 // 附件随消息在历史窗口中自然升降 —— 消息滚出窗口时附件也随之消失。
-
-// 注入顺序（process_chat Phase B all_attachments 组装）：
-//   file_parts          ← 本轮 chat POST 的 files 字段 (multipart)
-//   extra_parts         ← Superior ToolCollectionCache (当前轮工具输出)
-//   pending_parts       ← 本轮 pending_attachments (JSON 引用已有文件)
-
-// 实现位置：
-//   get_parts_for_message()     → engines/attachment_manager.py
-//   _build_msg_dict()           → agents/services.py
-//   SessionAttachmentView       → agents/views.py
-//   confirm_pending 去重        → engines/attachment_manager.py
-//   confirm_uploaded_files      → engines/attachment_manager.py
 
 
 1.8  GET /api/agents/presets/<preset_id>/triggered-notes/snapshot/  — TriggeredNote 快照
@@ -366,8 +349,6 @@ _build_msg_dict() → get_parts_for_message() 加载附件 Part。
 // ── 1.9e. DELETE /api/agents/chronicle/<id>/ — 删除
 
 // scope 字段说明:
-//   表 — 外部 milestone：事业/学业/成就/公开事件
-//   里 — 私人/关系 milestone：人际/情感/内心状态
 //   前端展示为 表/里 两个分类，但 scope 为自由文本（CharField），后续可按需扩展
 
 
@@ -421,10 +402,9 @@ _build_msg_dict() → get_parts_for_message() 加载附件 Part。
     "message": 101,              // null = 非划线来源
     "source": "highlight",       // "highlight" | "g045_tool" | "user_manual"
     "content": "量子纠缠是两个粒子…",
-    "scope": "work",             // null（Ollama 处理中）| scope_keywords.json 中任意值
-                                 // | "global"（兜底，匹配不到特定 scope 时使用）
+    "scope": "work",             // 有效值来自 scope_keywords.json + "global"；null = 处理中
     "tags": ["量子纠缠", "物理"],
-    "is_processed": true,        // false = 分类中（关键词查表 → Ollama → global），scope/tags 暂为空
+    "is_processed": true,        // false = 分类中，scope/tags 暂为空
     "created_at": "2026-04-21T14:23:00Z",
     "updated_at": "2026-04-21T14:25:00Z"
   }
@@ -439,14 +419,13 @@ _build_msg_dict() → get_parts_for_message() 加载附件 Part。
 // ── 2.2c. POST /api/memory/portraits/ — 用户手动新增（user_manual）
 // Request（preset_id 与 message_id 互斥，只能传其一）：
 { "preset_id": 1, "content": "我喜欢读科幻小说", "scope": "写作", "tags": ["科幻"] }
-// scope 可选，值来自 scope_keywords.json + "global" 兜底；传无效值 → 400
-// 若省略 scope：后台触发异步分类（关键词查表 → Ollama → global，is_processed: false → true）
-// 若提供 scope：直接写入，is_processed=true，跳过异步分类
+// scope 可选，有效值来自 scope_keywords.json + "global"；传无效值 → 400
+// 省略 scope → 自动分类（is_processed 从 false 变为 true）
+// 提供 scope → 直接写入，跳过自动分类
 
 // ── 2.2d. POST /api/memory/portraits/ — 划线笔记（highlight）
 { "message_id": 101, "content": "量子纠缠是两个粒子…" }
-// preset / conversation 自动从 message 所属会话派生
-// 始终触发 Ollama 异步分类
+// preset / conversation 自动从 message 所属会话派生；自动触发分类
 
 // ── 2.2e. PATCH /api/memory/portraits/<pk>/
 // 可编辑字段：content / scope / tags（三者可单独或组合）
@@ -486,49 +465,33 @@ _build_msg_dict() → get_parts_for_message() 加载附件 Part。
 
 // ── 2.3b. PUT — 全量替换
 // Body 格式与 GET 返回值完全一致。
-// 校验: key 必须是字符串（max 50 chars），value 必须是字符串列表。
-// 副作用:
-//   1. 若恰好 1 个旧 scope 被移除且 1 个新 scope 被添加 → 视为重命名，
-//      自动级联更新所有 UserPortrait 中旧 scope → 新 scope
-//   2. 使 entry_orchestrator 的模块级缓存失效，下次消息立即使用新关键词表
-//   3. 使 entry_processor 的 Ollama 分类立即使用新 scope 列表
 
 
 2.4  Scope 体系总览
 ─────────────────────────────────────────────────────────────
-五个模型中 scope 相关字段的对照表，供前端开发参考。
+各模型中 scope 相关字段对照：
 
-┌─────────────────────┬──────────┬──────────────────┬──────────────────────────────┬──────────────────────────────┐
-│ 模型                │ 字段名   │ 类型             │ 词汇来源                     │ 管理方式                     │
-├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┼──────────────────────────────┤
-│ UserPortrait         │ scope    │ CharField(50)    │ scope_keywords.json keys     │ 关键词查表 → Ollama 推测     │
-│ (memory/portraits/)   │          │                  │ + "global" 兜底              │ → global 兜底；用户可PATCH   │
-│                     │          │                  │                              │ portraits/<pk>/ 纠偏           │
-├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┼──────────────────────────────┤
-│ KnowledgeFragment   │ topic    │ CharField(100)   │ Obsidian frontmatter         │ 前端按 ?topic= 过滤查看      │
-│ (memory/knowledge/) │          │                  │ scope 字段                   │ PATCH 可编辑                 │
-├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┼──────────────────────────────┤
-│ TriggeredNote        │ scope    │ JSONField(list)  │ global / tech / emotional    │ LLM function call 自动设置   │
-│ (agents/triggered-   │          │                  │ / project                    │ 前端暂不需要管理             │
-│  notes/)             │          │                  │                              │                              │
-├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┼──────────────────────────────┤
-│ ChronicleEntry      │ scope    │ CharField(50)    │ 表 / 里（可扩展）             │ 前端 CRUD 手动管理           │
-│ (agents/chronicle/) │          │                  │                              │ MemoAssist 自动创建          │
-├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┼──────────────────────────────┤
-│ scope_keywords.json │ —        │ JSON dict        │ 用户手动维护                 │ GET/PUT /api/memory/         │
-│ (memory/scope-      │          │ (scope→keywords) │                              │ scope-keywords/              │
-│  keywords/)         │          │                  │                              │                              │
-└─────────────────────┴──────────┴──────────────────┴──────────────────────────────┴──────────────────────────────┘
-
-关键设计说明:
-- UserPortrait 的 scope 既是分类标签也是热更新检索的过滤维度
-- scope_keywords.json 的 keys 是"用户定义的 scope 注册表"——Ollama + 关键词两阶段分类时
-  只能从此列表选择；"global" 为通用兜底值，用于匹配不到特定 scope 的条目
-- 删除 scope_keywords.json 中的 scope 时：关联的 UserPortrait 条目标记 is_processed=false
-  并触发异步重分类；重命名 scope 时：直接级联更新条目 scope 字段
-- KnowledgeFragment 的 topic 来自 Obsidian 文件元数据，独立于 scope_keywords.json
-- TriggeredNote 的 scope（global/tech/emotional/project）是独立体系，用于会话级别匹配
-- ChronicleEntry 的 scope（表/里）是最简化的二分法，按需可扩展
+┌─────────────────────┬──────────┬──────────────────┬──────────────────────────────┐
+│ 模型                │ 字段名   │ 类型             │ 前端可操作                   │
+├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┤
+│ UserPortrait         │ scope    │ CharField(50)    │ PATCH 可编辑；新建可选填      │
+│ (memory/portraits/)  │          │                  │ 有效值来自 scope_keywords     │
+│                     │          │                  │ + "global" 兜底              │
+├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┤
+│ KnowledgeFragment   │ topic    │ CharField(100)   │ PATCH 可编辑；列表 ?topic=   │
+│ (memory/knowledge/) │          │                  │ 过滤                        │
+├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┤
+│ TriggeredNote        │ scope    │ JSONField(list)  │ 只读，自动生成               │
+│ (agents/triggered-  │          │                  │                              │
+│  notes/)            │          │                  │                              │
+├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┤
+│ ChronicleEntry      │ scope    │ CharField(50)    │ CRUD 可编辑                  │
+│ (agents/chronicle/) │          │                  │ 值: 表 / 里（可扩展）         │
+├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┤
+│ scope_keywords.json │ —        │ JSON dict        │ GET/PUT /api/memory/         │
+│ (memory/scope-      │          │ (scope→keywords) │ scope-keywords/              │
+│  keywords/)         │          │                  │                              │
+└─────────────────────┴──────────┴──────────────────┴──────────────────────────────┘
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -582,67 +545,9 @@ _build_msg_dict() → get_parts_for_message() 加载附件 Part。
 //   - read_project 工具根目录 → 回退到 settings.PROJECT_DIR
 //   - sync_project 命令 → 报错退出
 
-// ── 3.2e. System Prompt 拼接顺序 ──
-
-// 每次 LLM 调用时，按以下顺序动态拼接 system_prompt（不写入 preset DB）：
-
-// ┌─────────────────────────────────────────────────────────────────────────┐
-// │ 拼接顺序              │ Standard          │ Superior (G045)              │
-// ├─────────────────────────────────────────────────────────────────────────┤
-// │ 1. preset.system_prompt│ ✅ 始终           │ ✅ 始终                       │
-// │ 2. project.prompt      │ ✅ 项目非空时追加  │ ✅ 项目非空时追加              │
-// │ 3. Permanent Directives│ ❌ 无              │ ✅ 始终追加（位置提示）        │
-// └─────────────────────────────────────────────────────────────────────────┘
-
-// Standard Agent 最终 system_prompt：
-//   [preset.system_prompt]
-//   \n\n## 当前项目背景\n[project.prompt]    ← 仅当 conversation.project.prompt 非空
-
-// Superior Agent 最终 system_prompt：
-//   [preset.system_prompt]
-//   \n\n## 当前项目背景\n[project.prompt]    ← 仅当 conversation.project.prompt 非空
-//   \n\n你的永久指令位于上下文顶部 [Permanent Directives] 区块。
-
-// 后端注入点：
-//   G045Service._prepare_superior_context()     → agents/services.py :1626-1628
-//   StandardAgentService._build_context_generator() → agents/services.py :2403-2407
-
-
-3.3  CLI — sync_project 管理命令
-─────────────────────────────────────────────────────────────
-将项目 work_dir 下的文件同步为 KnowledgeFragment 记录。
-
-```
-python manage.py sync_project <project_name> [--dry-run]
-```
-
-// ── 参数 ──
-//   project_name  (必填)  Project.name，项目代号
-//   --dry-run     (可选)  仅扫描打印，不写入 DB
-
-// ── 行为 ──
-// 1. 查 Project by name → 校验 work_dir 非空且磁盘存在
-// 2. 遍历 {work_dir}/ExoCore_Files/ 下所有文件（排除隐藏文件）
-// 3. .md 文件 → parse_md_file() → upsert_fragment()
-//    - parse_md_file 从 frontmatter 提取 uid/title/abstract/keywords 等
-//    - upsert_fragment 以 uid 为 key 做 update_or_create，绑定到该 Project
-//    - source_type 自动设为 "obsidian_md"
-// 4. 其他文件类型 → 跳过
-// 5. 输出汇总：Created / Updated / Skipped / Errors
-
-// ── 前置条件 ──
-// 1. Project.work_dir 已通过 PATCH /api/core/projects/<id>/ 设置
-// 2. {work_dir}/ExoCore_Files/ 目录已存在（手动创建或通过文件上传自动生成）
-// 3. 需要同步的 .md 文件已放入该目录
-
-// ── 示例 ──
-// python manage.py sync_project Grand-Archives --dry-run
-// python manage.py sync_project Grand-Archives
-
-// ── 相关代码 ──
-// core/management/commands/sync_project.py
-// memory.utils.parse_md_file() / upsert_fragment()
-// core/models.py → Project.work_dir / work_dir_path
+// ── 3.2e. work_dir 设置后生效 ──
+// PATCH work_dir 后，read_project 工具使用 work_dir 而非全局 PROJECT_DIR。
+// 前端如需同步文件夹内容，联系后端运行 sync_project 管理命令。
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -698,8 +603,7 @@ python manage.py sync_project <project_name> [--dry-run]
 
 5.1  GET/PATCH /api/core/config/  — SystemConfig
 ─────────────────────────────────────────────────────────────
-Singleton operator configuration。DB values override env vars；空 DB 值回退到 env。
-API key 字段读取时始终 masking。
+系统配置单例。API key 字段读取时始终 masking（"****<last4>"）。
 
 // ── 5.1a. GET
 // API key 字段：若已设置 → "****<last4>"；若未设置 → ""
@@ -724,9 +628,14 @@ API key 字段读取时始终 masking。
   "deep_org_weekday": 0,              // 0=Mon … 6=Sun
   "deep_org_hour":    3,              // 0-23; read once at server startup
 
-  "model_generate_abstract":      "",           // empty = Ollama default
+  "model_generate_abstract":      "",           // empty = 使用默认模型
   "model_realtime_recompress":    "deepseek-v4-pro",
   "model_extract_chunk_metadata": "",
+
+  "key_map": {                              // platform → {role → ApiKey.id}
+    "deepseek": {"system": 3, "session": null, "sub_agent": null, "background": 1},
+    "gemini":  {"system": 7, "session": null, "sub_agent": null, "background": null}
+  },
 
   "updated_at": "2026-04-25T10:00:00Z"
 }
@@ -761,9 +670,64 @@ API key 字段读取时始终 masking。
   // ... all entries from model_registry.list_models()
 ]
 
-// 注：AgentPreset 的 feature toggles (can_self_check / can_deep_org / can_interact)
-// 不在 AgentPreset 字段上，而是通过 SystemConfig 的 ID 列表管理
-// (self_check_preset_ids / deep_org_preset_ids / interact_preset_ids)，通过上述 PATCH 修改。
+// AgentPreset 的 feature toggles 通过 SystemConfig 的 *_preset_ids 列表管理，不在 preset 模型上。
+
+
+5.3  CRUD /api/core/apikeys/  — API Key 管理
+─────────────────────────────────────────────────────────────
+
+// ── 5.3a. GET /api/core/apikeys/ — 列表
+// 支持过滤: ?platform=deepseek
+
+[
+  {
+    "id": 1,
+    "alias": "我的主力key",
+    "platform": "deepseek",
+    "last_four": "a1b2",
+    "created_at": "2026-06-03T12:00:00Z",
+    "updated_at": "2026-06-03T12:00:00Z"
+  }
+]
+
+// key_value 永不返回。前端只持有 {id, alias, platform, last_four}。
+
+// ── 5.3b. POST /api/core/apikeys/ — 新建
+// Request:
+{
+  "alias": "我的主力key",
+  "platform": "deepseek",
+  "key_value": "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxa1b2"
+}
+// Response (201): 同上列表项格式（无 key_value）
+
+// ── 5.3c. GET    /api/core/apikeys/<id>/ — 详情
+// ── 5.3d. PATCH  /api/core/apikeys/<id>/ — 仅可改 alias
+// Request: { "alias": "新别名" }
+// ── 5.3e. PUT    /api/core/apikeys/<id>/overwrite/ — 覆盖 key_value
+// Request: { "key_value": "sk-new..." }
+// ── 5.3f. DELETE /api/core/apikeys/<id>/ — 级联删除
+// 删除所有同 key_value 的行 + 清空 SystemConfig 中同值的兜底字段
+// Response:
+{
+  "deleted_aliases": ["我的主力key", "备用key"],
+  "cleared_system_config": ["deepseek"]
+}
+
+
+5.4  PUT /api/core/config/key-map/  — 设置 Key Map
+─────────────────────────────────────────────────────────────
+
+// 按平台和角色分配 Key。system 必填，其余可选（传 null = 回落 system）。
+// 值可以是 ApiKey.id（int）或 alias（str）。角色: system | session | sub_agent | background
+
+// Request:
+{
+  "deepseek": {"system": 3, "sub_agent": null, "background": "我的bg-key", "session": null},
+  "gemini":  {"system": "gm-system", "sub_agent": null, "background": null, "session": null}
+}
+
+// Response: { "key_map": {"deepseek": {"system": 3, ...}, ...} }
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -837,6 +801,23 @@ API key 字段读取时始终 masking。
 // ── 6.2a. POST /api/tasks/entries/<pk>/complete/  — 打卡完成
 // Body (optional): { "note": "did 3 sets" }
 // 返回: CompletionRecord 对象
+//
+// 按 entry_type 自动差异化行为：
+//
+//   todo:
+//     - 创建 CompletionRecord 后自动将 status 设为 "archived"
+//     - 一次性任务，完成即结束，不可重复打卡
+//     - 前端收到 201 后应将该项从活跃列表移除 / 标记为已完成
+//
+//   periodic:
+//     - occurrences_done += 1
+//     - 若设置了 end_count 且 occurrences_done >= end_count → status 自动 "archived"
+//     - 若设置了 end_date 且 next_due > end_date → status 自动 "archived"
+//
+//   goal:
+//     - 创建 CompletionRecord（含 cycle_start 标识归属周期）
+//     - 不自动归档，允许超额完成
+//     - 返回的 CompletionRecord 含 cycle_start 字段，前端可据此统计当前周期进度
 
 // ── 6.2b. POST /api/tasks/entries/<pk>/suspend/  — 挂起 (status → "suspended")
 // ── 6.2c. POST /api/tasks/entries/<pk>/resume/   — 恢复 (status → "active")
@@ -1014,41 +995,3 @@ GET /api/tasks/completions/?entry=<pk>
 }
 
 
-7.4  GET /api/telemetry/daily/  — 原始 daily_summary.json
-─────────────────────────────────────────────────────────────
-全量快照，keyed by date → platform → model。结构同旧格式，一般只供调试。
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-附录 A  File Transfer — 前端文件上传协调备忘
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Adapter Turn 机制依赖前端区分「文件上传」与「剪贴板粘贴」两类图片。
-当前后端通过 file_size 阈值（>100KB）作为近似判断，不够精确。
-待前端明确上传入口后协调调整。
-
-// ── 当前行为 ──
-//
-// 图片附件满足 file_size > 100KB，或文本附件 file_size > 10KB（约 >100行）
-// 时触发 Adapter Turn：后端生成虚拟 user/model turn 将 file_uri 冻入 Gemini
-// Context Cache，后续轮次不重传文件，节省 token 并避免大 base64 导致 SSE 断流。
-//
-// 小图片（<100KB，通常为剪贴板粘贴）保持次抛，每轮在 Part 5 新鲜发送。
-
-// ── 待协调 ──
-//
-// 1. 前端「文件上传」入口（按钮/拖拽）提交的图片应始终触发 adapter
-//    → 可考虑在 POST attachments 时传 source="upload" 标记
-// 2. 前端「剪贴板粘贴」的图片（clipboard paste）应始终不触发
-//    → 可考虑传 source="clipboard" 标记，或由后端根据请求路径区分
-// 3. 建议：前端在调用 POST /api/agents/conversations/<pk>/attachments/
-//    时增加可选字段 source: "upload" | "clipboard"，后端据此精确判断，
-//    替代当前的 file_size 阈值启发式。
-// 4. 文本文件的行数阈值（当前 10KB 近似）如需更精确，可考虑前端传
-//    line_count 字段。
-
-// ── 相关代码 ──
-//
-// 后端触发检测: agents/services.py → SuperiorService._detect_adapter_trigger()
-// Cache 构建:    engines/cache_chunk.py → CacheChunkBuilder._build_fresh(adapter_info)
-// Gemini 缓存:   engines/context_cache.py → _create_gemini_cache (has_adapter 分支)
