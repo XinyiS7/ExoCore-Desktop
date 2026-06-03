@@ -30,16 +30,9 @@ export default function KeyManagePanel() {
   const roleKeyMap = keyMap[activePlatform] || {};
 
   const getExistingForKey = (role) => {
-    const ref = roleKeyMap[role];  // can be int (id) or string (alias)
+    const ref = roleKeyMap[role];  // alias string
     if (ref === null || ref === undefined) return null;
-
-    // Try matching by id first, then by alias
-    const byId = keys.find(k => k.id === ref);
-    if (byId) return byId;
-    const byAlias = keys.find(k => k.alias === ref);
-    if (byAlias) return byAlias;
-
-    return null;
+    return keys.find(k => k.alias === ref) || null;
   };
 
   const roles = ['system', 'session', 'sub_agent', 'background'];

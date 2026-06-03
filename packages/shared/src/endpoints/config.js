@@ -27,19 +27,19 @@ export function createApiKey({ alias, platform, key_value }) {
   return apiFetch('/api/core/apikeys/', { method: 'POST', body: { alias, platform, key_value } });
 }
 
-/** PATCH /api/core/apikeys/<id>/ — update alias only */
-export function updateApiKeyAlias(id, alias) {
-  return apiFetch(`/api/core/apikeys/${id}/`, { method: 'PATCH', body: { alias } });
+/** PATCH /api/core/apikeys/<alias>/ — rename alias to a new value */
+export function updateApiKeyAlias(alias, newAlias) {
+  return apiFetch(`/api/core/apikeys/${encodeURIComponent(alias)}/`, { method: 'PATCH', body: { alias: newAlias } });
 }
 
-/** PUT /api/core/apikeys/<id>/overwrite/ — overwrite key_value */
-export function overwriteApiKey(id, key_value) {
-  return apiFetch(`/api/core/apikeys/${id}/overwrite/`, { method: 'PUT', body: { key_value } });
+/** PUT /api/core/apikeys/<alias>/overwrite/ — overwrite key_value */
+export function overwriteApiKey(alias, key_value) {
+  return apiFetch(`/api/core/apikeys/${encodeURIComponent(alias)}/overwrite/`, { method: 'PUT', body: { key_value } });
 }
 
-/** DELETE /api/core/apikeys/<id>/ — cascade delete same-value keys */
-export function deleteApiKey(id) {
-  return apiFetch(`/api/core/apikeys/${id}/`, { method: 'DELETE' });
+/** DELETE /api/core/apikeys/<alias>/ — cascade delete same-value keys */
+export function deleteApiKey(alias) {
+  return apiFetch(`/api/core/apikeys/${encodeURIComponent(alias)}/`, { method: 'DELETE' });
 }
 
 // ── Key Map (§5.4) ──

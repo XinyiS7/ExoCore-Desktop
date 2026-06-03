@@ -112,10 +112,10 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
         const currentMap = config.key_map || {};
         const prev = currentMap[platform] || {};
         const platformMap = {
-          system:     role === 'system'     ? created.id : (prev.system ?? null),
-          session:    role === 'session'    ? created.id : (prev.session ?? null),
-          sub_agent:  role === 'sub_agent'  ? created.id : (prev.sub_agent ?? null),
-          background: role === 'background' ? created.id : (prev.background ?? null),
+          system:     role === 'system'     ? created.alias : (prev.system ?? null),
+          session:    role === 'session'    ? created.alias : (prev.session ?? null),
+          sub_agent:  role === 'sub_agent'  ? created.alias : (prev.sub_agent ?? null),
+          background: role === 'background' ? created.alias : (prev.background ?? null),
         };
         await configApi.updateKeyMap({ ...currentMap, [platform]: platformMap });
         // Both succeeded
@@ -126,7 +126,7 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
         onSaved?.();
       } else if (showKeyInput) {
         // Overwrite key value
-        await configApi.overwriteApiKey(existing.id, keyValue.trim());
+        await configApi.overwriteApiKey(existing.alias, keyValue.trim());
         setKeyValue('');
         setMaskedDisplay(existing.last_four ? `...${existing.last_four}` : '');
         keyValueRef.current = '';
@@ -135,7 +135,7 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
         onSaved?.();
       } else {
         // Update alias only
-        await configApi.updateApiKeyAlias(existing.id, alias.trim());
+        await configApi.updateApiKeyAlias(existing.alias, alias.trim());
         setFeedback({ type: 'success', msg: 'Alias 已更新' });
         onSaved?.();
       }
@@ -154,7 +154,7 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
     clearFeedback();
     setSaving(true);
     try {
-      await configApi.deleteApiKey(existing.id);
+      await configApi.deleteApiKey(existing.alias);
       setAlias('');
       setMaskedDisplay('');
       keyValueRef.current = '';

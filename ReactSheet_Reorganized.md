@@ -632,9 +632,9 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
   "model_realtime_recompress":    "deepseek-v4-pro",
   "model_extract_chunk_metadata": "",
 
-  "key_map": {                              // platform → {role → ApiKey.id}
-    "deepseek": {"system": 3, "session": null, "sub_agent": null, "background": 1},
-    "gemini":  {"system": 7, "session": null, "sub_agent": null, "background": null}
+  "key_map": {                              // platform → {role → alias | null}
+    "deepseek": {"system": "我的主力key", "session": null, "sub_agent": null, "background": "ds-bg"},
+    "gemini":  {"system": "gem-paid", "session": null, "sub_agent": null, "background": null}
   },
 
   "updated_at": "2026-04-25T10:00:00Z"
@@ -681,7 +681,6 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 
 [
   {
-    "id": 1,
     "alias": "我的主力key",
     "platform": "deepseek",
     "last_four": "a1b2",
@@ -690,7 +689,7 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
   }
 ]
 
-// key_value 永不返回。前端只持有 {id, alias, platform, last_four}。
+// alias 即资源标识符，唯一且不含 /。key_value 永不返回。
 
 // ── 5.3b. POST /api/core/apikeys/ — 新建
 // Request:
@@ -701,12 +700,12 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 }
 // Response (201): 同上列表项格式（无 key_value）
 
-// ── 5.3c. GET    /api/core/apikeys/<id>/ — 详情
-// ── 5.3d. PATCH  /api/core/apikeys/<id>/ — 仅可改 alias
+// ── 5.3c. GET    /api/core/apikeys/<alias>/ — 详情
+// ── 5.3d. PATCH  /api/core/apikeys/<alias>/ — 仅可改 alias
 // Request: { "alias": "新别名" }
-// ── 5.3e. PUT    /api/core/apikeys/<id>/overwrite/ — 覆盖 key_value
+// ── 5.3e. PUT    /api/core/apikeys/<alias>/overwrite/ — 覆盖 key_value
 // Request: { "key_value": "sk-new..." }
-// ── 5.3f. DELETE /api/core/apikeys/<id>/ — 级联删除
+// ── 5.3f. DELETE /api/core/apikeys/<alias>/ — 级联删除
 // 删除所有同 key_value 的行 + 清空 SystemConfig 中同值的兜底字段
 // Response:
 {
@@ -719,15 +718,16 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 ─────────────────────────────────────────────────────────────
 
 // 按平台和角色分配 Key。system 必填，其余可选（传 null = 回落 system）。
-// 值可以是 ApiKey.id（int）或 alias（str）。角色: system | session | sub_agent | background
+// 值使用 ApiKey.alias（字符串）。角色: system | session | sub_agent | background
 
 // Request:
 {
-  "deepseek": {"system": 3, "sub_agent": null, "background": "我的bg-key", "session": null},
-  "gemini":  {"system": "gm-system", "sub_agent": null, "background": null, "session": null}
+  "deepseek": {"system": "我的主力key", "sub_agent": null, "background": "ds-bg", "session": null},
+  "gemini":  {"system": "gem-paid", "sub_agent": null, "background": null, "session": null}
 }
 
-// Response: { "key_map": {"deepseek": {"system": 3, ...}, ...} }
+// Response: { "key_map": {"deepseek": {"system": "我的主力key", ...}, ...} }
+// 返回 alias 字符串，前端无需知晓 DB ID
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

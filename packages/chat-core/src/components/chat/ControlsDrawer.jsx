@@ -49,10 +49,8 @@ export default function ControlsDrawer({
       const systemRef = platformMap.system;
       const resolveAlias = (ref) => {
         if (!ref) return null;
-        const byId = keys.find(k => k.id === ref);
-        if (byId) return byId.alias;
-        const byAlias = keys.find(k => k.alias === ref);
-        if (byAlias) return byAlias.alias;
+        const match = keys.find(k => k.alias === ref);
+        if (match) return match.alias;
         return typeof ref === 'string' ? ref : null;
       };
 
