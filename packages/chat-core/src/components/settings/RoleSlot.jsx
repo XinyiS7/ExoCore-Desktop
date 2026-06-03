@@ -196,6 +196,11 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
           maxLength={50}
           className="w-full px-3 py-2 bg-chat-bg border border-white/10 rounded text-sm text-chat-text outline-none focus:border-chat-accent/40 transition-colors placeholder:text-chat-muted/30 font-mono"
         />
+        {aliasEmpty && (
+          <p className="text-[10px] text-red-400/70 font-mono flex items-center gap-1">
+            <AlertCircle size={10} /> Alias is required
+          </p>
+        )}
       </div>
 
       {/* Key input */}
@@ -244,13 +249,7 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
           </div>
         )}
 
-        {/* Inline validation hints */}
-        {aliasEmpty && (
-          <p className="text-[10px] text-red-400/70 font-mono flex items-center gap-1">
-            <AlertCircle size={10} /> Alias is required
-          </p>
-        )}
-        {!aliasEmpty && keyNeeded && keyValue.trim() === '' && (
+        {keyNeeded && keyValue.trim() === '' && !aliasEmpty && (
           <p className="text-[10px] text-red-400/70 font-mono flex items-center gap-1">
             <AlertCircle size={10} /> Key is required
           </p>
