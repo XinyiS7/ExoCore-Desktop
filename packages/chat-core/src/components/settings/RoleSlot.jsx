@@ -101,12 +101,19 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
 
     try {
       if (!existing) {
-        // Create new key
-        await configApi.createApiKey({
+        // Step 1: Create new key
+        const created = await configApi.createApiKey({
           alias: alias.trim(),
           platform,
           key_value: keyValue.trim(),
         });
+        // Step 2: Assign this key to its role in key_map
+        const config = await configApi.getConfig();
+        const currentMap = config.key_map || {};
+        const platformMap = { ...(currentMap[platform] || {}) };
+        platformMap[role] = created.id;
+        await configApi.updateKeyMap({ ...currentMap, [platform]: platformMap });
+        // Both succeeded
         setKeyValue('');
         setMaskedDisplay('');
         keyValueRef.current = '';
