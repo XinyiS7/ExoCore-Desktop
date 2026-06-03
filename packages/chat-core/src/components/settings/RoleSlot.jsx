@@ -107,11 +107,16 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
           platform,
           key_value: keyValue.trim(),
         });
-        // Step 2: Assign this key to its role in key_map
+        // Step 2: Assign this key to its role in key_map (all 4 roles required)
         const config = await configApi.getConfig();
         const currentMap = config.key_map || {};
-        const platformMap = { ...(currentMap[platform] || {}) };
-        platformMap[role] = created.id;
+        const prev = currentMap[platform] || {};
+        const platformMap = {
+          system:     role === 'system'     ? created.id : (prev.system ?? null),
+          session:    role === 'session'    ? created.id : (prev.session ?? null),
+          sub_agent:  role === 'sub_agent'  ? created.id : (prev.sub_agent ?? null),
+          background: role === 'background' ? created.id : (prev.background ?? null),
+        };
         await configApi.updateKeyMap({ ...currentMap, [platform]: platformMap });
         // Both succeeded
         setKeyValue('');
