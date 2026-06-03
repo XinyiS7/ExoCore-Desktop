@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Routes, Route, useNavigate, useParams, useLocation, Outlet } from 'react-router-dom';
+import { Routes, Route, useNavigate, useParams, useLocation, Outlet, Navigate } from 'react-router-dom';
 
 // Layout
 import DesktopSidebar from './components/layout/DesktopSidebar';
@@ -21,7 +21,11 @@ import ProjectList from './views/ProjectList';
 import ProjectDetail from './views/ProjectDetail';
 import UserProfile from './views/UserProfile';
 import SettingsView from './views/SettingsView';
+import KeyManagePanel from './components/settings/KeyManagePanel';
 import MemoryConsole from './views/MemoryConsole';
+
+// Icons
+import { Clock } from 'lucide-react';
 
 // Chat
 import ChatShell from './components/chat/ChatShell';
@@ -195,6 +199,22 @@ function UserRoute() {
   return <UserProfile appState={appState} setView={setView} goBack={goBack} />;
 }
 
+function KeyManageRoute() {
+  return <KeyManagePanel />;
+}
+
+function RoutinePlaceholderRoute() {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center space-y-3">
+        <Clock size={32} className="text-chat-muted/20 mx-auto" />
+        <p className="text-sm text-chat-muted/40 font-mono">Routine Manage</p>
+        <p className="text-[10px] text-chat-muted/20 font-mono uppercase tracking-widest">Coming soon</p>
+      </div>
+    </div>
+  );
+}
+
 function SettingsRoute() {
   return <SettingsView />;
 }
@@ -217,7 +237,11 @@ export default function App() {
         <Route path="project/:id" element={<ProjectDetailRoute />} />
         <Route path="memory" element={<MemoryRoute />} />
         <Route path="user" element={<UserRoute />} />
-        <Route path="settings" element={<SettingsRoute />} />
+        <Route path="settings" element={<SettingsRoute />}>
+          <Route index element={<Navigate to="keys" replace />} />
+          <Route path="keys" element={<KeyManageRoute />} />
+          <Route path="routine" element={<RoutinePlaceholderRoute />} />
+        </Route>
       </Route>
     </Routes>
   );
