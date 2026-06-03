@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { configApi } from 'exo-shared';
 import { Save, Trash2, AlertCircle, Check } from 'lucide-react';
 
@@ -28,6 +28,9 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
   );
   const [showKeyInput, setShowKeyInput] = useState(false);
 
+  // Ref to track full key value for delta parsing (avoids stale closure issues)
+  const keyValueRef = useRef('');
+
   // UI state
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -38,22 +41,58 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
   const keyEmpty = keyNeeded && keyValue.trim() === '';
   const canSave = !aliasEmpty && !keyEmpty && !saving;
 
-  // Key input masking: as user types, update display to "...last4"
+  const clearFeedback = () => setFeedback(null);
+
+  // ── Key input: show "...last4" mask while tracking full value ──
   const handleKeyChange = (e) => {
-    const val = e.target.value;
-    setKeyValue(val);
-    if (val.length >= 4) {
-      setMaskedDisplay(`...${val.slice(-4)}`);
-    } else if (val.length > 0) {
-      setMaskedDisplay(`...${val}`);
+    const newDisplay = e.target.value;
+    if (newDisplay === maskedDisplay) return;
+
+    let newKey;
+
+    if (newDisplay.startsWith('...')) {
+      // User is editing with mask prefix visible
+      const newSuffix = newDisplay.slice(3);
+
+      if (newDisplay.length > maskedDisplay.length) {
+        // Characters added (typing or paste)
+        const oldSuffix = keyValueRef.current.length >= 4
+          ? keyValueRef.current.slice(-4)
+          : keyValueRef.current;
+
+        if (newSuffix.startsWith(oldSuffix)) {
+          // Appended after visible suffix
+          newKey = keyValueRef.current + newSuffix.slice(oldSuffix.length);
+        } else {
+          // Pasted or replaced — preserve hidden prefix
+          const prefix = keyValueRef.current.length > 4
+            ? keyValueRef.current.slice(0, -4)
+            : '';
+          newKey = prefix + newSuffix;
+        }
+      } else {
+        // Characters deleted (backspace at end of visible suffix)
+        const charsRemoved = maskedDisplay.length - newDisplay.length;
+        newKey = keyValueRef.current.slice(0, -charsRemoved);
+      }
+    } else {
+      // No mask prefix — user is typing fresh or pasted full key
+      newKey = newDisplay;
+    }
+
+    keyValueRef.current = newKey;
+    setKeyValue(newKey);
+
+    if (newKey.length >= 4) {
+      setMaskedDisplay(`...${newKey.slice(-4)}`);
+    } else if (newKey.length > 0) {
+      setMaskedDisplay(`...${newKey}`);
     } else {
       setMaskedDisplay('');
     }
   };
 
-  const clearFeedback = () => setFeedback(null);
-
-  // Save handler
+  // ── Save handler ──
   const handleSave = async () => {
     clearFeedback();
     if (!canSave) return;
@@ -68,13 +107,16 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
           key_value: keyValue.trim(),
         });
         setKeyValue('');
-        setShowKeyInput(false);
+        setMaskedDisplay('');
+        keyValueRef.current = '';
         setFeedback({ type: 'success', msg: '保存成功' });
         onSaved?.();
       } else if (showKeyInput) {
         // Overwrite key value
         await configApi.overwriteApiKey(existing.id, keyValue.trim());
         setKeyValue('');
+        setMaskedDisplay(existing.last_four ? `...${existing.last_four}` : '');
+        keyValueRef.current = '';
         setShowKeyInput(false);
         setFeedback({ type: 'success', msg: 'Key 已更新' });
         onSaved?.();
@@ -92,7 +134,7 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
     }
   };
 
-  // Delete handler
+  // ── Delete handler ──
   const handleDelete = async () => {
     if (!existing) return;
     if (!window.confirm(`删除 key "${existing.alias}"？这将级联删除所有同值 key。`)) return;
@@ -102,6 +144,7 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
       await configApi.deleteApiKey(existing.id);
       setAlias('');
       setMaskedDisplay('');
+      keyValueRef.current = '';
       setFeedback({ type: 'success', msg: '删除成功' });
       onSaved?.();
     } catch (err) {
@@ -145,8 +188,10 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
         </label>
         <input
           type="text"
+          name={`alias-${role}-${platform}`}
           value={alias}
-          onChange={e => { setAlias(e.target.value); clearFeedback(); }}
+          onChange={e => setAlias(e.target.value)}
+          onBlur={clearFeedback}
           placeholder={isRequired ? '必填，例如：我的主力key' : '选填'}
           maxLength={50}
           className="w-full px-3 py-2 bg-chat-bg border border-white/10 rounded text-sm text-chat-text outline-none focus:border-chat-accent/40 transition-colors placeholder:text-chat-muted/30 font-mono"
@@ -161,9 +206,26 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
 
         {!existing || showKeyInput ? (
           <input
-            type="password"
-            value={keyValue}
+            type="text"
+            name={`key-${role}-${platform}`}
+            value={maskedDisplay}
             onChange={handleKeyChange}
+            onPaste={(e) => {
+              // On paste, capture the full pasted text directly
+              e.preventDefault();
+              const pasted = (e.clipboardData || window.clipboardData).getData('text');
+              if (!pasted) return;
+              const cleaned = pasted.replace(/\s+/g, ''); // strip whitespace
+              keyValueRef.current = cleaned;
+              setKeyValue(cleaned);
+              if (cleaned.length >= 4) {
+                setMaskedDisplay(`...${cleaned.slice(-4)}`);
+              } else if (cleaned.length > 0) {
+                setMaskedDisplay(`...${cleaned}`);
+              } else {
+                setMaskedDisplay('');
+              }
+            }}
             placeholder="粘贴 API Key..."
             autoComplete="off"
             className="w-full px-3 py-2 bg-chat-bg border border-white/10 rounded text-sm text-chat-text outline-none focus:border-chat-accent/40 transition-colors placeholder:text-chat-muted/30 font-mono"
@@ -174,7 +236,7 @@ export default function RoleSlot({ role, platform, existing, onSaved }) {
               {maskedDisplay || '—'}
             </code>
             <button
-              onClick={() => { setShowKeyInput(true); setKeyValue(''); setMaskedDisplay(''); clearFeedback(); }}
+              onClick={() => { setShowKeyInput(true); setKeyValue(''); setMaskedDisplay(''); keyValueRef.current = ''; clearFeedback(); }}
               className="text-[10px] font-mono uppercase tracking-wider text-chat-accent/60 hover:text-chat-accent transition-colors whitespace-nowrap px-2 py-1"
             >
               覆盖
