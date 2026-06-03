@@ -1,6 +1,20 @@
 node_modules/
 dist/
-target/          # root Rust build (if any)
-**/target/       # any nested target/ dirs (Tauri, etc.)
+
+# Rust build output (Tauri sidecar)
+**/target/
+
+# IDE
+.idea/
+
+# Tool runtime
+.superpowers/
+
+# Windows junk
+*.lnk
+
+# Logs
 *.log
+
+# macOS
 .DS_Store
