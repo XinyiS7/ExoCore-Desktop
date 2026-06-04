@@ -16,6 +16,8 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@fontsource/lxgw-wenkai": "^5.2.5",
+    "@fontsource/maple-mono": "^5.2.6",
     "concurrently": "^10.0.0"
   },
   "devDependencies": {
