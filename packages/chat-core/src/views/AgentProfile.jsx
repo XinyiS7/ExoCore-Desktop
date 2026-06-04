@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, MessageSquare, Plus, Pencil } from 'lucide-react';
-import { getAgentAvatarUrl } from '../utils/avatar';
-import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from 'exo-shared';
+import { baseUrl, getCsrfToken, AVAILABLE_MODELS, useProfile } from 'exo-shared';
+import { setAgentAvatar } from 'exo-shared/profile';
 import EditPresetModal from '../components/modals/EditPresetModal';
 import AvatarCropModal from '../components/modals/AvatarCropModal';
 import SessionActionsMenu from '../components/chat/SessionActionsMenu';
@@ -10,7 +10,9 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
   const { presets, setActiveSessionId, openNewSession, refreshKey, refreshPresets } = appState;
   const preset = presets.find(p => p.id === viewParams.agentId);
 
-  const [avatarUrl, setAvatarUrl] = useState(() => getAgentAvatarUrl(viewParams.agentId, ''));
+  const { agentAvatars, refresh } = useProfile();
+  const avatarUrl = agentAvatars[viewParams.agentId] ||
+    `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(preset?.name || viewParams.agentId)}`;
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const [editingDesc, setEditingDesc] = useState(false);
@@ -27,12 +29,10 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
   const descInputRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Sync avatar with preset name (for dicebear fallback)
+  // Avatar updates via shared useProfile — refresh when preset changes
   useEffect(() => {
-    if (preset) {
-      setAvatarUrl(getAgentAvatarUrl(preset.id, preset.name));
-    }
-  }, [preset?.id, preset?.name]);
+    if (preset) refresh();
+  }, [preset?.id]);
 
   // Sync modelDraft when preset loads
   useEffect(() => {
@@ -164,8 +164,8 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
   };
 
   const handleCropConfirm = (dataUrl) => {
-    localStorage.setItem(`exo_agent_avatar_${preset.id}`, dataUrl);
-    setAvatarUrl(dataUrl);
+    setAgentAvatar(preset.id, dataUrl);
+    refresh();
     setCropFile(null);
   };
 
