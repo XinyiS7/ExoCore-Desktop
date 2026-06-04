@@ -4,9 +4,9 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer
 } from 'recharts';
-import { getUserAvatarUrl } from '../utils/avatar';
 import AvatarCropModal from '../components/modals/AvatarCropModal';
-import { telemetryApi, MODEL_REGISTRY } from 'exo-shared';
+import { telemetryApi, MODEL_REGISTRY, useProfile } from 'exo-shared';
+import { setUserAvatar } from 'exo-shared/profile';
 
 // ─── Chart helpers ──────────────────────────────────────────────────────────────
 const MODEL_COLOR_MAP = Object.fromEntries(MODEL_REGISTRY.map(m => [m.id, m.color]));
@@ -107,9 +107,8 @@ const ChartBlock = ({ title, data, models, valueKey }) => {
 
 // ─── Main component ─────────────────────────────────────────────────────────────
 export default function UserProfile({ appState, setView, goBack }) {
-  // Identity state
-  const [userAvatarUrl, setUserAvatarUrl] = useState(() => getUserAvatarUrl());
-  const [userNick, setUserNick] = useState(() => localStorage.getItem('exo_user_nick') || 'Exo User');
+  // Identity state — unified via shared useProfile hook
+  const { userAvatar: userAvatarUrl, userNick, updateNick, refresh } = useProfile();
   const [editingNick, setEditingNick] = useState(false);
   const [nickDraft, setNickDraft] = useState('');
   const [cropFile, setCropFile] = useState(null);
@@ -128,19 +127,7 @@ export default function UserProfile({ appState, setView, goBack }) {
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [statsError, setStatsError] = useState(false);
 
-  // Listen for external nick/avatar updates
-  useEffect(() => {
-    const handler = () => {
-      setUserAvatarUrl(getUserAvatarUrl());
-      setUserNick(localStorage.getItem('exo_user_nick') || 'Exo User');
-    };
-    window.addEventListener('user-nick-updated', handler);
-    window.addEventListener('user-avatar-updated', handler);
-    return () => {
-      window.removeEventListener('user-nick-updated', handler);
-      window.removeEventListener('user-avatar-updated', handler);
-    };
-  }, []);
+  // Cross-tab sync handled by useProfile hook's storage event listener
 
   // Fetch stats
   const fetchStats = useCallback(async () => {
@@ -175,9 +162,7 @@ export default function UserProfile({ appState, setView, goBack }) {
   const saveNick = () => {
     const v = nickDraft.trim();
     if (v) {
-      localStorage.setItem('exo_user_nick', v);
-      setUserNick(v);
-      window.dispatchEvent(new Event('user-nick-updated'));
+      updateNick(v);
     }
     setEditingNick(false);
   };
@@ -406,10 +391,9 @@ export default function UserProfile({ appState, setView, goBack }) {
         <AvatarCropModal
           file={cropFile}
           onConfirm={(dataUrl) => {
-            localStorage.setItem('exo_user_avatar_url', dataUrl);
-            setUserAvatarUrl(dataUrl);
+            setUserAvatar(dataUrl);
+            refresh();
             setCropFile(null);
-            window.dispatchEvent(new Event('user-avatar-updated'));
           }}
           onCancel={() => setCropFile(null)}
         />
