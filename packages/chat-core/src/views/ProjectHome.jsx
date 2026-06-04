@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, MessageSquare, Hash } from 'lucide-react';
 import { conversationsApi, getConvProjectId } from 'exo-shared';
+import SessionActionsMenu from '../components/chat/SessionActionsMenu';
 
 export default function ProjectHome({ appState, setView }) {
   const { openNewSession, setActiveSessionId } = appState;
@@ -20,6 +21,17 @@ export default function ProjectHome({ appState, setView }) {
   const handleSessionClick = (session) => {
     setActiveSessionId(session.id);
     setView('chat', { from: 'projects', sessionId: session.id, sessionTitle: session.name });
+  };
+
+  const handleSessionRename = (sessionId, newName) => {
+    setUnassignedSessions(prev => prev.map(c => c.id === sessionId ? { ...c, name: newName } : c));
+  };
+
+  const handleSessionDelete = (sessionId) => {
+    setUnassignedSessions(prev => prev.filter(c => c.id !== sessionId));
+    if (appState.activeSessionId === sessionId) {
+      appState.setActiveSessionId(null);
+    }
   };
 
   return (
@@ -75,7 +87,12 @@ export default function ProjectHome({ appState, setView }) {
                     )}
                   </p>
                 </div>
-                <span className="text-exo-muted/30 text-xs group-hover:text-exo-accent/60 transition-colors">&rarr;</span>
+                <SessionActionsMenu
+                  session={s}
+                  onUpdated={handleSessionRename}
+                  onDeleted={handleSessionDelete}
+                  openDestructor={appState.openDestructor}
+                />
               </button>
             ))}
           </div>

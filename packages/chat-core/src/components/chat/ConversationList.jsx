@@ -6,7 +6,6 @@ import {
   Search, MessageSquare
 } from 'lucide-react';
 import { conversationsApi, projectsApi, getConvProjectId } from 'exo-shared';
-import useSessionContextMenu from '../../hooks/useSessionContextMenu';
 
 const ConversationList = ({
   activeSessionId,
@@ -33,14 +32,6 @@ const ConversationList = ({
   const [expandedProjects, setExpandedProjects] = useState(new Set());
   const [showAllProjects, setShowAllProjects] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-
-  const { contextMenu, containerRef, menuActions, SessionContextMenuOverlay } = useSessionContextMenu({
-    sessions: conversations,
-    setSessions: setConversations,
-    activeSessionId,
-    setActiveSessionId,
-    openDestructor,
-  });
 
   const handleRenameProject = (proj) => {
     const newName = prompt('Rename project:', proj.name);
@@ -149,7 +140,7 @@ const ConversationList = ({
         </div>
       </div>
 
-      <div ref={containerRef} className={`flex-1 flex flex-col ${isMainView ? 'max-w-4xl mx-auto w-full px-8' : 'px-6'}`}>
+      <div className={`flex-1 flex flex-col ${isMainView ? 'max-w-4xl mx-auto w-full px-8' : 'px-6'}`}>
           
           {mode === 'chat' && (
             <>
@@ -346,7 +337,6 @@ const ConversationList = ({
           )}
       </div>
 
-      <SessionContextMenuOverlay contextMenu={contextMenu} actions={menuActions} />
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Plus, MessageSquare, FileText, Upload, Trash2, Hash, FolderOpen, ChevronUp } from 'lucide-react';
 import { conversationsApi, projectsApi, getConvProjectId } from 'exo-shared';
 import WorkDirModal from '../components/project/WorkDirModal';
-import useSessionContextMenu from '../hooks/useSessionContextMenu';
+import SessionActionsMenu from '../components/chat/SessionActionsMenu';
 
 export default function ProjectDetail({ appState, setView, goBack, viewParams }) {
   const { projects, openNewSession, openDestructor, setActiveSessionId } = appState;
@@ -17,14 +17,6 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
   const [savingPrompt, setSavingPrompt] = useState(false);
   const [showWorkDirModal, setShowWorkDirModal] = useState(false);
   const fileInputRef = useRef(null);
-
-  const { contextMenu, containerRef: sessionsContainerRef, menuActions, SessionContextMenuOverlay } = useSessionContextMenu({
-    sessions,
-    setSessions,
-    activeSessionId: appState.activeSessionId,
-    setActiveSessionId: appState.setActiveSessionId,
-    openDestructor,
-  });
 
   // Fetch sessions belonging to this project
   useEffect(() => {
@@ -84,6 +76,17 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
   const handleSessionClick = (session) => {
     setActiveSessionId(session.id);
     setView('chat', { from: 'project', sessionId: session.id, sessionTitle: session.name, projectId, projectName: project?.name });
+  };
+
+  const handleSessionRename = (sessionId, newName) => {
+    setSessions(prev => prev.map(c => c.id === sessionId ? { ...c, name: newName } : c));
+  };
+
+  const handleSessionDelete = (sessionId) => {
+    setSessions(prev => prev.filter(c => c.id !== sessionId));
+    if (appState.activeSessionId === sessionId) {
+      appState.setActiveSessionId(null);
+    }
   };
 
   const getFileIcon = (mimeType) => {
@@ -199,7 +202,7 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
       {/* Content: Sessions (left) + Files (right) */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Sessions List */}
-        <div ref={sessionsContainerRef} className="flex-1 md:w-1/2 md:flex-none overflow-y-auto scrollbar-hide border-b md:border-b-0 md:border-r border-exo-mist-8 p-4 md:p-6">
+        <div className="flex-1 md:w-1/2 md:flex-none overflow-y-auto scrollbar-hide border-b md:border-b-0 md:border-r border-exo-mist-8 p-4 md:p-6">
           <div className="flex items-center justify-between mb-3">
             <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-exo-muted">Sessions</p>
             {sessions.length > 0 && (
@@ -239,7 +242,12 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
                       )}
                     </p>
                   </div>
-                  <span className="text-exo-muted/30 text-xs group-hover:text-exo-accent/60 transition-colors">&rarr;</span>
+                  <SessionActionsMenu
+                    session={s}
+                    onUpdated={handleSessionRename}
+                    onDeleted={handleSessionDelete}
+                    openDestructor={openDestructor}
+                  />
                 </button>
               ))}
             </div>
@@ -314,7 +322,6 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
         onClose={() => setShowWorkDirModal(false)}
       />
 
-      <SessionContextMenuOverlay contextMenu={contextMenu} actions={menuActions} />
     </div>
   );
 }

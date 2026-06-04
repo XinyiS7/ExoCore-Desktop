@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrainCircuit, FolderKanban, Search, ArrowRight, MessageSquare } from 'lucide-react';
 import CalendarWidget from '../components/CalendarWidget';
 import { conversationsApi } from 'exo-shared';
-import useSessionContextMenu from '../hooks/useSessionContextMenu';
 
 const WELCOME_SENTENCES = [
   'Neural link established. All systems nominal.',
@@ -28,23 +27,6 @@ export default function Dashboard({ appState, setView }) {
   const [showResults, setShowResults] = useState(false);
   const [allConversations, setAllConversations] = useState([]);
   const searchRef = useRef(null);
-
-  // Combined sessions for context menu lookup (updates both state arrays on change)
-  const allSessions = useMemo(() => [...recentSessions, ...allConversations], [recentSessions, allConversations]);
-  const setAllSessions = (updater) => {
-    if (typeof updater === 'function') {
-      setRecentSessions(prev => updater(prev));
-      setAllConversations(prev => updater(prev));
-    }
-  };
-
-  const { contextMenu, containerRef, menuActions, SessionContextMenuOverlay } = useSessionContextMenu({
-    sessions: allSessions,
-    setSessions: setAllSessions,
-    activeSessionId: appState.activeSessionId,
-    setActiveSessionId: appState.setActiveSessionId,
-    openDestructor: appState.openDestructor,
-  });
 
   useEffect(() => {
     conversationsApi.listConversations()
@@ -92,7 +74,7 @@ export default function Dashboard({ appState, setView }) {
   }, []);
 
   return (
-    <div ref={containerRef} className="flex-1 h-full overflow-y-auto bg-exo-bg scrollbar-hide">
+    <div className="flex-1 h-full overflow-y-auto bg-exo-bg scrollbar-hide">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-72 bg-exo-accent/5 blur-[120px] pointer-events-none" />
 
       <div className="max-w-5xl mx-auto px-6 md:px-12 py-12 md:py-20 flex flex-col gap-14 relative z-10">
@@ -213,7 +195,6 @@ export default function Dashboard({ appState, setView }) {
         </div>
       </div>
 
-      <SessionContextMenuOverlay contextMenu={contextMenu} actions={menuActions} />
     </div>
   );
 }

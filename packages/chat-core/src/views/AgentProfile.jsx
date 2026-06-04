@@ -4,7 +4,7 @@ import { getAgentAvatarUrl } from '../utils/avatar';
 import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from 'exo-shared';
 import EditPresetModal from '../components/modals/EditPresetModal';
 import AvatarCropModal from '../components/modals/AvatarCropModal';
-import useSessionContextMenu from '../hooks/useSessionContextMenu';
+import SessionActionsMenu from '../components/chat/SessionActionsMenu';
 
 export default function AgentProfile({ appState, setView, goBack, viewParams }) {
   const { presets, setActiveSessionId, openNewSession, refreshKey, refreshPresets } = appState;
@@ -26,14 +26,6 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
   const nameInputRef = useRef(null);
   const descInputRef = useRef(null);
   const fileInputRef = useRef(null);
-
-  const { contextMenu, containerRef: sessionsContainerRef, menuActions, SessionContextMenuOverlay } = useSessionContextMenu({
-    sessions,
-    setSessions,
-    activeSessionId: appState.activeSessionId,
-    setActiveSessionId: appState.setActiveSessionId,
-    openDestructor: appState.openDestructor,
-  });
 
   // Sync avatar with preset name (for dicebear fallback)
   useEffect(() => {
@@ -180,6 +172,17 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
   const handleSessionClick = (session) => {
     setActiveSessionId(session.id);
     setView('chat', { from: 'agent', sessionId: session.id, agentId: preset.id, agentName: preset.name, sessionTitle: session.name });
+  };
+
+  const handleSessionRename = (sessionId, newName) => {
+    setSessions(prev => prev.map(c => c.id === sessionId ? { ...c, name: newName } : c));
+  };
+
+  const handleSessionDelete = (sessionId) => {
+    setSessions(prev => prev.filter(c => c.id !== sessionId));
+    if (appState.activeSessionId === sessionId) {
+      appState.setActiveSessionId(null);
+    }
   };
 
   const formatLastActive = (dateStr) => {
@@ -357,7 +360,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
         </div>
 
         {/* Sessions List */}
-        <div ref={sessionsContainerRef} className="px-4 md:px-12 py-6">
+        <div className="px-4 md:px-12 py-6">
           <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-exo-muted mb-4">Sessions</h3>
           {sessionsLoading ? (
             <p className="text-xs text-exo-muted">Loading sessions...</p>
@@ -382,6 +385,12 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                       {s.message_count != null && ` · ${s.message_count} msgs`}
                     </p>
                   </div>
+                  <SessionActionsMenu
+                    session={s}
+                    onUpdated={handleSessionRename}
+                    onDeleted={handleSessionDelete}
+                    openDestructor={appState.openDestructor}
+                  />
                 </button>
               ))}
             </div>
@@ -407,7 +416,6 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
         />
       )}
 
-      <SessionContextMenuOverlay contextMenu={contextMenu} actions={menuActions} />
     </div>
   );
 }
