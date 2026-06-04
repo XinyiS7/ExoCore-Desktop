@@ -2,6 +2,10 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-body)'],
+        mono: ['var(--font-code)'],
+      },
       colors: {
         cncl: {
           bg:     '#0d1117',

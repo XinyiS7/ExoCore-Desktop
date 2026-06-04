@@ -3,8 +3,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'Segoe UI', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-body)'],
         serif: ['Merriweather', 'Georgia', 'serif'],
+        mono: ['var(--font-code)'],
       },
       colors: {
         chron: {

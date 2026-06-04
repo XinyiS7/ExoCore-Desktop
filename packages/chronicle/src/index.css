@@ -1,3 +1,4 @@
+@import 'exo-shared/styles/fonts.css';
 @import 'exo-shared/styles/base.css';
 @import 'exo-shared/styles/transitions.css';
 
@@ -9,7 +10,7 @@
   body {
     background-color: #1a1a14;
     color: #d4c5a9;
-    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    font-family: var(--font-body);
   }
 
   .paper-card {
