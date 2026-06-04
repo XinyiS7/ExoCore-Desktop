@@ -1,3 +1,4 @@
+@import 'exo-shared/styles/fonts.css';
 @import 'exo-shared/styles/base.css';
 @import 'exo-shared/styles/transitions.css';
 
@@ -9,7 +10,7 @@
   body {
     background-color: #0a0a0f;
     color: #e2e8f0;
-    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    font-family: var(--font-body);
   }
 
   .glass-panel {
