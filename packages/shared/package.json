@@ -13,7 +13,12 @@
     "./hooks/useApi": "./src/hooks/useApi.js",
     "./hooks/useCsrf": "./src/hooks/useCsrf.js",
     "./styles/base.css": "./src/styles/base.css",
-    "./styles/transitions.css": "./src/styles/transitions.css"
+    "./styles/transitions.css": "./src/styles/transitions.css",
+    "./profile": "./src/profile.js",
+    "./hooks/useProfile": "./src/hooks/useProfile.js",
+    "./hooks/useFont": "./src/hooks/useFont.js",
+    "./utils/avatar": "./src/utils/avatar.js",
+    "./styles/fonts.css": "./src/styles/fonts.css"
   },
   "peerDependencies": {
     "react": "^19.0.0"

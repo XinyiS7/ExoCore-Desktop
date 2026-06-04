@@ -23,3 +23,13 @@ export * as tasksApi         from './endpoints/tasks';
 export * as telemetryApi     from './endpoints/telemetry';
 export * as systemApi        from './endpoints/system';
 export * as pushApi          from './endpoints/push';
+
+// Profile — unified user identity (avatar, nickname, agent avatars)
+export { getUserAvatar, setUserAvatar, getUserNick, setUserNick, getAgentAvatar, setAgentAvatar, getAllAgentAvatars } from './profile';
+
+// Hooks — useProfile and useFont
+export { useProfile } from './hooks/useProfile';
+export { useFont } from './hooks/useFont';
+
+// Avatar utility
+export { resizeAndStoreAvatar } from './utils/avatar';
