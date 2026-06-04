@@ -1,0 +1,25 @@
+/* ── LXGW WenKai (霞鹜文楷) — nav/UI font, from fontsource ── */
+@import '@fontsource/lxgw-wenkai/400.css';
+@import '@fontsource/lxgw-wenkai/700.css';
+
+/* ── Maple Mono — code blocks, from fontsource ── */
+@import '@fontsource/maple-mono/400.css';
+@import '@fontsource/maple-mono/500.css';
+@import '@fontsource/maple-mono/700.css';
+
+/* ── Sarasa Gothic Mono — body/default, self-hosted WOFF2 ── */
+@font-face {
+  font-family: 'Sarasa Gothic Mono';
+  src: url('../assets/fonts/sarasa-gothic-mono-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sarasa Gothic Mono';
+  src: url('../assets/fonts/sarasa-gothic-mono-bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
