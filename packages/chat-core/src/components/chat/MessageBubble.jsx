@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { FileText, Copy, Bookmark, Check, X, ZoomIn, Edit2, RotateCw, GitFork } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -15,10 +15,133 @@ function extractText(node) {
   return '';
 }
 
+// ── Mermaid lazy-load ────────────────────────────────────────────────
+let mermaidLib = null;
+async function ensureMermaid() {
+  if (!mermaidLib) {
+    const mod = await import('mermaid');
+    mermaidLib = mod.default;
+    mermaidLib.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'strict' });
+  }
+  return mermaidLib;
+}
+
+// ── SVG sanitizer ────────────────────────────────────────────────────
+const SVG_ALLOW_TAGS = new Set([
+  'svg', 'g', 'defs', 'symbol', 'use', 'marker', 'pattern',
+  'linearGradient', 'radialGradient', 'stop', 'filter',
+  'feGaussianBlur', 'feOffset', 'feMerge', 'feMergeNode',
+  'feColorMatrix', 'feBlend', 'feFlood', 'feComposite', 'feImage',
+  'clipPath', 'mask', 'image',
+  'path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon',
+  'text', 'tspan', 'textPath',
+  'title', 'desc', 'metadata', 'style',
+  'animate', 'animateTransform', 'animateMotion', 'set',
+  'foreignObject',
+]);
+
+function sanitizeSvg(svgString) {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgString, 'image/svg+xml');
+    const svgEl = doc.documentElement;
+    if (!svgEl || svgEl.tagName?.toLowerCase() !== 'svg') return null;
+
+    function clean(el) {
+      if (!SVG_ALLOW_TAGS.has(el.tagName?.toLowerCase())) {
+        el.remove();
+        return;
+      }
+      const toRemove = [];
+      for (const attr of el.attributes) {
+        const name = attr.name.toLowerCase();
+        if (name.startsWith('on')) toRemove.push(name);
+        if (name === 'href' && typeof attr.value === 'string' && attr.value.trim().toLowerCase().startsWith('javascript:')) toRemove.push(name);
+      }
+      toRemove.forEach(a => el.removeAttribute(a));
+      Array.from(el.children).forEach(clean);
+    }
+
+    clean(svgEl);
+    svgEl.setAttribute('width', '100%');
+    if (!svgEl.hasAttribute('height') || svgEl.getAttribute('height') === '100%') {
+      svgEl.setAttribute('height', 'auto');
+    }
+    return svgEl.outerHTML;
+  } catch {
+    return null;
+  }
+}
+
+// ── Visual preview components ────────────────────────────────────────
+
+function SvgPreview({ text }) {
+  // Quick pre-check: if it doesn't look like SVG at all, bail early
+  if (!/<svg\b/i.test(text)) {
+    return (
+      <div className="p-6 text-center text-[11px] font-mono text-exo-muted/50 bg-white/[0.02] border border-exo-mist-8 rounded-b-[4px]">
+        No SVG content detected — switch to Code tab to view source
+      </div>
+    );
+  }
+  const sanitized = sanitizeSvg(text);
+  if (!sanitized) {
+    return (
+      <div className="p-6 text-center text-[11px] font-mono text-red-400/70 bg-red-500/5 border border-red-500/10 rounded-b-[4px]">
+        Invalid SVG — cannot render preview
+      </div>
+    );
+  }
+  return (
+    <div
+      className="flex items-center justify-center p-4 bg-white/95 rounded-b-[4px] [&_svg]:max-h-[60vh]"
+      dangerouslySetInnerHTML={{ __html: sanitized }}
+    />
+  );
+}
+
+function MermaidPreview({ text }) {
+  const [svg, setSvg] = useState(null);
+  const [error, setError] = useState(null);
+  const idRef = useRef(`m-${Math.random().toString(36).slice(2, 8)}`);
+
+  useEffect(() => {
+    let cancelled = false;
+    ensureMermaid()
+      .then(m => m.render(idRef.current, text))
+      .then(result => { if (!cancelled) setSvg(result.svg); })
+      .catch(err => { if (!cancelled) setError(err.message || 'Mermaid render failed'); });
+    return () => { cancelled = true; };
+  }, [text]);
+
+  if (error) {
+    return (
+      <div className="p-4 text-center text-[11px] font-mono text-amber-400/70 bg-amber-500/5 border border-amber-500/10 rounded-b-[4px]">
+        Mermaid: {error}
+      </div>
+    );
+  }
+  if (!svg) {
+    return (
+      <div className="flex items-center justify-center p-8 bg-white/[0.03] rounded-b-[4px]">
+        <div className="w-4 h-4 border-2 border-exo-accent/40 border-t-exo-accent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  return (
+    <div
+      className="flex items-center justify-center p-4 bg-white/95 rounded-b-[4px] [&_svg]:max-h-[60vh]"
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  );
+}
+
 function CodeBlock({ children, className }) {
   const [copied, setCopied] = useState(false);
   const lang = (className || '').split(' ').find(c => c.startsWith('language-'))?.replace('language-', '') || 'code';
+  const [tab, setTab] = useState(lang === 'xml' ? 'code' : 'preview');
   const text = extractText(children);
+  const isVisual = lang === 'svg' || lang === 'xml' || lang === 'mermaid';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(String(text)).then(() => {
@@ -27,10 +150,29 @@ function CodeBlock({ children, className }) {
     }).catch(() => {});
   };
 
+  const tabBtn = (t, label) => (
+    <button
+      onClick={() => setTab(t)}
+      className={`text-[10px] font-mono uppercase tracking-[0.2em] px-2 py-0.5 rounded-[2px] transition-all ${
+        tab === t ? 'text-exo-accent bg-exo-accent/10' : 'text-exo-muted/40 hover:text-exo-muted/70'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <div className="relative group/code my-4">
       <div className="flex items-center justify-between px-3 py-1.5 bg-exo-pure border border-exo-mist-10 border-b-0 rounded-t-[4px]">
-        <span className="text-[10px] text-exo-muted font-mono uppercase tracking-[0.2em]">{lang}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-exo-muted font-mono uppercase tracking-[0.2em]">{lang}</span>
+          {isVisual && (
+            <div className="flex gap-0.5">
+              {tabBtn('preview', 'Preview')}
+              {tabBtn('code', 'Code')}
+            </div>
+          )}
+        </div>
         <button
           onClick={handleCopy}
           className="flex items-center gap-1.5 px-2 py-0.5 rounded-[2px] text-[10px] text-exo-muted hover:text-exo-accent hover:bg-exo-accent/5 transition-all"
@@ -39,9 +181,13 @@ function CodeBlock({ children, className }) {
           <span className="uppercase tracking-widest">{copied ? 'COPIED' : 'COPY'}</span>
         </button>
       </div>
-      <pre className={`${className ?? ''} !mt-0 !rounded-t-none !rounded-b-[4px] !border-exo-mist-10 !bg-exo-bg`}>
-        {children}
-      </pre>
+      {isVisual && tab === 'preview' ? (
+        lang === 'svg' || lang === 'xml' ? <SvgPreview text={text} /> : <MermaidPreview text={text} />
+      ) : (
+        <pre className={`${className ?? ''} !mt-0 !rounded-t-none !rounded-b-[4px] !border-exo-mist-10 !bg-exo-bg`}>
+          {children}
+        </pre>
+      )}
     </div>
   );
 }
