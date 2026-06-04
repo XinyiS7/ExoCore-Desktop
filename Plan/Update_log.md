@@ -2,6 +2,90 @@
 
 ---
 
+## 2026-06-04 — 共享 Profile + 字体设置：三模块统一身份 & 字体系统
+
+**署名：** Claude / Alicia — 2026-06-04
+
+### 完成项
+
+#### exo-shared 共享层（`packages/shared/src/`）
+- **`profile.js`** — localStorage 读写工具函数：`getUserAvatar` / `setUserAvatar` / `getUserNick` / `setUserNick` / `getAgentAvatar` / `setAgentAvatar` / `getAllAgentAvatars`，支持 DiceBear 在线头像作为 fallback，dispatch StorageEvent 跨标签同步
+- **`hooks/useProfile.js`** — 统一用户画像 React hook：`{ userAvatar, userNick, agentAvatars, updateAvatar, updateNick, updateAgentAvatar, refresh }`，监听 `storage` 事件实现跨标签实时同步
+- **`hooks/useFont.js`** — 字体偏好 hook：`{ fontPreference, setFont, availableFonts }`，注入 `--font-body` / `--font-nav` / `--font-code` 三个 CSS 自定义属性到 `:root`
+- **`utils/avatar.js`** — 图片缩放工具 `resizeAndStoreAvatar(file, key, callback)`：Canvas 缩放至 200×200 → JPEG dataURL → localStorage
+- **`styles/fonts.css`** — @font-face 声明三种字体：Sarasa Gothic Mono（自托管 WOFF2，~8MB/weight）、LXGW WenKai 霞鹜文楷（fontsource CDN）、Maple Mono（fontsource CDN，已有依赖）
+
+#### 字体方案
+| 角色 | 字体 | 用途 |
+|------|------|------|
+| `--font-body` | Sarasa Gothic Mono（默认）/ 霞鹜文楷 / Maple Mono · 三选一 | 正文、卡片、聊天消息 |
+| `--font-nav` | 霞鹜文楷 LXGW WenKai（固定）| 导航栏、按钮、标签、设置面板 |
+| `--font-code` | Maple Mono（固定）| Markdown 代码块、终端输出 |
+
+- 字体偏好存储于 `localStorage: exo_font_preference`，默认 `"sarasa"`
+- `useFont()` 在组件挂载时和切换时注入 CSS 变量，跨标签同步
+- 三个模块各自 `tailwind.config.js` 的 `fontFamily.sans` 改为 `var(--font-body)`，`fontFamily.mono` 改为 `var(--font-code)`
+
+#### chat-core Settings → Appearance（`/settings/appearance`）
+- **`AppearancePanel.jsx`** — 三选一字体选择器（Radio 风格按钮 + 预览卡片），调用 `useFont()` hook
+- **`SettingsView.jsx`** — 新增 Appearance 导航项（Palette 图标），路由到 `/settings/appearance`
+- 字体预览卡片实时展示三种字体栈的渲染效果（正文/导航/代码）
+
+#### UserProfile / AgentProfile 重构
+- **`UserProfile.jsx`** — 改用 `useProfile()` hook 管理头像和昵称状态，移除直接的 `localStorage` 读写和自定义事件派发；头像裁剪回调调用 `setUserAvatar()` + `refresh()`
+- **`AgentProfile.jsx`** — 改用 `useProfile()` hook 读取 `agentAvatars`，头像裁剪回调调用 `setAgentAvatar()` + `refresh()`；移除旧的 `getAgentAvatarUrl` 依赖
+- **`chat-core/src/utils/avatar.js`** — 重导出到 `exo-shared`，保持向后兼容的 import 路径
+
+#### chronicle
+- **`App.jsx`** — 新增桌面端顶部栏（`hidden md:flex`）：左侧 Chronicle 标识，右侧用户昵称 + 头像；调用 `useProfile()` + `useFont()`
+- **`index.css`** — 导入 `exo-shared/styles/fonts.css`，body 字体改为 `var(--font-body)`
+- **`tailwind.config.js`** — `fontFamily` 改为 CSS 变量驱动
+
+#### council
+- **`App.jsx`** — 右上角固定显示用户昵称 + 头像（`opacity-60` 低调展示）；调用 `useProfile()` + `useFont()`
+- **`index.css`** — 导入 fonts.css + body 使用 `var(--font-body)`
+- **`tailwind.config.js`** — 新增 `fontFamily` CSS 变量配置
+
+### 关键设计决策
+- **编辑分散，数据统一** — 用户头像/昵称在 UserProfile 页面编辑，Agent 头像在 AgentProfile 编辑，字体在 Settings → Appearance 编辑；所有数据通过 `exo-shared` 的 `useProfile()` / `useFont()` hook 统一读写，三个模块共用一个 localStorage 数据源
+- **字体分层固定，仅 body 可选** — 导航字体（霞鹜文楷）和代码字体（Maple Mono）由系统固定，用户仅在 Settings 中选择正文字体；这避免了过度配置，同时保证导航和代码块的一致可读性
+- **Sarasa Gothic Mono 自托管** — 无 fontsource 包，从 `@fontpkg/sarasa-mono-sc` npm 下载 TTF → fonttools 转换为 WOFF2（regular 8.3MB + bold 8.6MB），放在 `packages/shared/src/assets/fonts/`，Vite 生产构建时自动优化
+- **localStorage only，暂无后端** — 本阶段不引入 Django 模型，profile 和 font 数据纯前端存储；后续可通过 `exo-shared` hook 封装层透明切换到后端 API
+
+### 文件清单
+| 文件 | 操作 | 说明 |
+|------|------|------|
+| `packages/shared/src/profile.js` | 新建 | localStorage 读写工具 |
+| `packages/shared/src/hooks/useProfile.js` | 新建 | 统一身份 hook |
+| `packages/shared/src/hooks/useFont.js` | 新建 | 字体偏好 hook + CSS 变量 |
+| `packages/shared/src/utils/avatar.js` | 新建 | 图片缩放工具 |
+| `packages/shared/src/styles/fonts.css` | 新建 | @font-face 声明 |
+| `packages/shared/src/assets/fonts/` | 新建 | Sarasa WOFF2 字体文件 |
+| `packages/shared/src/index.js` | 编辑 | 导出新模块 |
+| `packages/shared/package.json` | 编辑 | exports 映射 |
+| `packages/chat-core/src/components/settings/AppearancePanel.jsx` | 新建 | 字体选择器 UI |
+| `packages/chat-core/src/views/SettingsView.jsx` | 编辑 | 新增 Appearance 导航 |
+| `packages/chat-core/src/views/UserProfile.jsx` | 编辑 | 改用 useProfile |
+| `packages/chat-core/src/views/AgentProfile.jsx` | 编辑 | 改用 useProfile |
+| `packages/chat-core/src/utils/avatar.js` | 编辑 | 重导出到 shared |
+| `packages/chat-core/src/App.jsx` | 编辑 | 接入 useFont |
+| `packages/chat-core/src/index.css` | 编辑 | CSS 字体变量 |
+| `packages/chat-core/tailwind.config.js` | 编辑 | fontFamily 改 CSS 变量 |
+| `packages/chronicle/src/App.jsx` | 编辑 | 顶部栏 + useProfile + useFont |
+| `packages/chronicle/src/index.css` | 编辑 | CSS 字体变量 |
+| `packages/chronicle/tailwind.config.js` | 编辑 | fontFamily 改 CSS 变量 |
+| `packages/council/src/App.jsx` | 编辑 | 角落身份 + useFont |
+| `packages/council/src/index.css` | 编辑 | CSS 字体变量 |
+| `packages/council/tailwind.config.js` | 编辑 | 新增 fontFamily |
+| `package.json` | 编辑 | 新增 `@fontsource/lxgw-wenkai` 依赖 |
+
+### 待办
+- [ ] 后端 Django UserProfile 模型 + API（头像/昵称持久化、跨设备同步）
+- [ ] Appearance 面板扩展（主题色/暗黑模式切换等）
+- [ ] 自定义字体上传（用户自己的 WOFF2）
+
+---
+
 ## 2026-06-03 — Web Push 通知：Service Worker + 前端订阅 + 后端 API
 
 **署名：** Claude (Frontend) / Claude (Backend) / Alicia — 2026-06-03
