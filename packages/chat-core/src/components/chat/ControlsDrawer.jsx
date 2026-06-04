@@ -50,17 +50,25 @@ export default function ControlsDrawer({
         return;
       }
 
-      // Resolve session default (may be id or alias)
-      const sessionRef = platformMap.session;
-      const systemRef = platformMap.system;
-      const resolveAlias = (ref) => {
-        if (!ref) return null;
-        const match = keys.find(k => k.alias === ref);
-        if (match) return match.alias;
-        return typeof ref === 'string' ? ref : null;
+      // New key_map format (ReactSheet §5.4): each role = {keys: [...], default: alias}
+      // Also handles legacy string format for backward compatibility
+      const getRoleDefault = (roleRef) => {
+        if (!roleRef) return null;
+        // New format: {keys, default}
+        if (typeof roleRef === 'object' && roleRef.default) {
+          return aliasList.includes(roleRef.default) ? roleRef.default : null;
+        }
+        // Legacy format: plain alias string
+        if (typeof roleRef === 'string' && aliasList.includes(roleRef)) {
+          return roleRef;
+        }
+        return null;
       };
 
-      const def = resolveAlias(sessionRef) || resolveAlias(systemRef) || aliasList[0] || '';
+      const def = getRoleDefault(platformMap.session)
+        || getRoleDefault(platformMap.system)
+        || aliasList[0]
+        || '';
       setSelectedAlias(def);
     } catch {
       // Silently fail — key selector will show empty

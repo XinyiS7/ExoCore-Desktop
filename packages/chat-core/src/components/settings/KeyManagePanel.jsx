@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { configApi, MODEL_REGISTRY } from 'exo-shared';
 import { useApiKeys } from '../../hooks/useApiKeys';
-import RoleSlot from './RoleSlot';
+import KeyPoolSection from './KeyPoolSection';
+import RoleKeyMapSection from './RoleKeyMapSection';
 import { RefreshCw } from 'lucide-react';
 
 /** Derive unique platform list from model registry. */
@@ -15,35 +16,37 @@ export default function KeyManagePanel() {
   const [activePlatform, setActivePlatform] = useState(platforms[0] || 'gemini');
   const { keys, loading, refresh } = useApiKeys(activePlatform);
 
-  // Key map from SystemConfig (for display: which key is assigned to which role)
+  // Key map from SystemConfig
   const [keyMap, setKeyMap] = useState({});
+  const [keyMapLoading, setKeyMapLoading] = useState(true);
 
   const fetchKeyMap = useCallback(() => {
+    setKeyMapLoading(true);
     configApi.getConfig()
       .then(config => setKeyMap(config.key_map || {}))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setKeyMapLoading(false));
   }, []);
 
   useEffect(() => { fetchKeyMap(); }, [fetchKeyMap]);
 
-  // Build a lookup: role → existing key object
-  const roleKeyMap = keyMap[activePlatform] || {};
+  // Called after key CRUD or key_map changes
+  const handleDataChanged = useCallback(() => {
+    refresh();
+    fetchKeyMap();
+  }, [refresh, fetchKeyMap]);
 
-  const getExistingForKey = (role) => {
-    const ref = roleKeyMap[role];  // alias string
-    if (ref === null || ref === undefined) return null;
-    return keys.find(k => k.alias === ref) || null;
-  };
+  const isLoading = loading && keyMapLoading && keys.length === 0;
 
-  const roles = ['system', 'session', 'sub_agent', 'background'];
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <RefreshCw size={20} className="animate-spin text-chat-muted/40" />
       </div>
     );
   }
+
+  const platformKeyMap = keyMap[activePlatform] || {};
 
   return (
     <div className="h-full flex flex-col">
@@ -64,20 +67,23 @@ export default function KeyManagePanel() {
         ))}
       </div>
 
-      {/* Role slots */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
-        {roles.map(role => (
-          <RoleSlot
-            key={`${activePlatform}-${role}`}
-            role={role}
-            platform={activePlatform}
-            existing={getExistingForKey(role)}
-            onSaved={() => {
-              refresh();
-              fetchKeyMap();
-            }}
-          />
-        ))}
+      {/* Two sections: Key Pool + Role Key Map */}
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        <KeyPoolSection
+          platform={activePlatform}
+          keys={keys}
+          loading={loading}
+          onKeysChanged={handleDataChanged}
+        />
+
+        <div className="border-t border-white/5" />
+
+        <RoleKeyMapSection
+          platform={activePlatform}
+          keys={keys}
+          keyMapForPlatform={platformKeyMap}
+          onSaved={fetchKeyMap}
+        />
       </div>
     </div>
   );

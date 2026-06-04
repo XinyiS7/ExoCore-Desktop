@@ -1,0 +1,363 @@
+# ExoCore Backend Data Flow Maps
+# 关键端到端数据流路径。记录每一步的确切文件、类/方法、动作。
+# 用途：回答「这个流经过哪些组件」、「某一步出错会影响什么」
+
+flows:
+  # ============================================================
+  # G045 Chat Flow — 核心对话流
+  # ============================================================
+  g045_chat:
+    description: "G045/Superior Agent 的完整对话处理流程：请求 → 上下文组装 → LLM 流式 → 工具循环 → 持久化 → 压缩"
+    trigger: "POST /api/agents/chat/<session_id>/  (AgentChatView.post)"
+    steps:
+      - seq: 1
+        file: agents/views.py
+        method: AgentChatView.post()
+        action: "解析请求体 (user_content, attachments, model, temperature, thinking_level, regenerate, mode)。查 AgentSession → 获取 agent_type → AgentFactory.get_service()"
+        next: step_2
+
+      - seq: 2
+        file: agents/services.py
+        method: AgentFactory.get_service()
+        action: "根据 agent_type 返回 SuperiorService 或 StandardAgentService。g045/superior → SuperiorService"
+        next: step_3
+
+      - seq: 3
+        file: agents/services.py
+        method: BaseChatService.process_chat() (Template Method)
+        action: "Phase 0: ConversationService.prepare_chat_session() 处理编辑/重新生成/截断。Phase A: _build_context_generator() 流式生成上下文"
+        next: step_4
+
+      - seq: 4
+        file: agents/services.py
+        method: SuperiorService._prepare_superior_context()
+        action: |
+          上下文组装中心。依次执行：
+          (a) _precompute_embedding() — 批量向量化 user_content + 未嵌入的 PrivateLog.vibe
+          (b) _build_note_injection() — 匹配 TriggeredNote 模式，注入命中 note
+          (c) entry_orchestrator.get_active_injections() — 读取活跃期 UserPortrait
+          (d) _search_similar_user_message() — pgvector 跨会话相似消息搜索
+          (e) _search_similar_vibe() — pgvector 跨会话相似 vibe 搜索
+          (f) SuperiorLogHelper.build_cross_window_continuity() — 跨窗口连续性上下文
+          所有结果组装到 dynamic_injections dict
+        next: step_5
+
+      - seq: 5
+        file: agents/services.py
+        method: SuperiorService._build_messages()
+        action: |
+          五部分缓存模型消息组装：
+          (a) _pre_detect_boundary() — 检测 P4 (cache gone) 和 P3 (topic shift) 边界
+          (b) _prepare_cache_chunk() — CacheChunkBuilder 构建 Part 3+4
+          (c) _prepare_raw_message() — 组装 Part 5 (raw + hot zone + <ExoCore> 注入)
+          (d) 附加处理：_detect_adapter_trigger() 检测扩展桥接触发词
+        next: step_6
+
+      - seq: 6
+        file: agents/services.py
+        method: SuperiorService._run_llm()
+        action: "按平台分发：Gemini → _run_tool_loop_gemini()，OpenAI/DeepSeek → _run_tool_loop_openai()"
+        next: step_7
+
+      - seq: 7
+        file: agents/services.py
+        method: SuperiorService._run_tool_loop_gemini() (或 _openai)
+        action: |
+          工具循环 (MAX_TOOL_DEPTH=20)：
+          (a) 每轮前 _get_static_toolset() + MCP tools 组装 tools_for_this_turn
+          (b) LLMGateway.stream_chat() 流式调用 LLM
+          (c) 收集 thinking / content / function_call 块
+          (d) 有 tool call → _dispatch_tool_call() 执行 → 构建 tool round → 继续循环
+          (e) 纯静默工具 (SILENT_OP_NAMES) → 继续不退出
+          (f) 无 tool 有文本 → 结束循环
+        next: step_8_post
+
+      - seq: 8_post
+        file: agents/services.py
+        method: SuperiorService._post_persist() + process_chat cleanup
+        action: |
+          后处理（按顺序）：
+          (a) 持久化消息 (base class)
+          (b) 附件完成化 _finalize_attachments()
+          (c) 缓冲日志完成化 _finalize_buffered_logs()
+          (d) ToolCollection 锚定 _anchor_tool_collection_entries()
+          (e) P3 边界提交 (cache_end_index 写入)
+          (f) Trigger B: raw zone 超阈值 → _elevate_raw_zone() 异步
+          (g) CACHE_GONE → trigger_gemini_elevation() 异步
+          (h) log_llm_turn() 记录用量
+        next: step_9_compact
+
+      - seq: 9_compact
+        file: memory/services.py
+        method: MemoryCompactor.check_and_compact() (异步触发)
+        action: |
+          压缩检查：
+          (a) trigger_compaction_async() → 后台线程
+          (b) detect_chat_boundary_static() 找压缩边界
+          (c) compact_buffer_zone_with_reserve() 带尾部保留压缩
+          (d) compact_cache_zone_segmented() 分段语义压缩
+          (e) _create_history_chunks() 创建 HistoryChunk + 向量化
+          (f) ContextCacheManager.invalidate() 清除缓存
+
+    touchpoints:
+      - module: frontend
+        what: "SSE 事件流 (thinking/content/reference/triggered_note_created/done/error) 由 React ChatArea 消费"
+      - module: extension
+        what: "ExternalContextInjectView 给扩展提供上下文注入入口；WezTerm bridge 通过此流收发消息"
+      - module: data
+        what: "PrivateLog 写入 AgentMemory/.G045_{preset_id}_private.jsonl；ToolCollectionCache 写入 Exocore-Data/cache/"
+
+  # ============================================================
+  # Council Flow — 多 LLM 讨论流
+  # ============================================================
+  council:
+    description: "多 LLM 讨论系统的完整状态机流程：创建 → 分发 → 交叉审查 → 综合 → 完成"
+    trigger: "POST /api/council/sessions/ (创建) → POST .../dispatch/ (分发)"
+    steps:
+      - seq: 1
+        file: council/views.py
+        method: CouncilSessionListCreateView.post()
+        action: "创建 CouncilSession (status=pre_alignment)。为每个 participant preset 创建 Conversation + CouncilParticipant。创建 phase0_conversation + AgentSession"
+        next: step_2
+
+      - seq: 2
+        file: council/views.py
+        method: CouncilDispatchView.post()
+        action: "校验状态 (pre_alignment/finished/synthesis_done)。调用 CouncilOrchestrator.dispatch()"
+        next: step_3
+
+      - seq: 3
+        file: council/services.py
+        method: CouncilOrchestrator.dispatch()
+        action: |
+          Phase 1 分发：
+          (a) 首次 dispatch 时创建 synthesis_conversation
+          (b) resolve_parts_for_platforms() 为每个参与者适配附件
+          (c) 状态 → dispatched，round_number += 1
+          (d) 将 topic 作为 user message 写入每个参与者的 conversation
+        next: step_4
+
+      - seq: 4
+        file: council/views.py
+        method: CouncilParticipantStreamView.get()
+        action: "对每个参与者：phase_status → generating，调用 CouncilParticipantService.stream_for_participant() → LLMGateway.stream_chat()。完成后持久化 assistant message，phase_status → done"
+        next: step_5
+
+      - seq: 5
+        file: council/views.py
+        method: CouncilCrossExamView.post()
+        action: "校验 status=dispatched 且所有参与者 done。调用 CouncilOrchestrator.start_cross_exam()"
+        next: step_6
+
+      - seq: 6
+        file: council/services.py
+        method: CouncilOrchestrator.start_cross_exam()
+        action: "Phase 2 交叉审查：环形配对 reviewer/reviewee，创建 CouncilCrossExam 记录，将 reviewee 草稿作为 reviewer 的 user message 写入"
+        next: step_7
+
+      - seq: 7
+        file: council/views.py
+        method: CouncilSynthesizeView.post()
+        action: "校验 status=dispatched/cross_exam。调用 CouncilOrchestrator.synthesize()"
+        next: step_8
+
+      - seq: 8
+        file: council/services.py
+        method: CouncilOrchestrator.synthesize()
+        action: "Phase 3 综合：组装所有参与者草稿为摘要文本 → 写入 synthesis_conversation + phase0_conversation (sub rosa)。状态 → synthesizing"
+        next: step_9
+
+      - seq: 9
+        file: council/views.py
+        method: CouncilSynthesisStreamView.get()
+        action: "流式调用 CouncilSynthesisService.stream_synthesis() → LLMGateway.stream_chat()。结果写入 synthesis_conversation 和 phase0_conversation。状态 → synthesis_done"
+        next: step_10
+
+      - seq: 10
+        file: council/views.py
+        method: CouncilFinishView.post()
+        action: "状态 → finished"
+
+    touchpoints:
+      - module: frontend
+        what: "CouncilSessionDetailView 返回的状态 + participant 信息由 React CouncilPanel 渲染。synthesis_done 支持 re-dispatch"
+      - module: extension
+        what: "无直接扩展接触点（council 仅通过 API 操作）"
+
+  # ============================================================
+  # Knowledge Ingestion Pipeline — 知识导入流
+  # ============================================================
+  knowledge_ingestion:
+    description: "Obsidian vault → ExoCore 知识库的三阶段导入流水线"
+    trigger: "手动执行管理命令"
+    steps:
+      - seq: 1
+        file: memory/management/commands/refine_obsidian.py
+        method: Command.handle()
+        action: |
+          Phase 1 — 文件层预处理：
+          (a) resolve_vault_path() 解析目标目录
+          (b) walk_md_files() 遍历 .md 文件
+          (c) frontmatter.load() 读取 YAML + 内容
+          (d) 操作：填充 exocore_uid → 标准化 tags → 填充 created/modified → [可选] NlpEngine.generate_abstract() → batch edit YAML
+          (e) frontmatter.dump() 写回文件
+        next: step_2
+
+      - seq: 2
+        file: memory/management/commands/ingest_obsidian.py
+        method: Command.handle()
+        action: |
+          Phase 2 — 导入层 (SQL + pgvector)：
+          (a) walk_md_files() + parse_md_file() 解析结构化数据
+          (b) 过滤：sync: true + uid 必须存在
+          (c) [可选] NlpEngine.generate_abstract() 补全空摘要
+          (d) upsert_fragment() → KnowledgeFragment 创建/更新
+          (e) [可选] MemoryManager.vectorize_fragment() 做向量化
+        next: step_3
+
+      - seq: 3
+        file: memory/management/commands/maintain_obsidian.py
+        method: Command.handle()
+        action: |
+          Phase 3 — 维护层：
+          (a) --check-paths: 验证 source_path 存在性
+          (b) --update: 增量更新 (比对 modified vs updated_at)
+          (c) --delete: 删除指定 KnowledgeFragment
+          (d) --re-vectorize: 重建向量索引 (MemoryManager.vectorize_fragment())
+
+    touchpoints:
+      - module: data
+        what: "直接从文件系统读取 Obsidian vault。路径配置在 Project.work_dir 或命令行参数"
+      - module: frontend
+        what: "KnowledgeFragmentListView 提供前端搜索和浏览已导入的知识片段"
+
+  # ============================================================
+  # Memory Compaction Flow — 记忆压缩流
+  # ============================================================
+  memory_compaction:
+    description: "对话历史 → 压缩块的多触发源压缩流程"
+    trigger: "三触发源：Trigger A (scheduler 定时) / Trigger B (post-response raw zone 溢出) / P4 safety net (Gemini 缓存丢失)"
+    steps:
+      - seq: 1
+        file: memory/services.py
+        method: MemoryCompactor (入口因触发源而异)
+        action: |
+          触发源路由：
+          - Trigger A: scheduler → trigger_gemini_elevation() → elevate_and_compress_gemini()
+          - Trigger B: SuperiorService post-response → _elevate_raw_zone() (re-cache only, async)
+          - P4 net: _pre_detect_boundary() → trigger_gemini_elevation() (sync)
+        next: step_2
+
+      - seq: 2
+        file: memory/services.py
+        method: MemoryCompactor.elevate_and_compress_gemini()
+        action: |
+          主 elevation+compression 入口：
+          (a) 检查 old buffer: >20k chars → pop + compress old buffer
+          (b) <=20k: append raw to buffer
+          (c) 调用 compact_cache_zone_segmented() 压缩旧 buffer
+        next: step_3
+
+      - seq: 3
+        file: memory/services.py
+        method: MemoryCompactor.compact_cache_zone_segmented()
+        action: |
+          P2 多段语义压缩：
+          (a) 滑动 6-user 窗口向历史方向扫描
+          (b) NlpEngine.detect_topic_shift() 找语义边界
+          (c) 按 topic-coherent segment 切分 cache zone
+          (d) 为每段创建 HistoryChunk
+        next: step_4
+
+      - seq: 4
+        file: memory/services.py
+        method: MemoryCompactor._create_history_chunks()
+        action: |
+          两阶段 chunk 创建：
+          Phase 1: NlpEngine.summarize_chat_history() + extract_history_chunk_metadata()
+          Phase 2: EmbeddingEngine 批量向量化 (parent: metadata_json, children: content)
+          失败回退到 pending JSONL
+        next: step_5
+
+      - seq: 5
+        file: engines/context_cache.py
+        method: ContextCacheManager.invalidate()
+        action: "每次压缩后清除 Gemini 上下文缓存，下次请求重建"
+
+    touchpoints:
+      - module: data
+        what: "压缩失败的 chunk 暂存到 pending JSONL 文件"
+      - module: frontend
+        what: "HistoryChunkListView / ConversationHistoryChunkListView 给前端提供压缩块浏览"
+
+  # ============================================================
+  # Tool Execution Loop — 工具执行循环
+  # ============================================================
+  tool_execution_loop:
+    description: "LLM function call → dispatch → result → next turn 的完整循环"
+    trigger: "LLM 返回 function_call chunk"
+    steps:
+      - seq: 1
+        file: agents/services.py
+        method: SuperiorService._run_tool_loop_gemini() (line ~2004)
+        action: "每轮前组装 tools_for_this_turn = _get_static_toolset() + McpRegistry.get_declarations_for_main()"
+        next: step_2
+
+      - seq: 2
+        file: engines/llm.py
+        method: LLMGateway.stream_chat()
+        action: "流式调用 LLM。yield thinking / content / function_call / usage_metadata chunk"
+        next: step_3
+
+      - seq: 3
+        file: agents/tools.py
+        method: SuperiorToolHandler._dispatch_tool_call()
+        action: |
+          中央路由分发 (按 tool name)：
+          - set_triggered_note → TriggeredNote 模型
+          - write_private_log → 队列化持久化
+          - memory_search → MemoryOrchestrator.retrieve_by_keywords()
+          - web_search → SearchAgent (sub_agent_presets.py)
+          - shell → subprocess
+          - use_skill → _scan_skills() + 文件读取
+          - spawn_sub_agent → SubAgentService
+          - mcp_* → McpRegistry.call_tool()
+          - workspace_* → project-scoped 操作
+          - 自我维护类 → CRUD on agent state
+        next: step_4
+
+      - seq: 4
+        file: engines/llm.py
+        method: LLMGateway.build_gemini_tool_round() (或 build_openai_tool_round)
+        action: "将 tool call + result 构建为 LLM 可理解的下一轮消息。make_fc_assistant_turn() + make_tool_result_turns()"
+        next: loop_back_to_step_1
+
+    touchpoints:
+      - module: frontend
+        what: "tool 执行状态 SSE 事件由 React ChatArea 渲染 tool call bubble"
+      - module: extension
+        what: "shell tool (G045 only) 可执行系统命令；workspace_run 可操作项目文件"
+
+  # ============================================================
+  # Attachment Flow — 附件处理流
+  # ============================================================
+  attachment_handling:
+    description: "跨平台文件上传和注入流程"
+    trigger: "chat POST with pending_attachments or SessionAttachment upload"
+    steps:
+      - seq: 1
+        file: engines/attachment_manager.py
+        method: prepare_uploaded_files() / prepare_pending()
+        action: "根据 model capabilities 选择上传策略：Gemini → File API, OpenAI/DeepSeek → base64 inline, local → 路径引用"
+        next: step_2
+
+      - seq: 2
+        file: engines/attachment_manager.py
+        method: resolve_parts_for_platforms()
+        action: "为每个平台 (gemini/openai) 生成对应的 content part。council 和 sub_agent 共享此逻辑"
+        next: step_3
+
+      - seq: 3
+        file: agents/services.py
+        method: BaseChatService._finalize_attachments()
+        action: "post-chat 清理：将临时附件转为持久 SessionAttachment，写入 platform_files JSON"

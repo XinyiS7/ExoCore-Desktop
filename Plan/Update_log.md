@@ -51,6 +51,8 @@
 - **修复：** 将 `body: JSON.stringify({...})` 改为 `body: {...}`，由 `apiFetch` 负责序列化和设置 Content-Type
 - **CSRF 验证：** 确认 `CSRF_TRUSTED_ORIGINS` 已包含 `localhost:5173` / `127.0.0.1:5173` / `192.168.178.25:5173`，无 CSRF 阻断
 - **后端端点验证：** `curl -X POST http://127.0.0.1:8000/api/push/subscribe/` 返回 201，端点正常
+- **✅ 端到端验证通过：** 手机订阅 → 数据库入库 → `send_physical_notification` → FCM → 手机弹窗成功
+- **每设备独立订阅：** 手机和 PC 各需点一次「启用通知」，各自生成独立 FCM endpoint，后端遍历全部 active 订阅推送到所有设备
 
 ---
 

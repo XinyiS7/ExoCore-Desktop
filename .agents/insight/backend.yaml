@@ -1,0 +1,515 @@
+# ExoCore Backend Insight Map
+# 只记录 grep 找不到的非直观耦合。
+# grep 能找到的 import/FK/URL 路由不写入此文件。
+
+entities:
+  # ============================================================
+  # agents/ — Agent Chat Engine (central app)
+  # ============================================================
+
+  AgentPreset:
+    path: agents/models.py
+    type: model
+    description: "Agent 人格卡。agent_type 决定 AgentFactory 实例化哪个 Service"
+    upstream:
+      - entity: AgentFactory
+        path: agents/services.py
+        reason: "根据 agent_type 字段值选择 SuperiorService 或 StandardAgentService — 不在 import 中体现，运行时决定"
+      - entity: SystemConfigSerializer
+        path: core/serializers.py
+        reason: "SystemConfig 校验 preset_ids 是否存在于 AgentPreset 表 — 跨 app 校验逻辑"
+      - entity: Conversation
+        path: memory/models.py
+        reason: "Conversation.agent_preset FK 可为 null；删除 AgentPreset 时自动归档到 Archived Chat preset — 信号驱动，非 ORM 级联"
+      - entity: CouncilSession
+        path: council/models.py
+        reason: "arbitrator_preset + CouncilParticipant.preset 都 FK 到 AgentPreset — 删除 AgentPreset 前需检查 council 引用"
+    touches_frontend: true
+    touches_extension: true
+    migrations:
+      - agents/migrations/
+
+  AgentSession:
+    path: agents/models.py
+    type: model
+    description: "会话包装器。1:1 绑定 Conversation，冻结项目范围"
+    upstream:
+      - entity: ConversationBranchView
+        path: agents/views.py
+        reason: "分支会话时需要复制原 AgentSession 的 frozen_project_ids — 非 ORM 级联"
+      - entity: SuperiorService._prepare_superior_context
+        path: agents/services.py
+        reason: "frozen_project_ids 控制 project_read 工具的可见范围 — 运行时逻辑，非显式引用"
+    downstream:
+      - entity: Conversation
+        path: memory/models.py
+        reason: "OTO 绑定 — base_conversation, 删除 AgentSession 时对应 Conversation 需同步处理"
+
+  TriggeredNote:
+    path: agents/models.py
+    type: model
+    description: "关键词触发的持久笔记。权重系统自动衰减/强化"
+    upstream:
+      - entity: SuperiorToolHandler._build_shared_note_injection
+        path: agents/tools.py
+        reason: "每次 chat 时扫描 TriggeredNote 表做模式匹配 — 高频率运行时依赖，非静态 import"
+      - entity: run_batch_modify (mgmt command)
+        path: agents/management/commands/run_batch_modify.py
+        reason: "批量修正 TriggeredNote 的 pattern/note — 管理命令直接操作此模型"
+      - entity: scheduler/agent_routine.py
+        path: scheduler/agent_routine.py
+        reason: "定时任务执行权重衰减和 auto-promote — 修改权重逻辑会影响调度器行为"
+    migrations:
+      - agents/migrations/
+
+  Register:
+    path: agents/models.py
+    type: model
+    description: "用户近态 + Core Register 双用途状态存储"
+    upstream:
+      - entity: SuperiorToolHandler._tool_update_register
+        path: agents/tools.py
+        reason: "G045 通过 function call 写入 Register (lifespan=数字→short, lifespan=persistent→long) — 合并了原 set_directive"
+    downstream: []
+
+  PrivateLog:
+    path: agents/models.py
+    type: model
+    description: "G045 内部观察日志。vibe_embedding 用于跨会话相似度搜索"
+    upstream:
+      - entity: SuperiorService._search_similar_vibe
+        path: agents/services.py
+        reason: "pgvector cosine 搜索跨会话相似 vibe — 修改 vibe_embedding 维度会影响搜索精度"
+      - entity: SuperiorToolHandler._tool_write_private_log
+        path: agents/tools.py
+        reason: "G045 function call 写入 — tool 实现直接创建 PrivateLog"
+    migrations:
+      - agents/migrations/
+
+  AgentFactory:
+    path: agents/services.py
+    type: service
+    description: "根据 agent_type 实例化对应的 Service 类。新增 Agent 类型只需改这里"
+    upstream:
+      - entity: AgentChatView
+        path: agents/views.py
+        reason: "每个 chat 请求调用 AgentFactory.get_service() — 修改返回类型会影响 view 的后续处理"
+    downstream:
+      - entity: AgentPreset
+        path: agents/models.py
+        reason: "agent_type 字段值直接决定 Service 选择 — 非 ORM 引用"
+
+  SuperiorService:
+    path: agents/services.py
+    type: service
+    description: "G045/Superior 的主服务。Template Method 模式，继承 BaseChatService + SuperiorToolHandler"
+    upstream:
+      - entity: MemoryOrchestrator
+        path: memory/services.py
+        reason: "_prepare_superior_context() 内调用 decide_and_retrieve() — 检索策略变更影响上下文组装"
+      - entity: MemoryCompactor
+        path: memory/services.py
+        reason: "post-response 触发异步压缩 — 修改压缩阈值会影响 SuperiorService 的响应延迟"
+      - entity: telemetry.log_llm_turn
+        path: telemetry/services.py
+        reason: "每个 LLM 调用后记录用量 — 修改 log_llm_turn 签名会破坏日志链"
+      - entity: ContextCacheManager
+        path: engines/context_cache.py
+        reason: "Gemini 缓存生命周期管理 — CACHE_GONE 检测触发 elevation 回退"
+      - entity: CacheChunkBuilder
+        path: engines/cache_chunk.py
+        reason: "五部分缓存模型构建 — 修改 cache chunk 结构影响 prompt 组装"
+    downstream:
+      - entity: LLMGateway
+        path: engines/llm.py
+        reason: "所有 LLM 调用通过此网关 — 平台路由逻辑集中在此"
+
+  SuperiorToolHandler:
+    path: agents/tools.py
+    type: service
+    description: "所有 tool 实现 + use_skill 调度 + shared note injection"
+    upstream:
+      - entity: LLMGateway.build_gemini_tool_round
+        path: engines/llm.py
+        reason: "tool 响应格式必须匹配 LLMGateway 的平台适配 — 新增 tool 需检查 Gemini/OpenAI 双路径"
+    downstream:
+      - entity: _scan_skills
+        path: agents/tools.py
+        reason: "use_skill 激活时扫描 .agents/skills/ 目录 — 新增 skill 无需改代码，自动发现"
+
+  SubAgentService:
+    path: agents/sub_agent_service.py
+    type: service
+    description: "异步子代理 spawner。daemon 线程 + DB 持久化结果"
+    upstream:
+      - entity: LLMGateway
+        path: engines/llm.py
+        reason: "子代理也通过 LLMGateway 调用 LLM — 平台路由统一"
+      - entity: attachment_manager
+        path: engines/attachment_manager.py
+        reason: "resolve_parts_for_platforms() 处理子代理的附件转发 — 平台差异透明化"
+    downstream:
+      - entity: SubAgentTask
+        path: agents/models.py
+        reason: "task_id 结果持久化到此模型 — DB 中的 task 状态管理"
+
+  # ============================================================
+  # memory/ — Memory, Knowledge, and Retrieval
+  # ============================================================
+
+  Conversation:
+    path: memory/models.py
+    type: model
+    description: "核心会话容器。几乎所有模块都通过 FK 或 OTO 引用它"
+    upstream:
+      - entity: AgentSession
+        path: agents/models.py
+        reason: "OTO 绑定 — 删除 Conversation 会破坏 AgentSession 的完整性"
+      - entity: CouncilSession
+        path: council/models.py
+        reason: "phase0_conversation + synthesis_conversation 双 FK — 删除 Conversation 前需检查 council 引用"
+      - entity: MessageActivity
+        path: scheduler/models.py
+        reason: "scheduler 通过 post_save 信号追踪 Message → 更新 MessageActivity — 非 ORM 引用"
+      - entity: ConversationService.branch_conversation
+        path: memory/services.py
+        reason: "分支逻辑复制消息、重置 cursor — 修改 Conversation 字段会影响分支行为"
+    touches_frontend: true
+    migrations:
+      - memory/migrations/
+
+  Message:
+    path: memory/models.py
+    type: model
+    description: "原子消息。index_in_session 是压缩游标的关键。attachment_ids 存 JSON"
+    upstream:
+      - entity: MemoryCompactor
+        path: memory/services.py
+        reason: "压缩依赖 index_in_session 范围 — 修改索引逻辑破坏压缩"
+      - entity: scheduler signals
+        path: scheduler/signals.py
+        reason: "post_save 信号更新 MessageActivity — 修改 Message 模型会影响调度器活跃度检测"
+      - entity: SuperiorService._elevate_raw_zone
+        path: agents/services.py
+        reason: "raw zone 字符数统计依赖 Message.content 长度 — 修改字段类型影响阈值计算"
+    touches_frontend: true
+    migrations:
+      - memory/migrations/
+
+  KnowledgeFragment:
+    path: memory/models.py
+    type: model
+    description: "知识片段。abstract_embedding 做 pgvector 索引，一个父文档一个向量"
+    upstream:
+      - entity: MemoryManager
+        path: memory/services.py
+        reason: "semantic_search() 在 abstract_embedding 上做 CosineDistance — 修改向量维度影响检索"
+      - entity: refine_obsidian (mgmt command)
+        path: memory/management/commands/refine_obsidian.py
+        reason: "文件层生成 abstract → 写入 frontmatter → ingest 时持久化到此模型"
+      - entity: ingest_obsidian (mgmt command)
+        path: memory/management/commands/ingest_obsidian.py
+        reason: "upsert_fragment() 批量写入 — 修改模型字段影响导入逻辑"
+    downstream:
+      - entity: ProjectFile
+        path: core/models.py
+        reason: "OTO 绑定 project_file — 删除 ProjectFile 时需处理孤儿 KnowledgeFragment"
+    migrations:
+      - memory/migrations/
+
+  HistoryChunk:
+    path: memory/models.py
+    type: model
+    description: "压缩后的历史块。支持父子层级和子块"
+    upstream:
+      - entity: MemoryCompactor._create_history_chunks
+        path: memory/services.py
+        reason: "压缩时创建 — 修改 chunk 结构影响压缩算法"
+      - entity: CacheChunkBuilder
+        path: engines/cache_chunk.py
+        reason: "五部分缓存模型使用 HistoryChunk — 修改 embedding 维度影响缓存组装"
+    downstream: []
+
+  MemoryManager:
+    path: memory/services.py
+    type: service
+    description: "pgvector 检索接口。封装 embedding + CosineDistance 查询"
+    upstream:
+      - entity: MemoryOrchestrator
+        path: memory/services.py
+        reason: "Layer2 向量搜索调用 MemoryManager.semantic_search()"
+      - entity: maintain_obsidian (mgmt command)
+        path: memory/management/commands/maintain_obsidian.py
+        reason: "--re-vectorize 调用 MemoryManager.vectorize_fragment() 重建向量"
+    downstream:
+      - entity: EmbeddingEngine
+        path: engines/embeddings.py
+        reason: "所有向量化通过此引擎 — 切换 embedding 模型只改这里"
+
+  MemoryOrchestrator:
+    path: memory/services.py
+    type: service
+    description: "G045 检索决策引擎。两阶段：keyword gate → Ollama dehydrate → 双路 pgvector"
+    upstream:
+      - entity: SuperiorService._prepare_superior_context
+        path: agents/services.py
+        reason: "每次 chat 调用 decide_and_retrieve() — 检索策略影响上下文质量"
+    downstream:
+      - entity: keyword_aliases.json
+        path: memory/keyword_aliases.json
+        reason: "Layer1 SQL 使用别名扩展 — 修改别名文件影响关键词检索召回率"
+      - entity: NlpEngine
+        path: engines/nlp.py
+        reason: "dehydrate_intent() 提取关键词 — 切换 Ollama 模型影响检索质量"
+
+  MemoryCompactor:
+    path: memory/services.py
+    type: service
+    description: "后响应压缩。多触发源：post-response trigger B + scheduler trigger A + P4 cache-gone 安全网"
+    upstream:
+      - entity: scheduler/agent_routine.py
+        path: scheduler/agent_routine.py
+        reason: "定时调用 trigger_gemini_elevation() — 修改压缩参数影响定时任务行为"
+      - entity: NlpEngine
+        path: engines/nlp.py
+        reason: "summarize_chat_history() + detect_topic_shift() — 切换 NLP 模型影响压缩质量"
+      - entity: ContextCacheManager
+        path: engines/context_cache.py
+        reason: "每次压缩后 invalidate Gemini 缓存 — 忘记 invalidate 会导致缓存不一致"
+    downstream:
+      - entity: HistoryChunk
+        path: memory/models.py
+        reason: "压缩输出写入 HistoryChunk — 修改 chunk schema 影响读取端"
+
+  UserPortrait:
+    path: memory/models.py
+    type: model
+    description: "用户长期画像。is_processed 标记 LLM 分类状态"
+    upstream:
+      - entity: entry_orchestrator
+        path: memory/entry_orchestrator.py
+        reason: "热调度器管理 entry_heat 状态 — 关键词 + 向量双匹配决定注入时机"
+      - entity: entry_processor
+        path: memory/entry_processor.py
+        reason: "异步分类器填充 scope/tags/embedding — is_processed=False 条目待处理"
+    touches_frontend: true
+    migrations:
+      - memory/migrations/
+
+  # ============================================================
+  # core/ — Foundation Models
+  # ============================================================
+
+  SystemConfig:
+    path: core/models.py
+    type: model
+    description: "单例系统配置。API keys、scheduler preset IDs、模型覆盖"
+    upstream:
+      - entity: scheduler all jobs
+        path: scheduler/agent_routine.py
+        reason: "scheduler 读取 SystemConfig 的 preset ID 列表和 timing 参数 — 修改配置影响所有定时任务"
+      - entity: SuperiorService
+        path: agents/services.py
+        reason: "G045 读取 SystemConfig 的模型覆盖和 timing — 运行时配置，非 import 依赖"
+    downstream:
+      - entity: AgentPreset
+        path: agents/models.py
+        reason: "serializer 校验 preset_ids 存在性 — 跨 app 校验"
+      - entity: model_registry
+        path: engines/model_registry.py
+        reason: "model 字段值必须存在于 model_registry 中 — 跨层校验"
+
+  # ============================================================
+  # council/ — LLM Multi-Agent Council
+  # ============================================================
+
+  CouncilSession:
+    path: council/models.py
+    type: model
+    description: "多 LLM 讨论会话。状态机 6 态"
+    upstream:
+      - entity: CouncilOrchestrator
+        path: council/services.py
+        reason: "状态转换逻辑集中在此 — 修改状态机需同步更新 orchestrator"
+      - entity: AgentPreset
+        path: agents/models.py
+        reason: "arbitrator_preset FK — 删除 AgentPreset 前需检查 council 引用"
+    downstream:
+      - entity: Conversation
+        path: memory/models.py
+        reason: "phase0 + synthesis 双 Conversation FK — conversation 生命周期与 council 绑定"
+
+  CouncilOrchestrator:
+    path: council/services.py
+    type: service
+    description: "Council 状态机编排器。dispatch → cross_exam → synthesize → finish"
+    upstream:
+      - entity: LLMGateway
+        path: engines/llm.py
+        reason: "participant 和 synthesis 流式调用 — 平台路由透明"
+      - entity: attachment_manager
+        path: engines/attachment_manager.py
+        reason: "resolve_parts_for_platforms() 跨参与者附件适配 — 不同 preset 可能用不同平台"
+    downstream:
+      - entity: CouncilParticipantService
+        path: council/services.py
+        reason: "dispatch 后由 view 调用 participant stream — orchestrator 只创建上下文"
+      - entity: CouncilSynthesisService
+        path: council/services.py
+        reason: "synthesize 后由 view 调用 synthesis stream — orchestrator 只组装草稿"
+
+  # ============================================================
+  # engines/ — LLM Gateway & Infrastructure (no DB models)
+  # ============================================================
+
+  LLMGateway:
+    path: engines/llm.py
+    type: service
+    description: "统一流式/阻塞接口。Gemini + OpenAI 双路径，platform 自动推断"
+    upstream:
+      - entity: SuperiorService
+        path: agents/services.py
+        reason: "所有 LLM 调用入口 — 修改流式协议影响 chat 和 council"
+      - entity: CouncilOrchestrator
+        path: council/services.py
+        reason: "council participant/synthesis 也通过此网关"
+      - entity: SubAgentService
+        path: agents/sub_agent_service.py
+        reason: "子代理也通过此网关 — 修改 tool round 构建影响子代理 FC"
+    downstream:
+      - entity: model_registry
+        path: engines/model_registry.py
+        reason: "infer_platform() 根据 model name 路由 — 新增 provider 只改 registry，不改 gateway"
+
+  model_registry:
+    path: engines/model_registry.py
+    type: service
+    description: "Provider 注册表。payload_format + 凭证路由 + 能力集。新加 provider 只改此文件"
+    upstream:
+      - entity: LLMGateway
+        path: engines/llm.py
+        reason: "infer_platform() + get_capabilities() — gateway 的所有平台决策依赖此文件"
+      - entity: SystemConfigSerializer
+        path: core/serializers.py
+        reason: "model 字段校验依赖 list_models() — 跨 app 校验"
+      - entity: SubAgentService
+        path: agents/sub_agent_service.py
+        reason: "spawn 时根据 model name 解析 platform — 非显式依赖"
+    touches_frontend: true
+    touches_extension: true
+
+  NlpEngine:
+    path: engines/nlp.py
+    type: service
+    description: "Ollama 本地 NLP。关键词提取、摘要、话题边界检测、摘要生成"
+    upstream:
+      - entity: MemoryOrchestrator
+        path: memory/services.py
+        reason: "dehydrate_intent() 提取查询关键词 — Ollama 模型版本影响检索质量"
+      - entity: MemoryCompactor
+        path: memory/services.py
+        reason: "summarize_chat_history() + detect_topic_shift() — Ollama 超时影响压缩可靠性"
+      - entity: refine_obsidian (mgmt command)
+        path: memory/management/commands/refine_obsidian.py
+        reason: "generate_abstract() 生成文档摘要 — 切换 platform 参数改变行为"
+
+  EmbeddingEngine:
+    path: engines/embeddings.py
+    type: service
+    description: "Gemini Embedding API 单例。3072-dim，RETRIEVAL_QUERY / RETRIEVAL_DOCUMENT"
+    upstream:
+      - entity: MemoryManager
+        path: memory/services.py
+        reason: "所有 pgvector 搜索通过此引擎 — 切换 embedding 模型需重建索引"
+      - entity: SuperiorService._precompute_embedding
+        path: agents/services.py
+        reason: "批量 embedding 用户消息 + PrivateLog.vibe — 修改 task_type 影响相似度计算"
+    downstream: []
+
+  attachment_manager:
+    path: engines/attachment_manager.py
+    type: service
+    description: "跨平台文件上传。Gemini File API + OpenAI/DeepSeek + 本地 fallback"
+    upstream:
+      - entity: SuperiorService
+        path: agents/services.py
+        reason: "chat 附件通过此上传 — 修改上传流程影响所有 agent"
+      - entity: CouncilOrchestrator
+        path: council/services.py
+        reason: "dispatch 时 resolve 跨参与者附件 — council 显式依赖"
+      - entity: SubAgentService
+        path: agents/sub_agent_service.py
+        reason: "子代理附件转发 — 平台差异透明化"
+    downstream:
+      - entity: model_registry
+        path: engines/model_registry.py
+        reason: "根据 model capabilities 选择上传策略 — 新增 provider 可能需加上传路径"
+
+  ContextCacheManager:
+    path: engines/context_cache.py
+    type: service
+    description: "Gemini Context Cache 生命周期管理。TTL 1h，自动续期"
+    upstream:
+      - entity: SuperiorService
+        path: agents/services.py
+        reason: "每次 chat 前检查缓存状态 — CACHE_GONE 触发 elevation"
+      - entity: MemoryCompactor
+        path: memory/services.py
+        reason: "每次压缩后 invalidate 缓存 — 不 invalidate 会导致陈旧上下文"
+
+  CacheChunkBuilder:
+    path: engines/cache_chunk.py
+    type: service
+    description: "五部分缓存模型构建器"
+    upstream:
+      - entity: SuperiorService._prepare_cache_chunk
+        path: agents/services.py
+        reason: "组装 Part 3+4 — 修改 chunk 结构影响 prompt 格式"
+    downstream:
+      - entity: HistoryChunk
+        path: memory/models.py
+        reason: "读取 HistoryChunk 构建缓存 — chunk 格式变更影响缓存内容"
+
+  # ============================================================
+  # telemetry/ — Usage Statistics (no models)
+  # ============================================================
+
+  log_llm_turn:
+    path: telemetry/services.py
+    type: service
+    description: "每次 LLM 调用记录用量。CSV + 增量 JSON summary，threading.Lock 线程安全"
+    upstream:
+      - entity: SuperiorService
+        path: agents/services.py
+        reason: "每个 LLM 调用后调用 — 修改日志签名影响所有 agent"
+      - entity: CouncilParticipantService
+        path: council/services.py
+        reason: "council 流式完成后也记录 — 多入口调用同一函数"
+
+  # ============================================================
+  # scheduler/ — Background Task Scheduler
+  # ============================================================
+
+  MessageActivity:
+    path: scheduler/models.py
+    type: model
+    description: "消息活跃度追踪。post_save 信号自动更新"
+    upstream:
+      - entity: Message (post_save signal)
+        path: scheduler/signals.py
+        reason: "每次创建 Message 触发信号更新此模型 — 修改 Message 保存逻辑影响活跃度"
+      - entity: scheduler/agent_routine.py
+        path: scheduler/agent_routine.py
+        reason: "idle detection 读取 MessageActivity.last_message_at — 调度器依赖此字段"
+
+  scheduler (BackgroundScheduler):
+    path: scheduler/core.py
+    type: service
+    description: "APScheduler + PostgreSQL job store。11 个注册 job"
+    upstream:
+      - entity: SystemConfig
+        path: core/models.py
+        reason: "preset ID 列表和 timing 参数来自 SystemConfig — 运行时读取，非 import"
+      - entity: AppConfig.ready()
+        path: agents/apps.py (或 scheduler/apps.py)
+        reason: "RUN_MAIN guard 启动 scheduler — 修改启动逻辑影响所有定时任务"

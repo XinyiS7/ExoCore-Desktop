@@ -41,7 +41,7 @@ export default function DesktopSidebar() {
   const userNick = localStorage.getItem('exo_user_nick') || 'Exo User';
 
   const isActive = (route) => {
-    if (route === '/projects') return location.pathname.startsWith('/project') || location.pathname === '/';
+    if (route === '/projects') return location.pathname.startsWith('/project');
     if (route === '/agent-hub') return location.pathname.startsWith('/agent');
     if (route === '/memory') return location.pathname.startsWith('/memory');
     return false;

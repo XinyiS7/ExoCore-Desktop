@@ -1,6 +1,6 @@
 ========================================================
   ExoCore — React 前端接口数据格式速查表（重整版）
-  最后更新：2026-06-03（§5.3-5.4 ApiKey 管理 + key_map；§1.3 api_key_alias 字段）
+  最后更新：2026-06-03（§5.3 ApiKey key池 CRUD；§5.4 key_map 升级为 {keys, default} 多key架构）
 ========================================================
 
 本文是纯数据格式速查，不是后端行为说明书。
@@ -632,9 +632,19 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
   "model_realtime_recompress":    "deepseek-v4-pro",
   "model_extract_chunk_metadata": "",
 
-  "key_map": {                              // platform → {role → alias | null}
-    "deepseek": {"system": "我的主力key", "session": null, "sub_agent": null, "background": "ds-bg"},
-    "gemini":  {"system": "gem-paid", "session": null, "sub_agent": null, "background": null}
+  "key_map": {                              // platform → role → {keys, default}
+    "deepseek": {
+      "system":      {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
+      "session":     {"keys": ["我的主力key"],         "default": "我的主力key"},
+      "sub_agent":   {"keys": [],                      "default": null},
+      "background":  {"keys": ["ds-bg"],               "default": "ds-bg"}
+    },
+    "gemini": {
+      "system":      {"keys": ["gem-paid"], "default": "gem-paid"},
+      "session":     {"keys": [],           "default": null},
+      "sub_agent":   {"keys": [],           "default": null},
+      "background":  {"keys": [],           "default": null}
+    }
   },
 
   "updated_at": "2026-04-25T10:00:00Z"
@@ -717,17 +727,46 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 5.4  PUT /api/core/config/key-map/  — 设置 Key Map
 ─────────────────────────────────────────────────────────────
 
-// 按平台和角色分配 Key。system 必填，其余可选（传 null = 回落 system）。
-// 值使用 ApiKey.alias（字符串）。角色: system | session | sub_agent | background
+// 按平台和角色分配 Key。每个 role = {keys: [...], default: <alias>}。
+// keys 和 default 均接受 alias（字符串）或 ID（整数）。
+// system.default 必填且必须在 system.keys 中；其他角色 default=null → 回落 system.default。
+// 角色: system | session | sub_agent | background
 
-// Request:
+// ── Request:
 {
-  "deepseek": {"system": "我的主力key", "sub_agent": null, "background": "ds-bg", "session": null},
-  "gemini":  {"system": "gem-paid", "sub_agent": null, "background": null, "session": null}
+  "deepseek": {
+    "system":      {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
+    "session":     {"keys": ["我的主力key"],         "default": "我的主力key"},
+    "sub_agent":   {"keys": [],                      "default": null},
+    "background":  {"keys": ["ds-bg"],               "default": "ds-bg"}
+  },
+  "gemini": {
+    "system":      {"keys": ["gem-paid"], "default": "gem-paid"},
+    "session":     {"keys": [],           "default": null},
+    "sub_agent":   {"keys": [],           "default": null},
+    "background":  {"keys": [],           "default": null}
+  }
 }
 
-// Response: { "key_map": {"deepseek": {"system": "我的主力key", ...}, ...} }
-// 返回 alias 字符串，前端无需知晓 DB ID
+// ── Response:
+{
+  "key_map": {
+    "deepseek": {
+      "system":      {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
+      "session":     {"keys": ["我的主力key"],         "default": "我的主力key"},
+      "sub_agent":   {"keys": [],                      "default": null},
+      "background":  {"keys": ["ds-bg"],               "default": "ds-bg"}
+    },
+    "gemini": {
+      "system":      {"keys": ["gem-paid"], "default": "gem-paid"},
+      "session":     {"keys": [],           "default": null},
+      "sub_agent":   {"keys": [],           "default": null},
+      "background":  {"keys": [],           "default": null}
+    }
+  }
+}
+// 返回 alias 字符串，前端无需知晓 DB ID。
+// 后续可扩展 strategy 字段（如 "round_robin"）实现轮询。
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
