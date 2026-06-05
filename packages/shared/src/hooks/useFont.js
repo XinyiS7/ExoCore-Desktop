@@ -29,7 +29,11 @@ function applyFontVariables(fontPref) {
 }
 
 function getStoredFont() {
-  return localStorage.getItem(FONT_KEY) || DEFAULT_FONT;
+  try {
+    return localStorage.getItem(FONT_KEY) || DEFAULT_FONT;
+  } catch {
+    return DEFAULT_FONT;
+  }
 }
 
 export function useFont() {
@@ -53,7 +57,9 @@ export function useFont() {
   }, []);
 
   const setFont = useCallback((font) => {
-    localStorage.setItem(FONT_KEY, font);
+    try {
+      localStorage.setItem(FONT_KEY, font);
+    } catch { /* storage unavailable */ }
     setFontPreference(font);
     // storage event doesn't fire in same tab — apply directly
     applyFontVariables(font);
