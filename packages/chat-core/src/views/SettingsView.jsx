@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Key, Clock, Bell, Palette } from 'lucide-react';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 const NAV_ITEMS = [
   {
@@ -75,7 +76,9 @@ export default function SettingsView() {
 
       {/* Right content area */}
       <div className="flex-1 min-w-0 overflow-hidden">
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </div>
     </div>
   );

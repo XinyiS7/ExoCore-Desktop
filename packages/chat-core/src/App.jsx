@@ -5,6 +5,7 @@ import { Routes, Route, useNavigate, useParams, useLocation, Outlet, Navigate } 
 import DesktopSidebar from './components/layout/DesktopSidebar';
 import MobileHeader from './components/layout/MobileHeader';
 import MobileBottomBar from './components/layout/MobileBottomBar';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Hooks
 import { useFont } from 'exo-shared';
@@ -53,7 +54,9 @@ function AppLayout() {
 
         {/* Page content */}
         <main className="flex-1 overflow-hidden flex flex-col">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
 
         {/* Mobile: bottom navigation bar */}

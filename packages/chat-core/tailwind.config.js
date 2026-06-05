@@ -10,8 +10,8 @@ export default {
       },
       colors: {
         chat: {
-          bg:    '#0a0a0f',
-          panel: '#111118',
+          bg:    '#171720',
+          panel: '#1a1a23',
           border:'rgba(255,255,255,0.06)',
           accent:'#c0392b',
           'accent-glow': '#e74c3c',
@@ -22,7 +22,7 @@ export default {
         exo: {
           bg:      '#0a0a0f',
           panel:   '#111118',
-          pure:    '#06060a',
+          pure:    '#0f0f1b',
           surface: '#0d0d14',
           border:  'rgba(255,255,255,0.06)',
           accent:  '#c0392b',
