@@ -4,35 +4,18 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 const isWatch = process.argv.includes('--watch');
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/chat/' : '/',
   plugins: [
     react(),
     !isWatch && VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'public',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
       devOptions: { enabled: false },
-      workbox: {
-        importScripts: ['/push-notification.js'],
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
-        navigateFallback: '/index.html',
-        runtimeCaching: [
-          {
-            urlPattern: /^\/api\//,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'exo-api-cache',
-              networkTimeoutSeconds: 10,
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: /^\/media\//,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'exo-media-cache',
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
       },
       manifest: {
         name: 'ExoCore Chat',
@@ -58,4 +41,4 @@ export default defineConfig({
       '/media': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
-})
+}))
