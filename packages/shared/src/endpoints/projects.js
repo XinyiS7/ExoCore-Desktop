@@ -28,3 +28,13 @@ export function uploadProjectFile(projectId, formData) {
 export function deleteProjectFile(projectId, fileId) {
   return apiFetch(`/api/core/projects/${projectId}/files/${fileId}/`, { method: 'DELETE' });
 }
+
+// ── Directory Browsing (§3.3) ──
+// path: relative subdirectory path (empty = root)
+// The backend handles recursive scanning, exclude rules, and sorting.
+// Frontend receives a static nested tree and searches it locally.
+export function listDirectory(projectId, path = '') {
+  const params = {};
+  if (path) params.path = path;
+  return apiFetch(`/api/core/projects/${projectId}/tree/`, { method: 'GET', params });
+}

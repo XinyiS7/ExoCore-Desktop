@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Save, Plus, RefreshCw, X, FileText,
-  Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2, SlidersHorizontal
+  Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2, SlidersHorizontal, Folder
 } from 'lucide-react';
 import { baseUrl, getCsrfToken, MAIN_MODEL_IDS } from 'exo-shared';
 import { getUserAvatarUrl, getAgentAvatarUrl } from '../../utils/avatar';
@@ -14,10 +14,11 @@ import { usePollingChat } from '../../hooks/usePollingChat';
 import AuroraBackground from './AuroraBackground';
 import ControlsDrawer from './ControlsDrawer';
 import { DEFAULT_PALETTE_ID, getPalette } from './palettes';
+import AutocompletePopup from './AutocompletePopup';
 
 const MSGS_PER_PAGE = 40;
 
-const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowConvList, openNewSession, presets, headerTitleOverride, rightExtraButton, onBack }) => {
+const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowConvList, openNewSession, presets, headerTitleOverride, rightExtraButton, onBack, fileTree, pendingInsert, onInsertConsumed, onLoadDirectory, project }) => {
   const [messages, setMessages] = useState([]);
   const [sessionInfo, setSessionInfo] = useState(null);
   const [inputValue, setInputValue] = useState("");
@@ -60,6 +61,21 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const [branchingMessageId, setBranchingMessageId] = useState(null);
   const [isBranching, setIsBranching] = useState(false);
 
+  // ---- @ file autocomplete state ----
+  const [autocompleteOpen, setAutocompleteOpen] = useState(false);
+  const [autocompleteQuery, setAutocompleteQuery] = useState('');
+
+  // Extract @[path] references from input text for chip bar
+  const fileRefs = useMemo(() => {
+    const refs = [];
+    const re = /@\[([^\]]+)\]/g;
+    let m;
+    while ((m = re.exec(inputValue)) !== null) {
+      refs.push({ path: m[1], start: m.index, end: m.index + m[0].length });
+    }
+    return refs;
+  }, [inputValue]);
+
   const allHistoryRef = useRef([]);
   const visibleStartRef = useRef(0);
   const messagesEndRef = useRef(null);
@@ -71,6 +87,42 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const textareaRef = useRef(null);
   const draftTimerRef = useRef(null);
   const composeAttachmentsRef = useRef([]);
+
+  // ---- Consume pendingInsert from Drawer ----
+  useEffect(() => {
+    if (!pendingInsert) return;
+    const el = textareaRef.current;
+    if (!el) return;
+    const token = `@[${pendingInsert.path}]`;
+    const start = el.selectionStart;
+    const newVal = inputValue.slice(0, start) + token + ' ' + inputValue.slice(start);
+    setInputValue(newVal);
+    setTimeout(() => {
+      el.selectionStart = el.selectionEnd = start + token.length + 1;
+      el.focus();
+    }, 0);
+    onInsertConsumed?.();
+  }, [pendingInsert]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---- Autocomplete select handler ----
+  const handleAutocompleteSelect = useCallback((path, type) => {
+    setAutocompleteOpen(false);
+    setAutocompleteQuery('');
+    const el = textareaRef.current;
+    if (!el) return;
+    const cursorPos = el.selectionStart;
+    const textBefore = inputValue.slice(0, cursorPos);
+    const atIdx = textBefore.lastIndexOf('@');
+    if (atIdx === -1) return;
+    const token = `@[${path}]`;
+    const newVal = inputValue.slice(0, atIdx) + token + ' ' + inputValue.slice(cursorPos);
+    setInputValue(newVal);
+    const newCursor = atIdx + token.length + 1;
+    setTimeout(() => {
+      el.selectionStart = el.selectionEnd = newCursor;
+      el.focus();
+    }, 0);
+  }, [inputValue]);
 
   const handleFilesSelected = (files) => {
     if (!activeSessionId || files.length === 0) return;
@@ -270,6 +322,11 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     }
   };
 
+  /** Clean @[path] tokens — replace with @path for the LLM while keeping the reference. */
+  const cleanContentForSend = (text) => {
+    return text.replace(/@\[([^\]]+)\]/g, '@$1');
+  };
+
   const handleSend = async (options = {}) => {
     const regenerateMessageId = options.regenerateMessageId;
     const editMessageId = options.editMessageId !== undefined ? options.editMessageId : (regenerateMessageId ? null : editingMessageId);
@@ -287,7 +344,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         userMsg = {
           id: editMessageId, // Keep same ID if possible or let backend handle
           role: 'user',
-          content: inputValue,
+          content: cleanContentForSend(inputValue),
           attachments: composeAttachments
             .filter(e => e.attachmentId != null)
             .map(e => ({
@@ -308,7 +365,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     } else {
       userMsg = {
         role: 'user',
-        content: inputValue,
+        content: cleanContentForSend(inputValue),
         attachments: composeAttachments
           .filter(e => e.attachmentId != null)
           .map(e => ({
@@ -841,7 +898,45 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
           />
         )}
 
-        <div className={`flex flex-col bg-exo-pure border rounded-[4px] transition-all overflow-hidden ${inputFocused || inputValue ? 'border-exo-accent/40 shadow-glow-gold' : 'border-exo-mist-10'}`}>
+        <div className={`relative flex flex-col bg-exo-pure border rounded-[4px] transition-all overflow-visible ${inputFocused || inputValue ? 'border-exo-accent/40 shadow-glow-gold' : 'border-exo-mist-10'}`}>
+          {/* @ file-reference chip bar */}
+          {fileRefs.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 px-3 pt-2.5 pb-1 border-b border-exo-mist-10 bg-white/[0.02]">
+              {fileRefs.map((ref, i) => (
+                <span
+                  key={`${ref.path}-${i}`}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] bg-chat-accent/10 border border-chat-accent/20 text-[10px] text-chat-accent font-mono"
+                >
+                  {ref.path.includes('/') && !ref.path.endsWith('/') ? (
+                    <FileText size={10} className="shrink-0" />
+                  ) : (
+                    <Folder size={10} className="shrink-0" />
+                  )}
+                  <span className="max-w-[180px] truncate">{ref.path}</span>
+                  <button
+                    onClick={() => {
+                      const newVal = inputValue.slice(0, ref.start) + inputValue.slice(ref.end);
+                      setInputValue(newVal);
+                    }}
+                    className="ml-0.5 text-chat-muted/40 hover:text-red-400 transition-colors"
+                  >
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* @ autocomplete popup — rendered in normal flow above textarea */}
+          <AutocompletePopup
+            isOpen={autocompleteOpen}
+            query={autocompleteQuery}
+            fileTree={fileTree}
+            onSelect={handleAutocompleteSelect}
+            onClose={() => { setAutocompleteOpen(false); setAutocompleteQuery(''); }}
+            onLoadDir={onLoadDirectory}
+          />
+
           {composeAttachments.length > 0 && (
             <div className="flex flex-wrap gap-2 px-3 pt-3 pb-2 border-b border-exo-mist-10 bg-white/[0.02]">
               {composeAttachments.map(e => (
@@ -888,10 +983,46 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
               const v = e.target.value;
               setInputValue(v);
               autoResize();
+
+              // @ autocomplete detection
+              const cursorPos = e.target.selectionStart;
+              const textBeforeCursor = v.slice(0, cursorPos);
+              const atMatch = textBeforeCursor.match(/@([^\s@\[\]]*)$/);
+
+              if (atMatch && project?.work_dir) {
+                setAutocompleteQuery(atMatch[1]);
+                setAutocompleteOpen(true);
+              } else {
+                setAutocompleteOpen(false);
+                setAutocompleteQuery('');
+              }
             }}
             onFocus={() => setInputFocused(true)}
             onBlur={() => { if (!inputValue) setInputFocused(false); }}
-            onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleSend(); } }}
+            onKeyDown={e => {
+              // Ctrl+Enter to send
+              if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) {
+                e.preventDefault();
+                if (!autocompleteOpen) handleSend();
+                return;
+              }
+
+              // Backspace: delete whole @[path] token if cursor is right after it
+              if (e.key === 'Backspace' && !autocompleteOpen) {
+                const cursorPos = e.target.selectionStart;
+                const textBefore = inputValue.slice(0, cursorPos);
+                const tokenMatch = textBefore.match(/@\[[^\]]+\]$/);
+                if (tokenMatch) {
+                  e.preventDefault();
+                  const newVal = inputValue.slice(0, tokenMatch.index) + inputValue.slice(cursorPos);
+                  setInputValue(newVal);
+                  setTimeout(() => {
+                    e.target.selectionStart = e.target.selectionEnd = tokenMatch.index;
+                  }, 0);
+                  return;
+                }
+              }
+            }}
             onPaste={e => {
               const items = Array.from(e.clipboardData?.items || []);
               const imageFiles = items

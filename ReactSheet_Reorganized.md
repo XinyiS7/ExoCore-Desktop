@@ -1,6 +1,6 @@
 ========================================================
   ExoCore — React 前端接口数据格式速查表（重整版）
-  最后更新：2026-06-03（§5.3 ApiKey key池 CRUD；§5.4 key_map 升级为 {keys, default} 多key架构）
+  最后更新：2026-06-05（§3.3 目录浏览 tree endpoint）
 ========================================================
 
 本文是纯数据格式速查，不是后端行为说明书。
@@ -548,6 +548,81 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 // ── 3.2e. work_dir 设置后生效 ──
 // PATCH work_dir 后，read_project 工具使用 work_dir 而非全局 PROJECT_DIR。
 // 前端如需同步文件夹内容，联系后端运行 sync_project 管理命令。
+
+
+3.3  GET /api/core/projects/<id>/tree/  — 完整目录树（递归）
+─────────────────────────────────────────────────────────────
+用途：前端 @ 路径补全 / 文件选择器。
+**一次请求返回完整递归树**，前端拿到静态结构后本地搜索，不逐层请求。
+后端负责：递归扫描、排除规则、排序、跳过隐藏文件。
+缓存 30 秒。
+
+// ── 3.3a. 前提 ──
+// Project.work_dir 必须非空，否则返回 400:
+// { "error": "项目未绑定工作目录，请先设置 work_dir。" }
+
+// ── 3.3b. GET /api/core/projects/<id>/tree/  — 完整递归树（默认）
+// ── 3.3c. GET /api/core/projects/<id>/tree/?path=src — 仅返回单层子目录
+//         （可选，用于 Drawer 按需展开；不带 path 时返回完整递归树）
+
+// Response (200) — 递归嵌套:
+{
+  "path": "",                    // 根目录（空字符串）
+  "entries": [
+    {
+      "name": "src",             "type": "dir",  "path": "src",
+      "entries": [                                 // ← 目录项嵌套子内容
+        {
+          "name": "components",  "type": "dir",  "path": "src/components",
+          "entries": [
+            { "name": "ChatArea.jsx",    "type": "file", "path": "src/components/ChatArea.jsx",    "size": 12345 },
+            { "name": "ChatShell.jsx",   "type": "file", "path": "src/components/ChatShell.jsx",   "size": 6789 }
+          ]
+        },
+        { "name": "main.jsx",    "type": "file", "path": "src/main.jsx",    "size": 1024 }
+      ]
+    },
+    { "name": "README.md",       "type": "file", "path": "README.md",       "size": 2048 },
+    { "name": "package.json",    "type": "file", "path": "package.json",    "size": 1024 }
+  ]
+}
+
+// 排序: 目录优先 → 文件，各自按名称忽略大小写字母排序。
+// path 字段使用正斜杠 "/" 分隔，跨平台统一。
+
+// ── 3.3d. 后端排除规则 ──
+// 以下目录/文件不在返回结果中：
+//   node_modules, .git, __pycache__, .venv, venv, .env,
+//   dist, .next, build, target, .turbo, .pnpm, .yarn,
+//   .cache, .vite, coverage, *.pyc, .DS_Store, Thumbs.db
+// 以及所有 . 开头的隐藏文件和目录。
+
+// ── 3.3e. 错误响应 ──
+
+// work_dir 未绑定 → 400
+{ "error": "项目未绑定工作目录，请先设置 work_dir。" }
+
+// 路径包含非法字符 → 400
+{ "error": "路径包含非法字符。" }
+
+// 路径穿越攻击 → 400
+{ "error": "路径穿越检测：不允许访问工作目录以外的路径。" }
+
+// 路径不存在 → 404
+{ "error": "路径不存在: src/nope" }
+
+// 路径指向文件而非目录 → 400
+{ "error": "路径指向文件而非目录，请使用上级目录。" }
+
+// 权限不足 → 403
+{ "error": "没有权限读取该目录。" }
+
+// ── 3.3f. 前端补全流程 ──
+// 1. 进入 project session → GET /tree/ 一次拿到完整递归树 → 存入 state
+// 2. 用户输入 @ → 本地递归搜索 fileTree，按名字匹配（精确 > 前缀 > 包含）
+// 3. 用户输入 @src/ → 按路径逐层导航 + 名字过滤，纯本地计算
+// 4. 选中后插入 path 字段的值到输入框
+// 5. 30s 轮询刷新全树（文件结构变动不频繁，增量更新）
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

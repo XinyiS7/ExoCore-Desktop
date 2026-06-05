@@ -2,6 +2,51 @@
 
 ---
 
+## 2026-06-05 — @ 文件路径自动补全：ProjectFilesDrawer 文件树 + 输入框 @ 补全
+
+**署名：** Claude / Alicia — 2026-06-05
+
+### 需求
+
+用户在 project 会话的输入框中输入 `@` 时，弹出 work_dir 下的文件/目录补全面板。选中后在输入框中渲染为 chip token，发送时携带相对路径。同时在 ProjectFilesDrawer 中展示可交互的真实文件树。
+
+### 方案简述
+
+- **后端**：`GET /api/core/projects/{id}/tree/` 一次返回完整递归树（目录项嵌套 `entries`），后端负责排除 node_modules/.git 等、排序、跳过隐藏文件。`?path=` 可选参数用于 Drawer 按需加载单层子目录。
+- **前端**：ChatShell 作为数据中枢，一次请求拿全树 → 30s 轮询刷新。AutocompletePopup 纯本地递归搜索（精确 > 前缀 > 包含）。@ 补全和 Drawer 共用同一份 tree 数据，通过 ChatShell 的 `pendingInsert` 回调线打通 Drawer → 输入框。
+- **匹配规则**：无 `/` 时全局递归搜索全树；有 `/` 时按路径逐层导航 + 名字过滤。选中后输入 `@[相对路径]`，发送时转为 `@相对路径`。
+- **API 契约更新**：`ReactSheet_Reorganized.md §3.3` — 改单层返回为递归嵌套，新增排除规则清单和前端流程图。
+
+### 改动文件
+
+| 文件 | 操作 | 说明 |
+|------|------|------|
+| `packages/shared/src/endpoints/projects.js` | 编辑 | 新增 `listDirectory(projectId, path)` |
+| `packages/chat-core/src/components/chat/ChatShell.jsx` | 编辑 | session→project→work_dir 通用解析；tree 数据中枢；pendingInsert 回调线 |
+| `packages/chat-core/src/utils/caret.js` | 新建 | `getCaretCoordinates()` 光标坐标工具 |
+| `packages/chat-core/src/components/chat/AutocompletePopup.jsx` | 新建 | @ 补全面板：全局递归搜索 + 路径导航 + 键盘导航 |
+| `packages/chat-core/src/components/chat/ChatArea.jsx` | 编辑 | @ 检测 + chip bar + 退格整块删除 + 发送提取 + pendingInsert 消费 |
+| `packages/chat-core/src/components/project/FileTree.jsx` | 新建 | 递归文件树组件：折叠/展开 + 懒加载子目录 + 点击插入 |
+| `packages/chat-core/src/components/project/ProjectFilesDrawer.jsx` | 编辑 | Work Directory 区域改为真实 FileTree + 点击插入关闭 |
+| `ReactSheet_Reorganized.md` | 编辑 | §3.3 改递归嵌套格式 + 排除规则清单 |
+
+### 新增或主要变更的函数
+
+- `projectsApi.listDirectory(projectId, path)` — 目录浏览 API 封装
+- `AutocompletePopup` — @ 补全面板组件（`filterAndScore` / `collectAll` 全局搜索 / `highlightMatch` 匹配高亮）
+- `FileTree` + `TreeNode` — 递归文件树组件（展开/折叠/懒加载/格式化文件大小）
+- `ChatShell.fetchFileTree(relPath)` — 单次请求拿树 + 子目录合并
+- `ChatArea.handleAutocompleteSelect(path, type)` — 选中后替换 @ 为 `@[path]` token
+- `ChatArea.cleanContentForSend(text)` — 发送前 `@[path]` → `@path` 转换
+
+### 是否成功验收
+
+- ✅ Build 通过（chat-core + chronicle + council 全部无错误）
+- ⏳ 待后端 tree API 改为递归嵌套格式后联调测试
+- ⏳ 待手动测试：@ 触发 → 面板弹出 → 键盘选择 → chip 插入 → 发送 → Drawer 文件树浏览
+
+---
+
 ## 2026-06-04 — 共享 Profile + 字体设置：三模块统一身份 & 字体系统
 
 **署名：** Claude / Alicia — 2026-06-04
