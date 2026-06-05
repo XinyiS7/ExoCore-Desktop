@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Send, Activity, CornerDownLeft } from 'lucide-react';
-import { tweetsApi } from 'exo-shared';
+import { tweetsApi, agentsApi } from 'exo-shared';
+import { getUserAvatar, getAgentAvatar, getUserNick } from 'exo-shared';
 
 const formatTime = (dateStr) => {
   if (!dateStr) return '';
@@ -18,10 +19,8 @@ const formatTime = (dateStr) => {
 };
 
 export default function TimelineView() {
-  const userNick = localStorage.getItem('exo_user_nick') || 'You';
-  const userAvatarUrl = `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(userNick)}`;
-  const getAgentAvatarUrl = (name) =>
-    `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${name ? `agent-${name}` : 'agent-unknown'}`;
+  const userNick = getUserNick();
+  const userAvatarUrl = getUserAvatar();
 
   const [tweets, setTweets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +29,16 @@ export default function TimelineView() {
   const [replyingToId, setReplyingToId] = useState(null);
   const [replyContent, setReplyContent] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const [presets, setPresets] = useState([]);
+
+  // Fetch presets for agent name/avatar resolution
+  useEffect(() => {
+    agentsApi.listPresets().then(data => {
+      setPresets(data.presets || data || []);
+    }).catch(err => {
+      console.error('Failed to fetch presets', err);
+    });
+  }, []);
 
   const fetchTweets = useCallback(async () => {
     setLoading(true);
@@ -90,8 +99,25 @@ export default function TimelineView() {
   const getAuthorInfo = (tweet) => {
     if (tweet.author === 'user')
       return { name: userNick, avatar: userAvatarUrl, isUser: true };
-    const name = tweet.author || 'Agent';
-    return { name, avatar: getAgentAvatarUrl(name), isUser: false };
+
+    // author format: "agent:{preset_id}" e.g. "agent:1"
+    const raw = tweet.author || '';
+    let presetId = null;
+    let name = 'Agent';
+
+    if (raw.startsWith('agent:')) {
+      presetId = parseInt(raw.split(':')[1]);
+      const preset = presets?.find(p => p.id === presetId);
+      name = preset?.name || 'G045';
+    } else {
+      name = raw;
+    }
+
+    return {
+      name,
+      avatar: getAgentAvatar(presetId, name),
+      isUser: false,
+    };
   };
 
   return (
@@ -111,7 +137,7 @@ export default function TimelineView() {
             <div className="flex gap-3">
               <img
                 src={userAvatarUrl}
-                className="w-10 h-10 rounded-full border border-chron-border bg-black object-cover shrink-0"
+                className="w-10 h-10 rounded-full border border-chron-border bg-chron-bg object-cover shrink-0"
                 alt={userNick}
               />
               <div className="flex-1 space-y-3">
@@ -157,7 +183,7 @@ export default function TimelineView() {
                 return (
                   <div key={tweet.id} className="py-5">
                     <div className="flex gap-3">
-                      <img src={avatar} className={`w-9 h-9 rounded-full border bg-black object-cover shrink-0 ${isUser ? 'border-chron-border' : 'border-chron-accent/40'}`} alt={name} />
+                      <img src={avatar} className={`w-9 h-9 rounded-full border bg-chron-bg object-cover shrink-0 ${isUser ? 'border-chron-border' : 'border-chron-accent/40'}`} alt={name} />
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-baseline gap-2">
                           <span className={`text-xs font-bold ${isUser ? 'text-chron-text' : 'text-chron-accent'}`}>{name}</span>
@@ -175,7 +201,7 @@ export default function TimelineView() {
                             <textarea rows={2} value={replyContent} onChange={e => setReplyContent(e.target.value)}
                               onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); handleReply(tweet.id); } }}
                               placeholder={`Reply to ${name}...`} autoFocus
-                              className="flex-1 bg-black/20 border border-chron-border rounded px-3 py-2 text-xs text-chron-text outline-none focus:border-chron-accent/40 resize-none placeholder:text-chron-muted/20"
+                              className="flex-1 bg-chron-accent/5 border border-chron-border rounded px-3 py-2 text-xs text-chron-text outline-none focus:border-chron-accent/40 resize-none placeholder:text-chron-muted/30"
                             />
                             <button onClick={() => handleReply(tweet.id)} disabled={!replyContent.trim() || isSubmittingReply}
                               className="px-3 py-2 bg-chron-accent text-chron-bg rounded hover:brightness-110 transition-all active:scale-95 disabled:opacity-30 shrink-0">

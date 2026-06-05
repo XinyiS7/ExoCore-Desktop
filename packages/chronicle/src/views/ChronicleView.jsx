@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Globe, Heart, Filter } from 'lucide-react';
 import ChronicleEntryRow from '../components/ChronicleEntryRow';
 import ChronicleEntryModal from '../components/ChronicleEntryModal';
-import { chronicleApi } from 'exo-shared';
+import { chronicleApi, agentsApi } from 'exo-shared';
 
 const SCOPES = [
   { value: 'all', label: '全部', icon: null },
@@ -10,7 +10,8 @@ const SCOPES = [
   { value: '里', label: '里 · 内部', icon: Heart },
 ];
 
-export default function ChronicleView({ presets = [] }) {
+export default function ChronicleView({ presets: presetsProp = [] }) {
+  const [presets, setPresets] = useState(presetsProp);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scopeFilter, setScopeFilter] = useState('all');
@@ -25,6 +26,16 @@ export default function ChronicleView({ presets = [] }) {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Fetch presets for the modal dropdown (if not provided via props)
+  useEffect(() => {
+    if (presetsProp.length > 0) return;
+    agentsApi.listPresets().then(data => {
+      setPresets(data.presets || data || []);
+    }).catch(err => {
+      console.error('Failed to fetch presets for ChronicleView', err);
+    });
+  }, [presetsProp]);
 
   const handleEdit = (entry) => setModalEntry(entry);
   const handleDelete = (id) => {

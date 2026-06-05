@@ -8,16 +8,16 @@
 
 @layer base {
   body {
-    background-color: #1a1a14;
-    color: #d4c5a9;
+    background-color: #faf6f0;
+    color: #3d2b1f;
     font-family: var(--font-body);
   }
 
   .paper-card {
-    background: #222218;
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    background: #fffdf8;
+    border: 1px solid rgba(139, 90, 43, 0.10);
     border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 1px 3px rgba(139, 90, 43, 0.06);
   }
 }
 

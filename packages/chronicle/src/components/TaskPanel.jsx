@@ -114,7 +114,7 @@ export default function TaskPanel({ openDestructor }) {
       `}>
         <div className="flex items-center justify-between px-4 h-14 border-b border-exo-mist-10 lg:hidden">
           <span className="text-[10px] font-bold text-exo-accent tracking-[0.2em] uppercase font-mono">CHRONOS_FLTR</span>
-          <button onClick={() => setShowSidebar(false)} className="p-1 text-exo-muted hover:text-white">
+          <button onClick={() => setShowSidebar(false)} className="p-1 text-exo-muted hover:text-chron-text">
             <X size={18} />
           </button>
         </div>
@@ -139,7 +139,7 @@ export default function TaskPanel({ openDestructor }) {
                     group flex items-center gap-3 w-full text-[11px] py-2 px-3 rounded-[2px] transition-all text-left font-mono uppercase tracking-tight
                     ${typeFilter === t.value
                       ? 'text-exo-accent bg-exo-accent/5 border-l-2 border-exo-accent'
-                      : 'text-exo-muted/60 hover:text-white hover:bg-white/5 border-l-2 border-transparent'}
+                      : 'text-exo-muted/60 hover:text-chron-text hover:bg-chron-accent/5 border-l-2 border-transparent'}
                   `}
                 >
                   {t.label}
@@ -160,7 +160,7 @@ export default function TaskPanel({ openDestructor }) {
                     group flex items-center gap-3 w-full text-[11px] py-2 px-3 rounded-[2px] transition-all text-left font-mono uppercase tracking-tight
                     ${statusFilter === s.value
                       ? 'text-exo-accent bg-exo-accent/5 border-l-2 border-exo-accent'
-                      : 'text-exo-muted/60 hover:text-white hover:bg-white/5 border-l-2 border-transparent'}
+                      : 'text-exo-muted/60 hover:text-chron-text hover:bg-chron-accent/5 border-l-2 border-transparent'}
                   `}
                 >
                   {s.label}
@@ -190,7 +190,7 @@ export default function TaskPanel({ openDestructor }) {
           
           <button
             onClick={() => setModalEntry({})}
-            className="flex items-center gap-2 px-4 py-1.5 bg-white text-exo-pure rounded-[2px] text-[11px] font-bold uppercase tracking-widest hover:bg-exo-accent transition-all shadow-brutalist active:scale-95"
+            className="flex items-center gap-2 px-4 py-1.5 bg-chron-accent text-white rounded-[2px] text-[11px] font-bold uppercase tracking-widest hover:bg-chron-accent/80 transition-all shadow-brutalist active:scale-95"
           >
             <Plus size={14} />
             <span className="hidden sm:inline">Initialize Task</span>
@@ -208,8 +208,8 @@ export default function TaskPanel({ openDestructor }) {
 
           {!loading && filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center h-64 opacity-20">
-              <span className="text-[11px] text-white font-mono uppercase tracking-[0.3em]">No Active Tasks</span>
-              <span className="text-[9px] text-white font-mono uppercase tracking-[0.1em] mt-2">Cycle: {selectedDate}</span>
+              <span className="text-[11px] text-chron-text/40 font-mono uppercase tracking-[0.3em]">No Active Tasks</span>
+              <span className="text-[9px] text-chron-text/30 font-mono uppercase tracking-[0.1em] mt-2">Cycle: {selectedDate}</span>
             </div>
           )}
 
