@@ -35,6 +35,7 @@
     "session_type": "chat",                        // "chat" | "code" | "cli"
     "thinking_level": "auto",                      // "off" | "auto" | "low" | "medium" | "high"
     "temperature": 1.0,                            // 0.0 ~ 2.0，每次发消息后自动持久化
+    "memory_injection_enabled": true,              // 记忆注入偏好；null = 未设置；可通过 PATCH 持久化
 
     // 嵌套的 AgentSession（精简版，preset 信息已由上方扁平字段覆盖）
     "agent_session": {
@@ -82,6 +83,7 @@
   "temperature": 1.0,
   "model": null,                    // 可选模型覆盖
   "api_key_alias": null,            // 可选 API Key 别名；null = 使用默认 key
+  "memory_injection_enabled": true, // 记忆注入开关；false = 暂停注入 + Gemini 走冷路径
   "files": [],                      // 可选上传文件
   "pending_attachments": []         // 可选附件 ID
 }
@@ -591,11 +593,16 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 // path 字段使用正斜杠 "/" 分隔，跨平台统一。
 
 // ── 3.3d. 后端排除规则 ──
-// 以下目录/文件不在返回结果中：
-//   node_modules, .git, __pycache__, .venv, venv, .env,
+//
+// 完全隐藏（不出现于结果中）：
+//   .git, __pycache__, .venv, venv, .env,
 //   dist, .next, build, target, .turbo, .pnpm, .yarn,
 //   .cache, .vite, coverage, *.pyc, .DS_Store, Thumbs.db
 // 以及所有 . 开头的隐藏文件和目录。
+//
+// 黑洞目录（显示但不递归 — 依赖目录文件数极大）：
+//   node_modules, vendor, bower_components, packages
+// 这些目录的 entry 只有 {name, type, path}，不包含 entries 子内容。
 
 // ── 3.3e. 错误响应 ──
 
