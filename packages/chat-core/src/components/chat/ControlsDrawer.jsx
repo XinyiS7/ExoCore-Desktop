@@ -24,6 +24,9 @@ export default function ControlsDrawer({
   // Key alias state
   const [aliases, setAliases] = useState([]);
   const [selectedAlias, setSelectedAlias] = useState('');
+  const [memInjectEnabled, setMemInjectEnabled] = useState(() =>
+    localStorage.getItem(`exo_mem_inject_${sessionId}`) !== 'false'
+  );
 
   // Determine platform from current model
   const platform = MODEL_REGISTRY.find(m => m.id === currentModel)?.provider || '';
@@ -270,6 +273,39 @@ export default function ControlsDrawer({
             {platform ? `No keys configured for ${platform}` : 'Select a model first'}
           </span>
         )}
+      </div>
+
+      {/* Row 2.5: Memory Injection Toggle */}
+      <div className="flex items-center gap-3">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-exo-muted/40 flex-shrink-0">
+          Mem Inject
+        </span>
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={memInjectEnabled}
+            onChange={() => {
+              const next = !memInjectEnabled;
+              setMemInjectEnabled(next);
+              localStorage.setItem(`exo_mem_inject_${sessionId}`, String(next));
+            }}
+            className="sr-only"
+          />
+          <span
+            className={`w-7 h-4 rounded-full transition-colors flex items-center px-[2px] ${
+              memInjectEnabled ? 'bg-exo-accent/60' : 'bg-exo-mist-10'
+            }`}
+          >
+            <span
+              className={`w-3 h-3 rounded-full bg-white transition-transform ${
+                memInjectEnabled ? 'translate-x-3' : 'translate-x-0'
+              }`}
+            />
+          </span>
+          <span className="text-[10px] font-sans text-exo-muted/40">
+            {memInjectEnabled ? 'On' : 'Off'}
+          </span>
+        </label>
       </div>
 
       {/* Row 3: Color Scheme */}
