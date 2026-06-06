@@ -80,6 +80,11 @@ export default function ControlsDrawer({
 
   useEffect(() => { loadKeyData(); }, [loadKeyData]);
 
+  // Re-sync memInjectEnabled when sessionId changes (toggle mounted across session switches)
+  useEffect(() => {
+    setMemInjectEnabled(localStorage.getItem(`exo_mem_inject_${sessionId}`) !== 'false');
+  }, [sessionId]);
+
   // Persist alias choice to localStorage
   const handleAliasChange = (alias) => {
     setSelectedAlias(alias);
