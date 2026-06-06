@@ -84,23 +84,37 @@ self.addEventListener('push', (event) => {
 });
 
 self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-
   const urlToOpen = event.notification.data?.url || '/';
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Try to focus an existing window from our origin
+    (async () => {
+      const clientList = await clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+
+      // 1. Try to find and focus an existing window at our origin
+      let focused = null;
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          return client.focus();
+          // Post the target URL so the app can navigate via React Router
+          client.postMessage({
+            type: 'PUSH_NAVIGATE',
+            url: urlToOpen,
+          });
+          focused = await client.focus();
+          break;
         }
       }
-      // No existing window — open a new one
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
+
+      // 2. No existing window — open a new one
+      if (!focused && clients.openWindow) {
+        await clients.openWindow(urlToOpen);
       }
-    })
+
+      // 3. Close notification after navigation is initiated
+      event.notification.close();
+    })()
   );
 });
 
