@@ -2,6 +2,49 @@
 
 ---
 
+## 2026-06-06 — memory_injection_enabled 前端开关 + Async 模式断点续传
+
+**署名：** Claude / Alicia — 2026-06-06
+
+### 需求
+
+1. **memory_injection_enabled 开关** — ControlsDrawer 中新增记忆注入 toggle，localStorage 持久化，随消息发送，行为与 key_alias 一致。后端 Conversation 模型和 API 已支持此字段，仅缺前端 UI。
+2. **Async 模式断点续传** — 用户开启 Async 模式发消息后退出会话再进入，前端自动检测活跃 async 任务并恢复轮询，避免丢失进度。此前退出后前端不再轮询，后端仍在处理但前端无感知。
+
+### 方案简述
+
+- **memory_injection_enabled**：ControlsDrawer 内部管理 state + localStorage (`exo_mem_inject_${sessionId}`)，默认 true。ChatArea.handleSend 发送时从 localStorage 读取并加入 bodyData。与 key_alias 的 localStorage 模式完全一致，零后端改动。
+- **Async 断点续传**：发送 async 消息时，`usePollingChat.sendMessageAsync` 将 `{message_id, timestamp}` 写入 localStorage (`exo_async_${sessionId}`)。重新进入会话时，ChatArea useEffect 检测 localStorage → GET `/status/` 查询状态 → 根据 streaming/done/error/not_found 四种状态分别处理 → streaming 时回放已缓冲 events → 调用新增的 `resumePolling` 继续轮询。
+- **代码重构**：提取 `applyDeltaToMessage` 模块级辅助函数消除 4 处 onDelta 重复代码；提取 `pollLoop` 共享轮询循环消除 sendMessageAsync/resumePolling 间的 ~45 行重复；添加 `loadGenRef` 过时保护防止会话切换竞态。
+
+### 改动文件
+
+| 文件 | 操作 | 说明 |
+|------|------|------|
+| `packages/chat-core/src/components/chat/ControlsDrawer.jsx` | 编辑 | 新增 memInjectEnabled state + toggle UI（Key Alias 同行，`\|` 分隔） |
+| `packages/chat-core/src/components/chat/ChatArea.jsx` | 编辑 | bodyData 携带 memory_injection_enabled；useEffect 检测活跃 async 任务并恢复轮询；导入 resumePolling；loadGenRef 过时保护；applyDeltaToMessage 辅助函数 |
+| `packages/chat-core/src/hooks/usePollingChat.js` | 重构 | 提取 pollLoop 共享轮询；sendMessageAsync 写入/清除 localStorage；新增 resumePolling 函数；not_found 终端状态处理；修复 cursor fallback bug；修复 async Promise executor 反模式 |
+
+### 新增或主要变更的函数
+
+- `ControlsDrawer.memInjectEnabled` — localStorage 持久化的记忆注入开关 state
+- `applyDeltaToMessage(msg, text, eventType)` — 模块级 delta→message 事件类型映射辅助函数
+- `usePollingChat.pollLoop(messageId, sessionId, signal, onDelta, resolve, reject)` — 共享轮询循环（cursor 管理 + 4 状态处理 + abort 清理）
+- `usePollingChat.resumePolling(messageId, sessionId, signal, onDelta)` — 断点续传入口（跳过 POST，直接轮询）
+- `ChatArea.loadGenRef` — useEffect 过时保护计数器，防止会话切换竞态
+
+### 是否成功验收
+
+- ✅ Build 通过（chat-core + chronicle + council 全部无错误）
+- ✅ 5173 dev server 可见 Mem Inject toggle（Key Alias 同行）
+- ✅ 8080 production nginx 可见并正常工作
+- ✅ Async 断点续传：退出再进入会话自动恢复轮询
+- ✅ Async 断点续传：刷新页面（F5）后自动恢复
+- ✅ Async 断点续传：任务完成后切回正常加载完整消息
+- ✅ 后端零改动
+
+---
+
 ## 2026-06-05 — @ 文件路径自动补全：ProjectFilesDrawer 文件树 + 输入框 @ 补全
 
 **署名：** Claude / Alicia — 2026-06-05
