@@ -46,7 +46,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const [userNick, setUserNick] = useState(() => localStorage.getItem('exo_user_nick') || 'You');
   const [userAvatarUrl] = useState(() => getUserAvatarUrl());
 
-  const { sendMessageAsync } = usePollingChat();
+  const { sendMessageAsync, resumePolling } = usePollingChat();
 
   const [showAttachPanel, setShowAttachPanel] = useState(false);
   const [sessionAttachments, setSessionAttachments] = useState([]);
@@ -283,6 +283,15 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     const savedDraft = localStorage.getItem(`exo_draft_${activeSessionId}`);
     setInputValue(savedDraft ?? '');
 
+    // [Async resume] Check for active async task to resume
+    const asyncData = localStorage.getItem(`exo_async_${activeSessionId}`);
+    let pendingAsync = null;
+    if (asyncData) {
+      try { pendingAsync = JSON.parse(asyncData); } catch (e) {
+        localStorage.removeItem(`exo_async_${activeSessionId}`);
+      }
+    }
+
     fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
@@ -306,6 +315,161 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         setMessages(enriched.slice(startIdx));
         setHasMore(startIdx > 0);
         requestAnimationFrame(() => scrollToBottom(false));
+
+        // [Async resume] After messages loaded, check if we need to resume polling
+        if (!pendingAsync) return;
+        const { message_id } = pendingAsync;
+
+        fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/status/?message_id=${message_id}&cursor=0`, {
+          headers: { 'X-CSRFToken': getCsrfToken() },
+          credentials: 'include',
+        })
+          .then(res => res.json())
+          .then(statusData => {
+            if (statusData.status === 'done') {
+              // Task completed while away — messages already loaded above
+              localStorage.removeItem(`exo_async_${activeSessionId}`);
+              return;
+            }
+
+            if (statusData.status === 'error') {
+              localStorage.removeItem(`exo_async_${activeSessionId}`);
+              // Mark last assistant message with error if present
+              setMessages(prev => {
+                const newMsgs = [...prev];
+                const last = newMsgs[newMsgs.length - 1];
+                if (last && last.role === 'assistant') {
+                  const updated = { ...last, error: statusData.error_message || 'Server error' };
+                  newMsgs[newMsgs.length - 1] = updated;
+                  allHistoryRef.current[allHistoryRef.current.length - 1] = updated;
+                }
+                return newMsgs;
+              });
+              return;
+            }
+
+            if (statusData.status === 'not_found') {
+              // Task expired — messages already loaded
+              localStorage.removeItem(`exo_async_${activeSessionId}`);
+              return;
+            }
+
+            // status === 'streaming' — resume polling
+            setIsGenerating(true);
+            abortControllerRef.current = new AbortController();
+
+            // Push AI placeholder if last message isn't assistant
+            setMessages(prev => {
+              const needsPlaceholder = prev.length === 0 || prev[prev.length - 1].role !== 'assistant';
+              if (needsPlaceholder) {
+                const placeholder = {
+                  id: Date.now(),
+                  role: 'assistant',
+                  content: '',
+                  reasoning_content: '',
+                  reasoning_steps: [],
+                  new_anchors: [],
+                };
+                allHistoryRef.current = [...allHistoryRef.current, placeholder];
+                return [...prev, placeholder];
+              }
+              return prev;
+            });
+
+            // Replay buffered events
+            const initialEvents = statusData.events || [];
+            if (initialEvents.length > 0) {
+              setMessages(prev => {
+                const newMsgs = [...prev];
+                const lastMsg = { ...newMsgs[newMsgs.length - 1] };
+                initialEvents.forEach(ev => {
+                  const text = ev.delta || '';
+                  const type = ev.event_type || 'content';
+                  if (type === 'thinking') {
+                    lastMsg.reasoning_content = (lastMsg.reasoning_content || '') + text;
+                    lastMsg.status_text = null;
+                  } else if (type === 'reasoning') {
+                    const steps = [...(lastMsg.reasoning_steps || [])];
+                    if (steps.length === 0 || steps[steps.length - 1] !== text) steps.push(text);
+                    lastMsg.reasoning_steps = steps;
+                  } else if (type === 'status') {
+                    lastMsg.status_text = text;
+                  } else if (type === 'anchor_created') {
+                    try {
+                      const parsed = typeof text === 'string' ? JSON.parse(text) : text;
+                      lastMsg.new_anchors = [...(lastMsg.new_anchors || []), parsed];
+                    } catch(e) {}
+                  } else {
+                    lastMsg.content = (lastMsg.content || '') + text;
+                    lastMsg.status_text = null;
+                  }
+                });
+                newMsgs[newMsgs.length - 1] = lastMsg;
+                allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
+                return newMsgs;
+              });
+            }
+
+            // Start polling
+            resumePolling(
+              message_id,
+              activeSessionId,
+              abortControllerRef.current.signal,
+              (text, type) => {
+                setMessages(prev => {
+                  const newMsgs = [...prev];
+                  const lastMsg = { ...newMsgs[newMsgs.length - 1] };
+                  if (type === 'thinking') {
+                    lastMsg.reasoning_content = (lastMsg.reasoning_content || '') + text;
+                    lastMsg.status_text = null;
+                  } else if (type === 'reasoning') {
+                    const steps = [...(lastMsg.reasoning_steps || [])];
+                    if (steps.length === 0 || steps[steps.length - 1] !== text) steps.push(text);
+                    lastMsg.reasoning_steps = steps;
+                  } else if (type === 'status') {
+                    lastMsg.status_text = text;
+                  } else if (type === 'anchor_created') {
+                    try {
+                      const parsed = typeof text === 'string' ? JSON.parse(text) : text;
+                      lastMsg.new_anchors = [...(lastMsg.new_anchors || []), parsed];
+                    } catch(e) {}
+                  } else {
+                    lastMsg.content = (lastMsg.content || '') + text;
+                    lastMsg.status_text = null;
+                  }
+                  newMsgs[newMsgs.length - 1] = lastMsg;
+                  allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
+                  return newMsgs;
+                });
+                if (isNearBottom()) scrollToBottom(false);
+              }
+            ).then(() => {
+              // Polling complete — reload full message list
+              setIsGenerating(false);
+              abortControllerRef.current = null;
+              fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { credentials: 'include' })
+                .then(res => res.json())
+                .then(fullData => {
+                  if (!Array.isArray(fullData) || fullData.length === 0) return;
+                  const enrichedFull = enrichMessages(fullData);
+                  allHistoryRef.current = enrichedFull;
+                  const sIdx = Math.max(0, enrichedFull.length - MSGS_PER_PAGE);
+                  visibleStartRef.current = sIdx;
+                  setMessages(enrichedFull.slice(sIdx));
+                  requestAnimationFrame(() => scrollToBottom(false));
+                })
+                .catch(() => {});
+            }).catch(err => {
+              if (err.name === 'AbortError') return;
+              setIsGenerating(false);
+              abortControllerRef.current = null;
+              console.error('Async resume failed:', err);
+            });
+          })
+          .catch(() => {
+            // Network error querying status — clear and move on
+            localStorage.removeItem(`exo_async_${activeSessionId}`);
+          });
       })
       .catch(err => console.error("获取失败:", err));
 
