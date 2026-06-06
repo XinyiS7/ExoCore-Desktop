@@ -16,6 +16,7 @@ export const usePollingChat = () => {
 
     const onAbort = () => {
       localStorage.removeItem(`exo_async_${sessionId}`);
+      if (signal) signal.removeEventListener('abort', onAbort);
       cleanup();
       reject(new DOMException('Aborted', 'AbortError'));
     };

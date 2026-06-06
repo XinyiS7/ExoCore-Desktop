@@ -18,6 +18,29 @@ import AutocompletePopup from './AutocompletePopup';
 
 const MSGS_PER_PAGE = 40;
 
+/** Apply a streaming delta to a message object (mutates and returns the message). */
+const applyDeltaToMessage = (msg, text, eventType) => {
+  if (eventType === 'thinking') {
+    msg.reasoning_content = (msg.reasoning_content || '') + text;
+    msg.status_text = null;
+  } else if (eventType === 'reasoning') {
+    const steps = [...(msg.reasoning_steps || [])];
+    if (steps.length === 0 || steps[steps.length - 1] !== text) steps.push(text);
+    msg.reasoning_steps = steps;
+  } else if (eventType === 'status') {
+    msg.status_text = text;
+  } else if (eventType === 'anchor_created') {
+    try {
+      const parsed = typeof text === 'string' ? JSON.parse(text) : text;
+      msg.new_anchors = [...(msg.new_anchors || []), parsed];
+    } catch(e) {}
+  } else {
+    msg.content = (msg.content || '') + text;
+    msg.status_text = null;
+  }
+  return msg;
+};
+
 const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowConvList, openNewSession, presets, headerTitleOverride, rightExtraButton, onBack, fileTree, pendingInsert, onInsertConsumed, onLoadDirectory, project }) => {
   const [messages, setMessages] = useState([]);
   const [sessionInfo, setSessionInfo] = useState(null);
@@ -85,6 +108,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const topSentinelRef = useRef(null);
   const cacheRef = useRef(null);
   const textareaRef = useRef(null);
+  const loadGenRef = useRef(0);
   const draftTimerRef = useRef(null);
   const composeAttachmentsRef = useRef([]);
 
@@ -263,6 +287,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
 
   useEffect(() => {
     if (!activeSessionId) return;
+    const loadGen = ++loadGenRef.current;
     allHistoryRef.current = [];
     visibleStartRef.current = 0;
     setMessages([]);
@@ -295,6 +320,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
+        if (loadGenRef.current !== loadGen) return;
         const current = data.find(c => c.id === activeSessionId);
         if (current) {
           setSessionInfo(current);
@@ -308,6 +334,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
+        if (loadGenRef.current !== loadGen) return;
         const enriched = enrichMessages(data);
         allHistoryRef.current = enriched;
         const startIdx = Math.max(0, enriched.length - MSGS_PER_PAGE);
@@ -326,6 +353,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         })
           .then(res => res.json())
           .then(statusData => {
+            if (loadGenRef.current !== loadGen) return;
             if (statusData.status === 'done') {
               // Task completed while away — messages already loaded above
               localStorage.removeItem(`exo_async_${activeSessionId}`);
@@ -383,26 +411,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
                 const newMsgs = [...prev];
                 const lastMsg = { ...newMsgs[newMsgs.length - 1] };
                 initialEvents.forEach(ev => {
-                  const text = ev.delta || '';
-                  const type = ev.event_type || 'content';
-                  if (type === 'thinking') {
-                    lastMsg.reasoning_content = (lastMsg.reasoning_content || '') + text;
-                    lastMsg.status_text = null;
-                  } else if (type === 'reasoning') {
-                    const steps = [...(lastMsg.reasoning_steps || [])];
-                    if (steps.length === 0 || steps[steps.length - 1] !== text) steps.push(text);
-                    lastMsg.reasoning_steps = steps;
-                  } else if (type === 'status') {
-                    lastMsg.status_text = text;
-                  } else if (type === 'anchor_created') {
-                    try {
-                      const parsed = typeof text === 'string' ? JSON.parse(text) : text;
-                      lastMsg.new_anchors = [...(lastMsg.new_anchors || []), parsed];
-                    } catch(e) {}
-                  } else {
-                    lastMsg.content = (lastMsg.content || '') + text;
-                    lastMsg.status_text = null;
-                  }
+                  applyDeltaToMessage(lastMsg, ev.delta || '', ev.event_type || 'content');
                 });
                 newMsgs[newMsgs.length - 1] = lastMsg;
                 allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
@@ -416,27 +425,11 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
               activeSessionId,
               abortControllerRef.current.signal,
               (text, type) => {
+                if (loadGenRef.current !== loadGen) return;
                 setMessages(prev => {
                   const newMsgs = [...prev];
                   const lastMsg = { ...newMsgs[newMsgs.length - 1] };
-                  if (type === 'thinking') {
-                    lastMsg.reasoning_content = (lastMsg.reasoning_content || '') + text;
-                    lastMsg.status_text = null;
-                  } else if (type === 'reasoning') {
-                    const steps = [...(lastMsg.reasoning_steps || [])];
-                    if (steps.length === 0 || steps[steps.length - 1] !== text) steps.push(text);
-                    lastMsg.reasoning_steps = steps;
-                  } else if (type === 'status') {
-                    lastMsg.status_text = text;
-                  } else if (type === 'anchor_created') {
-                    try {
-                      const parsed = typeof text === 'string' ? JSON.parse(text) : text;
-                      lastMsg.new_anchors = [...(lastMsg.new_anchors || []), parsed];
-                    } catch(e) {}
-                  } else {
-                    lastMsg.content = (lastMsg.content || '') + text;
-                    lastMsg.status_text = null;
-                  }
+                  applyDeltaToMessage(lastMsg, text, type);
                   newMsgs[newMsgs.length - 1] = lastMsg;
                   allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
                   return newMsgs;
@@ -444,6 +437,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
                 if (isNearBottom()) scrollToBottom(false);
               }
             ).then(() => {
+              if (loadGenRef.current !== loadGen) return;
               // Polling complete — reload full message list
               setIsGenerating(false);
               abortControllerRef.current = null;
@@ -466,8 +460,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
               console.error('Async resume failed:', err);
             });
           })
-          .catch(() => {
-            // Network error querying status — clear and move on
+          .catch((err) => {
+            console.warn('Async resume status query failed:', err);
             localStorage.removeItem(`exo_async_${activeSessionId}`);
           });
       })
@@ -477,6 +471,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
       .then(res => res.json())
       .then(data => setSessionAttachments(Array.isArray(data) ? data : (data.attachments || [])))
       .catch(() => {});
+    return () => { ++loadGenRef.current; };
   }, [activeSessionId, presets]);
 
   const handleStop = () => {
@@ -597,24 +592,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
           setMessages(prev => {
             const newMsgs = [...prev];
             const lastMsg = { ...newMsgs[newMsgs.length - 1] };
-            if (type === 'thinking') {
-              lastMsg.reasoning_content = (lastMsg.reasoning_content || '') + text;
-              lastMsg.status_text = null;
-            } else if (type === 'reasoning') {
-              const steps = [...(lastMsg.reasoning_steps || [])];
-              if (steps.length === 0 || steps[steps.length - 1] !== text) steps.push(text);
-              lastMsg.reasoning_steps = steps;
-            } else if (type === 'status') {
-              lastMsg.status_text = text;
-            } else if (type === 'anchor_created') {
-              try {
-                const parsed = typeof text === 'string' ? JSON.parse(text) : text;
-                lastMsg.new_anchors = [...(lastMsg.new_anchors || []), parsed];
-              } catch(e) {}
-            } else {
-              lastMsg.content = (lastMsg.content || '') + text;
-              lastMsg.status_text = null;
-            }
+            applyDeltaToMessage(lastMsg, text, type);
             newMsgs[newMsgs.length - 1] = lastMsg;
             allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
             return newMsgs;
@@ -683,21 +661,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
               const newMsgs = [...prev];
               const lastMsg = { ...newMsgs[newMsgs.length - 1] };
               newMsgs[newMsgs.length - 1] = lastMsg;
-              if (eventType === 'reasoning') {
-                const steps = [...(lastMsg.reasoning_steps || [])];
-                if (steps[steps.length - 1] !== text) steps.push(text);
-                lastMsg.reasoning_steps = steps;
-              } else if (eventType === 'thinking') {
-                lastMsg.reasoning_content = (lastMsg.reasoning_content || '') + text;
-                lastMsg.status_text = null;
-              } else if (eventType === 'content') {
-                lastMsg.content = (lastMsg.content || '') + text;
-                lastMsg.status_text = null;
-              } else if (eventType === 'anchor_created') {
-                try { lastMsg.new_anchors = [...(lastMsg.new_anchors || []), JSON.parse(text)]; } catch(e) {}
-              } else if (eventType === 'status') {
-                lastMsg.status_text = text;
-              }
+              applyDeltaToMessage(lastMsg, text, eventType);
               allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
               return newMsgs;
             });
