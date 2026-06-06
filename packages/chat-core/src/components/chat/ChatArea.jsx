@@ -406,6 +406,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         ...(activeSessionId && localStorage.getItem(`exo_session_key_${activeSessionId}`)
           ? { api_key_alias: localStorage.getItem(`exo_session_key_${activeSessionId}`) }
           : {}),
+        ...(activeSessionId && { memory_injection_enabled: localStorage.getItem(`exo_mem_inject_${activeSessionId}`) !== 'false' }),
         ...(currentPending.length > 0 || composeAttachments.some(e => e.attachmentId != null)
           ? { pending_attachments: [
               ...currentPending.map(a => typeof a === 'object' ? a.id : a),
