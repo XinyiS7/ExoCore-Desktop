@@ -1,9 +1,8 @@
 import React from 'react';
-import { ArrowLeft } from 'lucide-react';
-import MemoryManager from '../components/settings/MemoryManager';
+import { ArrowLeft, Database } from 'lucide-react';
 
 export default function AgentMemory({ appState, setView, goBack, viewParams }) {
-  const { presets, openDestructor } = appState;
+  const { presets } = appState;
   const preset = presets.find(p => p.id === viewParams.agentId);
 
   return (
@@ -19,9 +18,20 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
         </div>
       </div>
 
-      {/* MemoryManager locked to this preset */}
-      <div className="flex-1 overflow-hidden">
-        <MemoryManager presets={presets} openDestructor={openDestructor} presetId={viewParams.agentId} />
+      {/* Placeholder — MemoryManager removed, awaiting new implementation */}
+      <div className="flex-1 h-full flex items-center justify-center bg-chat-bg">
+        <div className="text-center space-y-4 max-w-md px-6">
+          <div className="p-4 rounded-full bg-chat-accent/10 inline-block">
+            <Database size={32} className="text-chat-accent/50" />
+          </div>
+          <h2 className="text-xl font-light text-chat-text">Agent Memory</h2>
+          <p className="text-sm text-chat-muted leading-relaxed">
+            Per-agent memory portraits and knowledge fragments will be available here.
+          </p>
+          <p className="text-[10px] font-mono text-chat-muted/40 uppercase tracking-widest">
+            Coming Soon
+          </p>
+        </div>
       </div>
     </div>
   );
