@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "chat-core",
-        "title": "ExoCore // Chat",
+        "title": "Chat",
         "width": 1200,
         "height": 800,
         "decorations": false,

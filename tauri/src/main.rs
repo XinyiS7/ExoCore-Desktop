@@ -105,7 +105,7 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
                     "council",
                     tauri::WebviewUrl::External("http://localhost:5175".parse().unwrap()),
                 )
-                .title("ExoCore // Council")
+                .title("Council")
                 .inner_size(1000.0, 700.0)
                 .resizable(true)
                 .build();
@@ -124,7 +124,7 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
                     "chronicle",
                     tauri::WebviewUrl::External("http://localhost:5174".parse().unwrap()),
                 )
-                .title("ExoCore // Chronicle")
+                .title("Chronicle")
                 .inner_size(380.0, 600.0)
                 .resizable(true)
                 .skip_taskbar(true)
