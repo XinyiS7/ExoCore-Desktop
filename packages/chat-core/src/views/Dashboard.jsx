@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BrainCircuit, FolderKanban, Search, ArrowRight, MessageSquare, Users } from 'lucide-react';
 import CalendarWidget from '../components/CalendarWidget';
 import { conversationsApi } from 'exo-shared';
@@ -18,8 +18,9 @@ const QUICK_LINKS = [
 ];
 
 export default function Dashboard({ appState, setView }) {
-  const userNick = localStorage.getItem('exo_user_nick') || 'Exo User';
   const { presets, refreshKey, setActiveSessionId } = appState;
+  const userPreset = useMemo(() => presets?.find(p => p.agent_type === 'user') || null, [presets]);
+  const userNick = userPreset?.name || 'user';
   const [recentSessions, setRecentSessions] = useState([]);
   const [greeting] = useState(
     () => WELCOME_SENTENCES[Math.floor(Math.random() * WELCOME_SENTENCES.length)]

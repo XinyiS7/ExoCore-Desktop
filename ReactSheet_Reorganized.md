@@ -648,7 +648,7 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
   "tweets": [
     {
       "id": 42,
-      "author": "user",                          // "user" | "agent:{id}"
+      "author": "agent:2",                       // 统一格式 "agent:{preset_id}"；agent:2 = 用户
       "content": "今天写代码好累...",
       "parent": null,
       "created_at": "2026-03-21T14:30:00Z",      // 后端已自动转换为本地时间字符串
@@ -698,14 +698,14 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 
   "self_check_preset_ids":  [1],      // G045 preset IDs allowed to self-check
   "deep_org_preset_ids":    [1],      // G045 preset IDs allowed deep-organize
-  "interact_preset_ids":    [1],      // G045 preset IDs allowed timeline interaction
+  "heartbeat_preset_ids":  [1],      // G045 preset IDs allowed HeartBeat interaction
 
   "active_start": "09:00",            // TimeField — HH:MM
   "active_end":   "23:00",
 
-  "interaction_base_hours":       2,  // active window min interval hours
-  "interaction_random_hours":     2,  // random addon (active + night)
-  "night_interaction_base_hours": 6,  // outside active window min interval
+  "heartbeat_base_hours":         2,  // active window min interval hours
+  "heartbeat_random_hours":       2,  // random addon (active + night)
+  "night_heartbeat_base_hours":   6,  // outside active window min interval
 
   "deep_org_weekday": 0,              // 0=Mon … 6=Sun
   "deep_org_hour":    3,              // 0-23; read once at server startup

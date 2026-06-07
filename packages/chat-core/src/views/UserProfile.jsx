@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ArrowLeft, Pencil, ChevronLeft, ChevronRight, Activity, Check } from 'lucide-react';
+import { ArrowLeft, Pencil, ChevronLeft, ChevronRight, Activity } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer
 } from 'recharts';
 import AvatarCropModal from '../components/modals/AvatarCropModal';
-import { telemetryApi, MODEL_REGISTRY, useProfile } from 'exo-shared';
-import { setUserAvatar } from 'exo-shared/profile';
+import { telemetryApi, MODEL_REGISTRY } from 'exo-shared';
+import { setAgentAvatar } from 'exo-shared/profile';
+import { useUserPreset } from '../hooks/useUserPreset';
 
 // ─── Chart helpers ──────────────────────────────────────────────────────────────
 const MODEL_COLOR_MAP = Object.fromEntries(MODEL_REGISTRY.map(m => [m.id, m.color]));
@@ -107,14 +108,64 @@ const ChartBlock = ({ title, data, models, valueKey }) => {
 
 // ─── Main component ─────────────────────────────────────────────────────────────
 export default function UserProfile({ appState, setView, goBack }) {
-  // Identity state — unified via shared useProfile hook
-  const { userAvatar: userAvatarUrl, userNick, updateNick, refresh } = useProfile();
-  const [editingNick, setEditingNick] = useState(false);
-  const [nickDraft, setNickDraft] = useState('');
+  const { presets, refreshPresets } = appState;
+
+  // User identity — resolved from AgentPreset with agent_type='user'
+  const { userPreset, updateUserPreset, saving: hookSaving, error: saveError } = useUserPreset(presets, refreshPresets);
+
+  const user = userPreset;
+  const userId = user?.id;
+
+  // Avatar — agent pattern: exo_agent_avatar_{userId}
+  const [avatarUrl, setAvatarUrl] = useState(() => {
+    if (!userId) return '';
+    return localStorage.getItem(`exo_agent_avatar_${userId}`) || '';
+  });
+
+  useEffect(() => {
+    if (userId) {
+      setAvatarUrl(localStorage.getItem(`exo_agent_avatar_${userId}`) || '');
+    }
+  }, [userId]);
+
+  // Editable fields
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [descDraft, setDescDraft] = useState('');
+  const [editingModel, setEditingModel] = useState(false);
+  const [modelDraft, setModelDraft] = useState('');
+  const [fieldSaving, setFieldSaving] = useState(null);
+
   const [cropFile, setCropFile] = useState(null);
   const avatarInputRef = useRef(null);
+  const nameInputRef = useRef(null);
+  const descInputRef = useRef(null);
+  const modelInputRef = useRef(null);
 
-  // Stats state
+  // Sync modelDraft when user changes
+  useEffect(() => {
+    setModelDraft(user?.default_model || 'Human');
+  }, [user?.id, user?.default_model]);
+
+  // Focus inputs on edit
+  useEffect(() => { if (editingName && nameInputRef.current) nameInputRef.current.focus(); }, [editingName]);
+  useEffect(() => { if (editingDesc && descInputRef.current) descInputRef.current.focus(); }, [editingDesc]);
+  useEffect(() => { if (editingModel && modelInputRef.current) modelInputRef.current.focus(); }, [editingModel]);
+
+  // Cross-tab sync for avatar
+  useEffect(() => {
+    if (!userId) return;
+    const handler = (e) => {
+      if (e.key === `exo_agent_avatar_${userId}`) {
+        setAvatarUrl(e.newValue || '');
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, [userId]);
+
+  // ─── Stats state ───
   const [platform, setPlatform] = useState('all');
   const [mode, setMode] = useState('week');
   const [anchor, setAnchor] = useState(() => {
@@ -127,9 +178,18 @@ export default function UserProfile({ appState, setView, goBack }) {
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [statsError, setStatsError] = useState(false);
 
-  // Cross-tab sync handled by useProfile hook's storage event listener
+  // ─── Patch user preset ───
+  const patchUser = async (fields) => {
+    if (!user) return;
+    setFieldSaving(Object.keys(fields)[0]);
+    try {
+      await updateUserPreset(fields);
+    } finally {
+      setFieldSaving(null);
+    }
+  };
 
-  // Fetch stats
+  // ─── Fetch stats ───
   const fetchStats = useCallback(async () => {
     setIsLoadingStats(true);
     setStatsError(false);
@@ -146,7 +206,7 @@ export default function UserProfile({ appState, setView, goBack }) {
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
-  // Avatar
+  // ─── Avatar ───
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -154,20 +214,51 @@ export default function UserProfile({ appState, setView, goBack }) {
     e.target.value = '';
   };
 
-  // Nick edit
-  const startEditNick = () => {
-    setNickDraft(userNick);
-    setEditingNick(true);
-  };
-  const saveNick = () => {
-    const v = nickDraft.trim();
-    if (v) {
-      updateNick(v);
-    }
-    setEditingNick(false);
+  const handleCropConfirm = (dataUrl) => {
+    if (!userId) return;
+    setAgentAvatar(userId, dataUrl);
+    setAvatarUrl(dataUrl);
+    setCropFile(null);
   };
 
-  // Period nav
+  // ─── Name edit ───
+  const startEditName = () => {
+    if (!user) return;
+    setNameDraft(user.name);
+    setEditingName(true);
+  };
+  const saveName = () => {
+    const v = nameDraft.trim();
+    if (!v || v === user?.name) { setEditingName(false); return; }
+    patchUser({ name: v });
+    setEditingName(false);
+  };
+
+  // ─── Description / Signature edit ───
+  const startEditDesc = () => {
+    setDescDraft(user?.description || '');
+    setEditingDesc(true);
+  };
+  const saveDesc = () => {
+    const v = descDraft.trim();
+    if (v === (user?.description || '')) { setEditingDesc(false); return; }
+    patchUser({ description: v });
+    setEditingDesc(false);
+  };
+
+  // ─── Model edit ───
+  const startEditModel = () => {
+    setModelDraft(user?.default_model || 'Human');
+    setEditingModel(true);
+  };
+  const saveModel = () => {
+    const v = modelDraft.trim();
+    if (!v || v === (user?.default_model || 'Human')) { setEditingModel(false); return; }
+    patchUser({ default_model: v });
+    setEditingModel(false);
+  };
+
+  // ─── Period nav ───
   const prevPeriod = () => setAnchor(a => {
     const d = new Date(a);
     mode === 'week' ? d.setDate(d.getDate() - 7) : d.setMonth(d.getMonth() - 1);
@@ -191,7 +282,7 @@ export default function UserProfile({ appState, setView, goBack }) {
     });
   };
 
-  // Derive chart data
+  // ─── Derive chart data ───
   const { chartData, allModels } = useMemo(() => {
     if (!rawData?.daily) return { chartData: [], allModels: [] };
     const modelSet = new Set();
@@ -216,6 +307,14 @@ export default function UserProfile({ appState, setView, goBack }) {
   }, [rawData, platform]);
 
   const hasData = chartData.length > 0 && allModels.length > 0;
+
+  if (!user) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-exo-muted">
+        <p className="font-mono text-sm">Loading user profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 h-full flex flex-col bg-exo-bg">
@@ -244,8 +343,8 @@ export default function UserProfile({ appState, setView, goBack }) {
             <div className="flex-shrink-0">
               <button onClick={() => avatarInputRef.current?.click()} className="group relative">
                 <img
-                  src={userAvatarUrl}
-                  alt={userNick}
+                  src={avatarUrl}
+                  alt={user.name}
                   className="w-16 h-16 md:w-[72px] md:h-[72px] rounded-md border border-exo-border object-cover bg-exo-bg"
                 />
                 <div className="absolute inset-0 rounded-md bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -256,50 +355,106 @@ export default function UserProfile({ appState, setView, goBack }) {
 
             {/* Info column */}
             <div className="flex-1 min-w-0 min-[480px]:min-w-[200px] space-y-2.5">
-              {/* Nickname */}
+              {/* Name + Badge */}
               <div className="flex items-center gap-3 flex-wrap">
-                {editingNick ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      autoFocus
-                      value={nickDraft}
-                      onChange={e => setNickDraft(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') saveNick(); if (e.key === 'Escape') setEditingNick(false); }}
-                      onBlur={saveNick}
-                      className="bg-transparent border-b-2 border-exo-accent text-lg font-medium text-white outline-none py-0.5 min-w-[120px]"
-                    />
-                    <button onClick={saveNick} className="p-1 text-exo-accent hover:text-white transition-colors">
-                      <Check size={14} />
-                    </button>
-                  </div>
+                {editingName ? (
+                  <input
+                    ref={nameInputRef}
+                    value={nameDraft}
+                    onChange={e => setNameDraft(e.target.value)}
+                    onBlur={saveName}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') saveName();
+                      if (e.key === 'Escape') setEditingName(false);
+                    }}
+                    className="bg-transparent border-b-2 border-exo-accent text-lg font-medium text-white outline-none py-0.5 min-w-[120px]"
+                  />
                 ) : (
                   <h2
-                    onClick={startEditNick}
+                    onClick={startEditName}
                     className="text-lg font-medium text-white cursor-pointer hover:border-b-2 hover:border-exo-accent/30 transition-all"
                   >
-                    {userNick}
+                    {user.name}
                   </h2>
                 )}
-                <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-white/5 text-exo-muted border border-exo-mist-10">
-                  EXO USER
+                <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                  user
                 </span>
+                {fieldSaving === 'name' && (
+                  <span className="text-[10px] text-exo-accent animate-pulse">saving...</span>
+                )}
               </div>
 
-              <p className="text-sm text-exo-muted italic">
-                Click name or avatar to edit
-              </p>
+              {/* Description / Signature */}
+              {editingDesc ? (
+                <input
+                  ref={descInputRef}
+                  value={descDraft}
+                  onChange={e => setDescDraft(e.target.value)}
+                  onBlur={saveDesc}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') saveDesc();
+                    if (e.key === 'Escape') setEditingDesc(false);
+                  }}
+                  className="bg-transparent border-b-2 border-exo-accent text-sm text-exo-muted italic outline-none py-0.5 w-full"
+                  placeholder="Personal signature..."
+                />
+              ) : (
+                <p
+                  onClick={startEditDesc}
+                  className="text-sm text-exo-muted italic cursor-pointer hover:border-b-2 hover:border-exo-accent/30 transition-all inline-block"
+                >
+                  {user.description || 'Click to add a personal signature...'}
+                </p>
+              )}
+              {fieldSaving === 'description' && (
+                <span className="text-[10px] text-exo-accent animate-pulse">saving...</span>
+              )}
+
+              {/* Model — editable text string */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-exo-muted">Model:</span>
+                {editingModel ? (
+                  <input
+                    ref={modelInputRef}
+                    value={modelDraft}
+                    onChange={e => setModelDraft(e.target.value)}
+                    onBlur={saveModel}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') saveModel();
+                      if (e.key === 'Escape') { setModelDraft(user.default_model || 'Human'); setEditingModel(false); }
+                    }}
+                    className="bg-transparent border-b-2 border-exo-accent text-xs text-exo-text outline-none py-0.5 min-w-[80px]"
+                    placeholder="Human"
+                  />
+                ) : (
+                  <span
+                    onClick={startEditModel}
+                    className="text-xs text-exo-text cursor-pointer hover:border-b-2 hover:border-exo-accent/30 transition-all"
+                  >
+                    {user.default_model || 'Human'}
+                  </span>
+                )}
+                {fieldSaving === 'default_model' && (
+                  <span className="text-[10px] text-exo-accent animate-pulse">saving...</span>
+                )}
+              </div>
             </div>
 
             {/* Action buttons */}
             <div className="flex items-start gap-2 w-full md:w-auto md:self-start">
               <button
-                onClick={() => setView('agent_memory', { agentId: 2, agentName: 'User Memory' })}
+                onClick={() => setView('agent_memory', { agentId: userId, agentName: user.name })}
                 className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-md text-purple-400 text-xs font-medium hover:bg-purple-500/20 active:scale-95 transition-all"
               >
                 Manage Memory
               </button>
             </div>
           </div>
+
+          {saveError && (
+            <p className="text-[10px] text-red-400 mt-2">{saveError}</p>
+          )}
         </div>
 
         {/* Stats Area */}
@@ -308,7 +463,6 @@ export default function UserProfile({ appState, setView, goBack }) {
 
           {/* Controls row */}
           <div className="flex items-center gap-3 shrink-0">
-            {/* Platform selector */}
             <div className="flex items-center border border-exo-border rounded-[3px] overflow-hidden">
               {PLATFORMS.map(p => (
                 <button
@@ -325,18 +479,11 @@ export default function UserProfile({ appState, setView, goBack }) {
               ))}
             </div>
 
-            {/* Period navigator */}
             <div className="flex items-center border border-exo-border rounded-[3px] overflow-hidden ml-auto">
-              <button
-                onClick={prevPeriod}
-                className="px-2 py-1.5 text-exo-muted hover:text-white transition-colors border-r border-exo-border"
-              >
+              <button onClick={prevPeriod} className="px-2 py-1.5 text-exo-muted hover:text-white transition-colors border-r border-exo-border">
                 <ChevronLeft size={14} />
               </button>
-              <button
-                onClick={toggleMode}
-                className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-exo-text hover:text-exo-accent transition-colors min-w-[80px] text-center"
-              >
+              <button onClick={toggleMode} className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-exo-text hover:text-exo-accent transition-colors min-w-[80px] text-center">
                 {rawData?.is_current
                   ? (mode === 'week' ? '本周' : '本月')
                   : (mode === 'week'
@@ -346,16 +493,12 @@ export default function UserProfile({ appState, setView, goBack }) {
                     : rawData?.from?.slice(0, 7) ?? '')
                 }
               </button>
-              <button
-                onClick={nextPeriod}
-                className="px-2 py-1.5 text-exo-muted hover:text-white transition-colors border-l border-exo-border"
-              >
+              <button onClick={nextPeriod} className="px-2 py-1.5 text-exo-muted hover:text-white transition-colors border-l border-exo-border">
                 <ChevronRight size={14} />
               </button>
             </div>
           </div>
 
-          {/* Content: loading / error / no data / charts */}
           {isLoadingStats && (
             <div className="flex-1 flex items-center justify-center text-exo-muted font-mono text-[11px] uppercase tracking-widest gap-2 py-24">
               <Activity size={14} className="animate-spin text-exo-accent" /> Loading...
@@ -365,14 +508,14 @@ export default function UserProfile({ appState, setView, goBack }) {
           {!isLoadingStats && statsError && (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-24">
               <p className="text-[11px] text-exo-muted font-mono uppercase tracking-widest opacity-60">
-                统计接口暂未接入
+                Statistics API unavailable
               </p>
             </div>
           )}
 
           {!isLoadingStats && !statsError && !hasData && rawData && (
             <div className="flex-1 flex items-center justify-center text-exo-muted font-mono text-[11px] uppercase tracking-widest opacity-40 py-24">
-              当前周期暂无数据
+              No data for current period
             </div>
           )}
 
@@ -386,15 +529,10 @@ export default function UserProfile({ appState, setView, goBack }) {
         </div>
       </div>
 
-      {/* AvatarCropModal */}
       {cropFile && (
         <AvatarCropModal
           file={cropFile}
-          onConfirm={(dataUrl) => {
-            setUserAvatar(dataUrl);
-            refresh();
-            setCropFile(null);
-          }}
+          onConfirm={handleCropConfirm}
           onCancel={() => setCropFile(null)}
         />
       )}

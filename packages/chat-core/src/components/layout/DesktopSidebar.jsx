@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Hexagon, BrainCircuit, FolderKanban, Users,
   Settings
 } from 'lucide-react';
-import { getUserAvatarUrl } from '../../utils/avatar';
+import { usePresets } from '../../hooks/usePresets';
 
 const NavIcon = ({ icon: Icon, label, isActive, onClick }) => (
   <button
@@ -37,8 +37,12 @@ const NAV_ITEMS = [
 export default function DesktopSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const userAvatarUrl = getUserAvatarUrl();
-  const userNick = localStorage.getItem('exo_user_nick') || 'Exo User';
+  const { presets } = usePresets();
+  const userPreset = useMemo(() => presets?.find(p => p.agent_type === 'user') || null, [presets]);
+  const userNick = userPreset?.name || 'user';
+  const userAvatarUrl = userPreset?.id
+    ? (localStorage.getItem(`exo_agent_avatar_${userPreset.id}`) || `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(userNick)}`)
+    : `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(userNick)}`;
 
   const isActive = (route) => {
     if (route === '/projects') return location.pathname.startsWith('/project');

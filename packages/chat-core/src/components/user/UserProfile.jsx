@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Send, Activity, CornerDownLeft, Camera } from 'lucide-react';
 import { baseUrl, getCsrfToken } from 'exo-shared';
-import { getUserAvatarUrl, getAgentAvatarUrl } from '../../utils/avatar';
+import { getAgentAvatarUrl } from '../../utils/avatar';
+import { setAgentAvatar } from 'exo-shared/profile';
 import AvatarCropModal from './modals/AvatarCropModal';
 
 const formatTime = (dateStr) => {
@@ -22,6 +23,14 @@ const formatTime = (dateStr) => {
 };
 
 const UserProfile = ({ presets }) => {
+  // ── Resolve user from presets (agent_type='user') ──
+  const userPreset = useMemo(
+    () => presets?.find(p => p.agent_type === 'user') || null,
+    [presets]
+  );
+  const userId = userPreset?.id;
+  const userNick = userPreset?.name || 'user';
+
   const [tweets, setTweets] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [nextBeforeId, setNextBeforeId] = useState(null);
@@ -34,10 +43,18 @@ const UserProfile = ({ presets }) => {
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const bottomRef = useRef(null);
   const avatarInputRef = useRef(null);
-  const [userAvatarUrl, setUserAvatarUrl] = useState(() => getUserAvatarUrl());
+  const [userAvatarUrl, setUserAvatarUrl] = useState(() => {
+    if (!userId) return '';
+    return localStorage.getItem(`exo_agent_avatar_${userId}`) || '';
+  });
   const [cropFile, setCropFile] = useState(null);
 
-  const userNick = localStorage.getItem('exo_user_nick') || 'You';
+  // Sync avatar when userId changes
+  useEffect(() => {
+    if (userId) {
+      setUserAvatarUrl(localStorage.getItem(`exo_agent_avatar_${userId}`) || '');
+    }
+  }, [userId]);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
@@ -46,18 +63,27 @@ const UserProfile = ({ presets }) => {
     e.target.value = '';
   };
 
+  // ── Unified author resolution: all authors are "agent:{preset_id}" ──
   const getAuthorInfo = (tweet) => {
-    if (tweet.author === 'user') {
+    const raw = tweet.author || '';
+    let presetId = null;
+
+    if (raw.startsWith('agent:')) {
+      presetId = parseInt(raw.split(':')[1], 10);
+    }
+
+    // Check if this is the user (agent_type='user' preset)
+    if (presetId && presetId === userId) {
       return {
         name: userNick,
         avatar: userAvatarUrl,
         isUser: true,
       };
     }
-    // author 格式："agent:{preset_id}"，如 "agent:1"
-    const presetId = parseInt(tweet.author.split(':')[1]);
+
+    // Agent author
     const preset = presets?.find(p => p.id === presetId);
-    const name = preset?.name || 'G045';
+    const name = preset?.name || (presetId ? `Agent #${presetId}` : 'Unknown');
     return {
       name,
       avatar: getAgentAvatarUrl(presetId, name),
@@ -187,7 +213,7 @@ const UserProfile = ({ presets }) => {
         <AvatarCropModal
           file={cropFile}
           onConfirm={(dataUrl) => {
-            localStorage.setItem('exo_user_avatar_url', dataUrl);
+            setAgentAvatar(userId, dataUrl);
             setUserAvatarUrl(dataUrl);
             setCropFile(null);
           }}

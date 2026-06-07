@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Send, Activity, CornerDownLeft } from 'lucide-react';
 import { tweetsApi, agentsApi } from 'exo-shared';
-import { getUserAvatar, getAgentAvatar, getUserNick } from 'exo-shared';
+import { getAgentAvatar } from 'exo-shared';
 
 const formatTime = (dateStr) => {
   if (!dateStr) return '';
@@ -19,9 +19,6 @@ const formatTime = (dateStr) => {
 };
 
 export default function TimelineView() {
-  const userNick = getUserNick();
-  const userAvatarUrl = getUserAvatar();
-
   const [tweets, setTweets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [postContent, setPostContent] = useState('');
@@ -30,6 +27,18 @@ export default function TimelineView() {
   const [replyContent, setReplyContent] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const [presets, setPresets] = useState([]);
+
+  // ── Resolve user from presets (agent_type='user') ──
+  const userPreset = useMemo(
+    () => presets?.find(p => p.agent_type === 'user') || null,
+    [presets]
+  );
+  const userId = userPreset?.id;
+  const userNick = userPreset?.name || 'user';
+  const userAvatarUrl = (() => {
+    if (!userId) return '';
+    return localStorage.getItem(`exo_agent_avatar_${userId}`) || '';
+  })();
 
   // Fetch presets for agent name/avatar resolution
   useEffect(() => {
@@ -96,23 +105,23 @@ export default function TimelineView() {
     }
   };
 
+  // ── Unified author resolution: all authors are "agent:{preset_id}" ──
   const getAuthorInfo = (tweet) => {
-    if (tweet.author === 'user')
-      return { name: userNick, avatar: userAvatarUrl, isUser: true };
-
-    // author format: "agent:{preset_id}" e.g. "agent:1"
     const raw = tweet.author || '';
     let presetId = null;
-    let name = 'Agent';
 
     if (raw.startsWith('agent:')) {
-      presetId = parseInt(raw.split(':')[1]);
-      const preset = presets?.find(p => p.id === presetId);
-      name = preset?.name || 'G045';
-    } else {
-      name = raw;
+      presetId = parseInt(raw.split(':')[1], 10);
     }
 
+    // Check if this is the user (agent_type='user' preset)
+    if (presetId && presetId === userId) {
+      return { name: userNick, avatar: userAvatarUrl, isUser: true };
+    }
+
+    // Agent author
+    const preset = presets?.find(p => p.id === presetId);
+    const name = preset?.name || (presetId ? `Agent #${presetId}` : raw || 'Unknown');
     return {
       name,
       avatar: getAgentAvatar(presetId, name),

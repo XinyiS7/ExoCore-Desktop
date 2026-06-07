@@ -4,7 +4,7 @@ import {
   Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2, SlidersHorizontal, Folder
 } from 'lucide-react';
 import { baseUrl, getCsrfToken, MAIN_MODEL_IDS } from 'exo-shared';
-import { getUserAvatarUrl, getAgentAvatarUrl } from '../../utils/avatar';
+import { getAgentAvatarUrl } from '../../utils/avatar';
 import { filesToAttachmentData, saveAttachments, enrichMessages, uploadFilesToAttachments } from '../../utils/attachmentStorage';
 import { formatDateSeparator, isDifferentDay } from '../../utils/time';
 import MessageBubble from './MessageBubble';
@@ -66,8 +66,14 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   );
   const [livePalette, setLivePalette] = useState(null); // { colors: {...} } from live preview
   const [inputFocused, setInputFocused] = useState(false);
-  const [userNick, setUserNick] = useState(() => localStorage.getItem('exo_user_nick') || 'You');
-  const [userAvatarUrl] = useState(() => getUserAvatarUrl());
+  const userPreset = useMemo(() => presets?.find(p => p.agent_type === 'user') || null, [presets]);
+  const userNick = userPreset?.name || 'user';
+  const [userAvatarUrl] = useState(() => {
+    if (userPreset?.id) {
+      return localStorage.getItem(`exo_agent_avatar_${userPreset.id}`) || `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(userPreset.name || 'user')}`;
+    }
+    return `https://api.dicebear.com/7.x/notionists/svg?seed=user`;
+  });
 
   const { sendMessageAsync, resumePolling } = usePollingChat();
 
@@ -204,19 +210,6 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   };
 
   useEffect(() => { autoResize(); }, [inputValue]);
-
-  // Sync userNick if it changes in localStorage (e.g. from settings)
-  useEffect(() => {
-    const handleStorage = () => {
-      setUserNick(localStorage.getItem('exo_user_nick') || 'You');
-    };
-    window.addEventListener('storage', handleStorage);
-    window.addEventListener('user-nick-updated', handleStorage);
-    return () => {
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('user-nick-updated', handleStorage);
-    };
-  }, []);
 
   // Debounced draft save
   useEffect(() => {
