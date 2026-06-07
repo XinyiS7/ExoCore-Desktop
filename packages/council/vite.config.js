@@ -18,6 +18,7 @@ export default defineConfig(({ command }) => ({
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
       },
       manifest: {
+        id: 'exocore-council',
         name: 'ExoCore Council',
         short_name: 'Council',
         description: 'ExoCore Multi-Agent Workspace',
@@ -27,7 +28,7 @@ export default defineConfig(({ command }) => ({
         start_url: command === 'build' ? '/council/' : '/',
         scope: command === 'build' ? '/council/' : '/',
         icons: [
-          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
+          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
           { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
           { src: '/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
         ],

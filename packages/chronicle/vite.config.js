@@ -18,6 +18,7 @@ export default defineConfig(({ command }) => ({
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
       },
       manifest: {
+        id: 'exocore-chronicle',
         name: 'ExoCore Chronicle',
         short_name: 'Chronicle',
         description: 'ExoCore Timeline & Task Management',
@@ -27,7 +28,7 @@ export default defineConfig(({ command }) => ({
         start_url: command === 'build' ? '/chronicle/' : '/',
         scope: command === 'build' ? '/chronicle/' : '/',
         icons: [
-          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
+          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
           { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
           { src: '/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
         ],
