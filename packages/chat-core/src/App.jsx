@@ -27,7 +27,7 @@ import KeyManagePanel from './components/settings/KeyManagePanel';
 import NotificationsPanel from './components/settings/NotificationsPanel';
 import AppearancePanel from './components/settings/AppearancePanel';
 import MemoryConsole from './views/MemoryConsole';
-import GroupchatPlaceholder from './views/GroupchatPlaceholder';
+import GroupchatList from './views/GroupchatList';
 
 // Icons
 import { Clock } from 'lucide-react';
@@ -95,6 +95,7 @@ function useAppStateBridge() {
       user: '/user',
       settings: '/settings',
       projects: '/projects',
+      groupchat: '/groupchat',
     };
     const target = routes[view] || '/';
     if (typeof target === 'string') {
@@ -207,6 +208,12 @@ function UserRoute() {
   return <UserProfile appState={appState} setView={setView} goBack={goBack} />;
 }
 
+function GroupchatListRoute() {
+  const { id } = useParams();
+  const { appState, goBack } = useAppStateBridge();
+  return <GroupchatList appState={appState} goBack={goBack} viewParams={{ id: id ? Number(id) : undefined }} />;
+}
+
 function KeyManageRoute() {
   return <KeyManagePanel />;
 }
@@ -243,7 +250,8 @@ export default function App() {
         <Route path="agent/:presetId/memory" element={<AgentMemoryRoute />} />
         <Route path="projects" element={<ProjectsRoute />} />
         <Route path="project/:id" element={<ProjectDetailRoute />} />
-        <Route path="groupchat" element={<GroupchatPlaceholder />} />
+        <Route path="groupchat" element={<GroupchatListRoute />} />
+        <Route path="groupchat/:id" element={<GroupchatListRoute />} />
         <Route path="user" element={<UserRoute />} />
         <Route path="settings" element={<SettingsRoute />}>
           <Route index element={<Navigate to="keys" replace />} />

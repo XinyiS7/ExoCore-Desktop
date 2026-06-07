@@ -14,7 +14,7 @@ const WELCOME_SENTENCES = [
 const QUICK_LINKS = [
   { id: 'agent_hub', icon: BrainCircuit, label: 'Agent Hub', desc: 'Manage AI agents & presets' },
   { id: 'project', icon: FolderKanban, label: 'Projects', desc: 'Long-running tasks & files' },
-  { id: 'groupchat', icon: Users, label: 'Groupchat', desc: 'Multi-agent group chat', disabled: true },
+  { id: 'groupchat', icon: Users, label: 'Groupchat', desc: 'Multi-agent group chat', disabled: false },
 ];
 
 export default function Dashboard({ appState, setView }) {

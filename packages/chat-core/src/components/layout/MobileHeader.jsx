@@ -8,7 +8,7 @@ const LABEL_MAP = {
   '/projects': 'Projects',
   '/settings': 'Settings',
   '/user': 'User Profile',
-  '/groupchat': 'Groupchat',
+  '/groupchat': 'Groupchats',
 };
 
 /** Derive a human-readable back label from the previous route */
@@ -21,6 +21,7 @@ function getBackLabel(location) {
   const path = location.pathname;
   if (path.startsWith('/agent/')) return 'Agent';
   if (path.startsWith('/project/')) return 'Project';
+  if (path.startsWith('/groupchat/')) return 'Groupchat';
   if (path.startsWith('/chat/')) return 'Sessions';
   for (const [route, label] of Object.entries(LABEL_MAP)) {
     if (path === route) return label;

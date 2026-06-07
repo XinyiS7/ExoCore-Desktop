@@ -1,6 +1,6 @@
 ========================================================
   ExoCore — React 前端接口数据格式速查表（重整版）
-  最后更新：2026-06-05（§3.3 目录浏览 tree endpoint）
+  最后更新：2026-06-07（第八篇 群聊 GroupChat API）
 ========================================================
 
 本文是纯数据格式速查，不是后端行为说明书。
@@ -1114,5 +1114,98 @@ GET /api/tasks/completions/?entry=<pk>
     }
   ]
 }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+第八篇  群聊 (GroupChat)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+8.1  GET/POST /api/groupchat/  — 群聊列表 & 创建
+─────────────────────────────────────────────────────────────
+
+// ── 8.1a. GET /api/groupchat/ — 列表
+// 支持过滤: ?participant_id=2  返回该参加者所在的所有群聊
+// 按 created_at 降序排列
+
+[
+  {
+    "id": 3,
+    "name": "技术讨论",
+    "prompt": "AI 技术前沿讨论群，聚焦 LLM 架构与工具开发",
+    "participant_ids": [2, 6],
+    "created_at": "2026-06-07T19:47:46.338185Z"
+  }
+]
+
+// ── 8.1b. POST /api/groupchat/ — 创建
+// Request:
+{
+  "name": "技术讨论",
+  "prompt": "AI 技术前沿讨论群，聚焦 LLM 架构与工具开发",
+  "participant_ids": [2, 6]
+}
+// prompt 可选，默认为空字符串。participant_ids 中 2 = 用户，其他为 AgentPreset.id。
+// Response (201): 同上列表项格式
+
+
+8.2  GET/PATCH/DELETE /api/groupchat/<id>/  — 群聊详情 & 更新 & 删除
+─────────────────────────────────────────────────────────────
+
+// ── 8.2a. GET — 详情
+{
+  "id": 3,
+  "name": "技术讨论",
+  "prompt": "AI 技术前沿讨论群，聚焦 LLM 架构与工具开发",
+  "participant_ids": [2, 6],
+  "created_at": "2026-06-07T19:47:46.338185Z"
+}
+
+// ── 8.2b. PATCH — 部分更新（覆盖式 participant_ids）
+// 可更新字段: name, prompt, participant_ids（均可选）
+// Request:
+{ "name": "技术讨论v2", "participant_ids": [2, 6, 8] }
+// 更新 participant_ids 即时生效——Superior Wakeup 的 build_summary 按新名单推送。
+// Response: 更新后的完整对象
+
+// ── 8.2c. DELETE — 删除群聊
+// → 204 No Content
+// CASCADE 删除所有关联消息
+
+
+8.3  GET/POST /api/groupchat/<id>/messages/  — 消息列表 & 发消息
+─────────────────────────────────────────────────────────────
+
+// ── 8.3a. GET — 消息列表
+// 按 created_at 正序排列（最早在上）
+
+[
+  {
+    "id": 2,
+    "group": 3,
+    "sender_id": 2,
+    "content": "第一条消息！",
+    "mention_ids": [],
+    "created_at": "2026-06-07T19:48:21.264922Z"
+  },
+  {
+    "id": 3,
+    "group": 3,
+    "sender_id": 6,
+    "content": "收到，@用户 你好！",
+    "mention_ids": [2],
+    "created_at": "2026-06-07T19:48:21.340439Z"
+  }
+]
+
+// ── 8.3b. POST — 发消息
+// Request:
+{
+  "sender_id": 2,
+  "content": "第一条消息！",
+  "mention_ids": []
+}
+// sender_id: 2 = 用户，其他 = AgentPreset.id
+// mention_ids: 被 @ 的 preset_id 列表，可选（空数组 = 不 @ 任何人）
+// Response (201): 同上列表项格式
 
 
