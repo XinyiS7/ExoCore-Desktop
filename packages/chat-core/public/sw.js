@@ -44,8 +44,20 @@ registerRoute(
   }),
 );
 
-// Auto-update: immediately activate new SW
+// Auto-update: immediately activate new SW and claim all clients
 self.skipWaiting();
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    self.clients.claim().then(() => {
+      // Notify all open tabs that a new version is available
+      return self.clients.matchAll({ type: 'window' }).then((clientList) => {
+        for (const client of clientList) {
+          client.postMessage({ type: 'SW_UPDATED' });
+        }
+      });
+    })
+  );
+});
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });

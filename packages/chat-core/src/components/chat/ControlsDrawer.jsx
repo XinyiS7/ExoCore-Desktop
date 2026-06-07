@@ -73,6 +73,10 @@ export default function ControlsDrawer({
         || aliasList[0]
         || '';
       setSelectedAlias(def);
+      // Persist the resolved default so ChatArea sees it at send-time
+      if (def) {
+        localStorage.setItem(`exo_session_key_${sessionId}`, def);
+      }
     } catch {
       // Silently fail — key selector will show empty
     }
@@ -257,7 +261,7 @@ export default function ControlsDrawer({
         )}
       </div>
 
-      {/* Row 2: Key Alias Selector */}
+      {/* Row 2: Key Alias + Memory Injection */}
       <div className="flex items-center gap-3">
         <Key size={10} className="text-exo-muted/25 flex-shrink-0" />
         <span className="text-[10px] font-mono uppercase tracking-wider text-exo-muted/40 flex-shrink-0">
@@ -278,14 +282,13 @@ export default function ControlsDrawer({
             {platform ? `No keys configured for ${platform}` : 'Select a model first'}
           </span>
         )}
-      </div>
 
-      {/* Row 2.5: Memory Injection Toggle */}
-      <div className="flex items-center gap-3">
+        <span className="text-exo-muted/12 text-[9px] select-none flex-shrink-0">|</span>
+
         <span className="text-[10px] font-mono uppercase tracking-wider text-exo-muted/40 flex-shrink-0">
-          Mem Inject
+          Mem
         </span>
-        <label className="flex items-center gap-2 cursor-pointer select-none">
+        <label className="flex items-center gap-1.5 cursor-pointer select-none">
           <input
             type="checkbox"
             checked={memInjectEnabled}

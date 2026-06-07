@@ -7,6 +7,21 @@ import './index.css';
 // Strip trailing slash: Vite's BASE_URL is "/chat/" → basename "/chat"
 const BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '');
 
+// ─── Service Worker Auto-Update Reload ────────────────────────────────
+// When a new SW activates and claims this client, reload to get new code.
+// Dev mode: devOptions.enabled=false, so this won't fire in dev.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
+  // Backup: also listen for SW_UPDATED message from the new SW's activate handler
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'SW_UPDATED') {
+      window.location.reload();
+    }
+  });
+}
+
 // ─── Service Worker Push Navigation Bridge ───────────────────────────
 // When the SW receives a notificationclick, it postMessages the target
 // URL here so React Router can navigate without a full page reload.

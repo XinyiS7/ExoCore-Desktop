@@ -38,6 +38,17 @@ registerRoute(
 );
 
 self.skipWaiting();
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    self.clients.claim().then(() => {
+      return self.clients.matchAll({ type: 'window' }).then((clientList) => {
+        for (const client of clientList) {
+          client.postMessage({ type: 'SW_UPDATED' });
+        }
+      });
+    })
+  );
+});
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
