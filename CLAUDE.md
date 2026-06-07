@@ -5,40 +5,32 @@ This file provides guidance to Claude Code when working with code in this reposi
 **Parent spec:** `../ReactSheet_Reorganized.md` — API contract (reorganized, this is the active reference).
 **API contract (legacy):** `../ExoCore/ReactSheet.txt` — original flat spec, superseded by ReactSheet_Reorganized.md.
 **Cross-module context:** `../AGENT.md` and `../.agent/project.md`
-**Nginx deployment:** `../nginx/nginx.conf` — reverse proxy config for hybrid deployment
+**Nginx deployment:** `../nginx/nginx.conf` — reverse proxy config
 **Startup script:** `../hybrid_start.ps1` — unified pgvector + Django + nginx launcher
 
 **Shell environment:** Git Bash (Windows). Use Bash tool for shell commands, not PowerShell.
 
 # V3 Frontend Split
 
-ExoCore-Desktop is a **monorepo** containing three independent SPAs. Each runs on its own port as a standalone PWA, sharing a single Django backend (port 8000). Tauri shell is shelved.
+ExoCore-Desktop is a **monorepo** containing three independent SPAs. Each runs on its own port as a standalone PWA, sharing a single Django backend (port 8000).
 
 ## Architecture
 
 ### Three Web Modules (packages/)
 
-| Package | Tauri Window | Purpose |
-|---|---|---|
-| `chat-core` | MainWindow | Agent hub, conversations, projects, files, settings, memory, user profile |
-| `chronicle` | TrayPanel (ToolWindow) | Timeline/BBS feed, task management, Google Calendar |
-| `council` | CouncilWindow (on-demand) | Multi-agent workspace — **deferred to V3.1** |
+| Package | Purpose |
+|---|---|
+| `chat-core` | Agent hub, conversations, projects, files, settings, memory, user profile |
+| `chronicle` | Timeline/BBS feed, task management, Google Calendar |
+| `council` | Multi-agent workspace — **deferred to V3.1** |
 
 ### Shared Package
 
 `packages/shared` (`exo-shared`) — API client, CSRF handling, endpoint wrappers, generic `useApi`/`useCsrf` hooks, CSS reset. **No visual design tokens** — each module owns its theme.
 
-### Tauri Shell (tauri/)
-
-- Rust desktop application managing window lifecycle, system tray, sidecar spawning
-- Django + wez_bridge run as silent sidecars (no terminal windows — `CREATE_NO_WINDOW` on Windows)
-- System tray: left-click toggles MainWindow, right-click menu for all actions
-- Council entry point: tray right-click menu only (not inside Chat Core)
-
 ### API Communication
 
 - All web modules use `exo-shared` API client → HTTP → Django :8000
-- Tauri does NOT proxy API traffic
 - Vite dev servers proxy `/api` to `localhost:8000`
 - SSE streaming unchanged
 

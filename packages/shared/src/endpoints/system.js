@@ -1,6 +1,6 @@
 import { apiFetch } from '../api';
 
-/** Health check — Tauri sidecar readiness detection. */
+/** Health check — backend readiness detection. */
 export function healthCheck() {
   return apiFetch('/api/health/', { method: 'GET' });
 }

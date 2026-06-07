@@ -24,7 +24,8 @@ export default defineConfig(({ command }) => ({
         theme_color: '#0d1117',
         background_color: '#0d1117',
         display: 'standalone',
-        start_url: '/',
+        start_url: command === 'build' ? '/council/' : '/',
+        scope: command === 'build' ? '/council/' : '/',
         icons: [
           { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
           { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },

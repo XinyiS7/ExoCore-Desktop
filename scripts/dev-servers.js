@@ -1,7 +1,6 @@
 /**
  * Dev server launcher — spawns chat + chronicle Vite servers as detached
  * background processes, waits a few seconds for them to boot, then exits.
- * Tauri handles the actual readiness check when it opens the webview.
  */
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';

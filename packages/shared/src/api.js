@@ -1,5 +1,5 @@
 // Base URL for API requests. Empty string means relative URLs — Vite proxy handles routing.
-// In Tauri production, this will point to http://localhost:8000.
+// In production, this points to the Django backend at localhost:8000.
 const API_BASE_URL = '';
 
 export const baseUrl = API_BASE_URL.replace(/\/+$/, '');

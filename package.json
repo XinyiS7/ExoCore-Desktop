@@ -4,7 +4,6 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "pnpm tauri dev",
     "dev:web": "node scripts/dev-servers.js",
     "dev:chat": "pnpm --filter exo-chat-core dev",
     "dev:chronicle": "pnpm --filter exo-chronicle dev",
@@ -22,7 +21,6 @@
     "concurrently": "^10.0.0"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.11.2",
     "sharp": "^0.34.5",
     "workbox-core": "^7.4.1",
     "workbox-precaching": "^7.4.1",

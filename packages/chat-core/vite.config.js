@@ -24,7 +24,8 @@ export default defineConfig(({ command }) => ({
         theme_color: '#0a0a0f',
         background_color: '#0a0a0f',
         display: 'standalone',
-        start_url: '/',
+        start_url: command === 'build' ? '/chat/' : '/',
+        scope: command === 'build' ? '/chat/' : '/',
         icons: [
           { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
           { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
