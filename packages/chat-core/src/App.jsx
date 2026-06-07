@@ -27,6 +27,7 @@ import KeyManagePanel from './components/settings/KeyManagePanel';
 import NotificationsPanel from './components/settings/NotificationsPanel';
 import AppearancePanel from './components/settings/AppearancePanel';
 import MemoryConsole from './views/MemoryConsole';
+import GroupchatPlaceholder from './views/GroupchatPlaceholder';
 
 // Icons
 import { Clock } from 'lucide-react';
@@ -230,10 +231,6 @@ function SettingsRoute() {
   return <SettingsView />;
 }
 
-function MemoryRoute() {
-  return <MemoryConsole />;
-}
-
 // ─── Root App ─────────────────────────────────────────────────────────
 export default function App() {
   return (
@@ -246,7 +243,7 @@ export default function App() {
         <Route path="agent/:presetId/memory" element={<AgentMemoryRoute />} />
         <Route path="projects" element={<ProjectsRoute />} />
         <Route path="project/:id" element={<ProjectDetailRoute />} />
-        <Route path="memory" element={<MemoryRoute />} />
+        <Route path="groupchat" element={<GroupchatPlaceholder />} />
         <Route path="user" element={<UserRoute />} />
         <Route path="settings" element={<SettingsRoute />}>
           <Route index element={<Navigate to="keys" replace />} />
@@ -254,6 +251,7 @@ export default function App() {
           <Route path="notifications" element={<NotificationsRoute />} />
           <Route path="appearance" element={<AppearancePanel />} />
           <Route path="routine" element={<RoutinePlaceholderRoute />} />
+          <Route path="memory" element={<MemoryConsole />} />
         </Route>
       </Route>
     </Routes>
