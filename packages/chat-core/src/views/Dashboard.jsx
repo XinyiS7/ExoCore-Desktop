@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BrainCircuit, FolderKanban, Search, ArrowRight, MessageSquare } from 'lucide-react';
+import { BrainCircuit, FolderKanban, Search, ArrowRight, MessageSquare, Users } from 'lucide-react';
 import CalendarWidget from '../components/CalendarWidget';
 import { conversationsApi } from 'exo-shared';
 
@@ -14,6 +14,7 @@ const WELCOME_SENTENCES = [
 const QUICK_LINKS = [
   { id: 'agent_hub', icon: BrainCircuit, label: 'Agent Hub', desc: 'Manage AI agents & presets' },
   { id: 'project', icon: FolderKanban, label: 'Projects', desc: 'Long-running tasks & files' },
+  { id: 'groupchat', icon: Users, label: 'Groupchat', desc: 'Multi-agent group chat', disabled: true },
 ];
 
 export default function Dashboard({ appState, setView }) {
@@ -166,18 +167,32 @@ export default function Dashboard({ appState, setView }) {
 
         {/* Quick Links */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in" style={{ animationDelay: '0.15s' }}>
-          {QUICK_LINKS.map(({ id, icon: Icon, label, desc }) => (
+          {QUICK_LINKS.map(({ id, icon: Icon, label, desc, disabled }) => (
             <button
               key={id}
-              onClick={() => setView(id)}
-              className="group flex flex-col items-center gap-3 p-6 bg-exo-pure border border-exo-mist-10 rounded-md hover:border-exo-accent/30 transition-all text-center"
+              onClick={() => !disabled && setView(id)}
+              disabled={disabled}
+              className={`group flex flex-col items-center gap-3 p-6 bg-exo-pure border border-exo-mist-10 rounded-md transition-all text-center ${
+                disabled
+                  ? 'opacity-40 cursor-not-allowed'
+                  : 'hover:border-exo-accent/30'
+              }`}
             >
-              <div className="p-3 rounded-md bg-white/[0.03] border border-exo-mist-10 text-exo-accent group-hover:shadow-glow-gold transition-all">
+              <div className={`p-3 rounded-md border border-exo-mist-10 transition-all ${
+                disabled
+                  ? 'bg-white/[0.02] text-exo-muted/50'
+                  : 'bg-white/[0.03] text-exo-accent group-hover:shadow-glow-gold'
+              }`}>
                 <Icon size={22} strokeWidth={1.5} />
               </div>
               <div>
-                <p className="text-sm font-medium text-white group-hover:text-exo-accent transition-colors">{label}</p>
+                <p className={`text-sm font-medium transition-colors ${
+                  disabled ? 'text-exo-muted/50' : 'text-white group-hover:text-exo-accent'
+                }`}>{label}</p>
                 <p className="text-[10px] text-exo-muted mt-0.5 font-mono uppercase tracking-wider">{desc}</p>
+                {disabled && (
+                  <span className="text-[9px] font-mono uppercase tracking-wider text-exo-muted/30 mt-1 block">soon</span>
+                )}
               </div>
             </button>
           ))}

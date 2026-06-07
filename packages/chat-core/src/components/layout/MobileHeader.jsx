@@ -8,7 +8,7 @@ const LABEL_MAP = {
   '/projects': 'Projects',
   '/settings': 'Settings',
   '/user': 'User Profile',
-  '/memory': 'Memory',
+  '/groupchat': 'Groupchat',
 };
 
 /** Derive a human-readable back label from the previous route */
