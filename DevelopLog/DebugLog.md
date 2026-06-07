@@ -1,5 +1,23 @@
 ## Shell Mistakes
 
+### [2026-06-07] PWA Manifest Missing `id` — Same-Origin Multi-App Install Degrades to Shortcut
+- **Context**: `packages/*/vite.config.js` — PWA manifest (vite-plugin-pwa). Three SPAs share one nginx port (8080/8443) with subdirectory routing (`/chat/`, `/chronicle/`, `/council/`).
+- **Precaution**: Chrome identifies a PWA by manifest `id`. Without an explicit `id`, identity is derived from `start_url`. If `start_url` later changes (`/` → `/chat/`), installed PWAs become orphaned and the new page fails installability heuristics → Android Chrome shows "Create shortcut" instead of "Install", desktop shows generic gray icon. ALWAYS set a permanent `id` per module. Keep `scope` + `start_url` aligned with `base` (conditional on `command === 'build'`). SVG icons must NOT carry `purpose: 'maskable'` — SVGs cannot satisfy maskable safe-zone requirements; put `maskable` only on PNG icons.
+- **Quick Fix**:
+  ```js
+  manifest: {
+    id: 'exocore-chat',  // ← permanent, never changes
+    start_url: command === 'build' ? '/chat/' : '/',
+    scope: command === 'build' ? '/chat/' : '/',
+    icons: [
+      { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+      { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: '/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+    ],
+  }
+  ```
+- **See also**: Full DEBUG entry below for root-cause analysis and Android vs Desktop behavior.
+
 ### [2026-05-12] Assuming Common Python Packages are Installed
 - **Context**: Python scripts or Django codebase tools (e.g., `agents/tools.py`).
 - **Precaution**: Do not assume common packages like `psutil` or `requests` are present in the virtual environment. Always check `requirements.txt` before importing them dynamically, or you might cause silent `ModuleNotFoundError`s.
@@ -27,6 +45,34 @@
 
 ### Conda Interpreter
 - **Precaution**: Conda env `exocore_project` 在 WezTerm 交互环境和 shell 工具中均自动激活（shell 工具走 `bash.exe -l -c` 登录 shell）。直接用 `python.exe` 即可。不要手动 `conda activate` 或 `which python` 检查。
+
+---
+
+# DEBUG: Same-Origin Multi-PWA Install — Identity Collapse Without `id` and `scope` (✅ FIXED)
+
+- **Date**: 2026-06-07
+- **Phenomenon**:
+  - **Android Chrome**: Previously showed "Install" prompt for `/chat/`, `/chronicle/`, `/council/`. After manifest `start_url` changed from `/` to subdirectory (`/chat/` etc.), Chrome regressed to showing "Create shortcut" instead of "Install" — PWA installability checks failed.
+  - **Desktop Chrome/Edge**: Could install all three PWAs separately (scope fix worked), but installed icons showed generic gray placeholder instead of the custom SVG/PNG icons.
+  - **Dev mode** (Vite dev server, separate ports 5173/5174/5175): No issues — each origin has only one PWA, so identity collision doesn't occur. PWA is disabled in dev anyway (`devOptions: { enabled: false }`).
+- **Inference & Evidence**:
+  1. **Missing `id` → identity drift**: The nginx config comment (line 4-7) explicitly planned `id: exocore-chat`, `id: exocore-chronicle`, `id: exocore-council` — but no `vite.config.js` ever set the `id` field. Chrome's PWA identification hierarchy: (a) explicit `id` in manifest → (b) `start_url` if `id` absent. When `start_url` changed from `/` to `/chat/`, Chrome saw a **different PWA** than the one previously installed. The old PWA (identity: `start_url="/"`) was orphaned; the new page (identity: `start_url="/chat/"`) hadn't passed the full installability gate yet.
+  2. **Installability gate failure on Android**: For Chrome to show "Install" (not "Create shortcut"), the page must meet ALL criteria: valid manifest, registered SW with fetch handler, HTTPS (or localhost), `display: standalone`+, icons ≥192px. With the identity split, the new page's SW registration might not have fully propagated before the install prompt check. Android Chrome is stricter than desktop — it requires the SW to have handled a fetch before offering install. On first visit after build, no fetch has been intercepted yet → "Create shortcut".
+  3. **SVG `purpose: 'any maskable'` → icon rejection**: `maskable` purpose signals the platform can crop the icon to a safe zone (80% inner radius on Android). SVG format has no intrinsic pixel dimensions, so maskable-safe-zone cropping is undefined. Chrome's manifest parser **silently drops** SVG icons with `purpose: 'maskable'` → falls back to the next valid icon. If PNG icons are also stale (cached by SW from pre-fix build), no valid icon remains → generic gray placeholder.
+  4. **Why "it used to work"**: Before the `start_url` change (this session), all three manifests had `start_url: '/'`. On Android, visiting `http://192.168.x.x:8080/chat/` with `start_url: '/'` — Chrome used the origin as the PWA identity. Three different origins? No — all three share the same origin behind nginx (same port). With `start_url: '/'` for all three and no `id`, Chrome considered them **the same PWA** on Android (last-installed wins). On desktop, Chrome might have allowed multiple installs due to different heuristics, but they'd conflict.
+  5. **nginx designed for this**: The nginx config always had the correct vision: `id` + `scope` per module, served from subdirectories of the same server block. The vite manifests simply weren't implementing the planned `id` field.
+- **Correction Plan**:
+  - [Plan A]: Add permanent `id` to each manifest (`exocore-chat`, `exocore-chronicle`, `exocore-council`) → identity survives any `start_url` change. ✅
+  - [Plan B]: Make `start_url` and `scope` conditional on build mode (`command === 'build'` → subdirectory; dev → `/`) → matches `base` already set in vite config. ✅
+  - [Plan C]: Remove `maskable` from SVG icon purpose, keep it only on PNG icons → Chrome won't reject SVGs. ✅
+  - [Plan D]: Regenerate PNG icons with `scripts/convert-icons.mjs` to ensure fresh cached content. ✅
+- **Correction Result**:
+  - Modified `packages/{chat-core,chronicle,council}/vite.config.js`: Added `id`, conditional `start_url`/`scope`, split icon `purpose`.
+  - Verified generated `dist/manifest.webmanifest` for all three modules: each contains correct `id`, `scope`, `start_url`, and icon purposes.
+  - **Desktop**: After uninstalling old gray-icon PWAs and reinstalling from `https://...:8443/{chat,chronicle,council}/`, all three show correct custom icons.
+  - **Android**: After uninstalling old PWAs and reinstalling via HTTPS from the same host, "Install" prompt returns for each module.
+  - **Key takeaway**: `id` is the PWA's permanent identity — set it ONCE, never change it. `scope` and `start_url` can vary by deploy context (dev vs build) as long as `scope` is a prefix of `start_url` and both are same-origin relative. Without `id`, you're coupling identity to routing, and every routing change risks PWA breakage.
+  - **Forgiveness note**: Desktop Chrome is more forgiving than Android Chrome for PWA install checks. Android enforces stricter criteria (fetch-handled-by-SW requirement). Always test PWA installability on Android before declaring it fixed.
 
 ---
 
