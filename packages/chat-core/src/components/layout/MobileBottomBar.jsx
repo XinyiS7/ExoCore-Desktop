@@ -1,14 +1,14 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Settings, BrainCircuit, FolderKanban, Database } from 'lucide-react';
+import { Home, Settings, BrainCircuit, FolderKanban, Users } from 'lucide-react';
 import { getUserAvatarUrl } from '../../utils/avatar';
 
 const BOTTOM_ITEMS = [
-  { route: '/',         icon: Home,          label: 'Home' },
-  { route: '/projects', icon: FolderKanban,  label: 'Projects' },
-  { route: '/agent-hub',icon: BrainCircuit,  label: 'Agents' },
-  { route: '/memory',   icon: Database,      label: 'Memory' },
-  { route: '/settings', icon: Settings,      label: 'Settings' },
+  { route: '/',          icon: Home,          label: 'Home' },
+  { route: '/projects',  icon: FolderKanban,  label: 'Projects' },
+  { route: '/agent-hub', icon: BrainCircuit,  label: 'Agents' },
+  { route: '/groupchat', icon: Users,         label: 'Group' },
+  { route: '/settings',  icon: Settings,      label: 'Settings' },
 ];
 
 export default function MobileBottomBar() {
@@ -20,7 +20,7 @@ export default function MobileBottomBar() {
     if (route === '/') return location.pathname === '/';
     if (route === '/projects') return location.pathname.startsWith('/project') || location.pathname === '/projects';
     if (route === '/agent-hub') return location.pathname.startsWith('/agent');
-    if (route === '/memory') return location.pathname.startsWith('/memory');
+    if (route === '/groupchat') return location.pathname.startsWith('/groupchat');
     if (route === '/settings') return location.pathname.startsWith('/settings');
     return false;
   };

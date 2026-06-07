@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Hexagon, BrainCircuit, FolderKanban, Database,
+  Hexagon, BrainCircuit, FolderKanban, Users,
   Settings
 } from 'lucide-react';
 import { getUserAvatarUrl } from '../../utils/avatar';
@@ -31,7 +31,7 @@ const NavIcon = ({ icon: Icon, label, isActive, onClick }) => (
 const NAV_ITEMS = [
   { route: '/projects',  icon: FolderKanban, label: 'Projects' },
   { route: '/agent-hub', icon: BrainCircuit,  label: 'Agents' },
-  { route: '/memory',    icon: Database,      label: 'Memory' },
+  { route: '/groupchat', icon: Users,         label: 'Groupchat' },
 ];
 
 export default function DesktopSidebar() {
@@ -43,7 +43,7 @@ export default function DesktopSidebar() {
   const isActive = (route) => {
     if (route === '/projects') return location.pathname.startsWith('/project');
     if (route === '/agent-hub') return location.pathname.startsWith('/agent');
-    if (route === '/memory') return location.pathname.startsWith('/memory');
+    if (route === '/groupchat') return location.pathname.startsWith('/groupchat');
     return false;
   };
 
