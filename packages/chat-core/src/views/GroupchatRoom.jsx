@@ -513,7 +513,7 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
               rows={1}
               disabled={isSending}
               className="w-full bg-exo-pure border border-exo-mist-10 rounded-[4px] px-4 py-2.5 text-sm text-white/90 outline-none resize-none focus:border-exo-accent/40 transition-colors font-sans placeholder:text-exo-muted/40 disabled:opacity-50 max-h-[40vh]"
-              style={{ minHeight: '2.75rem' }}
+              style={{ minHeight: '2.75rem', fontFamily: 'var(--font-message)' }}
             />
           </div>
           <button
