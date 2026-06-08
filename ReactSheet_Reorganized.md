@@ -710,22 +710,33 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
   "deep_org_weekday": 0,              // 0=Mon … 6=Sun
   "deep_org_hour":    3,              // 0-23; read once at server startup
 
-  "model_generate_abstract":      "",           // empty = 使用默认模型
-  "model_realtime_recompress":    "deepseek-v4-pro",
-  "model_extract_chunk_metadata": "",
+  "model_generate_abstract":      "",           // [deprecated] 改用 model_roles.sub_agent
+  "model_extract_chunk_metadata": "",           // [deprecated] 改用 model_roles.sub_agent
+
+  "model_roles": {                              // 模型角色 → 模型ID 映射（空字符串 = 使用硬编码默认）
+    "sub_agent":  "deepseek-v4-flash",          // 后台杂活：子代理 / 压实 / 摘要 / 记忆整理
+    "vision":     "gemini-2.5-flash",           // 识图
+    "image_gen":  "gemini-3-pro-image-preview", // 生图 (tool 类型)
+    "web_search": "gemini-2.5-flash-lite"       // 联网搜索 (SearchAgent)
+  },
+  // Agent 自己的模型走 AgentPreset.default_model → settings.DEFAULT_MODEL，不在此处
 
   "key_map": {                              // platform → role → {keys, default}
     "deepseek": {
-      "system":      {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
-      "session":     {"keys": ["我的主力key"],         "default": "我的主力key"},
-      "sub_agent":   {"keys": [],                      "default": null},
-      "background":  {"keys": ["ds-bg"],               "default": "ds-bg"}
+      "system":       {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
+      "main_session": {"keys": ["我的主力key"],         "default": "我的主力key"},
+      "sub_agent":    {"keys": ["ds-bg"],               "default": "ds-bg"},
+      "vision":       {"keys": [],                      "default": null},
+      "image_gen":    {"keys": [],                      "default": null},
+      "web_search":   {"keys": [],                      "default": null}
     },
     "gemini": {
-      "system":      {"keys": ["gem-paid"], "default": "gem-paid"},
-      "session":     {"keys": [],           "default": null},
-      "sub_agent":   {"keys": [],           "default": null},
-      "background":  {"keys": [],           "default": null}
+      "system":       {"keys": ["gem-paid"], "default": "gem-paid"},
+      "main_session": {"keys": [],            "default": null},
+      "sub_agent":    {"keys": [],            "default": null},
+      "vision":       {"keys": [],            "default": null},
+      "image_gen":    {"keys": [],            "default": null},
+      "web_search":   {"keys": [],            "default": null}
     }
   },
 
@@ -740,8 +751,9 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 //   - active_start / active_end: HH:MM string
 //   - deep_org_weekday: 0–6
 //   - deep_org_hour: 0–23
-//   - model_* fields: 若非空则必须存在于 model_registry（任意 role）
-//   - *_preset_ids: 必须是有效的 G045 AgentPreset IDs
+//   - model_roles: 合法角色名见上方 Shape，模型 ID 非空时必须存在于 model_registry
+//   - model_* fields (deprecated): 若非空则必须存在于 model_registry
+//   - *_preset_ids: 必须是有效的 G045/superior AgentPreset IDs
 
 // Request example:
 { "gemini_api_key": "sk-newkey", "self_check_preset_ids": [1, 2], "deep_org_hour": 4 }
@@ -812,21 +824,25 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 // 按平台和角色分配 Key。每个 role = {keys: [...], default: <alias>}。
 // keys 和 default 均接受 alias（字符串）或 ID（整数）。
 // system.default 必填且必须在 system.keys 中；其他角色 default=null → 回落 system.default。
-// 角色: system | session | sub_agent | background
+// 角色: system | main_session | sub_agent | vision | image_gen | web_search
 
 // ── Request:
 {
   "deepseek": {
-    "system":      {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
-    "session":     {"keys": ["我的主力key"],         "default": "我的主力key"},
-    "sub_agent":   {"keys": [],                      "default": null},
-    "background":  {"keys": ["ds-bg"],               "default": "ds-bg"}
+    "system":       {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
+    "main_session": {"keys": ["我的主力key"],         "default": "我的主力key"},
+    "sub_agent":    {"keys": ["ds-bg"],               "default": "ds-bg"},
+    "vision":       {"keys": [],                      "default": null},
+    "image_gen":    {"keys": [],                      "default": null},
+    "web_search":   {"keys": [],                      "default": null}
   },
   "gemini": {
-    "system":      {"keys": ["gem-paid"], "default": "gem-paid"},
-    "session":     {"keys": [],           "default": null},
-    "sub_agent":   {"keys": [],           "default": null},
-    "background":  {"keys": [],           "default": null}
+    "system":       {"keys": ["gem-paid"], "default": "gem-paid"},
+    "main_session": {"keys": [],            "default": null},
+    "sub_agent":    {"keys": [],            "default": null},
+    "vision":       {"keys": [],            "default": null},
+    "image_gen":    {"keys": [],            "default": null},
+    "web_search":   {"keys": [],            "default": null}
   }
 }
 
@@ -834,16 +850,20 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 {
   "key_map": {
     "deepseek": {
-      "system":      {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
-      "session":     {"keys": ["我的主力key"],         "default": "我的主力key"},
-      "sub_agent":   {"keys": [],                      "default": null},
-      "background":  {"keys": ["ds-bg"],               "default": "ds-bg"}
+      "system":       {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
+      "main_session": {"keys": ["我的主力key"],         "default": "我的主力key"},
+      "sub_agent":    {"keys": ["ds-bg"],               "default": "ds-bg"},
+      "vision":       {"keys": [],                      "default": null},
+      "image_gen":    {"keys": [],                      "default": null},
+      "web_search":   {"keys": [],                      "default": null}
     },
     "gemini": {
-      "system":      {"keys": ["gem-paid"], "default": "gem-paid"},
-      "session":     {"keys": [],           "default": null},
-      "sub_agent":   {"keys": [],           "default": null},
-      "background":  {"keys": [],           "default": null}
+      "system":       {"keys": ["gem-paid"], "default": "gem-paid"},
+      "main_session": {"keys": [],            "default": null},
+      "sub_agent":    {"keys": [],            "default": null},
+      "vision":       {"keys": [],            "default": null},
+      "image_gen":    {"keys": [],            "default": null},
+      "web_search":   {"keys": [],            "default": null}
     }
   }
 }

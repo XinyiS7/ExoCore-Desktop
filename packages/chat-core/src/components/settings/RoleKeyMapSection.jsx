@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { configApi } from 'exo-shared';
-import { Save, AlertCircle, Shield } from 'lucide-react';
+import { Save, AlertCircle, Shield, ChevronDown } from 'lucide-react';
 import Toast from './Toast';
 
-const ROLES = ['system', 'session', 'sub_agent', 'background'];
+const ROLES = ['system', 'main_session', 'sub_agent', 'vision', 'image_gen', 'web_search'];
 
 const ROLE_LABELS = {
-  system:     'System',
-  session:    'Session',
-  sub_agent:  'Sub-agent',
-  background: 'Background',
+  system:      'System',
+  main_session:'Main Session',
+  sub_agent:   'Sub-agent',
+  vision:      'Vision',
+  image_gen:   'Image Gen',
+  web_search:  'Web Search',
 };
 
 /** Deep-compare two role assignment objects. */
@@ -46,6 +48,8 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
   const [initial, setInitial] = useState(buildInitial);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [openRole, setOpenRole] = useState(null); // which role's dropdown is open
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const next = buildInitial();
@@ -53,6 +57,18 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
     setInitial(next);
     setFeedback(null);
   }, [platform, keyMapForPlatform, buildInitial]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!openRole) return;
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpenRole(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openRole]);
 
   const clearFeedback = () => setFeedback(null);
   const aliasOptions = keys.map(k => k.alias).sort();
@@ -109,6 +125,10 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
     } finally { setSaving(false); }
   };
 
+  const toggleDropdown = (role) => {
+    setOpenRole(prev => prev === role ? null : role);
+  };
+
   return (
     <div className="bg-chat-panel border border-white/5 rounded-lg p-3 space-y-3">
       {/* Header */}
@@ -137,103 +157,114 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
           No keys available. Create keys in the Key Pool section first.
         </div>
       ) : (
-        /* Table layout */
-        <div className="text-[10px]">
-          {/* Table header */}
-          <div className="grid grid-cols-[100px_1fr_140px] gap-2 px-2 pb-1.5 text-chat-muted/40 font-mono uppercase tracking-[0.1em]">
-            <span>Role</span>
-            <span>Assigned Keys</span>
-            <span>Default</span>
-          </div>
-
+        <div className="space-y-1" ref={dropdownRef}>
           {ROLES.map(role => {
             const ra = assignments[role];
             const selectedArr = [...ra.selectedKeys];
             const isEmpty = selectedArr.length === 0;
             const isSystemRole = role === 'system';
+            const isOpen = openRole === role;
 
             return (
-              <div
-                key={role}
-                className={`grid grid-cols-[100px_1fr_140px] gap-2 items-center px-2 py-2 border-t transition-colors ${
-                  isSystemRole && isEmpty && dirty
-                    ? 'border-red-500/10 bg-red-500/[0.03]'
-                    : 'border-white/[0.03]'
-                }`}
-              >
-                {/* Role name */}
-                <div className="min-w-0">
-                  <span className="text-chat-text/70 font-mono text-[10px]">
+              <div key={role} className="relative">
+                {/* Single row: Role + Dropdown */}
+                <div
+                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded border transition-colors cursor-pointer ${
+                    isSystemRole && isEmpty && dirty
+                      ? 'border-red-500/10 bg-red-500/[0.03]'
+                      : isOpen
+                        ? 'border-chat-accent/20 bg-chat-bg'
+                        : 'border-transparent hover:border-white/5 bg-chat-bg'
+                  }`}
+                  onClick={() => toggleDropdown(role)}
+                >
+                  {/* Role label */}
+                  <span className="text-[10px] font-mono text-chat-text/70 w-[72px] flex-shrink-0 select-none">
                     {ROLE_LABELS[role]}
+                    {isSystemRole && <span className="text-chat-accent/50 ml-0.5">*</span>}
                   </span>
-                  {isSystemRole && (
-                    <span className="text-[8px] text-chat-accent/50 font-mono ml-1">*</span>
-                  )}
+
+                  {/* Selected value display */}
+                  <span className={`flex-1 min-w-0 text-xs font-mono truncate select-none ${
+                    isEmpty ? 'text-chat-muted/30' : 'text-chat-text/80'
+                  }`}>
+                    {isEmpty ? '—' : selectedArr.join(', ')}
+                  </span>
+
+                  {/* Warning for empty system role */}
                   {isSystemRole && isEmpty && dirty && (
-                    <span className="text-[8px] text-red-400/60 block">
-                      <AlertCircle size={9} className="inline mr-0.5" />needs key
+                    <span className="text-[8px] text-red-400/60 font-mono flex items-center gap-0.5 flex-shrink-0">
+                      <AlertCircle size={9} /> required
                     </span>
                   )}
+
+                  {/* Chevron */}
+                  <ChevronDown
+                    size={12}
+                    className={`text-chat-muted/30 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+                  />
                 </div>
 
-                {/* Key chips */}
-                <div className="flex flex-wrap gap-1">
-                  {aliasOptions.map(alias => {
-                    const checked = ra.selectedKeys.has(alias);
-                    return (
-                      <button
-                        key={alias}
-                        onClick={() => toggleKey(role, alias)}
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-[3px] border text-[9px] font-mono transition-all ${
-                          checked
-                            ? 'bg-chat-accent/8 border-chat-accent/20 text-chat-accent'
-                            : 'bg-transparent border-white/[0.06] text-chat-muted/40 hover:border-white/15'
-                        }`}
-                      >
-                        <span className={`w-2.5 h-2.5 rounded-[2px] border flex items-center justify-center flex-shrink-0 ${
-                          checked ? 'bg-chat-accent border-chat-accent' : 'border-white/15'
-                        }`}>
-                          {checked && (
-                            <svg width="6" height="6" viewBox="0 0 8 8" fill="none">
-                              <path d="M1.5 4L3.5 6L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          )}
-                        </span>
-                        {alias}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Default selector */}
-                <div>
-                  {selectedArr.length > 1 ? (
+                {/* Dropdown */}
+                {isOpen && (
+                  <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-chat-panel border border-white/10 rounded-md shadow-xl p-2 space-y-1.5">
+                    {/* Key checkboxes */}
                     <div className="flex flex-wrap gap-1">
-                      {selectedArr.map(alias => (
-                        <button
-                          key={alias}
-                          onClick={() => setDefault(role, alias)}
-                          className={`inline-flex items-center gap-1 text-[9px] font-mono transition-colors ${
-                            ra.defaultAlias === alias ? 'text-chat-accent' : 'text-chat-muted/40 hover:text-chat-muted/70'
-                          }`}
-                        >
-                          <span className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center ${
-                            ra.defaultAlias === alias ? 'border-chat-accent' : 'border-white/15'
-                          }`}>
-                            {ra.defaultAlias === alias && (
-                              <span className="w-1 h-1 rounded-full bg-chat-accent" />
-                            )}
-                          </span>
-                          {alias}
-                        </button>
-                      ))}
+                      {aliasOptions.map(alias => {
+                        const checked = ra.selectedKeys.has(alias);
+                        return (
+                          <button
+                            key={alias}
+                            onClick={(e) => { e.stopPropagation(); toggleKey(role, alias); }}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-[3px] border text-[9px] font-mono transition-all ${
+                              checked
+                                ? 'bg-chat-accent/8 border-chat-accent/20 text-chat-accent'
+                                : 'bg-transparent border-white/[0.06] text-chat-muted/40 hover:border-white/15'
+                            }`}
+                          >
+                            <span className={`w-2.5 h-2.5 rounded-[2px] border flex items-center justify-center flex-shrink-0 ${
+                              checked ? 'bg-chat-accent border-chat-accent' : 'border-white/15'
+                            }`}>
+                              {checked && (
+                                <svg width="6" height="6" viewBox="0 0 8 8" fill="none">
+                                  <path d="M1.5 4L3.5 6L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              )}
+                            </span>
+                            {alias}
+                          </button>
+                        );
+                      })}
                     </div>
-                  ) : selectedArr.length === 1 ? (
-                    <span className="text-chat-accent/60 font-mono text-[9px]">{selectedArr[0]}</span>
-                  ) : (
-                    <span className="text-chat-muted/30 font-mono text-[9px]">—</span>
-                  )}
-                </div>
+
+                    {/* Default selector — only show when multiple keys selected */}
+                    {selectedArr.length > 1 && (
+                      <div className="border-t border-white/[0.04] pt-1.5">
+                        <span className="text-[8px] font-mono uppercase tracking-[0.1em] text-chat-muted/40 px-1">Default</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {selectedArr.map(alias => (
+                            <button
+                              key={alias}
+                              onClick={(e) => { e.stopPropagation(); setDefault(role, alias); }}
+                              className={`inline-flex items-center gap-1 text-[9px] font-mono transition-colors ${
+                                ra.defaultAlias === alias ? 'text-chat-accent' : 'text-chat-muted/40 hover:text-chat-muted/70'
+                              }`}
+                            >
+                              <span className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center ${
+                                ra.defaultAlias === alias ? 'border-chat-accent' : 'border-white/15'
+                              }`}>
+                                {ra.defaultAlias === alias && (
+                                  <span className="w-1 h-1 rounded-full bg-chat-accent" />
+                                )}
+                              </span>
+                              {alias}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
