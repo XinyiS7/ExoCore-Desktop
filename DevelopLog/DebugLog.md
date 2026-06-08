@@ -143,6 +143,25 @@
   - [Plan B]: Add `BrowserRouter basename` from `import.meta.env.BASE_URL` → ✅ RESOLVED
 - **Correction Result**: App renders successfully at `http://localhost:8080/chat/`. Verified via Playwright — `#root` contains full AppLayout DOM. Remaining API 400 errors are backend connectivity, not rendering.
 
+# DEBUG: AvatarCropModal Touch Drag — Pointer/Touch Event Pipeline Conflict (⚠️ UNRESOLVED)
+
+- **Date**: 2026-06-08
+- **Phenomenon**:
+  - Avatar crop modal: scroll-wheel zoom works, pinch zoom works, but **drag/pan only moves the image ~1 frame then crashes** with `TypeError: Cannot read properties of null (reading 'x')`.
+  - The crash comes from `onMove` handler: `dragRef.current.x` where `dragRef.current` is `null`.
+  - Same behavior on both mouse and touch — not specific to one input modality.
+- **Inference & Evidence**:
+  1. **Attempt 1 — `touchmove` unconditional `preventDefault()`**: Original code had `e.preventDefault()` outside the `if (e.touches.length === 2)` guard. In Chromium, calling `preventDefault()` on `touchmove` can cancel the pending `pointermove` event. **Fix**: moved `preventDefault()` inside the pinch guard. Result: **slightly better** — drag moves 1 frame instead of 0, still crashes.
+  2. **Attempt 2 — Separate touch/pointer pipelines**: Rewrote event handling so touch events handle ALL touch interactions (drag + pinch), pointer events only handle mouse (`pointerType === 'mouse'` guard). Result: **same behavior** — ~1 frame of drag then crash.
+  3. **Hypothesis (unconfirmed)**: `setPointerCapture(e.pointerId)` might be silently failing, causing the browser to fire `pointercancel` immediately after the first `pointermove`, which clears `dragRef.current = null`. Or, the `pointercancel` fires because the browser detects a conflicting gesture (even with `touch-action: none` on the element).
+  4. **The real question**: Why does `dragRef.current` become `null` between `if (!dragRef.current) return;` (line 39) and `dragRef.current.x` (line 40) when the check is synchronous? Possibilities: stale closure in React event handler, or a race between pointer and touch event dispatches that clears the ref.
+  5. **Not yet tried**: (a) using `useState` for drag position instead of `useRef`, (b) `pointermove` ONLY without `setPointerCapture`, (c) removing touch event handlers entirely and handling everything through pointer events + gesture detection, (d) using `requestAnimationFrame` throttling on move events.
+- **Files involved**: `packages/chat-core/src/components/modals/AvatarCropModal.jsx`
+- **Current state**: The code uses separate touch/pointer pipelines (Attempt 2 applied). Touch drag tracks via `dragRef` in `onTouchStart/onTouchMove/onTouchEnd`. Mouse drag tracks via `dragRef` in `onDown/onMove/onUp` with `pointerType === 'mouse'` guard. The ref is cleared in `onTouchEnd` (touch) and `onUp`/`pointercancel` (pointer). Something still nukes `dragRef.current` before the second move frame.
+- **Next steps**: When we come back to this, instrument the handlers with `console.log` to trace the exact sequence of events. The key question: WHAT fires between frame 1 and frame 2 of a drag that sets `dragRef.current = null`?
+
+---
+
 ## Frontend JavaScript Mistakes
 
 ### [2026-06-04] `const` TDZ — Accessing Variable Before Declaration in React Components
