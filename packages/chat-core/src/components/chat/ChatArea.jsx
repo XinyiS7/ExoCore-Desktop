@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Save, Plus, RefreshCw, X, FileText,
-  Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2, SlidersHorizontal, Folder
+  Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2, SlidersHorizontal, Folder, ChevronDown
 } from 'lucide-react';
 import { baseUrl, getCsrfToken, MAIN_MODEL_IDS } from 'exo-shared';
 import { getAgentAvatarUrl, getUserAvatarUrl } from '../../utils/avatar';
@@ -123,6 +123,9 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const loadGenRef = useRef(0);
   const draftTimerRef = useRef(null);
   const composeAttachmentsRef = useRef([]);
+  const shouldScrollRef = useRef(false);       // flag to scroll after React commit
+  const userScrolledUpRef = useRef(false);      // user intent: scrolled away from bottom
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
 
   // ---- Consume pendingInsert from Drawer ----
   useEffect(() => {
@@ -250,11 +253,40 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const scrollToBottom = (smooth = true) =>
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "instant", block: "end" });
 
+  // Scroll after React commits — replaces unreliable rAF inside fetch().then()
+  useEffect(() => {
+    if (shouldScrollRef.current) {
+      shouldScrollRef.current = false;
+      scrollToBottom(false);
+      userScrolledUpRef.current = false;
+      setShowScrollBtn(false);
+    }
+  }, [messages]);
+
   const isNearBottom = () => {
     const c = scrollContainerRef.current;
     if (!c) return true;
     return c.scrollHeight - c.scrollTop - c.clientHeight < 120;
   };
+
+  // Track user scroll intent: if user manually scrolls up, stop auto-following
+  const handleScrollWheel = useCallback((e) => {
+    if (e.deltaY < 0) {
+      // User scrolled up — stop auto-follow
+      userScrolledUpRef.current = true;
+      if (isGenerating) setShowScrollBtn(true);
+    } else if (e.deltaY > 0 && isNearBottom()) {
+      // User scrolled back to bottom — resume auto-follow
+      userScrolledUpRef.current = false;
+      setShowScrollBtn(false);
+    }
+  }, [isGenerating]);
+
+  const handleScrollToBottomClick = useCallback(() => {
+    userScrolledUpRef.current = false;
+    setShowScrollBtn(false);
+    scrollToBottom(true);
+  }, []);
 
   const loadMoreMessages = useCallback(() => {
     if (!hasMore || isLoadingMore) return;
@@ -359,7 +391,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         visibleStartRef.current = 0;
         setMessages(enriched);
         setHasMore(data.has_more ?? (enriched.length < count));
-        requestAnimationFrame(() => scrollToBottom(false));
+        shouldScrollRef.current = true;
 
         // [Async resume] After messages loaded, check if we need to resume polling
         if (!pendingAsync) return;
@@ -402,6 +434,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
 
             // status === 'streaming' — resume polling
             setIsGenerating(true);
+            userScrolledUpRef.current = false;
+            setShowScrollBtn(false);
             abortControllerRef.current = new AbortController();
 
             // Push AI placeholder if last message isn't assistant
@@ -452,7 +486,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
                   allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
                   return newMsgs;
                 });
-                if (isNearBottom()) scrollToBottom(false);
+                if (!userScrolledUpRef.current && isNearBottom()) scrollToBottom(false);
               }
             ).then(() => {
               if (loadGenRef.current !== loadGen) return;
@@ -471,7 +505,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
                   visibleStartRef.current = 0;
                   setMessages(enrichedFull);
                   setHasMore(fullData.has_more ?? false);
-                  requestAnimationFrame(() => scrollToBottom(false));
+                  shouldScrollRef.current = true;
                 })
                 .catch(() => {});
             }).catch(err => {
@@ -571,6 +605,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     setComposeAttachments([]);
     setIsGenerating(true);
     setEditingMessageId(null);
+    userScrolledUpRef.current = false;
+    setShowScrollBtn(false);
     scrollToBottom(true);
     localStorage.removeItem(`exo_draft_${activeSessionId}`);
 
@@ -618,7 +654,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
             allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
             return newMsgs;
           });
-          if (isNearBottom()) scrollToBottom(false);
+          if (!userScrolledUpRef.current && isNearBottom()) scrollToBottom(false);
         });
       } else {
         response = await fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, fetchOptions);
@@ -687,7 +723,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
               return newMsgs;
             });
           }
-          if (isNearBottom()) scrollToBottom(false);
+          if (!userScrolledUpRef.current && isNearBottom()) scrollToBottom(false);
         }
       }
     } catch (err) {
@@ -717,7 +753,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
           visibleStartRef.current = 0;
           setMessages(enriched);
           setHasMore(data.has_more ?? false);
-          requestAnimationFrame(() => scrollToBottom(false));
+          shouldScrollRef.current = true;
         })
         .catch(() => {});
       // Refresh attachments after every SSE completion
@@ -973,7 +1009,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         )}
       </div>
 
-      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-8 scrollbar-hide relative z-10">
+      <div ref={scrollContainerRef} onWheel={handleScrollWheel} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-8 scrollbar-hide relative z-10">
         <div ref={topSentinelRef} className="h-px" />
         {isLoadingMore && (
           <div className="flex justify-center py-3">
@@ -1009,6 +1045,16 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
           );
         })}
         <div ref={messagesEndRef} />
+
+        {/* Floating scroll-to-bottom button — shown when user scrolls up during streaming */}
+        {showScrollBtn && (
+          <button
+            onClick={handleScrollToBottomClick}
+            className="sticky bottom-2 left-1/2 -translate-x-1/2 z-30 px-3 py-1.5 rounded-full bg-exo-accent/90 text-black text-[10px] font-mono uppercase tracking-[0.15em] shadow-lg hover:bg-exo-accent transition-all animate-fade-in flex items-center gap-1.5"
+          >
+            <ChevronDown size={12} /> 回到底部
+          </button>
+        )}
       </div>
 
       <BranchSessionModal
