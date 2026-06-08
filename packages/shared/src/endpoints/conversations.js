@@ -18,8 +18,8 @@ export function deleteConversation(convId) {
 }
 
 // ── Messages (§1.2) ──
-export function getConversationMessages(convId) {
-  return apiFetch(`/api/agents/chat/${convId}/`, { method: 'GET' });
+export function getConversationMessages(convId, params = {}) {
+  return apiFetch(`/api/agents/chat/${convId}/`, { method: 'GET', params });
 }
 
 // ── History Chunks (§1.4-1.5) ──

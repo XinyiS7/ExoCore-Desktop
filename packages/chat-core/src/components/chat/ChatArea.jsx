@@ -16,7 +16,7 @@ import ControlsDrawer from './ControlsDrawer';
 import { DEFAULT_PALETTE_ID, getPalette } from './palettes';
 import AutocompletePopup from './AutocompletePopup';
 
-const MSGS_PER_PAGE = 40;
+const MSGS_PER_PAGE = 50;
 
 /** Apply a streaming delta to a message object (mutates and returns the message). */
 const applyDeltaToMessage = (msg, text, eventType) => {
@@ -261,16 +261,33 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     const container = scrollContainerRef.current;
     const prevScrollHeight = container?.scrollHeight || 0;
     setIsLoadingMore(true);
-    const newStart = Math.max(0, visibleStartRef.current - MSGS_PER_PAGE);
-    const newSlice = allHistoryRef.current.slice(newStart, visibleStartRef.current);
-    visibleStartRef.current = newStart;
-    setMessages(prev => [...newSlice, ...prev]);
-    setHasMore(newStart > 0);
-    setIsLoadingMore(false);
-    requestAnimationFrame(() => {
-      if (container) container.scrollTop = container.scrollHeight - prevScrollHeight;
-    });
-  }, [hasMore, isLoadingMore]);
+
+    const currentLoaded = allHistoryRef.current.length;
+    const apiOffset = currentLoaded;
+
+    fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/?limit=${MSGS_PER_PAGE}&offset=${apiOffset}`, {
+      credentials: 'include'
+    })
+      .then(res => res.json())
+      .then(data => {
+        const olderMessages = data.messages || data;
+        const enriched = enrichMessages(olderMessages);
+
+        allHistoryRef.current = [...enriched, ...allHistoryRef.current];
+
+        setMessages(prev => [...enriched, ...prev]);
+        setHasMore(data.has_more ?? false);
+        setIsLoadingMore(false);
+
+        requestAnimationFrame(() => {
+          if (container) container.scrollTop = container.scrollHeight - prevScrollHeight;
+        });
+      })
+      .catch(err => {
+        console.error('加载更早消息失败:', err);
+        setIsLoadingMore(false);
+      });
+  }, [hasMore, isLoadingMore, activeSessionId]);
 
   useEffect(() => {
     const sentinel = topSentinelRef.current;
@@ -330,16 +347,18 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         }
       });
 
-    fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { credentials: 'include' })
+    fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/?limit=${MSGS_PER_PAGE}`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (loadGenRef.current !== loadGen) return;
-        const enriched = enrichMessages(data);
+        // 兼容新旧格式：分页模式返回 {messages, total_count, has_more}，旧格式返回数组
+        const messages = data.messages || data;
+        const enriched = enrichMessages(messages);
+        const count = data.total_count ?? enriched.length;
         allHistoryRef.current = enriched;
-        const startIdx = Math.max(0, enriched.length - MSGS_PER_PAGE);
-        visibleStartRef.current = startIdx;
-        setMessages(enriched.slice(startIdx));
-        setHasMore(startIdx > 0);
+        visibleStartRef.current = 0;
+        setMessages(enriched);
+        setHasMore(data.has_more ?? (enriched.length < count));
         requestAnimationFrame(() => scrollToBottom(false));
 
         // [Async resume] After messages loaded, check if we need to resume polling
@@ -437,18 +456,21 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
               }
             ).then(() => {
               if (loadGenRef.current !== loadGen) return;
-              // Polling complete — reload full message list
+              // Polling complete — reload latest messages (paginated)
               setIsGenerating(false);
               abortControllerRef.current = null;
-              fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { credentials: 'include' })
+              const loadedCount = allHistoryRef.current.length;
+              const refreshLimit = Math.max(MSGS_PER_PAGE, Math.ceil(loadedCount / MSGS_PER_PAGE) * MSGS_PER_PAGE);
+              fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/?limit=${refreshLimit}`, { credentials: 'include' })
                 .then(res => res.json())
                 .then(fullData => {
-                  if (!Array.isArray(fullData) || fullData.length === 0) return;
-                  const enrichedFull = enrichMessages(fullData);
+                  const messages = fullData.messages || fullData;
+                  if ((!Array.isArray(messages) || messages.length === 0) && !Array.isArray(fullData)) return;
+                  const enrichedFull = enrichMessages(Array.isArray(fullData) ? fullData : messages);
                   allHistoryRef.current = enrichedFull;
-                  const sIdx = Math.max(0, enrichedFull.length - MSGS_PER_PAGE);
-                  visibleStartRef.current = sIdx;
-                  setMessages(enrichedFull.slice(sIdx));
+                  visibleStartRef.current = 0;
+                  setMessages(enrichedFull);
+                  setHasMore(fullData.has_more ?? false);
                   requestAnimationFrame(() => scrollToBottom(false));
                 })
                 .catch(() => {});
@@ -682,16 +704,19 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     } finally {
       setIsGenerating(false);
       abortControllerRef.current = null;
-      // 刷新消息列表以获取真实 DB id
-      fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { credentials: 'include' })
+      // 刷新最新消息以获取真实 DB id（分页模式）
+      const loadedCount = allHistoryRef.current.length;
+      const refreshLimit = Math.max(MSGS_PER_PAGE, Math.ceil(loadedCount / MSGS_PER_PAGE) * MSGS_PER_PAGE);
+      fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/?limit=${refreshLimit}`, { credentials: 'include' })
         .then(res => res.json())
         .then(async data => {
-          if (!Array.isArray(data) || data.length === 0) return;
-          const enriched = enrichMessages(data);
+          const messages = data.messages || data;
+          if ((!Array.isArray(messages) || messages.length === 0) && !Array.isArray(data)) return;
+          const enriched = enrichMessages(Array.isArray(data) ? data : messages);
           allHistoryRef.current = enriched;
-          const startIdx = Math.max(0, enriched.length - MSGS_PER_PAGE);
-          visibleStartRef.current = startIdx;
-          setMessages(enriched.slice(startIdx));
+          visibleStartRef.current = 0;
+          setMessages(enriched);
+          setHasMore(data.has_more ?? false);
           requestAnimationFrame(() => scrollToBottom(false));
         })
         .catch(() => {});

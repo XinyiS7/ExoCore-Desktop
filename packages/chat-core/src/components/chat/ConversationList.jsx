@@ -85,23 +85,46 @@ const ConversationList = ({
 
   const visibleProjects = showAllProjects ? sortedProjects : sortedProjects.slice(0, 2);
 
-  const SessionItem = ({ conv, icon: Icon }) => (
+  // 判断会话是否超过 7 天未活跃
+  const isSessionInactive = (conv) => {
+    const lastActive = new Date(conv.last_message_at || conv.created_at);
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    return lastActive < weekAgo;
+  };
+
+  const SessionItem = ({ conv, icon: Icon }) => {
+    const inactive = isSessionInactive(conv);
+    return (
     <div
       onClick={() => setActiveSessionId(conv.id)}
       data-session-id={conv.id}
-      className={`group relative flex items-center justify-between p-3 rounded-[4px] cursor-pointer transition-all border ${activeSessionId === conv.id ? 'bg-exo-accent/10 text-exo-accent border-exo-accent/40 shadow-glow-gold' : 'text-exo-muted hover:bg-white/[0.03] border-transparent hover:border-exo-mist-10'}`}
+      className={`group relative flex items-center justify-between p-3 rounded-[4px] cursor-pointer transition-all border ${
+        activeSessionId === conv.id
+          ? 'bg-exo-accent/10 text-exo-accent border-exo-accent/40 shadow-glow-gold'
+          : inactive
+            ? 'text-exo-muted/40 hover:bg-white/[0.02] border-dashed border-exo-mist-6'
+            : 'text-exo-muted hover:bg-white/[0.03] border-transparent hover:border-exo-mist-10'
+      }`}
     >
       <div className="flex items-center gap-3 overflow-hidden min-w-0">
-        <div className={`p-1.5 rounded-[2px] border transition-all ${activeSessionId === conv.id ? 'bg-exo-accent/20 border-exo-accent/40' : 'bg-white/5 border-transparent group-hover:border-exo-mist-10'}`}>
-          <Icon size={14} className={activeSessionId === conv.id ? 'text-exo-accent' : 'opacity-40 group-hover:opacity-100'} />
+        <div className={`p-1.5 rounded-[2px] border transition-all ${
+          activeSessionId === conv.id ? 'bg-exo-accent/20 border-exo-accent/40' :
+          inactive ? 'bg-white/[0.02] border-transparent opacity-30' :
+          'bg-white/5 border-transparent group-hover:border-exo-mist-10'
+        }`}>
+          <Icon size={14} className={activeSessionId === conv.id ? 'text-exo-accent' : inactive ? 'opacity-20 group-hover:opacity-40' : 'opacity-40 group-hover:opacity-100'} />
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="text-sm truncate tracking-wide font-display font-light">{conv.name || `Session #${conv.id}`}</span>
+          <span className={`text-sm truncate tracking-wide font-display font-light ${inactive && activeSessionId !== conv.id ? 'opacity-50' : ''}`}>{conv.name || `Session #${conv.id}`}</span>
           {isMainView && <span className="text-[9px] opacity-40 uppercase font-mono tracking-tighter">TIMESTAMP: {new Date(conv.last_message_at || conv.created_at).toLocaleString()}</span>}
         </div>
       </div>
+      {inactive && activeSessionId !== conv.id && (
+        <span className="text-[8px] font-mono uppercase tracking-[0.15em] text-exo-muted/20 border border-exo-mist-6 rounded-[2px] px-1.5 py-0.5 flex-shrink-0">休眠</span>
+      )}
     </div>
   );
+  };
 
   const containerClasses = isMainView
     ? "flex-1 h-full bg-exo-bg flex flex-col overflow-y-auto scrollbar-hide"
