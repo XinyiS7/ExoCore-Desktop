@@ -25,46 +25,68 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
     setReady(true);
   };
 
-  // 所有交互事件统一用 native addEventListener，绕开 React 合成事件与 setPointerCapture 的兼容问题
+  // ── Touch-driven interaction: single-finger drag + two-finger pinch ──
+  // Touch events handle ALL touch interactions so they don't fight with pointer events.
+  // Pointer events are reserved for mouse (pointerType === 'mouse') only.
   useEffect(() => {
     const el = cropContainerRef.current;
     if (!el) return;
 
-    // 拖拽：Pointer Events（覆盖鼠标和单指触摸）
+    // ── Mouse drag via Pointer Events (pointerType === 'mouse' only) ──
     const onDown = (e) => {
+      if (e.pointerType !== 'mouse') return;
       el.setPointerCapture(e.pointerId);
       dragRef.current = { x: e.clientX, y: e.clientY };
     };
     const onMove = (e) => {
+      if (e.pointerType !== 'mouse') return;
       if (!dragRef.current) return;
       setPos(p => ({ x: p.x + e.clientX - dragRef.current.x, y: p.y + e.clientY - dragRef.current.y }));
       dragRef.current = { x: e.clientX, y: e.clientY };
     };
-    const onUp = () => { dragRef.current = null; };
+    const onUp = (e) => {
+      if (e.pointerType !== 'mouse') return;
+      dragRef.current = null;
+    };
 
-    // 双指缩放：Touch Events（pinchRef 仅在双指时设置）
+    // ── Touch: single-finger drag + two-finger pinch ──
     const onTouchStart = (e) => {
-      if (e.touches.length === 2) {
+      if (e.touches.length === 1) {
+        dragRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      } else if (e.touches.length === 2) {
+        dragRef.current = null; // cancel drag when pinch starts
         pinchRef.current = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
         );
       }
     };
-    const onTouchEnd = () => { pinchRef.current = null; };
+    const onTouchEnd = () => {
+      dragRef.current = null;
+      pinchRef.current = null;
+    };
     const onTouchMove = (e) => {
-      e.preventDefault();
       if (e.touches.length === 2 && pinchRef.current !== null) {
+        // Pinch zoom
+        e.preventDefault();
         const dist = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
         );
         setScale(s => Math.min(10, Math.max(0.1, s * dist / pinchRef.current)));
         pinchRef.current = dist;
+      } else if (e.touches.length === 1 && dragRef.current !== null) {
+        // Single-finger drag
+        e.preventDefault();
+        setPos(p => ({
+          x: p.x + e.touches[0].clientX - dragRef.current.x,
+          y: p.y + e.touches[0].clientY - dragRef.current.y,
+        }));
+        dragRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       }
     };
 
-    // 滚轮缩放
+    // ── Scroll-wheel zoom ──
     const onWheel = (e) => {
       e.preventDefault();
       setScale(s => Math.min(10, Math.max(0.1, s * (e.deltaY > 0 ? 0.9 : 1.1))));
@@ -74,7 +96,7 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
     el.addEventListener('pointermove', onMove);
     el.addEventListener('pointerup', onUp);
     el.addEventListener('pointercancel', onUp);
-    el.addEventListener('touchstart', onTouchStart);
+    el.addEventListener('touchstart', onTouchStart, { passive: false });
     el.addEventListener('touchend', onTouchEnd);
     el.addEventListener('touchmove', onTouchMove, { passive: false });
     el.addEventListener('wheel', onWheel, { passive: false });
@@ -171,7 +193,7 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
 
         <div className="text-center space-y-1">
           <p className="text-[10px] text-exo-muted font-mono uppercase tracking-widest opacity-60">Visual Normalization</p>
-          <p className="text-[9px] text-exo-muted/40 font-mono italic">DRAG TO PAN · SCROLL TO SCALE</p>
+          <p className="text-[9px] text-exo-muted/40 font-mono italic">DRAG TO PAN · SCROLL / PINCH TO SCALE</p>
         </div>
 
         <div className="flex gap-3 w-full pt-2">
