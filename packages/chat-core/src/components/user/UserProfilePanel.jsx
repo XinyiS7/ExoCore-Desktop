@@ -5,6 +5,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { getUserAvatarUrl } from '../../utils/avatar';
+import { setUserAvatar } from 'exo-shared/profile';
 import AvatarCropModal from './modals/AvatarCropModal';
 import { baseUrl, MODEL_REGISTRY } from 'exo-shared';
 
@@ -228,10 +229,9 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
         <AvatarCropModal
           file={cropFile}
           onConfirm={(dataUrl) => {
-            localStorage.setItem('exo_user_avatar_url', dataUrl);
+            setUserAvatar(dataUrl);
             setUserAvatarUrl(dataUrl);
             setCropFile(null);
-            window.dispatchEvent(new Event('user-avatar-updated'));
           }}
           onCancel={() => setCropFile(null)}
         />

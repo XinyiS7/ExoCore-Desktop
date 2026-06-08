@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Send, ArrowLeft, Settings, RefreshCw } from 'lucide-react';
 import { groupchatApi } from 'exo-shared';
-import { getAgentAvatarUrl } from '../utils/avatar';
+import { getAgentAvatarUrl, getUserAvatarUrl } from '../utils/avatar';
 import { formatDateSeparator, isDifferentDay } from '../utils/time';
 import GroupchatMessage from '../components/groupchat/GroupchatMessage';
 import AuroraBackground from '../components/chat/AuroraBackground';
@@ -74,9 +74,17 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
   );
   const userNick = userPreset?.name || 'user';
   const userId = userPreset?.id;
-  const userAvatarUrl = userId
-    ? (localStorage.getItem(`exo_agent_avatar_${userId}`) || `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(userNick)}`)
-    : `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(userNick)}`;
+  const [userAvatarUrl, setUserAvatarUrl] = useState(() => getUserAvatarUrl());
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'exo_user_avatar') {
+        setUserAvatarUrl(getUserAvatarUrl());
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
 
   // ── Resolve participants from groupchat.participant_ids ──
   const participants = useMemo(() => {

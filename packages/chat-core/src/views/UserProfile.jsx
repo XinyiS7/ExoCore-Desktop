@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import AvatarCropModal from '../components/modals/AvatarCropModal';
 import { telemetryApi, MODEL_REGISTRY } from 'exo-shared';
-import { setAgentAvatar } from 'exo-shared/profile';
+import { setUserAvatar, getUserAvatar } from 'exo-shared/profile';
 import { useUserPreset } from '../hooks/useUserPreset';
 
 // ─── Chart helpers ──────────────────────────────────────────────────────────────
@@ -116,16 +116,11 @@ export default function UserProfile({ appState, setView, goBack }) {
   const user = userPreset;
   const userId = user?.id;
 
-  // Avatar — agent pattern: exo_agent_avatar_{userId}
-  const [avatarUrl, setAvatarUrl] = useState(() => {
-    if (!userId) return '';
-    return localStorage.getItem(`exo_agent_avatar_${userId}`) || '';
-  });
+  // Avatar — unified user avatar via shared profile module
+  const [avatarUrl, setAvatarUrl] = useState(() => getUserAvatar());
 
   useEffect(() => {
-    if (userId) {
-      setAvatarUrl(localStorage.getItem(`exo_agent_avatar_${userId}`) || '');
-    }
+    setAvatarUrl(getUserAvatar());
   }, [userId]);
 
   // Editable fields
@@ -155,15 +150,14 @@ export default function UserProfile({ appState, setView, goBack }) {
 
   // Cross-tab sync for avatar
   useEffect(() => {
-    if (!userId) return;
     const handler = (e) => {
-      if (e.key === `exo_agent_avatar_${userId}`) {
+      if (e.key === 'exo_user_avatar') {
         setAvatarUrl(e.newValue || '');
       }
     };
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
-  }, [userId]);
+  }, []);
 
   // ─── Stats state ───
   const [platform, setPlatform] = useState('all');
@@ -215,8 +209,7 @@ export default function UserProfile({ appState, setView, goBack }) {
   };
 
   const handleCropConfirm = (dataUrl) => {
-    if (!userId) return;
-    setAgentAvatar(userId, dataUrl);
+    setUserAvatar(dataUrl);
     setAvatarUrl(dataUrl);
     setCropFile(null);
   };

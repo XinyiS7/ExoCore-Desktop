@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Send, Activity, CornerDownLeft, Camera } from 'lucide-react';
 import { baseUrl, getCsrfToken } from 'exo-shared';
-import { getAgentAvatarUrl } from '../../utils/avatar';
-import { setAgentAvatar } from 'exo-shared/profile';
+import { getAgentAvatarUrl, getUserAvatarUrl } from '../../utils/avatar';
+import { setUserAvatar } from 'exo-shared/profile';
 import AvatarCropModal from './modals/AvatarCropModal';
 
 const formatTime = (dateStr) => {
@@ -43,16 +43,13 @@ const UserProfile = ({ presets }) => {
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const bottomRef = useRef(null);
   const avatarInputRef = useRef(null);
-  const [userAvatarUrl, setUserAvatarUrl] = useState(() => {
-    if (!userId) return '';
-    return localStorage.getItem(`exo_agent_avatar_${userId}`) || '';
-  });
+  const [userAvatarUrl, setUserAvatarUrl] = useState(() => getUserAvatarUrl());
   const [cropFile, setCropFile] = useState(null);
 
   // Sync avatar when userId changes
   useEffect(() => {
     if (userId) {
-      setUserAvatarUrl(localStorage.getItem(`exo_agent_avatar_${userId}`) || '');
+      setUserAvatarUrl(getUserAvatarUrl());
     }
   }, [userId]);
 
@@ -213,7 +210,7 @@ const UserProfile = ({ presets }) => {
         <AvatarCropModal
           file={cropFile}
           onConfirm={(dataUrl) => {
-            setAgentAvatar(userId, dataUrl);
+            setUserAvatar(dataUrl);
             setUserAvatarUrl(dataUrl);
             setCropFile(null);
           }}

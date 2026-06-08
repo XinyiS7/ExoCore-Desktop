@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Hexagon, BrainCircuit, FolderKanban, Users,
   Settings
 } from 'lucide-react';
 import { usePresets } from '../../hooks/usePresets';
+import { getUserAvatar } from 'exo-shared/profile';
 
 const NavIcon = ({ icon: Icon, label, isActive, onClick }) => (
   <button
@@ -40,9 +41,18 @@ export default function DesktopSidebar() {
   const { presets } = usePresets();
   const userPreset = useMemo(() => presets?.find(p => p.agent_type === 'user') || null, [presets]);
   const userNick = userPreset?.name || 'user';
-  const userAvatarUrl = userPreset?.id
-    ? (localStorage.getItem(`exo_agent_avatar_${userPreset.id}`) || `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(userNick)}`)
-    : `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(userNick)}`;
+  const [userAvatarUrl, setUserAvatarUrl] = useState(() => getUserAvatar());
+
+  // React to avatar changes (cross-component via shared setUserAvatar)
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'exo_user_avatar') {
+        setUserAvatarUrl(getUserAvatar());
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
 
   const isActive = (route) => {
     if (route === '/projects') return location.pathname.startsWith('/project');

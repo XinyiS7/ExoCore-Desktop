@@ -4,7 +4,7 @@ import {
   Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2, SlidersHorizontal, Folder
 } from 'lucide-react';
 import { baseUrl, getCsrfToken, MAIN_MODEL_IDS } from 'exo-shared';
-import { getAgentAvatarUrl } from '../../utils/avatar';
+import { getAgentAvatarUrl, getUserAvatarUrl } from '../../utils/avatar';
 import { filesToAttachmentData, saveAttachments, enrichMessages, uploadFilesToAttachments } from '../../utils/attachmentStorage';
 import { formatDateSeparator, isDifferentDay } from '../../utils/time';
 import MessageBubble from './MessageBubble';
@@ -68,12 +68,18 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const [inputFocused, setInputFocused] = useState(false);
   const userPreset = useMemo(() => presets?.find(p => p.agent_type === 'user') || null, [presets]);
   const userNick = userPreset?.name || 'user';
-  const [userAvatarUrl] = useState(() => {
-    if (userPreset?.id) {
-      return localStorage.getItem(`exo_agent_avatar_${userPreset.id}`) || `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(userPreset.name || 'user')}`;
-    }
-    return `https://api.dicebear.com/7.x/notionists/svg?seed=user`;
-  });
+  const [userAvatarUrl, setUserAvatarUrl] = useState(() => getUserAvatarUrl());
+
+  // React to avatar changes (cross-component via shared setUserAvatar)
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'exo_user_avatar') {
+        setUserAvatarUrl(getUserAvatarUrl());
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
 
   const { sendMessageAsync, resumePolling } = usePollingChat();
 
