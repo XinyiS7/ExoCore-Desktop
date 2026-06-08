@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const FONT_KEY = 'exo_font_preference';
+const FONT_SYSTEM_KEY = 'exo_font_system';
+const FONT_MESSAGE_KEY = 'exo_font_message';
+const FONT_LEGACY_KEY = 'exo_font_preference';
 const DEFAULT_FONT = 'sarasa';
 
-// Font stack definitions — used for --font-body CSS variable
+// Font stack definitions
 const FONT_STACKS = {
   sarasa:  "'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace",
   wenkai:  "'LXGW WenKai', 'Sarasa Gothic Mono', 'Georgia', serif",
@@ -20,54 +22,94 @@ export const AVAILABLE_FONTS = [
 const FONT_NAV  = "'LXGW WenKai', 'Sarasa Gothic Mono', 'Segoe UI', sans-serif";
 const FONT_CODE = "'Maple Mono', 'Consolas', 'Cascadia Code', monospace";
 
-function applyFontVariables(fontPref) {
+function getStoredFont(key, fallback) {
+  try {
+    return localStorage.getItem(key) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function applyFontVariables(systemFont, messageFont) {
   const root = document.documentElement;
-  const bodyStack = FONT_STACKS[fontPref] || FONT_STACKS[DEFAULT_FONT];
-  root.style.setProperty('--font-body', bodyStack);
+  const systemStack = FONT_STACKS[systemFont] || FONT_STACKS[DEFAULT_FONT];
+  const messageStack = FONT_STACKS[messageFont] || FONT_STACKS[DEFAULT_FONT];
+
+  root.style.setProperty('--font-system', systemStack);
+  root.style.setProperty('--font-message', messageStack);
+  // Backward compat: --font-body mirrors --font-system
+  root.style.setProperty('--font-body', systemStack);
   root.style.setProperty('--font-nav', FONT_NAV);
   root.style.setProperty('--font-code', FONT_CODE);
 }
 
-function getStoredFont() {
-  try {
-    return localStorage.getItem(FONT_KEY) || DEFAULT_FONT;
-  } catch {
-    return DEFAULT_FONT;
-  }
-}
-
 export function useFont() {
-  const [fontPreference, setFontPreference] = useState(getStoredFont);
+  // Migrate legacy preference on first load
+  const legacyFont = (() => {
+    try {
+      return localStorage.getItem(FONT_LEGACY_KEY);
+    } catch { return null; }
+  })();
+
+  if (legacyFont) {
+    try {
+      localStorage.setItem(FONT_SYSTEM_KEY, legacyFont);
+      localStorage.setItem(FONT_MESSAGE_KEY, legacyFont);
+      localStorage.removeItem(FONT_LEGACY_KEY);
+    } catch { /* storage unavailable */ }
+  }
+
+  const [systemFont, setSystemFontState] = useState(
+    () => getStoredFont(FONT_SYSTEM_KEY, DEFAULT_FONT)
+  );
+  const [messageFont, setMessageFontState] = useState(
+    () => getStoredFont(FONT_MESSAGE_KEY, DEFAULT_FONT)
+  );
 
   // Apply CSS variables on mount and on change
   useEffect(() => {
-    applyFontVariables(fontPreference);
-  }, [fontPreference]);
+    applyFontVariables(systemFont, messageFont);
+  }, [systemFont, messageFont]);
 
   // Listen for cross-tab changes
   useEffect(() => {
     const handler = (e) => {
-      if (e.key === FONT_KEY) {
-        const newFont = getStoredFont();
-        setFontPreference(newFont);
+      if (e.key === FONT_SYSTEM_KEY) {
+        setSystemFontState(getStoredFont(FONT_SYSTEM_KEY, DEFAULT_FONT));
+      }
+      if (e.key === FONT_MESSAGE_KEY) {
+        setMessageFontState(getStoredFont(FONT_MESSAGE_KEY, DEFAULT_FONT));
+      }
+      if (e.key === FONT_LEGACY_KEY) {
+        const legacy = getStoredFont(FONT_LEGACY_KEY, null);
+        if (legacy) {
+          localStorage.setItem(FONT_SYSTEM_KEY, legacy);
+          localStorage.setItem(FONT_MESSAGE_KEY, legacy);
+          localStorage.removeItem(FONT_LEGACY_KEY);
+          setSystemFontState(legacy);
+          setMessageFontState(legacy);
+        }
       }
     };
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
   }, []);
 
-  const setFont = useCallback((font) => {
-    try {
-      localStorage.setItem(FONT_KEY, font);
-    } catch { /* storage unavailable */ }
-    setFontPreference(font);
-    // storage event doesn't fire in same tab — apply directly
-    applyFontVariables(font);
+  const setSystemFont = useCallback((font) => {
+    try { localStorage.setItem(FONT_SYSTEM_KEY, font); } catch {}
+    setSystemFontState(font);
+  }, []);
+
+  const setMessageFont = useCallback((font) => {
+    try { localStorage.setItem(FONT_MESSAGE_KEY, font); } catch {}
+    setMessageFontState(font);
   }, []);
 
   return {
-    fontPreference,
-    setFont,
+    systemFont,
+    messageFont,
+    setSystemFont,
+    setMessageFont,
     availableFonts: AVAILABLE_FONTS,
   };
 }

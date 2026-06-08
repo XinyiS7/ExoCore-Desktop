@@ -24,9 +24,11 @@
   font-display: swap;
 }
 
-/* ── Fallback CSS variables (before JS loads useFont()) ── */
+/* ── CSS variables (before JS loads useFont()) ── */
 :root {
-  --font-body: 'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
-  --font-nav:  'LXGW WenKai', 'Sarasa Gothic Mono', 'Segoe UI', sans-serif;
-  --font-code: 'Maple Mono', 'Consolas', 'Cascadia Code', monospace;
+  --font-system:  'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
+  --font-message: 'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
+  --font-body:    'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace; /* deprecated alias for --font-system */
+  --font-nav:     'LXGW WenKai', 'Sarasa Gothic Mono', 'Segoe UI', sans-serif;
+  --font-code:    'Maple Mono', 'Consolas', 'Cascadia Code', monospace;
 }

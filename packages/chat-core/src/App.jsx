@@ -42,7 +42,7 @@ import CreateProjectModal from './components/modals/CreateProjectModal';
 
 // ─── AppLayout shell ─────────────────────────────────────────────────
 function AppLayout() {
-  useFont(); // Inject --font-body, --font-nav, --font-code CSS variables
+  useFont(); // Inject --font-system, --font-message, --font-body (alias), --font-nav, --font-code CSS variables
   return (
     <div className="w-full h-screen bg-chat-bg text-chat-text font-sans flex overflow-hidden">
       {/* Desktop: 16px icon sidebar */}
