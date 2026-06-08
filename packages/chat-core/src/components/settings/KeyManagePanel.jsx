@@ -51,15 +51,15 @@ export default function KeyManagePanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Platform tabs */}
-      <div className="flex gap-0 border-b border-white/5 px-6 pt-2">
+      <div className="flex gap-0 border-b border-white/5 px-5 pt-2">
         {platforms.map(p => (
           <button
             key={p}
             onClick={() => setActivePlatform(p)}
-            className={`px-5 py-2.5 text-xs font-mono uppercase tracking-[0.15em] transition-all border-b-2 -mb-[1px] ${
+            className={`px-4 py-2 text-[10px] font-mono uppercase tracking-[0.12em] transition-all border-b-2 -mb-[1px] ${
               activePlatform === p
                 ? 'text-chat-accent border-chat-accent bg-chat-accent/5'
-                : 'text-chat-muted/50 border-transparent hover:text-chat-muted hover:border-chat-muted/20'
+                : 'text-chat-muted/40 border-transparent hover:text-chat-muted/60 hover:border-chat-muted/15'
             }`}
           >
             {p}
@@ -67,16 +67,14 @@ export default function KeyManagePanel() {
         ))}
       </div>
 
-      {/* Two sections: Key Pool + Role Key Map */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+      {/* Content — reduced spacing */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
         <KeyPoolSection
           platform={activePlatform}
           keys={keys}
           loading={loading}
           onKeysChanged={handleDataChanged}
         />
-
-        <div className="border-t border-white/5" />
 
         <RoleKeyMapSection
           platform={activePlatform}

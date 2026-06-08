@@ -6,17 +6,10 @@ import Toast from './Toast';
 const ROLES = ['system', 'session', 'sub_agent', 'background'];
 
 const ROLE_LABELS = {
-  system:     'System Default',
-  session:    'Session Default',
-  sub_agent:  'Sub-agent Default',
-  background: 'Background Default',
-};
-
-const ROLE_REQUIRED = {
-  system:     true,
-  session:    false,
-  sub_agent:  false,
-  background: false,
+  system:     'System',
+  session:    'Session',
+  sub_agent:  'Sub-agent',
+  background: 'Background',
 };
 
 /** Deep-compare two role assignment objects. */
@@ -31,28 +24,19 @@ function isEqual(a, b) {
 }
 
 export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, onSaved }) {
-  // Build initial state from props
   const buildInitial = useCallback(() => {
     const state = {};
     for (const role of ROLES) {
       const roleData = keyMapForPlatform?.[role];
-      // Handle both new format {keys, default} and legacy string format
       if (roleData && typeof roleData === 'object' && Array.isArray(roleData.keys)) {
         state[role] = {
           selectedKeys: new Set(roleData.keys),
           defaultAlias: roleData.default || null,
         };
       } else if (typeof roleData === 'string' && roleData) {
-        // Legacy: single alias string
-        state[role] = {
-          selectedKeys: new Set([roleData]),
-          defaultAlias: roleData,
-        };
+        state[role] = { selectedKeys: new Set([roleData]), defaultAlias: roleData };
       } else {
-        state[role] = {
-          selectedKeys: new Set(),
-          defaultAlias: null,
-        };
+        state[role] = { selectedKeys: new Set(), defaultAlias: null };
       }
     }
     return state;
@@ -63,7 +47,6 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  // Reset when platform or keyMapForPlatform changes
   useEffect(() => {
     const next = buildInitial();
     setAssignments(next);
@@ -72,21 +55,17 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
   }, [platform, keyMapForPlatform, buildInitial]);
 
   const clearFeedback = () => setFeedback(null);
-
   const aliasOptions = keys.map(k => k.alias).sort();
 
-  // ── Derived ──
   const dirty = !isEqual(assignments, initial);
   const systemHasKey = assignments.system?.selectedKeys?.size > 0;
   const canSave = dirty && systemHasKey && !saving;
 
-  // ── Handlers ──
   const toggleKey = (role, alias) => {
     setAssignments(prev => {
       const roleData = { ...prev[role], selectedKeys: new Set(prev[role].selectedKeys) };
       if (roleData.selectedKeys.has(alias)) {
         roleData.selectedKeys.delete(alias);
-        // If removing the default, pick another or clear
         if (roleData.defaultAlias === alias) {
           roleData.defaultAlias = roleData.selectedKeys.size === 1
             ? [...roleData.selectedKeys][0]
@@ -96,10 +75,7 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
         }
       } else {
         roleData.selectedKeys.add(alias);
-        // If this is the first key, auto-set as default
-        if (roleData.selectedKeys.size === 1) {
-          roleData.defaultAlias = alias;
-        }
+        if (roleData.selectedKeys.size === 1) roleData.defaultAlias = alias;
       }
       return { ...prev, [role]: roleData };
     });
@@ -112,81 +88,66 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
     }));
   };
 
-  // ── Save ──
   const handleSave = async () => {
     if (!canSave) return;
     clearFeedback();
     setSaving(true);
     try {
-      // Get full key_map to preserve other platforms
       const config = await configApi.getConfig();
       const fullKeyMap = config.key_map || {};
-
-      // Build platform entry
       const platformMap = {};
       for (const role of ROLES) {
         const ra = assignments[role];
-        const sortedKeys = [...ra.selectedKeys].sort();
-        platformMap[role] = {
-          keys: sortedKeys,
-          default: ra.defaultAlias || null,
-        };
+        platformMap[role] = { keys: [...ra.selectedKeys].sort(), default: ra.defaultAlias || null };
       }
-
       await configApi.updateKeyMap({ ...fullKeyMap, [platform]: platformMap });
       setFeedback({ type: 'success', msg: 'Key Map 保存成功' });
-      // Update initial so dirty resets
       setInitial(buildInitial());
       onSaved?.();
     } catch (err) {
       setFeedback({ type: 'error', msg: err.body?.detail || err.body?.error || err.message || '保存失败' });
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   return (
-    <div className="bg-chat-panel border border-white/5 rounded-lg p-5 space-y-4">
+    <div className="bg-chat-panel border border-white/5 rounded-lg p-3 space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Shield size={14} className="text-chat-muted/50" />
-          <span className="text-xs font-mono uppercase tracking-[0.15em] text-chat-text/80">
-            Key Map
-          </span>
-          {dirty && (
-            <span className="text-[9px] font-mono text-chat-accent/60 animate-fade-in">
-              (modified)
-            </span>
-          )}
+          <Shield size={13} className="text-chat-muted/50" />
+          <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-chat-text/70">Key Map</span>
+          {dirty && <span className="text-[8px] font-mono text-chat-accent/50">(modified)</span>}
         </div>
         <button
           onClick={handleSave}
           disabled={!canSave}
-          className="px-4 py-1.5 bg-chat-accent text-white text-[10px] font-bold uppercase tracking-[0.15em] rounded hover:brightness-110 disabled:opacity-20 disabled:grayscale transition-all flex items-center gap-1.5"
+          className="px-3 py-1.5 bg-chat-accent text-white text-[9px] font-bold uppercase tracking-[0.12em] rounded hover:brightness-110 disabled:opacity-20 disabled:grayscale transition-all flex items-center gap-1"
         >
           {saving ? (
-            <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <span className="inline-block w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
-            <Save size={12} />
+            <Save size={11} />
           )}
-          Save Key Map
+          Save
         </button>
       </div>
 
-      {/* Empty state */}
-      {aliasOptions.length === 0 && (
-        <div className="text-center py-6 text-[11px] text-chat-muted/40 font-mono">
+      {aliasOptions.length === 0 ? (
+        <div className="text-center py-4 text-[10px] text-chat-muted/40 font-mono">
           No keys available. Create keys in the Key Pool section first.
         </div>
-      )}
+      ) : (
+        /* Table layout */
+        <div className="text-[10px]">
+          {/* Table header */}
+          <div className="grid grid-cols-[100px_1fr_140px] gap-2 px-2 pb-1.5 text-chat-muted/40 font-mono uppercase tracking-[0.1em]">
+            <span>Role</span>
+            <span>Assigned Keys</span>
+            <span>Default</span>
+          </div>
 
-      {/* Role rows */}
-      {aliasOptions.length > 0 && (
-        <div className="space-y-3">
           {ROLES.map(role => {
             const ra = assignments[role];
-            const isRequired = ROLE_REQUIRED[role];
             const selectedArr = [...ra.selectedKeys];
             const isEmpty = selectedArr.length === 0;
             const isSystemRole = role === 'system';
@@ -194,123 +155,92 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
             return (
               <div
                 key={role}
-                className={`rounded-lg border p-3.5 space-y-2.5 transition-colors ${
+                className={`grid grid-cols-[100px_1fr_140px] gap-2 items-center px-2 py-2 border-t transition-colors ${
                   isSystemRole && isEmpty && dirty
-                    ? 'border-red-500/20 bg-red-500/5'
-                    : 'border-white/5 bg-chat-bg'
+                    ? 'border-red-500/10 bg-red-500/[0.03]'
+                    : 'border-white/[0.03]'
                 }`}
               >
-                {/* Role label */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono uppercase tracking-[0.12em] text-chat-text/70">
+                {/* Role name */}
+                <div className="min-w-0">
+                  <span className="text-chat-text/70 font-mono text-[10px]">
                     {ROLE_LABELS[role]}
                   </span>
-                  {isRequired && (
-                    <span className="text-[9px] font-mono text-chat-accent/60 uppercase tracking-wider">
-                      (required)
-                    </span>
+                  {isSystemRole && (
+                    <span className="text-[8px] text-chat-accent/50 font-mono ml-1">*</span>
                   )}
                   {isSystemRole && isEmpty && dirty && (
-                    <span className="text-[9px] font-mono text-red-400/70 flex items-center gap-1">
-                      <AlertCircle size={10} /> needs at least 1 key
+                    <span className="text-[8px] text-red-400/60 block">
+                      <AlertCircle size={9} className="inline mr-0.5" />needs key
                     </span>
                   )}
                 </div>
 
-                {/* Key checkboxes */}
-                <div className="flex flex-wrap gap-2">
+                {/* Key chips */}
+                <div className="flex flex-wrap gap-1">
                   {aliasOptions.map(alias => {
                     const checked = ra.selectedKeys.has(alias);
-                    const isDefault = ra.defaultAlias === alias;
                     return (
-                      <label
+                      <button
                         key={alias}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-[11px] font-mono cursor-pointer transition-all select-none ${
+                        onClick={() => toggleKey(role, alias)}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-[3px] border text-[9px] font-mono transition-all ${
                           checked
-                            ? isDefault
-                              ? 'bg-chat-accent/10 border-chat-accent/30 text-chat-accent'
-                              : 'bg-chat-accent/5 border-chat-accent/15 text-chat-text/70'
-                            : 'bg-transparent border-white/5 text-chat-muted/50 hover:border-white/15'
+                            ? 'bg-chat-accent/8 border-chat-accent/20 text-chat-accent'
+                            : 'bg-transparent border-white/[0.06] text-chat-muted/40 hover:border-white/15'
                         }`}
                       >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleKey(role, alias)}
-                          className="sr-only"
-                        />
-                        <span className={`w-3 h-3 rounded-[2px] border flex items-center justify-center flex-shrink-0 transition-colors ${
-                          checked
-                            ? 'bg-chat-accent border-chat-accent'
-                            : 'border-white/20'
+                        <span className={`w-2.5 h-2.5 rounded-[2px] border flex items-center justify-center flex-shrink-0 ${
+                          checked ? 'bg-chat-accent border-chat-accent' : 'border-white/15'
                         }`}>
                           {checked && (
-                            <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-                              <path d="M1.5 4L3.5 6L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <svg width="6" height="6" viewBox="0 0 8 8" fill="none">
+                              <path d="M1.5 4L3.5 6L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                           )}
                         </span>
-                        <span>{alias}</span>
-                      </label>
+                        {alias}
+                      </button>
                     );
                   })}
-                  {aliasOptions.length === 0 && (
-                    <span className="text-[10px] text-chat-muted/40 italic">No keys available</span>
-                  )}
                 </div>
 
-                {/* Default selector — only show when at least one key selected */}
-                {selectedArr.length > 1 && (
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="text-[9px] font-mono uppercase tracking-wider text-chat-muted/50 flex-shrink-0">
-                      Default:
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
+                {/* Default selector */}
+                <div>
+                  {selectedArr.length > 1 ? (
+                    <div className="flex flex-wrap gap-1">
                       {selectedArr.map(alias => (
-                        <label
-                          key={`def-${alias}`}
-                          className="flex items-center gap-1 cursor-pointer select-none"
+                        <button
+                          key={alias}
+                          onClick={() => setDefault(role, alias)}
+                          className={`inline-flex items-center gap-1 text-[9px] font-mono transition-colors ${
+                            ra.defaultAlias === alias ? 'text-chat-accent' : 'text-chat-muted/40 hover:text-chat-muted/70'
+                          }`}
                         >
-                          <input
-                            type="radio"
-                            name={`default-${platform}-${role}`}
-                            checked={ra.defaultAlias === alias}
-                            onChange={() => setDefault(role, alias)}
-                            className="sr-only"
-                          />
-                          <span className={`w-3 h-3 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
-                            ra.defaultAlias === alias
-                              ? 'border-chat-accent'
-                              : 'border-white/20'
+                          <span className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center ${
+                            ra.defaultAlias === alias ? 'border-chat-accent' : 'border-white/15'
                           }`}>
                             {ra.defaultAlias === alias && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-chat-accent" />
+                              <span className="w-1 h-1 rounded-full bg-chat-accent" />
                             )}
                           </span>
-                          <span className={`text-[10px] font-mono transition-colors ${
-                            ra.defaultAlias === alias
-                              ? 'text-chat-accent'
-                              : 'text-chat-muted/50'
-                          }`}>
-                            {alias}
-                          </span>
-                        </label>
+                          {alias}
+                        </button>
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : selectedArr.length === 1 ? (
+                    <span className="text-chat-accent/60 font-mono text-[9px]">{selectedArr[0]}</span>
+                  ) : (
+                    <span className="text-chat-muted/30 font-mono text-[9px]">—</span>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Toast */}
-      <Toast
-        type={feedback?.type}
-        message={feedback?.msg}
-        onClose={clearFeedback}
-      />
+      <Toast type={feedback?.type} message={feedback?.msg} onClose={clearFeedback} />
     </div>
   );
 }
