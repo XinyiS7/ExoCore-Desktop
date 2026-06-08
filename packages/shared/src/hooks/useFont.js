@@ -1,3 +1,11 @@
+/**
+ * ⚠️ SYNC ALERT ⚠️
+ * 如果你修改了 FONT_STACKS / localStorage key / DEFAULT_FONT，必须同步更新:
+ *   packages/chat-core/index.html    (内联 <script> 中的字体初始化代码)
+ *   packages/chronicle/index.html    (内联 <script> 中的字体初始化代码)
+ * 两边的 STACKS、DEFAULT、key 常量必须完全一致，否则字体闪烁 FOUC 会回来。
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 
 const FONT_SYSTEM_KEY = 'exo_font_system';
@@ -6,6 +14,7 @@ const FONT_LEGACY_KEY = 'exo_font_preference';
 const DEFAULT_FONT = 'sarasa';
 
 // Font stack definitions
+// KEEP IN SYNC with the inline <script> in: packages/chat-core/index.html
 const FONT_STACKS = {
   sarasa:  "'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace",
   wenkai:  "'LXGW WenKai', 'Sarasa Gothic Mono', 'Georgia', serif",

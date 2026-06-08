@@ -6,6 +6,46 @@
   <meta name="theme-color" content="#0a0a0f" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <title>Chat</title>
+  <!--
+    ⚠️ SYNC ALERT ⚠️
+    此脚本中的 STACKS / DEFAULT / localStorage key 必须与以下文件保持一致:
+      packages/shared/src/hooks/useFont.js
+    改任意一边都要同步改另一边，否则字体闪烁 FOUC 会回来。
+  -->
+  <script>
+    (function() {
+      // ⚠️ 这些常量与 packages/shared/src/hooks/useFont.js 保持同步
+      var STACKS = {
+        sarasa:  "'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace",
+        wenkai:  "'LXGW WenKai', 'Sarasa Gothic Mono', 'Georgia', serif",
+        maple:   "'Maple Mono', 'Sarasa Gothic Mono', 'Consolas', monospace",
+      };
+      var DEFAULT = 'sarasa';
+      var NAV  = "'LXGW WenKai', 'Sarasa Gothic Mono', 'Segoe UI', sans-serif";
+      var CODE = "'Maple Mono', 'Consolas', 'Cascadia Code', monospace";
+
+      var sys = DEFAULT, msg = DEFAULT;
+      try {
+        var legacy = localStorage.getItem('exo_font_preference');
+        if (legacy) {
+          localStorage.setItem('exo_font_system', legacy);
+          localStorage.setItem('exo_font_message', legacy);
+          localStorage.removeItem('exo_font_preference');
+          sys = msg = legacy;
+        } else {
+          sys = localStorage.getItem('exo_font_system') || DEFAULT;
+          msg = localStorage.getItem('exo_font_message') || DEFAULT;
+        }
+      } catch(e) {}
+
+      var root = document.documentElement;
+      root.style.setProperty('--font-system',  STACKS[sys] || STACKS[DEFAULT]);
+      root.style.setProperty('--font-message', STACKS[msg] || STACKS[DEFAULT]);
+      root.style.setProperty('--font-body',    STACKS[sys] || STACKS[DEFAULT]);
+      root.style.setProperty('--font-nav',     NAV);
+      root.style.setProperty('--font-code',    CODE);
+    })();
+  </script>
 </head>
 <body class="bg-[#0a0a0f] text-white">
   <div id="root"></div>
