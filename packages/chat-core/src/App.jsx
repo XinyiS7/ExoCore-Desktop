@@ -24,13 +24,13 @@ import ProjectDetail from './views/ProjectDetail';
 import UserProfile from './views/UserProfile';
 import SettingsView from './views/SettingsView';
 import KeyManagePanel from './components/settings/KeyManagePanel';
+import ModelAssignPanel from './components/settings/ModelAssignPanel';
 import NotificationsPanel from './components/settings/NotificationsPanel';
 import AppearancePanel from './components/settings/AppearancePanel';
+import RoutinePanel from './components/settings/RoutinePanel';
 import MemoryConsole from './views/MemoryConsole';
 import GroupchatList from './views/GroupchatList';
 
-// Icons
-import { Clock } from 'lucide-react';
 
 // Chat
 import ChatShell from './components/chat/ChatShell';
@@ -222,16 +222,12 @@ function NotificationsRoute() {
   return <NotificationsPanel />;
 }
 
-function RoutinePlaceholderRoute() {
-  return (
-    <div className="flex items-center justify-center h-full">
-      <div className="text-center space-y-3">
-        <Clock size={32} className="text-chat-muted/20 mx-auto" />
-        <p className="text-sm text-chat-muted/40 font-mono">Routine Manage</p>
-        <p className="text-[10px] text-chat-muted/20 font-mono uppercase tracking-widest">Coming soon</p>
-      </div>
-    </div>
-  );
+function ModelAssignRoute() {
+  return <ModelAssignPanel />;
+}
+
+function RoutineRoute() {
+  return <RoutinePanel />;
 }
 
 function SettingsRoute() {
@@ -256,9 +252,10 @@ export default function App() {
         <Route path="settings" element={<SettingsRoute />}>
           <Route index element={<Navigate to="keys" replace />} />
           <Route path="keys" element={<KeyManageRoute />} />
+          <Route path="models" element={<ModelAssignRoute />} />
           <Route path="notifications" element={<NotificationsRoute />} />
           <Route path="appearance" element={<AppearancePanel />} />
-          <Route path="routine" element={<RoutinePlaceholderRoute />} />
+          <Route path="routine" element={<RoutineRoute />} />
           <Route path="memory" element={<MemoryConsole />} />
         </Route>
       </Route>

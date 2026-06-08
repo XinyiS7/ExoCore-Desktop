@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Key, Clock, Bell, Palette, Database, ArrowLeft } from 'lucide-react';
+import { Key, Clock, Bell, Palette, Database, Cpu, ArrowLeft } from 'lucide-react';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 const NAV_ITEMS = [
@@ -9,6 +9,13 @@ const NAV_ITEMS = [
     label: 'Key Manage',
     icon: Key,
     route: '/settings/keys',
+    enabled: true,
+  },
+  {
+    id: 'models',
+    label: 'Model Assign',
+    icon: Cpu,
+    route: '/settings/models',
     enabled: true,
   },
   {
@@ -27,10 +34,10 @@ const NAV_ITEMS = [
   },
   {
     id: 'routine',
-    label: 'Routine Manage',
+    label: 'Routine',
     icon: Clock,
     route: '/settings/routine',
-    enabled: false,
+    enabled: true,
   },
   {
     id: 'memory',
