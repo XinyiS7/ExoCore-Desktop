@@ -101,6 +101,7 @@ self.addEventListener('notificationclick', (event) => {
           client.postMessage({
             type: 'PUSH_NAVIGATE',
             url: urlToOpen,
+            registerId: event.notification.data?.register_id || null,
           });
           focused = await client.focus();
           break;

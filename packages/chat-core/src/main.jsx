@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
 import App from './App';
 import './index.css';
+import { apiFetch } from 'exo-shared';
 
 // Strip trailing slash: Vite's BASE_URL is "/chat/" → basename "/chat"
 const BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -29,7 +30,7 @@ function PushNavigateListener() {
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    function handleMessage(event) {
+    async function handleMessage(event) {
       if (event.data?.type === 'PUSH_NAVIGATE' && event.data?.url) {
         // SW sends absolute path like /chat/agent/6.
         // Strip basename prefix if present so React Router handles it.
@@ -37,6 +38,22 @@ function PushNavigateListener() {
           ? event.data.url.slice(BASENAME.length) || '/'
           : event.data.url;
         navigate(path);
+
+        // Click-to-cancel: if notification has a linked Register entry,
+        // delete it so Superior knows the notification was seen.
+        if (event.data.registerId) {
+          try {
+            // Extract preset_id from URL path: /chat/agent/6 → 6
+            const match = path.match(/\/agent\/(\d+)/);
+            const presetId = match ? match[1] : null;
+            await apiFetch(
+              `/api/agents/registers/${event.data.registerId}/`,
+              { method: 'DELETE', params: presetId ? { preset_id: presetId } : {} },
+            );
+          } catch (_) {
+            // Silent — Register auto-expires via 4h TTL as fallback
+          }
+        }
       }
     }
 
