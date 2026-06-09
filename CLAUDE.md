@@ -10,6 +10,24 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 **Shell environment:** Git Bash (Windows). Use Bash tool for shell commands, not PowerShell.
 
+## Repository Boundaries (CRITICAL)
+
+This repo is **ExoCore-Desktop** (React + Vite frontend).
+
+**`../ExoCore/` (Django backend) and `../ExocoreExtension/` (Windows extensions) are separate repositories.**
+You may READ their source code and docs to understand API contracts, data models, and existing behavior — but you MUST NEVER modify files in those directories.
+
+If a task requires backend or extension changes:
+1. Write a clear spec/doc in `docs/superpowers/specs/` describing what the other repo needs to change
+2. Tell the user to hand it off to that repo's agent
+3. Do NOT reach across and edit files yourself
+
+## Before You Code
+
+- **Evaluate necessity.** Not every request needs to be implemented exactly as stated. Think about whether the ask is reasonable, whether a simpler approach exists, and whether the benefit justifies the complexity. Push back on over-engineering.
+- **Check the API contract first.** `ReactSheet_Reorganized.md` defines the data shapes. If a proposed change doesn't match the spec, discuss before coding.
+- **Respect existing patterns.** This monorepo has established conventions — match them. Don't introduce new patterns without a reason.
+
 # V3 Frontend Split
 
 ExoCore-Desktop is a **monorepo** containing three independent SPAs. Each runs on its own port as a standalone PWA, sharing a single Django backend (port 8000).
