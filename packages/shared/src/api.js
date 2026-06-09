@@ -9,13 +9,20 @@ export const getCsrfToken = () =>
 
 // Model registry is fetched dynamically from GET /api/core/models/ (see config.js endpoint).
 // Static fallback for offline/bootstrap scenarios — always prefer the API response.
+// Static fallback — keep in sync with engines/model_registry.py AVAILABLE_MODELS.
+// Prefer dynamic fetch from GET /api/core/models/ (config.listModels); this is
+// only for offline/bootstrap / before the API response arrives.
 export const MODEL_REGISTRY = [
-  { provider: 'gemini',   id: 'gemini-3.1-pro-preview', roles: ['main'],       color: '#4285F4' },
-  { provider: 'gemini',   id: 'gemini-3.5-flash',       roles: ['main'],       color: '#34A853' },
-  { provider: 'gemini',   id: 'gemini-3-flash-preview', roles: ['main'],       color: '#FBBC04' },
-  { provider: 'gemini',   id: 'gemini-2.5-flash',       roles: ['sub_agent'],  color: '#FF6D01' },
-  { provider: 'deepseek', id: 'deepseek-v4-pro',        roles: ['main'],       color: '#6C5CE7' },
-  { provider: 'deepseek', id: 'deepseek-v4-flash',      roles: ['main', 'sub_agent'], color: '#00CEC9' },
+  { provider: 'gemini',   id: 'gemini-3.1-pro-preview',  roles: ['main'],                      color: '#4285F4' },
+  { provider: 'gemini',   id: 'gemini-3.5-flash',        roles: ['main'],                      color: '#34A853' },
+  { provider: 'gemini',   id: 'gemini-3-flash-preview',  roles: ['main'],                      color: '#FBBC04' },
+  { provider: 'gemini',   id: 'gemini-2.5-pro',          roles: ['main', 'sub_agent', 'web_search'], color: '#EA4335' },
+  { provider: 'gemini',   id: 'gemini-2.5-flash',        roles: ['sub_agent', 'web_search', 'vision'], color: '#FF6D01' },
+  { provider: 'gemini',   id: 'gemini-2.5-flash-lite',   roles: ['sub_agent', 'web_search', 'vision'], color: '#FF8A65' },
+  { provider: 'gemini',   id: 'gemini-3-pro-image',      roles: ['image_gen'],                 color: '#AB47BC' },
+  { provider: 'gemini',   id: 'gemini-3.1-flash-image',  roles: ['image_gen'],                 color: '#7C4DFF' },
+  { provider: 'deepseek', id: 'deepseek-v4-flash',       roles: ['main', 'sub_agent'],         color: '#00CEC9' },
+  { provider: 'deepseek', id: 'deepseek-v4-pro',         roles: ['main'],                      color: '#6C5CE7' },
 ];
 
 export const AVAILABLE_MODELS = MODEL_REGISTRY.map(m => m.id);

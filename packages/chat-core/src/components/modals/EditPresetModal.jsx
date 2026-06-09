@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Edit3, X, Activity, Save } from 'lucide-react';
-import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from 'exo-shared';
+import { baseUrl, getCsrfToken, MAIN_MODEL_IDS } from 'exo-shared';
 
 const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
   const [form, setForm] = useState({ name: '', description: '', default_model: '', system_prompt: '' });
@@ -86,7 +86,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
                   value={form.default_model}
                   onChange={e => setForm(p => ({ ...p, default_model: e.target.value }))}
                 >
-                  {AVAILABLE_MODELS.map(m => <option key={m} value={m} className="bg-exo-pure">{m}</option>)}
+                  {MAIN_MODEL_IDS.map(m => <option key={m} value={m} className="bg-exo-pure">{m}</option>)}
                 </select>
               </div>
             </>

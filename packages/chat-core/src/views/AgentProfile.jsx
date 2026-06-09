@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, MessageSquare, Plus, Pencil } from 'lucide-react';
-import { baseUrl, getCsrfToken, AVAILABLE_MODELS, useProfile } from 'exo-shared';
+import { baseUrl, getCsrfToken, MAIN_MODEL_IDS, useProfile } from 'exo-shared';
 import { setAgentAvatar } from 'exo-shared/profile';
 import EditPresetModal from '../components/modals/EditPresetModal';
 import AvatarCropModal from '../components/modals/AvatarCropModal';
@@ -306,7 +306,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                   className="bg-exo-panel border border-exo-border rounded px-2 py-1 text-xs text-exo-text outline-none focus:border-exo-accent/40 transition-colors cursor-pointer"
                 >
                   {!preset.default_model && <option value="">Select a model...</option>}
-                  {AVAILABLE_MODELS.map(m => (
+                  {MAIN_MODEL_IDS.map(m => (
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
