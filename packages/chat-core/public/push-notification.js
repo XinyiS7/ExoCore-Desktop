@@ -100,7 +100,10 @@ self.addEventListener('push', (event) => {
 });
 
 self.addEventListener('notificationclick', (event) => {
-  const urlToOpen = event.notification.data?.url || '/';
+  const clickAction = event.action;  // 'navigate' | 'dismiss' | '' (点主体)
+  const action = clickAction === 'dismiss' ? 'dismiss' : 'navigate';
+  const notificationData = event.notification.data;
+  const urlToOpen = notificationData?.url || '/';
 
   event.waitUntil(
     (async () => {
@@ -109,27 +112,29 @@ self.addEventListener('notificationclick', (event) => {
         includeUncontrolled: true,
       });
 
-      // 1. Try to find and focus an existing window at our origin
+      // 1. Try to find and focus an existing window
       let focused = null;
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          // Post the target URL so the app can navigate via React Router
           client.postMessage({
             type: 'PUSH_NAVIGATE',
-            url: urlToOpen,
-            registerId: event.notification.data?.register_id || null,
+            url: action === 'navigate' ? urlToOpen : null,
+            action,
+            registerId: notificationData?.registerId || null,
+            presetId: notificationData?.presetId || null,
           });
           focused = await client.focus();
           break;
         }
       }
 
-      // 2. No existing window — open a new one
-      if (!focused && clients.openWindow) {
+      // 2. navigate → no existing window → open new one
+      //    dismiss → never open new window
+      if (!focused && action === 'navigate' && clients.openWindow) {
         await clients.openWindow(urlToOpen);
       }
 
-      // 3. Close notification after navigation is initiated
+      // 3. Close notification
       event.notification.close();
     })()
   );
