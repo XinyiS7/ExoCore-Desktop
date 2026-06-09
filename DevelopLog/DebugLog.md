@@ -206,6 +206,37 @@
 
 ---
 
+### [2026-06-09] Tailwind Typography `prose` — CSS Pseudo-Elements Inject Backtick Characters on Inline `<code>`
+
+- **Context**: `packages/chat-core/src/components/chat/MessageBubble.jsx` — `ReactMarkdown` rendered inside `prose prose-invert` container from `@tailwindcss/typography`.
+- **Symptom**: Every inline `<code>` element displayed literal `` ` `` characters around the code text. Block code (fenced code blocks) worked correctly. The same markdown content rendered correctly in Obsidian, confirming the source content was valid.
+- **Inference & Evidence**:
+  1. **Initial misdiagnosis — rehype-highlight**: First suspected `rehype-highlight` was adding `hljs` class to inline `<code>`, making `isInline = !className` return `false`. While `rehype-highlight` DOES add `hljs` to all `<code>` elements (not just block), this was NOT the root cause — it only affected the component selection (inline vs block rendering path), but wouldn't cause backticks to appear.
+  2. **Second misdiagnosis — Unicode fullwidth characters**: Suspected the LLM (DeepSeek) was emitting fullwidth grave accent (`｀` U+FF40) which react-markdown doesn't recognize as a code delimiter. Added `normalizeMarkdown()` to convert U+FF40 → U+0060. This was a valid defensive measure but NOT the root cause.
+  3. **Third misdiagnosis — HTML entities**: Suspected the backend was HTML-escaping backticks to `&#96;`. Added entity unescaping to `normalizeMarkdown()`. Also not the root cause.
+  4. **Root cause — `@tailwindcss/typography` `prose` plugin**: The `prose` class from Tailwind Typography applies these default styles to inline `<code>` elements:
+     ```css
+     .prose code::before { content: "`"; }
+     .prose code::after  { content: "`"; }
+     ```
+     The "backtick" characters the user saw were **CSS-generated pseudo-element content**, not rendered markdown. They appeared because the message container had `prose` (and `prose-invert`) classes. Obsidian doesn't use Tailwind Typography, which is why the same content worked there.
+  5. **Why only inline code was affected**: Block code is wrapped in `<pre><code>`, and the `pre` component handler intercepts before the `prose` class applies. Only inline `<code>` elements are direct children of the prose container, so only they received the CSS pseudo-elements.
+- **Correction Plan**:
+  - [Plan A]: Add `prose-code:before:content-none prose-code:after:content-none` to the prose container's className. This uses Tailwind's `content-none` utility (`content: none`) to override the pseudo-element content injected by the prose plugin. ✅
+  - [Plan B]: Move `normalizeMarkdown()` call before `ReactMarkdown` — already in place as a defense layer against Unicode lookalikes and HTML entities. ✅ (not the root fix, but worth keeping)
+- **Correction Result**:
+  - Added `prose-code:before:content-none prose-code:after:content-none` to both user message bubble (`max-w-[92%]` div) and AI message container (`w-full` div) in `MessageBubble.jsx`.
+  - Added same fix to `GroupchatMessage.jsx` AI message containers.
+  - Also fixed `isInline` detection from `!className` to `!className?.includes('language-')` in both files — this was a real secondary bug: `rehype-highlight` adds `hljs` class to inline `<code>`, which made the component treat inline code as block code, skipping the inline styling (different symptom from the CSS backtick issue, but same root confusion).
+  - **Verification**: Inline code now renders correctly — no visible backtick characters around code text. The CSS pseudo-elements are suppressed, and the markdown parser handles the actual backtick delimiters correctly.
+- **Lessons learned**:
+  - When debugging "extra characters appearing in rendered output," check CSS pseudo-elements in DevTools BEFORE investigating markdown parsing or character encoding. `::before` and `::after` are invisible in the DOM tree but visible to the user.
+  - `@tailwindcss/typography`'s `prose` class is opinionated about code styling — it adds visual backtick decorations that look like bugs if you don't know they're there. Always audit what the prose plugin injects when using it with a custom markdown renderer.
+  - Multiple bugs with the same symptom (inline code rendering wrong) can coexist: (a) CSS pseudo-elements adding backticks, (b) `isInline` detection broken by `rehype-highlight`'s `hljs` class. Fix them all, not just the first one you find.
+  - The `normalizeMarkdown()` function (Unicode + HTML entity normalization) is a useful defense layer even though it wasn't the root cause here — LLMs can and do emit non-standard characters.
+
+---
+
 ## Tool Loop Mistakes
 
 ### [2026-05-26] 工具回传设计原则（三收集器）

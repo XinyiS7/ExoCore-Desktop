@@ -46,7 +46,7 @@ export default function StageHeader({
           onClick={handleBack}
           className="flex items-center gap-1.5 text-chat-muted hover:text-chat-text transition-colors group"
         >
-          <ArrowLeft size={15} strokeWidth={1.5} className="group-hover:-translate-x-0.5 transition-transform" />
+          <ArrowLeft size={15} strokeWidth={1} className="group-hover:-translate-x-0.5 transition-transform" />
           <span className="text-sm font-light text-chat-text/80 truncate max-w-[200px]">
             {backLabel}
           </span>
@@ -58,10 +58,10 @@ export default function StageHeader({
         {showFilesButton && (
           <button
             onClick={onToggleFilesDrawer}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-chat-muted/60 hover:text-chat-accent border border-white/10 hover:border-chat-accent/30 rounded transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-chat-muted/60 hover:text-chat-accent border border-white/[0.06] hover:border-chat-accent/30 rounded transition-all"
             title="Project Files"
           >
-            <FolderKanban size={13} strokeWidth={1.5} />
+            <FolderKanban size={13} strokeWidth={1} />
             <span className="hidden sm:inline font-mono uppercase tracking-widest">Project Files</span>
           </button>
         )}

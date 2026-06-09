@@ -44,7 +44,7 @@ const MD_COMPONENTS = {
     return <pre {...props} className="bg-exo-pure border border-exo-mist-10 p-4 rounded-[4px] my-4 overflow-x-auto">{children}</pre>;
   },
   code({ children, className, ...props }) {
-    const isInline = !className;
+    const isInline = !className?.includes('language-');
     if (isInline) {
       return <code className="bg-white/10 text-exo-accent px-1 py-0.5 rounded-[2px] font-mono text-[0.9em]" {...props}>{children}</code>;
     }
@@ -100,7 +100,7 @@ const GroupchatMessage = React.memo(({ msg, isUser, senderName, senderAvatarUrl,
 
       {/* Content */}
       {isUser ? (
-        <div className="max-w-[92%] bg-exo-pure border border-exo-mist-12 rounded-[4px] rounded-tr-none p-4 text-sm shadow-brutalist transition-all hover:border-exo-mist-20 prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 text-white/90" style={{ fontFamily: 'var(--font-message)' }}>
+        <div className="max-w-[92%] bg-exo-pure border border-exo-mist-12 rounded-[4px] rounded-tr-none p-4 text-sm shadow-brutalist transition-all hover:border-exo-mist-20 prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none text-white/90" style={{ fontFamily: 'var(--font-message)' }}>
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeHighlight, rehypeKatex, rehypeRaw]}
@@ -110,7 +110,7 @@ const GroupchatMessage = React.memo(({ msg, isUser, senderName, senderAvatarUrl,
           </ReactMarkdown>
         </div>
       ) : (
-        <div className="w-full prose prose-invert prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0" style={{ fontFamily: 'var(--font-message)' }}>
+        <div className="w-full prose prose-invert prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none" style={{ fontFamily: 'var(--font-message)' }}>
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeHighlight, rehypeKatex, rehypeRaw]}

@@ -15,6 +15,24 @@ function extractText(node) {
   return '';
 }
 
+/**
+ * Normalize Unicode lookalikes that break markdown parsing.
+ * LLMs (especially Chinese-native models) sometimes emit fullwidth
+ * grave accent (U+FF40) instead of ASCII backtick (U+0060), which
+ * react-markdown does not recognize as a code delimiter → rendered
+ * as literal text.
+ */
+const RE_UNICODE_BACKTICK = /[｀]/g;
+const RE_UNICODE_TILDE = /[～]/g;
+const RE_ENTITY_BACKTICK = /&#(?:96|x60);/gi;
+function normalizeMarkdown(text) {
+  if (!text) return text;
+  return text
+    .replace(RE_UNICODE_BACKTICK, '`')
+    .replace(RE_UNICODE_TILDE, '~')
+    .replace(RE_ENTITY_BACKTICK, '`');
+}
+
 // ── Mermaid lazy-load ────────────────────────────────────────────────
 let mermaidLib = null;
 async function ensureMermaid() {
@@ -153,21 +171,22 @@ function CodeBlock({ children, className }) {
   const tabBtn = (t, label) => (
     <button
       onClick={() => setTab(t)}
-      className={`text-[10px] font-mono uppercase tracking-[0.2em] px-2 py-0.5 rounded-[2px] transition-all ${
-        tab === t ? 'text-exo-accent bg-exo-accent/10' : 'text-exo-muted/40 hover:text-exo-muted/70'
+      className={`text-[11px] px-1.5 transition-colors ${
+        tab === t ? 'text-exo-muted/70' : 'text-exo-muted/25 hover:text-exo-muted/50'
       }`}
+      style={{ fontFamily: 'var(--font-code)' }}
     >
       {label}
     </button>
   );
 
   return (
-    <div className="relative group/code my-4">
-      <div className="flex items-center justify-between px-3 py-1.5 bg-exo-pure border border-exo-mist-10 border-b-0 rounded-t-[4px]">
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] text-exo-muted font-mono uppercase tracking-[0.2em]">{lang}</span>
+    <div className="relative group/code my-4 rounded-[4px] overflow-hidden bg-exo-pure/8">
+      <div className="flex items-center justify-between px-4 py-1.5">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-[11px] text-exo-muted/35 select-none" style={{ fontFamily: 'var(--font-code)' }}>{lang}</span>
           {isVisual && (
-            <div className="flex gap-0.5">
+            <div className="flex gap-1">
               {tabBtn('preview', 'Preview')}
               {tabBtn('code', 'Code')}
             </div>
@@ -175,16 +194,17 @@ function CodeBlock({ children, className }) {
         </div>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 px-2 py-0.5 rounded-[2px] text-[10px] text-exo-muted hover:text-exo-accent hover:bg-exo-accent/5 transition-all"
+          className="flex items-center gap-1.5 text-[11px] text-exo-muted/20 hover:text-exo-muted/50 transition-colors"
+          style={{ fontFamily: 'var(--font-code)' }}
         >
-          {copied ? <Check size={10} className="text-green-400" /> : <Copy size={10} />}
-          <span className="uppercase tracking-widest">{copied ? 'COPIED' : 'COPY'}</span>
+          {copied ? <Check size={11} strokeWidth={1} className="text-green-400" /> : <Copy size={11} strokeWidth={1} />}
+          <span>{copied ? 'Copied' : 'Copy'}</span>
         </button>
       </div>
       {isVisual && tab === 'preview' ? (
         lang === 'svg' || lang === 'xml' ? <SvgPreview text={text} /> : <MermaidPreview text={text} />
       ) : (
-        <pre className={`${className ?? ''} !mt-0 !rounded-t-none !rounded-b-[4px] !border-exo-mist-10 !bg-exo-bg`}>
+        <pre className={`${className ?? ''} !mt-0 !rounded-none !border-0 !bg-transparent px-4 py-3`}>
           {children}
         </pre>
       )}
@@ -205,7 +225,9 @@ const MD_COMPONENTS = {
     return <pre {...props} className="bg-exo-pure border border-exo-mist-10 p-4 rounded-[4px] my-4">{children}</pre>;
   },
   code({ children, className, ...props }) {
-    const isInline = !className;
+    // rehype-highlight adds 'hljs' class to ALL <code> elements (even inline),
+    // so we can't use !className. Only block code has 'language-*' class.
+    const isInline = !className?.includes('language-');
     if (isInline) {
       return <code className="bg-white/10 text-exo-accent px-1 py-0.5 rounded-[2px] font-mono text-[0.9em]" {...props}>{children}</code>;
     }
@@ -288,9 +310,9 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
           </div>
         )}
         {!isUser && msg.reasoning_content && (
-          <details className="lcd-screen rounded-[4px] text-xs text-exo-muted cursor-pointer w-full group/think transition-all hover:border-exo-mist-20">
+          <details className="lcd-screen rounded-[4px] text-xs text-exo-muted cursor-pointer w-full group/think transition-all hover:border-exo-mist-20 bg-exo-pure/30 backdrop-blur-md">
             <summary className="p-2 flex items-center gap-2 label-caps text-exo-accent/60 group-hover/think:text-exo-accent transition-colors">Thinking Process</summary>
-            <div className="p-4 border-t border-exo-mist-10 bg-exo-pure/50 whitespace-pre-wrap font-mono leading-relaxed text-[11px]">
+            <div className="p-4 border-t border-exo-mist-10 bg-exo-pure/30 whitespace-pre-wrap font-mono leading-relaxed text-[11px]">
               {msg.reasoning_steps && msg.reasoning_steps.map((step, sIdx) => (
                 <div key={sIdx} className="inline-block text-[10px] font-mono uppercase tracking-widest text-exo-accent/70 bg-exo-accent/5 px-2 py-0.5 rounded-[2px] border border-exo-accent/10 mb-2 mr-2">{step}</div>
               ))}
@@ -311,16 +333,16 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
                 ? <button
                     key={i}
                     onClick={() => setLightboxSrc(att.preview)}
-                    className="relative group block h-32 max-w-[200px] rounded-[4px] overflow-hidden border border-exo-mist-12 hover:border-exo-accent/40 transition-all cursor-zoom-in"
+                    className="relative group block h-32 max-w-[200px] rounded-[4px] overflow-hidden border border-white/[0.06] hover:border-exo-accent/40 transition-all cursor-zoom-in"
                     title={att.name}
                   >
                     <img src={att.preview} alt={att.name} className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all" />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-exo-accent/10 transition-colors flex items-center justify-center">
-                      <ZoomIn size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ZoomIn size={18} strokeWidth={1} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </button>
-                : <div key={i} className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-tighter bg-exo-pure border border-exo-mist-12 rounded-[4px] px-2 py-1.5 text-exo-muted">
-                    <FileText size={11} className="text-blue-400 shrink-0" />
+                : <div key={i} className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-tighter bg-exo-pure/40 backdrop-blur-sm border border-white/[0.06] rounded-[4px] px-2 py-1.5 text-exo-muted">
+                    <FileText size={11} strokeWidth={1} className="text-blue-400 shrink-0" />
                     <span className="truncate max-w-[160px]">{att.name}</span>
                   </div>
             ))}
@@ -334,10 +356,10 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
             onClick={() => setLightboxSrc(null)}
           >
             <button
-              className="absolute top-4 right-4 p-2 text-white/60 hover:text-white bg-white/10 rounded-full transition-colors"
+              className="absolute top-4 right-4 p-2 text-white/50 hover:text-white transition-colors"
               onClick={() => setLightboxSrc(null)}
             >
-              <X size={20} />
+              <X size={18} strokeWidth={1} />
             </button>
             <img
               src={lightboxSrc}
@@ -348,59 +370,59 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
           </div>
         )}
         {isUser ? (
-          <div className="max-w-[92%] bg-exo-pure border border-exo-mist-12 rounded-[4px] rounded-tr-none p-4 text-sm shadow-brutalist transition-all hover:border-exo-mist-20 prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 text-white/90" style={{ fontFamily: 'var(--font-message)' }}>
-            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{msg.content}</ReactMarkdown>
+          <div className="max-w-[92%] bg-exo-pure/40 backdrop-blur-md border border-white/[0.06] rounded-[4px] rounded-tr-none p-4 text-sm transition-all hover:border-white/[0.10] prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none text-white/90" style={{ fontFamily: 'var(--font-message)' }}>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
           </div>
         ) : (
-          <div className="w-full prose prose-invert prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0" style={{ fontFamily: 'var(--font-message)' }}>
-            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{msg.content}</ReactMarkdown>
+          <div className="w-full prose prose-invert prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none" style={{ fontFamily: 'var(--font-message)' }}>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
           </div>
         )}
       </div>
 
       {/* Action toolbar */}
-      <div className={`flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'flex-row-reverse mr-2' : 'ml-1'}`}>
+      <div className={`flex items-center gap-0.5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'flex-row-reverse mr-2' : 'ml-1'}`}>
         <button
           onClick={handleCopy}
-          className="p-1.5 text-exo-muted/30 hover:text-exo-accent transition-colors rounded-[2px] border border-transparent hover:border-exo-mist-10 hover:bg-exo-pure"
+          className="p-1 text-exo-muted/30 hover:text-exo-accent transition-colors"
           title="复制"
         >
-          {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+          {copied ? <Check size={12} strokeWidth={1} className="text-green-400" /> : <Copy size={12} strokeWidth={1} />}
         </button>
 
         {isUser ? (
           <button
             onClick={() => onEdit && onEdit(msg)}
             disabled={isGenerating}
-            className="p-1.5 text-exo-muted/30 hover:text-exo-accent transition-colors rounded-[2px] border border-transparent hover:border-exo-mist-10 hover:bg-exo-pure disabled:opacity-20"
+            className="p-1 text-exo-muted/30 hover:text-exo-accent transition-colors disabled:opacity-20"
             title="编辑并重发"
           >
-            <Edit2 size={12} />
+            <Edit2 size={12} strokeWidth={1} />
           </button>
         ) : (
           <>
             <button
               onClick={() => onRegenerate && onRegenerate(msg)}
               disabled={isGenerating}
-              className="p-1.5 text-exo-muted/30 hover:text-exo-accent transition-colors rounded-[2px] border border-transparent hover:border-exo-mist-10 hover:bg-exo-pure disabled:opacity-20"
+              className="p-1 text-exo-muted/30 hover:text-exo-accent transition-colors disabled:opacity-20"
               title="重新生成"
             >
-              <RotateCw size={12} />
+              <RotateCw size={12} strokeWidth={1} />
             </button>
             <button
               onClick={() => onBranch && onBranch(msg.id)}
               disabled={isGenerating}
-              className="p-1.5 text-exo-muted/30 hover:text-blue-400 transition-colors rounded-[2px] border border-transparent hover:border-exo-mist-10 hover:bg-exo-pure disabled:opacity-20"
+              className="p-1 text-exo-muted/30 hover:text-blue-400 transition-colors disabled:opacity-20"
               title="从此分叉"
             >
-              <GitFork size={12} />
+              <GitFork size={12} strokeWidth={1} />
             </button>
             <button
               onClick={openBookmark}
-              className={`p-1.5 transition-colors rounded-[2px] border border-transparent hover:border-exo-mist-10 hover:bg-exo-pure ${showBookmark ? 'text-exo-accent' : 'text-exo-muted/30 hover:text-exo-accent'}`}
+              className={`p-1 transition-colors ${showBookmark ? 'text-exo-accent' : 'text-exo-muted/30 hover:text-exo-accent'}`}
               title="标记到长期记忆"
             >
-              <Bookmark size={12} />
+              <Bookmark size={12} strokeWidth={1} />
             </button>
           </>
         )}
@@ -408,11 +430,11 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
 
       {/* Bookmark panel */}
       {showBookmark && (
-        <div className="w-full mt-3 border border-exo-accent/20 rounded-[4px] bg-exo-pure shadow-brutalist overflow-hidden animate-fade-in">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-exo-mist-10 bg-exo-accent/5">
+        <div className="w-full mt-3 border border-white/[0.06] rounded-[4px] bg-exo-pure/40 backdrop-blur-md overflow-hidden animate-fade-in">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.04] bg-white/[0.02]">
             <span className="label-caps text-exo-accent/70">ARCHIVE_TO_LONGTERM_MEMORY</span>
-            <button onClick={() => setShowBookmark(false)} className="text-exo-muted/50 hover:text-white transition-colors rounded p-0.5">
-              <X size={12} />
+            <button onClick={() => setShowBookmark(false)} className="text-exo-muted/50 hover:text-white transition-colors p-0.5">
+              <X size={12} strokeWidth={1} />
             </button>
           </div>
           <div className="p-4 space-y-3">

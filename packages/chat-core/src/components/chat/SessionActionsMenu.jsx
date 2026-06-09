@@ -65,22 +65,22 @@ export default function SessionActionsMenu({ session, onUpdated, onDeleted, open
         className="p-1.5 text-exo-muted/30 hover:text-exo-muted hover:bg-white/5 rounded transition-all opacity-0 group-hover:opacity-100"
         title="Session actions"
       >
-        <MoreVertical size={14} strokeWidth={1.5} />
+        <MoreVertical size={14} strokeWidth={1} />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-36 bg-exo-pure border border-exo-mist-12 rounded-[2px] shadow-2xl py-1 z-50 backdrop-blur-xl">
+        <div className="absolute right-0 top-full mt-1 w-36 bg-exo-pure/80 backdrop-blur-xl border border-white/[0.06] rounded-[2px] shadow-lg py-1 z-50">
           <button
             onClick={handleRename}
             className="w-full flex items-center gap-2 px-3 py-2 text-[11px] text-white font-mono uppercase tracking-wider hover:bg-white/5 transition-colors text-left"
           >
-            <Edit2 size={11} /> Rename
+            <Edit2 size={11} strokeWidth={1} /> Rename
           </button>
           <button
             onClick={handleDelete}
             className="w-full flex items-center gap-2 px-3 py-2 text-[11px] text-red-500 font-mono uppercase tracking-wider hover:bg-red-500/10 transition-colors text-left"
           >
-            <Trash2 size={11} /> Delete
+            <Trash2 size={11} strokeWidth={1} /> Delete
           </button>
         </div>
       )}
