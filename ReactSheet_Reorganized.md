@@ -1,6 +1,6 @@
 ========================================================
   ExoCore — React 前端接口数据格式速查表（重整版）
-  最后更新：2026-06-07（第八篇 群聊 GroupChat API）
+  最后更新：2026-06-09（第九篇 Push 通知 & 订阅）
 ========================================================
 
 本文是纯数据格式速查，不是后端行为说明书。
@@ -824,7 +824,7 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 // 按平台和角色分配 Key。每个 role = {keys: [...], default: <alias>}。
 // keys 和 default 均接受 alias（字符串）或 ID（整数）。
 // system.default 必填且必须在 system.keys 中；其他角色 default=null → 回落 system.default。
-// 角色: system | main_session | sub_agent | vision | image_gen | web_search
+// 角色: system | session | sub_agent | background
 
 // ── Request:
 {
@@ -1229,3 +1229,122 @@ GET /api/tasks/completions/?entry=<pk>
 // Response (201): 同上列表项格式
 
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+第九篇  Push 通知 & 订阅 (Push / Register)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+9.1  POST /api/push/subscribe/  — 订阅推送
+─────────────────────────────────────────────────────────────
+浏览器 Service Worker 注册后调用，upsert（同 endpoint 重复订阅 = 更新）。
+
+// Request:
+{
+  "subscription": {
+    "endpoint": "https://fcm.googleapis.com/fcm/send/...",
+    "expirationTime": null,
+    "keys": { "p256dh": "...", "auth": "..." }
+  },
+  "device_name": "iPhone"                // 可选，用户自定义设备名
+}
+
+// Response (201):
+{
+  "id": 3,
+  "endpoint": "https://fcm.googleapis.com/fcm/send/...",
+  "p256dh": "...",
+  "auth": "...",
+  "user_agent": "Mozilla/5.0 ...",
+  "device_name": "iPhone",               // 空字符串 = 未设置
+  "is_active": true,
+  "created_at": "2026-06-09T12:00:00Z",
+  "updated_at": "2026-06-09T12:00:00Z"
+}
+
+
+9.2  POST /api/push/unsubscribe/  — 取消订阅
+─────────────────────────────────────────────────────────────
+
+// Request:
+{ "endpoint": "https://fcm.googleapis.com/fcm/send/..." }
+
+// Response: 204 No Content（幂等，不存在也返回 204）
+
+
+9.3  Push 消息 Payload（后端 → 浏览器）
+─────────────────────────────────────────────────────────────
+由 PushService.send_to_all() 生成，经 Web Push 送达 Service Worker。
+
+{
+  "title": "编译完成",
+  "body": "前端构建已成功完成。",
+  "data": {
+    "url": "/chat/agent/6",              // 点击「跳转」导航目标
+    "sender_type": "agent",              // "agent" | "system"
+    "sender_name": "G045",               // AgentPreset.name 或 "ExoCore"
+    "preset_id": 6,                      // null 当 sender_type="system"
+    "register_id": 42                    // 可选，关联的短期 Register 条目 ID
+  },
+  "actions": [
+    {"action": "navigate", "title": "跳转"},
+    {"action": "dismiss", "title": "关闭"}
+  ],
+  "requireInteraction": true             // false = low urgency 时自动关闭
+}
+// 多条推送始终堆叠，不替换。
+
+// Service Worker 收到后调用 showNotification()：
+//   title 拼为 "From: {sender_name}"
+//   body 拼为 "{title}\n{body}"
+
+// 点击行为：
+//   通知主体 / 「跳转」按钮 → action = "navigate"
+//   「关闭」按钮 → action = "dismiss"
+
+// notificationclick → postMessage({
+//   type: 'PUSH_NAVIGATE',
+//   url,            // dismiss 时为 null
+//   action,         // "navigate" | "dismiss"
+//   registerId,
+//   presetId,
+// })
+// 前端 PushNavigateListener → navigate 时跳转 + POST ack，dismiss 时仅 POST ack
+
+
+9.4  POST /api/agents/registers/<pk>/ack/  — 通知查看回执
+─────────────────────────────────────────────────────────────
+用途：用户操作通知后回调，无论跳转还是关闭都通知后端。
+
+// Request:
+// POST /api/agents/registers/42/ack/?preset_id=6
+{ "action": "navigate" }     // "navigate" | "dismiss"
+
+// action 含义:
+//   navigate = 用户点击了「跳转」按钮或通知主体（已跳转查看）
+//   dismiss  = 用户点击了「关闭」按钮（明确忽略）
+
+// Response (200):
+{ "id": 42, "content": "[推送通知] 编译完成: 前端构建已成功。 → 用户已查看" }
+
+// 404: { "error": "Register id=42 not found for preset 6" }
+// 400: { "error": "preset_id query param is required" }
+
+// 幂等：重复 ack 不会追加多个「→ 用户已查看」。
+
+
+9.5  PushSubscription 模型字段
+─────────────────────────────────────────────────────────────
+字段一览（DB 层，非全部通过 API 暴露）：
+
+┌─────────────────┬──────────────┬──────────────────────────────────┐
+│ 字段            │ 类型         │ 说明                             │
+├─────────────────┼──────────────┼──────────────────────────────────┤
+│ id              │ int          │ 主键                             │
+│ endpoint        │ URLField     │ Push service 端点，unique        │
+│ p256dh          │ CharField    │ 客户端 DH 公钥                   │
+│ auth            │ CharField    │ 客户端 auth secret               │
+│ user_agent      │ CharField    │ 浏览器 UA，自动从请求头获取       │
+│ device_name     │ CharField    │ 用户自定义设备名，不检查重名       │
+│ is_active       │ BooleanField │ 软停用（410 Gone 自动标记 false） │
+│ created_at      │ DateTime     │ 首次订阅时间                     │
+│ updated_at      │ DateTime     │ 最后更新时间                     │
+└─────────────────┴──────────────┴──────────────────────────────────┘
