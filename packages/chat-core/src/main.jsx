@@ -31,27 +31,50 @@ function PushNavigateListener() {
 
   React.useEffect(() => {
     async function handleMessage(event) {
-      if (event.data?.type === 'PUSH_NAVIGATE' && event.data?.url) {
-        // SW sends absolute path like /chat/agent/6.
-        // Strip basename prefix if present so React Router handles it.
-        const path = event.data.url.startsWith(BASENAME)
-          ? event.data.url.slice(BASENAME.length) || '/'
-          : event.data.url;
-        navigate(path);
+      if (event.data?.type !== 'PUSH_NAVIGATE') return;
 
-        // Click-to-cancel: if notification has a linked Register entry,
-        // delete it so Superior knows the notification was seen.
-        if (event.data.registerId) {
+      const { url, action, registerId, presetId } = event.data;
+
+      // dismiss → 只回执，不跳转
+      if (action === 'dismiss') {
+        if (registerId) {
           try {
-            // Extract preset_id from URL path: /chat/agent/6 → 6
-            const match = path.match(/\/agent\/(\d+)/);
-            const presetId = match ? match[1] : null;
             await apiFetch(
-              `/api/agents/registers/${event.data.registerId}/`,
-              { method: 'DELETE', params: presetId ? { preset_id: presetId } : {} },
+              `/api/agents/registers/${registerId}/ack/`,
+              {
+                method: 'POST',
+                body: { action: 'dismiss' },
+                params: presetId ? { preset_id: presetId } : {},
+              },
             );
           } catch (_) {
-            // Silent — Register auto-expires via 4h TTL as fallback
+            // Silent
+          }
+        }
+        return;
+      }
+
+      // navigate → 跳转 + 回执
+      if (action === 'navigate' && url) {
+        const path = url.startsWith(BASENAME)
+          ? url.slice(BASENAME.length) || '/'
+          : url;
+        navigate(path);
+
+        if (registerId) {
+          try {
+            const match = path.match(/\/agent\/(\d+)/);
+            const pid = match ? match[1] : presetId;
+            await apiFetch(
+              `/api/agents/registers/${registerId}/ack/`,
+              {
+                method: 'POST',
+                body: { action: 'navigate' },
+                params: pid ? { preset_id: pid } : {},
+              },
+            );
+          } catch (_) {
+            // Silent
           }
         }
       }
