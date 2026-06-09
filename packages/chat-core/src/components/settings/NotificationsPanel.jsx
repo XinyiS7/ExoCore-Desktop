@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Bell, BellOff, Loader2, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { pushApi } from 'exo-shared';
 
@@ -6,6 +6,7 @@ const { usePushSubscription } = pushApi;
 
 export default function NotificationsPanel() {
   const { isSubscribed, isLoading, permission, subscribe, unsubscribe } = usePushSubscription();
+  const [deviceName, setDeviceName] = useState('');
 
   return (
     <div className="flex-1 h-full flex flex-col items-center justify-center p-8">
@@ -67,9 +68,26 @@ export default function NotificationsPanel() {
           </div>
         </div>
 
+        {/* Device name input — only when not subscribed */}
+        {!isSubscribed && permission !== 'denied' && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-mono uppercase tracking-wider text-chat-muted/50">
+              设备名称
+            </label>
+            <input
+              type="text"
+              value={deviceName}
+              onChange={(e) => setDeviceName(e.target.value)}
+              placeholder="例如：我的台式机"
+              maxLength={200}
+              className="w-full bg-chat-panel/40 border border-white/5 rounded-lg px-3 py-2 text-sm text-chat-text placeholder:text-chat-muted/30 focus:outline-none focus:border-chat-accent/30 transition-colors"
+            />
+          </div>
+        )}
+
         {/* Toggle button */}
         <button
-          onClick={isSubscribed ? unsubscribe : subscribe}
+          onClick={isSubscribed ? unsubscribe : () => subscribe(deviceName.trim())}
           disabled={isLoading || permission === 'denied'}
           className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
             isLoading

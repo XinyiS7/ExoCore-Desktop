@@ -80,7 +80,7 @@ export async function requestNotificationPermission() {
  *
  * Returns the PushSubscription object, or null if denied.
  */
-export async function subscribeToPush() {
+export async function subscribeToPush(deviceName = '') {
   if (!isPushSupported()) {
     console.warn('[ExoPush] Push API not supported in this browser');
     return null;
@@ -104,11 +104,14 @@ export async function subscribeToPush() {
 
   console.log('[ExoPush] Subscribed:', subscription.endpoint);
 
-  // 4. Persist to backend
+  // 4. Persist to backend (with device name)
   try {
     await apiFetch('/api/push/subscribe/', {
       method: 'POST',
-      body: { subscription: subscription.toJSON() },
+      body: {
+        subscription: subscription.toJSON(),
+        device_name: deviceName || '',
+      },
     });
     console.log('[ExoPush] Subscription saved to backend');
   } catch (err) {
@@ -185,10 +188,10 @@ export function usePushSubscription() {
     return () => { cancelled = true; };
   }, []);
 
-  const subscribe = useCallback(async () => {
+  const subscribe = useCallback(async (deviceName = '') => {
     setIsLoading(true);
     try {
-      const sub = await subscribeToPush();
+      const sub = await subscribeToPush(deviceName);
       setIsSubscribed(!!sub);
       setPermission(getNotificationPermission());
     } finally {
