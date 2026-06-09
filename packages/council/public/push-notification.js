@@ -31,7 +31,7 @@ self.addEventListener('push', (event) => {
   try {
     const payload = event.data.json();
     const {
-      title,
+      title: backendTitle,
       body,
       icon = '/icon-192x192.png',
       badge = '/icon-192x192.png',
@@ -48,14 +48,30 @@ self.addEventListener('push', (event) => {
       timestamp = Date.now(),
     } = payload;
 
+    // ── 排版：title = "From: {sender_name}" ──
+    const senderName = data.sender_name || 'ExoCore';
+    const title = `From: ${senderName}`;
+
+    // ── 正文：后端标题 + 内容 ──
+    const lines = [backendTitle];
+    if (body) lines.push(body);
+    const notificationBody = lines.join('\n');
+
     const options = {
-      body,
+      body: notificationBody,
       icon,
       badge,
       image,
       tag,
-      data: { ...data, url: data.url || '/' },
-      actions,
+      data: {
+        url: data.url || '/',
+        registerId: data.register_id || null,
+        presetId: data.preset_id || null,
+      },
+      actions: [
+        { action: 'navigate', title: '跳转' },
+        { action: 'dismiss', title: '关闭' },
+      ],
       vibrate,
       requireInteraction,
       silent,
