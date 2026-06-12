@@ -18,7 +18,7 @@ const MemoryAnchorTicker = ({ anchors = [] }) => {
 
   if (anchors.length === 0) {
     return (
-      <div className="h-16 flex items-center justify-center border border-dashed border-exo-mist-10 rounded-[2px] bg-black/20 text-[10px] text-exo-muted/40 font-mono uppercase tracking-widest">
+      <div className="h-16 flex items-center justify-center border border-dashed border-exo-mist-10 rounded-[2px] bg-black/20 text-[10px] text-exo-muted/40 tracking-widest">
         <Activity size={12} className="mr-2 animate-pulse" /> Core Memory Scan: [NULL]
       </div>
     );
@@ -39,7 +39,7 @@ const MemoryAnchorTicker = ({ anchors = [] }) => {
             <div className="flex gap-1.5 overflow-x-auto whitespace-nowrap pr-10 h-full items-center"
               style={{ scrollbarWidth: 'none' }}>
               {keywords.map((kw, i) => (
-                <span key={i} className={`text-[9px] px-2 py-0.5 rounded-[2px] font-mono font-bold uppercase tracking-widest whitespace-nowrap flex-shrink-0 ${
+                <span key={i} className={`text-[9px] px-2 py-0.5 rounded-[2px] font-bold tracking-widest whitespace-nowrap flex-shrink-0 ${
                   anchor.is_persistent
                     ? 'bg-exo-accent/15 text-exo-accent border border-exo-accent/30'
                     : 'bg-white/5 text-exo-muted border border-exo-mist-10'

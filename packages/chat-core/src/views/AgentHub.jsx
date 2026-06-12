@@ -9,7 +9,7 @@ const SectionHeader = ({ icon: Icon, label, accent }) => (
   <div className="mb-3">
     <div className="flex items-center gap-2 mb-2">
       <Icon size={14} strokeWidth={1.5} className={accent} />
-      <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-exo-muted">{label}</span>
+      <span className="text-[10px] tracking-[0.3em] text-exo-muted">{label}</span>
     </div>
     <div className="h-px bg-gradient-to-r from-exo-mist-10 to-transparent" />
   </div>
@@ -52,7 +52,7 @@ const AgentCard = ({ preset, anchors, dragging, dragOver, onDragStart, onDragEnd
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium text-white truncate">{preset.name}</span>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded-[2px] font-mono uppercase tracking-wider whitespace-nowrap border ${
+            <span className={`text-[9px] px-1.5 py-0.5 rounded-[2px] tracking-wider whitespace-nowrap border ${
               preset.agent_type === 'g045'
                 ? 'text-exo-accent border-exo-accent/30 bg-exo-accent/10'
                 : preset.agent_type === 'superior'

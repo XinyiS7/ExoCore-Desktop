@@ -5,7 +5,7 @@ function FontSelector({ label, description, value, onChange }) {
   return (
     <div className="space-y-2.5">
       <div>
-        <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-chat-text/70">
+        <span className="text-[10px] tracking-[0.12em] text-chat-text/70">
           {label}
         </span>
         {description && (
@@ -93,7 +93,7 @@ export default function AppearancePanel() {
         <div className="mt-8 space-y-4">
           {/* System font preview */}
           <div className="p-4 rounded-lg border border-white/5 bg-chat-panel/50">
-            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-chat-muted/40 mb-3">
+            <p className="text-[10px] tracking-[0.2em] text-chat-muted/40 mb-3">
               System Font Preview · 系统字体
             </p>
             <div style={{ fontFamily: 'var(--font-system)' }}>
@@ -108,7 +108,7 @@ export default function AppearancePanel() {
 
           {/* Message font preview */}
           <div className="p-4 rounded-lg border border-white/5 bg-chat-panel/50">
-            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-chat-muted/40 mb-3">
+            <p className="text-[10px] tracking-[0.2em] text-chat-muted/40 mb-3">
               Message Font Preview · 消息字体
             </p>
             <div style={{ fontFamily: 'var(--font-message)' }}>

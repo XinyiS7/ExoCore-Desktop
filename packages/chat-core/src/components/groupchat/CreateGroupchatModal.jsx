@@ -109,7 +109,7 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
         <div className="p-5 space-y-5">
           {/* Name */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-exo-muted">Name</label>
+            <label className="text-[10px] tracking-[0.2em] text-exo-muted">Name</label>
             <input
               type="text"
               value={name}
@@ -122,7 +122,7 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
 
           {/* Prompt */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-exo-muted">
+            <label className="text-[10px] tracking-[0.2em] text-exo-muted">
               Prompt <span className="text-exo-muted/40">(optional)</span>
             </label>
             <textarea
@@ -136,7 +136,7 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
 
           {/* Participants */}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-exo-muted">
+            <label className="text-[10px] tracking-[0.2em] text-exo-muted">
               Participants <span className="text-exo-muted/40">({participantIds.length} agent{participantIds.length !== 1 ? 's' : ''} selected)</span>
             </label>
             {agentPresets.length === 0 ? (
@@ -193,7 +193,7 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="px-3 py-1.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 rounded-[2px] text-[10px] font-mono uppercase tracking-widest transition-all flex items-center gap-1.5 disabled:opacity-30"
+                className="px-3 py-1.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 rounded-[2px] text-[10px] tracking-widest transition-all flex items-center gap-1.5 disabled:opacity-30"
               >
                 <Trash2 size={12} />
                 {deleting ? 'Deleting...' : 'Delete'}
@@ -203,14 +203,14 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-1.5 text-[10px] font-mono uppercase tracking-widest text-exo-muted hover:text-white transition-colors"
+              className="px-4 py-1.5 text-[10px] tracking-widest text-exo-muted hover:text-white transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving || !name.trim()}
-              className="px-4 py-1.5 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[10px] font-mono uppercase tracking-widest hover:bg-exo-accent hover:text-black transition-all flex items-center gap-1.5 disabled:opacity-30"
+              className="px-4 py-1.5 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[10px] tracking-widest hover:bg-exo-accent hover:text-black transition-all flex items-center gap-1.5 disabled:opacity-30"
             >
               <Plus size={12} />
               {saving ? 'Saving...' : isEdit ? 'Save' : 'Create'}

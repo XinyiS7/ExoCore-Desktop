@@ -6,6 +6,7 @@ const CACHE_TTL = 1500;  // matches ContextCacheManager DEFAULT_TTL_SECONDS (25m
 const POLL_INTERVAL = 30000;
 const TICK_INTERVAL = 1000;
 const STORAGE_PREFIX = 'exo_cache_';
+const CACHE_ENABLED_PREFIX = 'exo_cache_enabled_';
 
 function loadFromStorage(sessionId) {
   try {
@@ -53,6 +54,10 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
   const [cacheState, setCacheState] = useState(null);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [cacheEnabled, setCacheEnabled] = useState(() => {
+    if (!activeSessionId) return true;
+    return localStorage.getItem(`${CACHE_ENABLED_PREFIX}${activeSessionId}`) !== 'false';
+  });
   const [hovered, setHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState(null);
   const tickRef = useRef(null);
@@ -105,8 +110,12 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
     if (!activeSessionId) {
       setCacheState(null);
       setRemainingSeconds(0);
+      setCacheEnabled(true);
       return;
     }
+
+    // Sync cache_enabled toggle from localStorage for the new session
+    setCacheEnabled(localStorage.getItem(`${CACHE_ENABLED_PREFIX}${activeSessionId}`) !== 'false');
 
     // Try localStorage first for instant restore
     const stored = loadFromStorage(activeSessionId);
@@ -165,18 +174,11 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
   }, []);
 
   // ── Actions ────────────────────────────────────────────────────
-  const handleRenew = async () => {
-    if (!activeSessionId || !cacheState?.active || loading) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/cache/renew/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-        credentials: 'include',
-      });
-      if (res.ok) await fetchCache(activeSessionId);
-    } catch { /* ignore */ }
-    finally { setLoading(false); }
+  const handleToggleCache = () => {
+    if (!activeSessionId) return;
+    const next = !cacheEnabled;
+    setCacheEnabled(next);
+    localStorage.setItem(`${CACHE_ENABLED_PREFIX}${activeSessionId}`, String(next));
   };
 
   const handleRelease = async () => {
@@ -301,17 +303,19 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
           </div>
         )}
 
-        {/* Renew button — only for active cache (Gemini) */}
+        {/* Cache enable toggle — always clickable, even after release */}
         <button
-          onClick={handleRenew}
-          disabled={!isActive || loading}
-          className={`h-full aspect-square flex items-center justify-center transition-colors rounded-full
-            ${!isActive
-              ? 'text-exo-muted/30 cursor-not-allowed'
-              : 'text-exo-muted/50 hover:text-exo-accent hover:bg-exo-accent/10 active:scale-90'}`}
-          title="续期 30 分钟"
+          onClick={handleToggleCache}
+          className="h-full px-1 flex items-center justify-center transition-all rounded-full active:scale-90 hover:bg-white/5"
+          title={cacheEnabled ? 'Context Cache ON — click to disable' : 'Context Cache OFF — click to enable'}
         >
-          <span className="text-[11px] font-bold leading-none font-mono">+</span>
+          <span className={`w-4 h-2.5 rounded-full transition-colors flex items-center px-[1.5px] ${
+            cacheEnabled ? 'bg-exo-accent/60' : 'bg-exo-mist-15'
+          }`}>
+            <span className={`w-2 h-2 rounded-full bg-white transition-transform duration-200 ${
+              cacheEnabled ? 'translate-x-1.5' : 'translate-x-0'
+            }`} />
+          </span>
         </button>
       </div>
 

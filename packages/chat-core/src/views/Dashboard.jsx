@@ -84,9 +84,9 @@ export default function Dashboard({ appState, setView }) {
         <div className="space-y-6 animate-fade-in">
           <div className="flex items-center gap-3">
             <div className="h-px w-8 bg-exo-accent/40" />
-            <span className="text-[10px] font-mono uppercase tracking-[0.5em] text-exo-accent/60">ExoCore // System.Ready</span>
+            <span className="text-[10px] tracking-[0.5em] text-exo-accent/60">ExoCore // System.Ready</span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-display font-light leading-ultra-tight tracking-tight text-white">
+          <h1 className="text-4xl md:text-6xl font-light leading-ultra-tight tracking-tight text-white">
             Welcome back, <span className="text-exo-accent font-medium">{userNick.toUpperCase()}</span>
           </h1>
           <p className="text-base text-exo-muted max-w-xl font-light">{greeting}</p>
@@ -140,7 +140,7 @@ export default function Dashboard({ appState, setView }) {
           <div className="space-y-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
             <div className="flex items-center gap-3">
               <div className="h-px w-6 bg-exo-accent/30" />
-              <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-exo-muted">Recent Sessions</span>
+              <span className="text-[10px] tracking-[0.4em] text-exo-muted">Recent Sessions</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {recentSessions.map(convo => (
@@ -190,9 +190,9 @@ export default function Dashboard({ appState, setView }) {
                 <p className={`text-sm font-medium transition-colors ${
                   disabled ? 'text-exo-muted/50' : 'text-white group-hover:text-exo-accent'
                 }`}>{label}</p>
-                <p className="text-[10px] text-exo-muted mt-0.5 font-mono uppercase tracking-wider">{desc}</p>
+                <p className="text-[10px] text-exo-muted mt-0.5 tracking-wider">{desc}</p>
                 {disabled && (
-                  <span className="text-[9px] font-mono uppercase tracking-wider text-exo-muted/30 mt-1 block">soon</span>
+                  <span className="text-[9px] font-mono tracking-wider text-exo-muted/30 mt-1 block">soon</span>
                 )}
               </div>
             </button>
@@ -203,7 +203,7 @@ export default function Dashboard({ appState, setView }) {
         <div className="space-y-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center gap-3">
             <div className="h-px w-6 bg-exo-accent/30" />
-            <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-exo-muted">Calendar</span>
+            <span className="text-[10px] tracking-[0.4em] text-exo-muted">Calendar</span>
           </div>
           <div className="bg-exo-pure border border-exo-mist-10 rounded-md p-1">
             <CalendarWidget />

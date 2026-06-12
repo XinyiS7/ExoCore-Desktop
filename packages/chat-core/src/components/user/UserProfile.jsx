@@ -219,8 +219,8 @@ const UserProfile = ({ presets }) => {
       )}
       <div className="h-14 border-b border-exo-mist-10 flex items-center px-8 bg-exo-pure/40 backdrop-blur-md shrink-0">
         <div className="flex flex-col">
-          <span className="font-bold text-[13px] text-white tracking-[0.2em] uppercase font-display">Neural Timeline</span>
-          <span className="text-[9px] text-exo-muted font-mono uppercase tracking-widest opacity-40">System-wide Event Log</span>
+          <span className="font-bold text-[13px] text-white tracking-[0.2em]">Neural Timeline</span>
+          <span className="text-[9px] text-exo-muted tracking-widest opacity-40">System-wide Event Log</span>
         </div>
       </div>
 
@@ -255,11 +255,11 @@ const UserProfile = ({ presets }) => {
                   className="w-full bg-transparent text-[14px] text-white outline-none resize-none placeholder:opacity-20 font-mono leading-relaxed"
                 />
                 <div className="flex justify-between items-center pt-4 border-t border-exo-mist-6">
-                  <span className="text-[9px] text-exo-muted font-mono uppercase tracking-tight opacity-40">Markdown & Links Supported</span>
+                  <span className="text-[9px] text-exo-muted tracking-tight opacity-40">Markdown & Links Supported</span>
                   <button
                     onClick={handlePost}
                     disabled={!newPostContent.trim() || isPosting}
-                    className="px-6 py-2 bg-white text-exo-pure text-[11px] font-bold rounded-[2px] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-2 uppercase tracking-widest"
+                    className="px-6 py-2 bg-white text-exo-pure text-[11px] font-bold rounded-[2px] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-2 tracking-widest"
                   >
                     {isPosting ? <Activity size={12} className="animate-spin" /> : <Send size={12} />}
                     Inscribe
@@ -271,11 +271,11 @@ const UserProfile = ({ presets }) => {
 
           {/* Timeline */}
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-exo-muted font-mono text-[11px] uppercase tracking-[0.3em] gap-4">
+            <div className="flex flex-col items-center justify-center py-20 text-exo-muted font-mono text-[11px] tracking-[0.3em] gap-4">
               <Activity size={24} className="animate-spin text-exo-accent" /> Initializing Stream...
             </div>
           ) : tweets.length === 0 ? (
-            <div className="text-center py-20 text-exo-muted/20 font-mono text-[11px] uppercase tracking-widest italic">No log entries found in current epoch</div>
+            <div className="text-center py-20 text-exo-muted/20 font-mono text-[11px] tracking-widest italic">No log entries found in current epoch</div>
           ) : (
             <div className="space-y-0 divide-y divide-exo-mist-4">
               {tweets.map(tweet => (
@@ -298,7 +298,7 @@ const UserProfile = ({ presets }) => {
           <div ref={bottomRef} className="h-1" />
 
           {isLoadingMore && (
-            <div className="flex items-center justify-center py-8 text-exo-muted font-mono text-[10px] uppercase tracking-widest gap-2">
+            <div className="flex items-center justify-center py-8 text-exo-muted font-mono text-[10px] tracking-widest gap-2">
               <Activity size={12} className="animate-spin" /> Fetching Archive...
             </div>
           )}
@@ -306,7 +306,7 @@ const UserProfile = ({ presets }) => {
           {!hasMore && tweets.length > 0 && !isLoading && (
             <div className="flex items-center justify-center py-12 opacity-10">
               <div className="h-px w-20 bg-white" />
-              <span className="mx-4 text-[9px] font-mono uppercase tracking-widest">End of Stream</span>
+              <span className="mx-4 text-[9px] font-mono tracking-widest">End of Stream</span>
               <div className="h-px w-20 bg-white" />
             </div>
           )}
@@ -357,13 +357,13 @@ const TweetCard = ({
         </div>
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-baseline gap-3">
-            <span className={`text-[13px] font-bold uppercase tracking-tight font-display ${isUser ? 'text-white' : 'text-exo-accent'}`}>{name}</span>
-            <span className="text-[9px] text-exo-muted font-mono uppercase tracking-tighter opacity-40">[{formatTime(tweet.created_at)}]</span>
+            <span className={`text-[13px] font-bold tracking-tight ${isUser ? 'text-white' : 'text-exo-accent'}`}>{name}</span>
+            <span className="text-[9px] text-exo-muted tracking-tighter opacity-40">[{formatTime(tweet.created_at)}]</span>
           </div>
           <p className="text-[14px] text-white/80 leading-relaxed font-mono tracking-tight break-words">{tweet.content}</p>
           <button
             onClick={() => { setReplyingToId(isReplyingHere ? null : tweet.id); setReplyContent(''); }}
-            className="mt-3 text-[10px] font-bold uppercase tracking-widest text-exo-muted/50 hover:text-exo-accent transition-colors flex items-center gap-1.5"
+            className="mt-3 text-[10px] font-bold tracking-widest text-exo-muted/50 hover:text-exo-accent transition-colors flex items-center gap-1.5"
           >
             <CornerDownLeft size={12} /> Respond
           </button>
@@ -401,19 +401,19 @@ const TweetCard = ({
             return (
               <div key={reply.id} className="relative">
                 <div className="text-[14px] leading-relaxed font-mono tracking-tight break-words">
-                  <span className={`text-[13px] font-bold tracking-tight font-display mr-2 ${replyAuthor.isUser ? 'text-white' : 'text-exo-accent'}`}>
+                  <span className={`text-[13px] font-bold tracking-tight mr-2 ${replyAuthor.isUser ? 'text-white' : 'text-exo-accent'}`}>
                     {prefix}
                   </span>
                   <span className="text-white/80">{reply.content}</span>
                 </div>
                 
                 <div className="flex items-center gap-3 mt-1.5">
-                  <span className="text-[9px] text-exo-muted font-mono uppercase tracking-tighter opacity-40">
+                  <span className="text-[9px] text-exo-muted tracking-tighter opacity-40">
                     [{formatTime(reply.created_at)}]
                   </span>
                   <button
                     onClick={() => { setReplyingToId(isReplyReplyingHere ? null : reply.id); setReplyContent(''); }}
-                    className="text-[10px] font-bold uppercase tracking-widest text-exo-muted/50 hover:text-exo-accent transition-colors flex items-center gap-1.5"
+                    className="text-[10px] font-bold tracking-widest text-exo-muted/50 hover:text-exo-accent transition-colors flex items-center gap-1.5"
                   >
                     <CornerDownLeft size={10} /> Respond
                   </button>

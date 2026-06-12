@@ -111,11 +111,11 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
             </div>
 
             <div className="min-w-0 flex-1 space-y-1">
-              <h3 className={`text-lg font-bold flex items-center gap-2 font-display uppercase tracking-tight ${isG045 ? 'text-exo-accent' : 'text-white'}`}>
+              <h3 className={`text-lg font-bold flex items-center gap-2 tracking-tight ${isG045 ? 'text-exo-accent' : 'text-white'}`}>
                 <span className="truncate">{preset.name}</span>
                 {isG045 && <Sparkles size={14} className="text-exo-accent animate-pulse-glow shrink-0" />}
               </h3>
-              <p className="text-[10px] text-exo-muted font-mono uppercase tracking-[0.1em] truncate opacity-60">Model: {preset.default_model}</p>
+              <p className="text-[10px] text-exo-muted tracking-[0.1em] truncate opacity-60">Model: {preset.default_model}</p>
             </div>
           </div>
 
@@ -146,7 +146,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
                 openNewSession({ presetId: preset.id });
                 setCurrentTab('chat');
               }}
-              className="px-4 py-2 bg-white text-exo-pure rounded-[2px] flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest hover:bg-exo-accent transition-all shadow-brutalist active:scale-95"
+              className="px-4 py-2 bg-white text-exo-pure rounded-[2px] flex items-center gap-2 text-[11px] font-bold tracking-widest hover:bg-exo-accent transition-all shadow-brutalist active:scale-95"
             >
               <Play size={12} fill="currentColor" /> Initiate
             </button>
@@ -160,10 +160,10 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
         {isG045 && (
           <div className="mt-auto pt-4 border-t border-exo-accent/20">
             <div className="flex items-center justify-between mb-3">
-              <div className="text-[10px] font-bold text-exo-accent uppercase tracking-[0.2em] flex items-center gap-2">
+              <div className="text-[10px] font-bold text-exo-accent tracking-[0.2em] flex items-center gap-2">
                 <Clock size={12} className="animate-pulse" /> Active Neural Trace
               </div>
-              <span className="text-[9px] font-mono text-exo-accent/40 uppercase tracking-tighter">[L3_SYNC_ACTIVE]</span>
+              <span className="text-[9px] text-exo-accent/40 tracking-tighter">[L3_SYNC_ACTIVE]</span>
             </div>
             <MemoryAnchorTicker anchors={anchorCache[preset.id] || []} />
           </div>
@@ -185,9 +185,9 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
         <div className="space-y-4 animate-fade-in">
           <div className="flex items-center gap-3">
             <div className="h-px w-8 bg-exo-accent" />
-            <div className="text-[10px] font-mono uppercase tracking-[0.5em] text-exo-accent">ExoCore Agent Cluster // Management.Console</div>
+            <div className="text-[10px] tracking-[0.5em] text-exo-accent">ExoCore Agent Cluster // Management.Console</div>
           </div>
-          <h2 className="text-4xl font-light text-white font-display uppercase tracking-tight flex items-center gap-4">
+          <h2 className="text-4xl font-light text-white tracking-tight flex items-center gap-4">
             <BrainCircuit className="text-exo-accent" size={36} /> Central Neural Hub
           </h2>
           <p className="text-exo-muted text-lg max-w-3xl font-light leading-tight-12">
@@ -201,7 +201,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
               <div className="p-1.5 bg-exo-accent/10 border border-exo-accent/30 rounded-[2px]">
                 <Cpu size={16} className="text-exo-accent" />
               </div>
-              <h3 className="text-[12px] font-bold text-white uppercase tracking-[0.3em] font-mono">Superior Neural Cores (G045)</h3>
+              <h3 className="text-[12px] font-bold text-white tracking-[0.3em]">Superior Neural Cores (G045)</h3>
               <div className="h-px flex-1 bg-gradient-to-r from-exo-accent/20 to-transparent" />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -216,7 +216,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
               <div className="p-1.5 bg-white/5 border border-exo-mist-10 rounded-[2px]">
                 <Hash size={16} className="text-exo-muted" />
               </div>
-              <h3 className="text-[12px] font-bold text-white uppercase tracking-[0.3em] font-mono">Subordinate Logical Modules</h3>
+              <h3 className="text-[12px] font-bold text-white tracking-[0.3em]">Subordinate Logical Modules</h3>
               <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
