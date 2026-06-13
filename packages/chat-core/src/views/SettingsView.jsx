@@ -87,7 +87,7 @@ export default function SettingsView() {
     <Icon size={16} strokeWidth={1.5} />
     <span className="font-sans text-[13px]">{label}</span>
     {!enabled && (
-    <span className="text-[9px] font-mono tracking-wider text-chat-muted/20 ml-auto">
+    <span className="text-[9px] tracking-wider text-chat-muted/20 ml-auto">
      soon
     </span>
     )}

@@ -384,7 +384,7 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
    <span className="text-sm font-sans font-medium text-white/90 truncate block">
     {groupchat?.name || 'Groupchat'}
    </span>
-   <span className="text-[9px] font-mono text-exo-muted/40">
+   <span className="text-[9px] text-exo-muted/40">
     {participantCount} participant{participantCount !== 1 ? 's' : ''}
    </span>
    </div>
@@ -426,7 +426,7 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
    <div className="flex items-center justify-center h-full py-20">
    <div className="text-center space-y-3">
     <p className="text-sm text-exo-muted/40 font-light">No messages yet</p>
-    <p className="text-[10px] font-mono text-exo-muted/20 tracking-widest">Start the conversation</p>
+    <p className="text-[10px] text-exo-muted/20 tracking-widest">Start the conversation</p>
    </div>
    </div>
   )}
@@ -440,7 +440,7 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
    <React.Fragment key={msg.id || idx}>
     {showDateSep && (
     <div className="flex items-center justify-center py-2">
-     <span className="text-[10px] font-mono text-exo-muted/30 tracking-wider bg-exo-pure px-3 py-1 rounded-[2px] border border-exo-mist-8">
+     <span className="text-[10px] text-exo-muted/30 tracking-wider bg-exo-pure px-3 py-1 rounded-[2px] border border-exo-mist-8">
      {formatDateSeparator(msg.created_at)}
      </span>
     </div>
@@ -462,7 +462,7 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
   {/* Input area */}
   <div className="flex-shrink-0 p-4 border-t border-exo-mist-10 bg-exo-pure/80 backdrop-blur-xl relative z-10">
   {sendError && (
-   <div className="mb-2 text-[11px] font-mono text-red-400 bg-red-500/5 border border-red-500/20 rounded-[2px] px-3 py-2 flex items-center justify-between">
+   <div className="mb-2 text-[11px] text-red-400 bg-red-500/5 border border-red-500/20 rounded-[2px] px-3 py-2 flex items-center justify-between">
    <span>{sendError}</span>
    <button onClick={() => setSendError('')} className="text-red-400/60 hover:text-red-400 ml-2">✕</button>
    </div>
@@ -498,12 +498,12 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
      />
      <span className="text-sm truncate">{p.name}</span>
      {p.isUser && (
-      <span className="text-[8px] font-mono text-exo-muted/40 tracking-wider ml-auto flex-shrink-0">You</span>
+      <span className="text-[8px] text-exo-muted/40 tracking-wider ml-auto flex-shrink-0">You</span>
      )}
      </button>
     ))}
     {filteredParticipants.length === 0 && (
-     <div className="px-3 py-4 text-center text-[10px] text-exo-muted/40 font-mono tracking-wider">
+     <div className="px-3 py-4 text-center text-[10px] text-exo-muted/40 tracking-wider">
      No matches
      </div>
     )}

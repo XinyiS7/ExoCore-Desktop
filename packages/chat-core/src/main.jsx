@@ -33,7 +33,7 @@ function PushNavigateListener() {
     async function handleMessage(event) {
       if (event.data?.type !== 'PUSH_NAVIGATE') return;
 
-      const { url, action, registerId, presetId } = event.data;
+      const { url, action, registerId, presetId, subscriptionEndpoint } = event.data;
 
       // dismiss → 只回执，不跳转
       if (action === 'dismiss') {
@@ -43,7 +43,10 @@ function PushNavigateListener() {
               `/api/agents/registers/${registerId}/ack/`,
               {
                 method: 'POST',
-                body: { action: 'dismiss' },
+                body: {
+                  action: 'dismiss',
+                  subscription_endpoint: subscriptionEndpoint || null,
+                },
                 params: presetId ? { preset_id: presetId } : {},
               },
             );
@@ -69,7 +72,10 @@ function PushNavigateListener() {
               `/api/agents/registers/${registerId}/ack/`,
               {
                 method: 'POST',
-                body: { action: 'navigate' },
+                body: {
+                  action: 'navigate',
+                  subscription_endpoint: subscriptionEndpoint || null,
+                },
                 params: pid ? { preset_id: pid } : {},
               },
             );

@@ -16,7 +16,7 @@ export default {
           accent:'#c0392b',
           'accent-glow': '#e74c3c',
           text:  '#e2e8f0',
-          muted: '#64748b',
+          muted: '#afc8ed',
         },
         // V2 compat aliases — remove after migrating components to chat-* palette
         exo: {
@@ -27,7 +27,7 @@ export default {
           border:  'rgba(255,255,255,0.06)',
           accent:  '#c0392b',
           text:    '#e2e8f0',
-          muted:   '#64748b',
+          muted:   '#a5c2ea',
           metal:   '#334155',
           'mist-4':  'rgba(255,255,255,0.04)',
           'mist-6':  'rgba(255,255,255,0.06)',

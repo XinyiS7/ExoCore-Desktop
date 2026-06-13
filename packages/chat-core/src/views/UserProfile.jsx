@@ -28,7 +28,7 @@ const toDateStr = (d) => d.toISOString().slice(0, 10);
 const CustomTooltip = ({ active, payload, label }) => {
  if (!active || !payload?.length) return null;
  return (
- <div className="bg-exo-panel border border-exo-border rounded-[3px] px-3 py-2 text-[11px] font-mono shadow-xl">
+ <div className="bg-exo-panel border border-exo-border rounded-[3px] px-3 py-2 text-[11px] shadow-xl">
   <p className="text-exo-muted mb-1.5 tracking-widest text-[9px]">{label}</p>
   {payload.map(p => (
   <div key={p.dataKey} className="flex items-center gap-2 mb-0.5">
@@ -51,7 +51,7 @@ const ChartSummary = ({ data, models, valueKey }) => {
   const avg = convTotal > 0 ? Math.round(total / convTotal) : 0;
   if (total === 0) return null;
   return (
-   <div key={model} className="flex items-center gap-2 text-[10px] font-mono">
+   <div key={model} className="flex items-center gap-2 text-[10px] ">
    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: modelColor(model) }} />
    <span className="text-exo-muted truncate max-w-[100px]" title={model}>{model}</span>
    <span className="text-white">{total.toLocaleString()}</span>
@@ -304,7 +304,7 @@ export default function UserProfile({ appState, setView, goBack }) {
  if (!user) {
  return (
   <div className="flex-1 flex items-center justify-center text-exo-muted">
-  <p className="font-mono text-sm">Loading user profile...</p>
+  <p className=" text-sm">Loading user profile...</p>
   </div>
  );
  }
@@ -370,7 +370,7 @@ export default function UserProfile({ appState, setView, goBack }) {
      {user.name}
      </h2>
     )}
-    <span className="text-[10px] font-mono tracking-wider px-2 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
+    <span className="text-[10px] tracking-wider px-2 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
      user
     </span>
     {fieldSaving === 'name' && (
@@ -406,7 +406,7 @@ export default function UserProfile({ appState, setView, goBack }) {
 
     {/* Model — editable text string */}
     <div className="flex items-center gap-2">
-    <span className="text-[10px] font-mono tracking-wider text-exo-muted">Model:</span>
+    <span className="text-[10px] tracking-wider text-exo-muted">Model:</span>
     {editingModel ? (
      <input
      ref={modelInputRef}
@@ -452,7 +452,7 @@ export default function UserProfile({ appState, setView, goBack }) {
 
   {/* Stats Area */}
   <div className="px-4 md:px-12 py-6 flex flex-col gap-5">
-   <h3 className="text-[10px] font-mono tracking-[0.3em] text-exo-muted mb-1">Usage Statistics</h3>
+   <h3 className="text-[10px] tracking-[0.3em] text-exo-muted mb-1">Usage Statistics</h3>
 
    {/* Controls row */}
    <div className="flex items-center gap-3 shrink-0">
@@ -493,21 +493,21 @@ export default function UserProfile({ appState, setView, goBack }) {
    </div>
 
    {isLoadingStats && (
-   <div className="flex-1 flex items-center justify-center text-exo-muted font-mono text-[11px] tracking-widest gap-2 py-24">
+   <div className="flex-1 flex items-center justify-center text-exo-muted text-[11px] tracking-widest gap-2 py-24">
     <Activity size={14} className="animate-spin text-exo-accent" /> Loading...
    </div>
    )}
 
    {!isLoadingStats && statsError && (
    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-24">
-    <p className="text-[11px] text-exo-muted font-mono tracking-widest opacity-60">
+    <p className="text-[11px] text-exo-muted tracking-widest opacity-60">
     Statistics API unavailable
     </p>
    </div>
    )}
 
    {!isLoadingStats && !statsError && !hasData && rawData && (
-   <div className="flex-1 flex items-center justify-center text-exo-muted font-mono text-[11px] tracking-widest opacity-40 py-24">
+   <div className="flex-1 flex items-center justify-center text-exo-muted text-[11px] tracking-widest opacity-40 py-24">
     No data for current period
    </div>
    )}

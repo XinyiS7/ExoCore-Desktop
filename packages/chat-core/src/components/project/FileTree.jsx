@@ -96,7 +96,7 @@ function TreeNode({ entry, indent, onFileClick, onExpand, expandedDirs, onToggle
         )}
 
         {/* Name */}
-        <span className={`text-[11px] truncate font-mono ${isDir ? 'text-chat-text/70' : 'text-chat-text/60'}`}>
+        <span className={`text-[11px] truncate ${isDir ? 'text-chat-text/70' : 'text-chat-text/60'}`}>
           {entry.name}
         </span>
 

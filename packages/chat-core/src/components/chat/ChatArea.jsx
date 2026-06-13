@@ -990,13 +990,13 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
      <FileText size={13} strokeWidth={1} className="text-exo-accent/50 shrink-0" />
      <div className="flex-1 min-w-0">
      <div className="text-xs text-exo-accent/80 break-all leading-tight">{att.display_name || att.original_filename}</div>
-     <div className="text-[9px] text-exo-accent/40 font-mono tracking-widest">PENDING</div>
+     <div className="text-[9px] text-exo-accent/40 tracking-widest">PENDING</div>
      </div>
      <button onClick={() => setPendingAttachments(p => p.filter((_, j) => j !== i))} className="p-1 hover:text-red-400 transition-colors"><X size={11} strokeWidth={1} /></button>
     </div>
     ))}
     {filteredSessionAttachments.length === 0 && filteredPendingAttachments.length === 0 && !isAddingAttach && (
-    <div className="py-8 text-center text-[10px] text-exo-muted/30 font-mono tracking-widest">
+    <div className="py-8 text-center text-[10px] text-exo-muted/30 tracking-widest">
      [ 无挂载文档 ]
     </div>
     )}
@@ -1007,7 +1007,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
      onChange={e => setNewAttachPath(e.target.value)}
      placeholder="文件绝对路径..."
      autoFocus
-     className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-2 py-1.5 text-xs text-white outline-none focus:border-exo-accent/50 transition-colors font-mono"
+     className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-2 py-1.5 text-xs text-white outline-none focus:border-exo-accent/50 transition-colors "
      />
      <input
      value={newAttachName}
@@ -1049,7 +1049,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    <React.Fragment key={msg.id || idx}>
     {showDateSep && (
     <div className="flex items-center justify-center py-2">
-     <span className="text-[10px] font-mono text-exo-muted/30 tracking-wider bg-exo-pure px-3 py-1 rounded-[2px] border border-exo-mist-8">
+     <span className="text-[10px] text-exo-muted/30 tracking-wider bg-exo-pure px-3 py-1 rounded-[2px] border border-exo-mist-8">
      {formatDateSeparator(msg.created_at)}
      </span>
     </div>
@@ -1074,7 +1074,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   {showScrollBtn && (
    <button
    onClick={handleScrollToBottomClick}
-   className="sticky bottom-2 left-1/2 -translate-x-1/2 z-30 px-3 py-1.5 rounded-full bg-exo-accent/90 text-black text-[10px] font-mono tracking-[0.15em] shadow-lg hover:bg-exo-accent transition-all animate-fade-in flex items-center gap-1.5"
+   className="sticky bottom-2 left-1/2 -translate-x-1/2 z-30 px-3 py-1.5 rounded-full bg-exo-accent/90 text-black text-[10px] tracking-[0.15em] shadow-lg hover:bg-exo-accent transition-all animate-fade-in flex items-center gap-1.5"
    >
    <ChevronDown size={12} strokeWidth={1} /> 回到底部
    </button>
@@ -1091,7 +1091,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   <div className="flex-shrink-0 p-4 border-t border-white/[0.04] bg-exo-pure/40 backdrop-blur-xl flex flex-col gap-2 relative z-10">
   {editingMessageId && (
    <div className="flex items-center justify-between px-3 py-1.5 bg-exo-accent/10 border border-exo-accent/20 rounded-[2px] animate-fade-in">
-   <div className="flex items-center gap-2 text-exo-accent text-[10px] font-mono tracking-widest">
+   <div className="flex items-center gap-2 text-exo-accent text-[10px] tracking-widest">
     <Edit2 size={11} strokeWidth={1} />
     <span>正在修正通讯协议数据区块 #{editingMessageId}</span>
    </div>
@@ -1128,7 +1128,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     {fileRefs.map((ref, i) => (
     <span
      key={`${ref.path}-${i}`}
-     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] bg-chat-accent/10 border border-chat-accent/20 text-[10px] text-chat-accent font-mono"
+     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] bg-chat-accent/10 border border-chat-accent/20 text-[10px] text-chat-accent "
     >
      {ref.path.includes('/') && !ref.path.endsWith('/') ? (
      <FileText size={9} strokeWidth={1} className="shrink-0" />
@@ -1174,12 +1174,12 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
       )}
       {e.error && (
       <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
-       <span className="text-[8px] text-red-400 font-mono">!</span>
+       <span className="text-[8px] text-red-400 ">!</span>
       </div>
       )}
      </div>
      ) : (
-     <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[10px] font-mono ${
+     <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[10px] ${
       e.error ? 'border-red-500/30 text-red-400 bg-red-500/5' :
       e.uploading ? 'border-exo-mist-10 text-exo-muted bg-exo-pure' :
       'border-exo-accent/20 text-exo-accent bg-exo-accent/5'
@@ -1257,7 +1257,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     handleFilesSelected(imageFiles);
     }
    }}
-   placeholder="Message..."
+   placeholder="Chat to ExoCore..."
    className="w-full bg-transparent text-sm text-white/90 outline-none resize-none px-4 pt-2.5 pb-1 disabled:opacity-50 overflow-y-auto max-h-[40vh] font-sans font-normal placeholder:text-exo-muted/40"
    style={{ minHeight: (inputFocused || inputValue) ? '4.5rem' : '2.5rem', fontFamily: 'var(--font-message)' }}
    disabled={isGenerating}
@@ -1281,7 +1281,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     {isGenerating ? (
     <button
      onClick={handleStop}
-     className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-[2px] hover:bg-red-500 hover:text-white transition-all flex items-center gap-1.5 text-[10px] font-mono tracking-[0.2em]"
+     className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-[2px] hover:bg-red-500 hover:text-white transition-all flex items-center gap-1.5 text-[10px] tracking-[0.2em]"
      title="中止上行链路"
     >
      <X size={12} strokeWidth={1} />

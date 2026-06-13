@@ -151,19 +151,31 @@ export async function unsubscribeFromPush() {
 
 import { useState, useEffect, useCallback } from 'react';
 
+const DEVICE_NAME_KEY = 'exo_push_device_name';
+
 /**
  * React hook for managing push notification subscription state.
  *
  * Usage:
- *   const { isSubscribed, isLoading, subscribe, unsubscribe } = usePushSubscription();
+ *   const { isSubscribed, isLoading, deviceName, subscribe, unsubscribe } = usePushSubscription();
  *
- *   // Call subscribe() on a button click (must be user gesture for permission prompt)
- *   <button onClick={subscribe}>Enable Notifications</button>
+ *   // Call subscribe(deviceName) on a button click (must be user gesture for permission prompt)
+ *   <button onClick={() => subscribe(deviceName)}>Enable Notifications</button>
+ *
+ * deviceName is persisted to localStorage so it survives page refreshes.
+ * It is cleared on unsubscribe.
  */
 export function usePushSubscription() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [permission, setPermission] = useState('default');
+  const [deviceName, setDeviceName] = useState(() => {
+    try {
+      return localStorage.getItem(DEVICE_NAME_KEY) || '';
+    } catch {
+      return '';
+    }
+  });
 
   // Check current state on mount
   useEffect(() => {
@@ -188,10 +200,15 @@ export function usePushSubscription() {
     return () => { cancelled = true; };
   }, []);
 
-  const subscribe = useCallback(async (deviceName = '') => {
+  const subscribe = useCallback(async (name = '') => {
     setIsLoading(true);
     try {
-      const sub = await subscribeToPush(deviceName);
+      const sub = await subscribeToPush(name);
+      if (sub) {
+        const trimmed = name.trim();
+        setDeviceName(trimmed);
+        try { localStorage.setItem(DEVICE_NAME_KEY, trimmed); } catch { /* quota exceeded */ }
+      }
       setIsSubscribed(!!sub);
       setPermission(getNotificationPermission());
     } finally {
@@ -204,11 +221,13 @@ export function usePushSubscription() {
     try {
       await unsubscribeFromPush();
       setIsSubscribed(false);
+      setDeviceName('');
+      try { localStorage.removeItem(DEVICE_NAME_KEY); } catch { /* ignore */ }
       setPermission(getNotificationPermission());
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  return { isSubscribed, isLoading, permission, subscribe, unsubscribe };
+  return { isSubscribed, isLoading, permission, deviceName, subscribe, unsubscribe };
 }

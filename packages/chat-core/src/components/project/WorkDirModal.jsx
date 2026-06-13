@@ -113,14 +113,14 @@ const WorkDirModal = ({ projectId, currentWorkDir, setProjects, isOpen, onClose 
   </p>
 
   <div className="mb-4">
-   <label className="text-[10px] font-mono tracking-wider text-exo-muted block mb-1.5">目录路径</label>
+   <label className="text-[10px] tracking-wider text-exo-muted block mb-1.5">目录路径</label>
    <input
    type="text"
    value={workDirDraft}
    onChange={e => { setWorkDirDraft(e.target.value); setError(null); }}
    placeholder={fetching ? '加载中...' : 'D:\\Alicia\\Projects\\MyProject'}
    disabled={fetching}
-   className="w-full bg-black/30 border border-exo-border rounded-md px-3 py-2 text-sm text-exo-text font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:text-exo-muted/30"
+   className="w-full bg-black/30 border border-exo-border rounded-md px-3 py-2 text-sm text-exo-text focus:border-exo-accent/40 outline-none transition-all placeholder:text-exo-muted/30"
    onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
    />
    {error && (

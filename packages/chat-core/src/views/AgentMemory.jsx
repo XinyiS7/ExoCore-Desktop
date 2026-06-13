@@ -28,7 +28,7 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
    <p className="text-sm text-chat-muted leading-relaxed">
    Per-agent memory portraits and knowledge fragments will be available here.
    </p>
-   <p className="text-[10px] font-mono text-chat-muted/40 tracking-widest">
+   <p className="text-[10px] text-chat-muted/40 tracking-widest">
    Coming Soon
    </p>
   </div>

@@ -136,7 +136,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
             <div className="space-y-2">
               <label className="label-caps opacity-50">Topic Label / 话题标签</label>
               <input
-                className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
+                className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
                 value={topicLabel}
                 onChange={e => setTopicLabel(e.target.value)}
                 placeholder="TOPIC LABEL..."
@@ -147,7 +147,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
             <div className="space-y-2">
               <label className="label-caps opacity-50">Content / 内容摘要</label>
               <textarea
-                className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-3 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20 resize-y min-h-[120px]"
+                className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-3 text-sm text-white focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20 resize-y min-h-[120px]"
                 value={summary}
                 onChange={e => setSummary(e.target.value)}
                 placeholder="DETAILED SUMMARY..."
@@ -238,7 +238,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
                     <Clock size={11} className="text-exo-muted shrink-0 mt-0.5" />
                     <div>
                       <div className="text-[8px] font-bold tracking-widest text-exo-muted mb-0.5">Time Ref</div>
-                      <div className="text-[11px] text-exo-text font-mono">{readonlyMeta.time_ref}</div>
+                      <div className="text-[11px] text-exo-text ">{readonlyMeta.time_ref}</div>
                     </div>
                   </div>
                 )}
@@ -249,7 +249,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
                     <span className="text-[11px] shrink-0 mt-0.5">◈</span>
                     <div>
                       <div className="text-[8px] font-bold tracking-widest text-exo-muted mb-0.5">Emotion</div>
-                      <div className="text-[11px] text-exo-text font-mono">{readonlyMeta.emotion}</div>
+                      <div className="text-[11px] text-exo-text ">{readonlyMeta.emotion}</div>
                     </div>
                   </div>
                 )}
@@ -260,7 +260,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
                     <div className="text-[8px] font-bold tracking-widest text-exo-muted mb-1.5">Entities</div>
                     <div className="flex flex-wrap gap-1.5">
                       {readonlyMeta.entities.map((e, i) => (
-                        <span key={i} className="text-[9px] font-mono px-2 py-0.5 rounded-[2px] bg-white/5 border border-exo-mist-10 text-exo-text/70">
+                        <span key={i} className="text-[9px] px-2 py-0.5 rounded-[2px] bg-white/5 border border-exo-mist-10 text-exo-text/70">
                           {e}
                         </span>
                       ))}
@@ -273,7 +273,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
                   <div className="px-3 py-2.5 bg-black/30 border border-exo-mist-6 rounded-[2px]">
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="text-[8px] font-bold tracking-widest text-exo-muted">Importance</div>
-                      <span className="text-[10px] font-mono font-bold text-exo-accent">{importancePct}%</span>
+                      <span className="text-[10px] font-bold text-exo-accent">{importancePct}%</span>
                     </div>
                     <div className="h-1 bg-white/5 rounded-full overflow-hidden">
                       <div
@@ -286,7 +286,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
               </div>
             ) : (
               <div className="px-3 py-6 text-center opacity-20">
-                <span className="text-[10px] font-mono tracking-widest">
+                <span className="text-[10px] tracking-widest">
                   {isLoadingDetail ? 'Loading...' : 'No context data'}
                 </span>
               </div>
@@ -306,18 +306,18 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
           {isLoadingMsgs ? (
             <div className="flex flex-col items-center justify-center py-20 opacity-30">
               <Activity size={22} className="animate-spin mb-4" />
-              <span className="text-[10px] font-mono tracking-widest">Reconstructing Stream...</span>
+              <span className="text-[10px] tracking-widest">Reconstructing Stream...</span>
             </div>
           ) : originalMessages?.length ? (
             <div className="space-y-5">
               {originalMessages.map((msg, i) => (
                 <div key={i} className={`flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                   <div className="flex items-center gap-1.5 px-1 opacity-40">
-                    <span className="text-[9px] font-bold font-mono tracking-tighter">{msg.role}</span>
+                    <span className="text-[9px] font-bold tracking-tighter">{msg.role}</span>
                     <div className="w-1 h-1 rounded-full bg-white" />
                   </div>
                   <div className={`
-                    max-w-[92%] px-4 py-3 rounded-[2px] text-[12px] font-mono tracking-tight leading-relaxed border
+                    max-w-[92%] px-4 py-3 rounded-[2px] text-[12px] tracking-tight leading-relaxed border
                     ${msg.role === 'user'
                       ? 'bg-white text-exo-pure border-white shadow-brutalist'
                       : 'bg-exo-pure text-white/80 border-exo-mist-10'
@@ -330,7 +330,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
             </div>
           ) : (
             <div className="flex items-center justify-center py-20 opacity-20 italic">
-              <span className="text-[10px] font-mono tracking-widest">Trace data unavailable</span>
+              <span className="text-[10px] tracking-widest">Trace data unavailable</span>
             </div>
           )}
         </div>

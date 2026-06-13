@@ -97,7 +97,7 @@ function SvgPreview({ text }) {
  // Quick pre-check: if it doesn't look like SVG at all, bail early
  if (!/<svg\b/i.test(text)) {
  return (
-  <div className="p-6 text-center text-[11px] font-mono text-exo-muted/50 bg-white/[0.02] border border-exo-mist-8 rounded-b-[4px]">
+  <div className="p-6 text-center text-[11px] text-exo-muted/50 bg-white/[0.02] border border-exo-mist-8 rounded-b-[4px]">
   No SVG content detected — switch to Code tab to view source
   </div>
  );
@@ -105,7 +105,7 @@ function SvgPreview({ text }) {
  const sanitized = sanitizeSvg(text);
  if (!sanitized) {
  return (
-  <div className="p-6 text-center text-[11px] font-mono text-red-400/70 bg-red-500/5 border border-red-500/10 rounded-b-[4px]">
+  <div className="p-6 text-center text-[11px] text-red-400/70 bg-red-500/5 border border-red-500/10 rounded-b-[4px]">
   Invalid SVG — cannot render preview
   </div>
  );
@@ -134,7 +134,7 @@ function MermaidPreview({ text }) {
 
  if (error) {
  return (
-  <div className="p-4 text-center text-[11px] font-mono text-amber-400/70 bg-amber-500/5 border border-amber-500/10 rounded-b-[4px]">
+  <div className="p-4 text-center text-[11px] text-amber-400/70 bg-amber-500/5 border border-amber-500/10 rounded-b-[4px]">
   Mermaid: {error}
   </div>
  );
@@ -293,11 +293,11 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    className={`w-6 h-6 rounded-[2px] border bg-exo-pure object-cover ${isUser ? 'border-exo-mist-20' : 'border-exo-accent/40 shadow-glow-gold'}`}
    alt={isUser ? (userNick || 'You') : (agentName || 'Core')}
   />
-  <span className={`text-[10px] font-mono font-bold tracking-[0.2em] ${isUser ? 'text-exo-muted' : 'text-exo-accent'}`}>
+  <span className={`text-[10px] font-bold tracking-[0.2em] ${isUser ? 'text-exo-muted' : 'text-exo-accent'}`}>
    {isUser ? (userNick || 'You') : (agentName || 'Core')}
   </span>
   {msg.created_at && (
-   <span className="text-[9px] font-mono text-exo-muted/40 tracking-tight">
+   <span className="text-[9px] text-exo-muted/40 tracking-tight">
    {formatMessageTime(msg.created_at)}
    </span>
   )}
@@ -305,7 +305,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
 
   <div className={`w-full space-y-3 ${isUser ? 'flex flex-col items-end' : ''}`}>
   {!isUser && msg.error && (
-   <div className="text-[11px] font-mono tracking-tight text-red-500 bg-red-500/5 border border-red-500/20 rounded-[2px] px-3 py-2">
+   <div className="text-[11px] tracking-tight text-red-500 bg-red-500/5 border border-red-500/20 rounded-[2px] px-3 py-2">
    [ ERROR ] {msg.error}
    </div>
   )}
@@ -321,7 +321,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    </details>
   )}
   {!isUser && msg.status_text && (
-   <div className="flex items-center gap-2 text-[11px] font-mono tracking-widest text-exo-accent/80 bg-exo-accent/5 border border-exo-accent/15 rounded-[4px] px-3 py-2 animate-fade-in">
+   <div className="flex items-center gap-2 text-[11px] tracking-widest text-exo-accent/80 bg-exo-accent/5 border border-exo-accent/15 rounded-[4px] px-3 py-2 animate-fade-in">
    <span className="inline-block w-1.5 h-1.5 rounded-full bg-exo-accent animate-blink-sharp shrink-0" />
    <span>{msg.status_text}</span>
    </div>
@@ -341,7 +341,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
       <ZoomIn size={18} strokeWidth={1} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
      </div>
      </button>
-    : <div key={i} className="flex items-center gap-1.5 text-[10px] font-mono tracking-tighter bg-exo-pure/40 backdrop-blur-sm border border-white/[0.06] rounded-[4px] px-2 py-1.5 text-exo-muted">
+    : <div key={i} className="flex items-center gap-1.5 text-[10px] tracking-tighter bg-exo-pure/40 backdrop-blur-sm border border-white/[0.06] rounded-[4px] px-2 py-1.5 text-exo-muted">
      <FileText size={11} strokeWidth={1} className="text-blue-400 shrink-0" />
      <span className="truncate max-w-[160px]">{att.name}</span>
      </div>
@@ -444,20 +444,20 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
     value={bookmarkText}
     onChange={e => setBookmarkText(e.target.value)}
     rows={4}
-    className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-3 py-2 text-xs text-white outline-none focus:border-exo-accent/50 resize-y font-mono leading-relaxed"
+    className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-3 py-2 text-xs text-white outline-none focus:border-exo-accent/50 resize-y leading-relaxed"
     placeholder="选取要标记的内容..."
    />
    <div className="flex justify-end gap-3">
     <button
     onClick={() => setShowBookmark(false)}
-    className="px-3 py-1 text-[10px] font-mono tracking-widest text-exo-muted hover:text-white transition-colors"
+    className="px-3 py-1 text-[10px] tracking-widest text-exo-muted hover:text-white transition-colors"
     >
     CANCEL
     </button>
     <button
     onClick={handleBookmarkSubmit}
     disabled={bookmarkStatus === 'saving' || bookmarkStatus === 'done'}
-    className="px-4 py-1.5 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[10px] font-mono tracking-widest hover:bg-exo-accent hover:text-black transition-all disabled:opacity-50"
+    className="px-4 py-1.5 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[10px] tracking-widest hover:bg-exo-accent hover:text-black transition-all disabled:opacity-50"
     >
     {bookmarkStatus === 'saving' ? 'UPLOADING...'
      : bookmarkStatus === 'done' ? '✓ ARCHIVED'

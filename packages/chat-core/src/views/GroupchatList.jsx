@@ -77,7 +77,7 @@ export default function GroupchatList({ appState, viewParams, goBack }) {
   {/* Sidebar Header */}
   <div className="flex-shrink-0 px-5 py-4 border-b border-exo-mist-8 flex items-center justify-between">
    <div>
-   <h2 className="text-[10px] font-mono font-bold tracking-[0.4em] text-exo-accent">Groupchats</h2>
+   <h2 className="text-[10px] font-bold tracking-[0.4em] text-exo-accent">Groupchats</h2>
    <p className="text-[9px] text-exo-muted mt-0.5">{sortedGroupchats.length} groupchat{sortedGroupchats.length !== 1 ? 's' : ''}</p>
    </div>
    <button
@@ -94,7 +94,7 @@ export default function GroupchatList({ appState, viewParams, goBack }) {
    {sortedGroupchats.length === 0 && (
    <div className="text-center py-12 text-exo-muted">
     <MessageSquare size={24} className="mx-auto mb-2 opacity-20" />
-    <p className="text-[10px] font-mono tracking-wider">No groupchats</p>
+    <p className="text-[10px] tracking-wider">No groupchats</p>
     <p className="text-[9px] text-exo-muted/40 mt-1">Create one to start</p>
    </div>
    )}
@@ -118,7 +118,7 @@ export default function GroupchatList({ appState, viewParams, goBack }) {
     </div>
     <div className="flex-1 min-w-0">
      <p className="text-sm font-medium truncate">{gc.name}</p>
-     <p className="text-[9px] text-exo-muted/50 font-mono">
+     <p className="text-[9px] text-exo-muted/50 ">
      {participantCount} participant{participantCount !== 1 ? 's' : ''}
      </p>
     </div>

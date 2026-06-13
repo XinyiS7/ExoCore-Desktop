@@ -42,7 +42,7 @@ export default function ProjectList({ appState, setView, goBack, viewParams }) {
   {/* Sidebar Header */}
   <div className="flex-shrink-0 px-5 py-4 border-b border-exo-mist-8 flex items-center justify-between">
    <div>
-   <h2 className="text-[10px] font-mono font-bold tracking-[0.4em] text-exo-accent">Project Repos</h2>
+   <h2 className="text-[10px] font-bold tracking-[0.4em] text-exo-accent">Project Repos</h2>
    <p className="text-[9px] text-exo-muted mt-0.5">{sortedProjects.length} repositories</p>
    </div>
    <button
@@ -59,7 +59,7 @@ export default function ProjectList({ appState, setView, goBack, viewParams }) {
    {sortedProjects.length === 0 && (
    <div className="text-center py-12 text-exo-muted">
     <Folder size={24} className="mx-auto mb-2 opacity-20" />
-    <p className="text-[10px] font-mono tracking-wider">No projects</p>
+    <p className="text-[10px] tracking-wider">No projects</p>
    </div>
    )}
    {sortedProjects.map(proj => {
@@ -88,7 +88,7 @@ export default function ProjectList({ appState, setView, goBack, viewParams }) {
      </div>
      <div className="flex-1 min-w-0">
      <p className="text-sm font-medium truncate">{proj.name}</p>
-     <p className="text-[9px] text-exo-muted/50 font-mono">{sessionCount} sessions</p>
+     <p className="text-[9px] text-exo-muted/50 ">{sessionCount} sessions</p>
      </div>
      <button
      onClick={(e) => { e.stopPropagation(); handleRenameProject(proj); }}

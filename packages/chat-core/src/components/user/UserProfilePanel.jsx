@@ -31,7 +31,7 @@ const toDateStr = (d) => d.toISOString().slice(0, 10);
 const CustomTooltip = ({ active, payload, label }) => {
  if (!active || !payload?.length) return null;
  return (
- <div className="bg-exo-panel border border-exo-border rounded-[3px] px-3 py-2 text-[11px] font-mono shadow-xl">
+ <div className="bg-exo-panel border border-exo-border rounded-[3px] px-3 py-2 text-[11px] shadow-xl">
   <p className="text-exo-muted mb-1.5 tracking-widest text-[9px]">{label}</p>
   {payload.map(p => (
   <div key={p.dataKey} className="flex items-center gap-2 mb-0.5">
@@ -56,7 +56,7 @@ const ChartSummary = ({ data, models, valueKey, label, modelColor }) => {
   const avg = convTotal > 0 ? Math.round(total / convTotal) : 0;
   if (total === 0) return null;
   return (
-   <div key={model} className="flex items-center gap-2 text-[10px] font-mono">
+   <div key={model} className="flex items-center gap-2 text-[10px] ">
    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: modelColor(model) }} />
    <span className="text-exo-muted truncate max-w-[100px]" title={model}>{model}</span>
    <span className="text-white">{total.toLocaleString()}</span>
@@ -300,7 +300,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
      title="点击修改名称"
      >
      <p className="text-[15px] font-bold text-white group-hover/nick:text-exo-accent transition-colors truncate">{userNick}</p>
-     <p className="text-[10px] text-exo-muted font-mono tracking-widest mt-0.5 opacity-60">EXO-CORE AUTH · 点击修改</p>
+     <p className="text-[10px] text-exo-muted tracking-widest mt-0.5 opacity-60">EXO-CORE AUTH · 点击修改</p>
      </button>
     )}
     </div>
@@ -362,24 +362,24 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
 
    {/* Loading / Error / No data */}
    {isLoadingStats && (
-    <div className="flex-1 flex items-center justify-center text-exo-muted font-mono text-[11px] tracking-widest gap-2">
+    <div className="flex-1 flex items-center justify-center text-exo-muted text-[11px] tracking-widest gap-2">
     <Activity size={14} className="animate-spin text-exo-accent" /> Loading...
     </div>
    )}
 
    {!isLoadingStats && statsError && (
     <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
-    <p className="text-[11px] text-exo-muted font-mono tracking-widest opacity-60">
+    <p className="text-[11px] text-exo-muted tracking-widest opacity-60">
      统计接口暂未接入
     </p>
-    <p className="text-[10px] text-exo-muted/40 font-mono">
+    <p className="text-[10px] text-exo-muted/40 ">
      需要后端实现 GET /api/core/stats/usage/
     </p>
     </div>
    )}
 
    {!isLoadingStats && !statsError && !hasData && rawData && (
-    <div className="flex-1 flex items-center justify-center text-exo-muted font-mono text-[11px] tracking-widest opacity-40">
+    <div className="flex-1 flex items-center justify-center text-exo-muted text-[11px] tracking-widest opacity-40">
     当前周期暂无数据
     </div>
    )}

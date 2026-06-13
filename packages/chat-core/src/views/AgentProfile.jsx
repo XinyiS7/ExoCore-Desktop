@@ -79,7 +79,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
  if (!preset) {
  return (
   <div className="flex-1 flex items-center justify-center text-exo-muted">
-  <p className="font-mono text-sm">Agent not found</p>
+  <p className=" text-sm">Agent not found</p>
   </div>
  );
  }
@@ -262,7 +262,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
      {preset.name}
      </h2>
     )}
-    <span className={`text-[10px] font-mono tracking-wider px-2 py-0.5 rounded ${typeBadgeClass}`}>
+    <span className={`text-[10px] tracking-wider px-2 py-0.5 rounded ${typeBadgeClass}`}>
      {preset.agent_type}
     </span>
     {savingField === 'name' && (
@@ -298,7 +298,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
 
     {/* Model */}
     <div className="flex items-center gap-2">
-    <span className="text-[10px] font-mono tracking-wider text-exo-muted">Model:</span>
+    <span className="text-[10px] tracking-wider text-exo-muted">Model:</span>
     <select
      value={modelDraft}
      onChange={handleModelChange}
@@ -361,7 +361,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
 
   {/* Sessions List */}
   <div className="px-4 md:px-12 py-6">
-   <h3 className="text-[10px] font-mono tracking-[0.3em] text-exo-muted mb-4">Sessions</h3>
+   <h3 className="text-[10px] tracking-[0.3em] text-exo-muted mb-4">Sessions</h3>
    {sessionsLoading ? (
    <p className="text-xs text-exo-muted">Loading sessions...</p>
    ) : sessions.length === 0 ? (

@@ -57,12 +57,15 @@ self.addEventListener('push', (event) => {
     if (body) lines.push(body);
     const notificationBody = lines.join('\n');
 
+    // 后端未传 tag 时自动生成唯一标识，确保 renotify 合法 + 通知中心独立堆叠
+    const effectiveTag = tag || `exo-${Date.now()}`;
+
     const options = {
       body: notificationBody,
       icon,
       badge,
       image,
-      tag,
+      tag: effectiveTag,
       data: {
         url: data.url || '/',
         registerId: data.register_id || null,
@@ -107,6 +110,10 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     (async () => {
+      // 获取本设备订阅标识，供后端 ack 时溯源 device_name
+      const subscription = await self.registration.pushManager.getSubscription();
+      const subscriptionEndpoint = subscription?.endpoint || null;
+
       const clientList = await clients.matchAll({
         type: 'window',
         includeUncontrolled: true,
@@ -122,6 +129,7 @@ self.addEventListener('notificationclick', (event) => {
             action,
             registerId: notificationData?.registerId || null,
             presetId: notificationData?.presetId || null,
+            subscriptionEndpoint,
           });
           focused = await client.focus();
           break;

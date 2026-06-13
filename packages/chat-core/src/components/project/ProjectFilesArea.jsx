@@ -137,10 +137,10 @@ const ProjectFilesArea = ({ projectId, projects, setProjects, openDestructor }) 
       <div className="flex-1 overflow-hidden">
       <p className="text-sm font-bold text-exo-text truncate" title={file.name}>{file.name}</p>
       <div className="flex items-center gap-2 mt-1">
-       <span className="text-[10px] font-mono text-exo-muted bg-black px-1.5 py-0.5 rounded border border-exo-border">
+       <span className="text-[10px] text-exo-muted bg-black px-1.5 py-0.5 rounded border border-exo-border">
        {file.source === 'obsidian_sync' ? 'OBSIDIAN' : 'MANUAL'}
        </span>
-       <span className="text-[10px] text-exo-muted font-mono">{formatBytes(file.size)}</span>
+       <span className="text-[10px] text-exo-muted ">{formatBytes(file.size)}</span>
       </div>
       </div>
      </div>
@@ -178,7 +178,7 @@ const ProjectFilesArea = ({ projectId, projects, setProjects, openDestructor }) 
     })}
 
     {files.length === 0 && (
-    <div className="col-span-full py-10 text-center text-exo-muted text-sm font-mono border border-dashed border-exo-border rounded-lg">
+    <div className="col-span-full py-10 text-center text-exo-muted text-sm border border-dashed border-exo-border rounded-lg">
      [ DATABANK EMPTY ]
     </div>
     )}

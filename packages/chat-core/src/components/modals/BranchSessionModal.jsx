@@ -24,17 +24,17 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
   {/* Header */}
   <div className="px-6 py-4 border-b border-exo-mist-10 flex items-center justify-between bg-exo-pure/50">
    <div className="flex flex-col">
-   <h3 className="font-bold tracking-[0.2em] text-white flex items-center gap-2 font-mono text-sm">
+   <h3 className="font-bold tracking-[0.2em] text-white flex items-center gap-2 text-sm">
     <GitFork size={18} className="text-exo-accent" /> Branch Context
    </h3>
-   <span className="text-[9px] text-exo-muted font-mono tracking-widest opacity-40 mt-1">Forking Active Neural Stream</span>
+   <span className="text-[9px] text-exo-muted tracking-widest opacity-40 mt-1">Forking Active Neural Stream</span>
    </div>
    <button onClick={onClose} className="p-2 text-exo-muted hover:text-white transition-colors"><X size={18}/></button>
   </div>
   
   {/* Content */}
   <div className="p-6 space-y-6">
-   <p className="text-[12px] text-exo-muted leading-relaxed font-mono italic opacity-70">
+   <p className="text-[12px] text-exo-muted leading-relaxed italic opacity-70">
    Determine target entry point. New session branch will inherit previous context weights without affecting the primary stream.
    </p>
    
@@ -45,7 +45,7 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
     value={name}
     onChange={e => setName(e.target.value)}
     placeholder="USE DEFAULT IF NULL..."
-    className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
+    className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
     autoFocus
     onKeyDown={e => { if (e.key === 'Enter') onConfirm({ name, sessionType }); }}
    />
@@ -61,7 +61,7 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
     <button
      key={value}
      onClick={() => setSessionType(value)}
-     className={`px-4 py-2.5 rounded-[2px] border text-[10px] font-mono tracking-wider transition-all
+     className={`px-4 py-2.5 rounded-[2px] border text-[10px] tracking-wider transition-all
      ${sessionType === value
       ? 'bg-exo-accent/10 border-exo-accent/60 text-white'
       : 'bg-black/30 border-exo-mist-10 text-exo-muted/60 hover:border-exo-mist-20'}`}

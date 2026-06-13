@@ -226,7 +226,7 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
   const hasSnapshot = !cacheState?.active && cacheState?.has_snapshot;
   const fillPercent = isActive ? Math.min(100, (remainingSeconds / CACHE_TTL) * 100) : hasSnapshot ? 100 : 0;
   const remainingMinutes = Math.ceil(remainingSeconds / 60);
-  const isInert = !isActive && !hasSnapshot;
+  // "inert" state no longer disables the component — the bar is simply empty
 
   const tooltipText = cacheState === null
     ? '暂无缓存信息'
@@ -260,61 +260,68 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className={`
-        flex items-center h-7 rounded-full border overflow-hidden transition-all select-none
-        ${isInert
-          ? 'border-exo-mist-10 opacity-30'
-          : hasSnapshot
-            ? 'border-exo-mist-15 bg-exo-bg hover:border-exo-mist-25'
-            : 'border-exo-mist-20 bg-exo-bg hover:border-exo-mist-30'}
-      `}>
-        {/* Release button */}
-        <button
-          onClick={handleRelease}
-          disabled={isInert || loading}
-          className={`h-full aspect-square flex items-center justify-center transition-colors rounded-full
-            ${isInert
-              ? 'text-exo-muted/30 cursor-not-allowed'
-              : 'text-exo-muted/50 hover:text-red-400 hover:bg-red-400/10 active:scale-90'}`}
-          title={isInert ? '' : isActive && hasSnapshot ? '释放缓存与快照' : hasSnapshot ? '释放快照' : '释放缓存'}
-        >
-          <span className="text-[11px] font-bold leading-none font-mono">−</span>
-        </button>
+      {/* ── Pill: progress bar base + separator + circle toggle ── */}
+      <div className="flex items-center h-4 rounded-full overflow-hidden select-none
+                      border border-exo-mist-20 bg-exo-bg hover:border-exo-mist-30 transition-all">
 
-        {/* Body: progress bar (active or snapshot) or empty (inert) */}
-        {isInert ? (
-          <div className="h-full w-14 mx-0.5" />
-        ) : (
-          <div className="relative h-full w-14 mx-0.5 flex items-center justify-center">
-            <div className="absolute inset-y-1.5 left-0 right-0 rounded-full bg-exo-mist-10" />
-            <div
-              className="absolute inset-y-1.5 left-0 rounded-full transition-all duration-1000 ease-linear"
-              style={{
-                width: `${fillPercent}%`,
-                minWidth: fillPercent > 1 ? '3px' : '0',
-                background: 'rgba(200, 205, 215, 0.45)',
-              }}
-            />
-            {isActive && (
-              <span className="relative z-10 text-[9px] font-mono text-exo-text/80 leading-none select-none">
-                {remainingMinutes}m
-              </span>
-            )}
-          </div>
-        )}
+        {/* ── Progress bar area (fills available space, full height) ── */}
+        <div className="relative h-full flex-1 min-w-[48px]">
+          {/* Track — bottom layer */}
+          <div className="absolute inset-0 bg-exo-mist-10" />
+          {/* Fill — on top of track */}
+          <div
+            className="absolute inset-y-0 left-0 transition-all duration-1000 ease-linear"
+            style={{
+              width: `${fillPercent}%`,
+              minWidth: fillPercent > 1 ? '2px' : '0',
+              background: 'rgba(200, 205, 215, 0.40)',
+            }}
+          />
 
-        {/* Cache enable toggle — always clickable, even after release */}
+          {/* Release − button (floating on bar, left side) */}
+          <button
+            onClick={handleRelease}
+            disabled={loading}
+            className="absolute left-0 inset-y-0 w-[18px] flex items-center justify-center
+                       z-10 active:scale-90 transition-colors
+                       text-exo-muted/50 hover:text-red-400"
+            title={
+              loading ? '释放中...'
+              : isActive && hasSnapshot ? '释放缓存与快照'
+              : hasSnapshot ? '释放快照'
+              : isActive ? '释放缓存'
+              : '无缓存可释放'
+            }
+          >
+            <span className="text-[8px] font-bold font-mono leading-none">−</span>
+          </button>
+
+          {/* Remaining time (centered, clicks pass through) */}
+          {isActive && (
+            <span className="absolute inset-0 flex items-center justify-center
+                             text-[7px] font-mono text-exo-text/60 leading-none
+                             select-none pointer-events-none z-[5]">
+              {remainingMinutes}m
+            </span>
+          )}
+        </div>
+
+        {/* ── Explicit vertical separator ── */}
+        <div className="w-px h-2.5 bg-exo-mist-20 flex-shrink-0 z-10" />
+
+        {/* ── Circle toggle: on/off dot switch ── */}
         <button
           onClick={handleToggleCache}
-          className="h-full px-1 flex items-center justify-center transition-all rounded-full active:scale-90 hover:bg-white/5"
+          className="h-full px-1.5 flex items-center justify-center flex-shrink-0
+                     z-10 active:scale-90 transition-all hover:bg-white/5"
           title={cacheEnabled ? 'Context Cache ON — click to disable' : 'Context Cache OFF — click to enable'}
         >
-          <span className={`w-4 h-2.5 rounded-full transition-colors flex items-center px-[1.5px] ${
-            cacheEnabled ? 'bg-exo-accent/60' : 'bg-exo-mist-15'
+          <span className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors ${
+            cacheEnabled ? 'bg-exo-accent/60' : 'bg-exo-mist-10'
           }`}>
-            <span className={`w-2 h-2 rounded-full bg-white transition-transform duration-200 ${
-              cacheEnabled ? 'translate-x-1.5' : 'translate-x-0'
-            }`} />
+            <span className="text-[5.5px] font-mono leading-none text-white/90 select-none">
+              {cacheEnabled ? 'on' : 'off'}
+            </span>
           </span>
         </button>
       </div>

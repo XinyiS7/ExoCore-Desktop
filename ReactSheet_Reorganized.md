@@ -32,7 +32,7 @@
     "agent_preset_id": 2,                          // AgentPreset.id
 
     // 会话偏好（加载会话时用于回显下拉框）
-    "session_type": "chat",                        // "chat" | "code" | "cli"
+    "session_type": "full",                        // "full" | "lite"
     "thinking_level": "auto",                      // "off" | "auto" | "low" | "medium" | "high"
     "temperature": 1.0,                            // 0.0 ~ 2.0，每次发消息后自动持久化
     "memory_injection_enabled": true,              // 记忆注入偏好；null = 未设置；可通过 PATCH 持久化
@@ -83,9 +83,12 @@
   "temperature": 1.0,
   "model": null,                    // 可选模型覆盖
   "api_key_alias": null,            // 可选 API Key 别名；null = 使用默认 key
-  "memory_injection_enabled": true, // 记忆注入开关；false = 暂停注入 + Gemini 走冷路径
+  "memory_injection_enabled": false,// 记忆注入开关（embedding/UserPortrait/cross_window/vibe/private_logs）
+  "cache_enabled": false,           // Gemini 远端缓存开关（成本控制）
+  "session_type": "lite",           // "full" | "lite" — 上下文结构模式（每次请求携带，默认 lite）
   "files": [],                      // 可选上传文件
-  "pending_attachments": []         // 可选附件 ID
+  "pending_attachments": [],        // 可选附件 ID
+  "edit_message_id": null           // 可选：指定一条用户消息，从其位置重新生成回复（见 1.3e）
 }
 
 // api_key_alias: 可选，传入 ApiKey 别名
@@ -103,7 +106,7 @@
 //
 // Response:
 {
-  "status": "streaming",           // "streaming" | "done" | "error" | "not_found"
+  "status": "streaming",           // "streaming" | "done" | "stopped" | "error" | "not_found"
   "events": [                      // cursor 之后的新增事件（类型与 SSE 模式一致）
     {"event_type": "thinking", "delta": "嗯，用户问的是..."},
     {"event_type": "content", "delta": "你好！"}
@@ -123,7 +126,49 @@
 //    - reference → 引用链接
 //    - triggered_note_created → TriggeredNote 创建通知
 // 4. status="done" → 停止轮询，GET /chat/<sid>/ 拉完整消息列表
-// 5. status="error" → 显示错误，停止轮询
+// 5. status="stopped" → 用户手动停止，已生成的部分内容已持久化，拉消息列表即可
+// 6. status="error" → 显示错误，停止轮询
+
+// ── 1.3d. 停止异步生成 ──
+// POST /api/agents/chat/<session_id>/stop/?message_id=<token>
+// 前端点击「停止」按钮时调用。后端设置停止信号，LLM 在下个 chunk 到达时检测并中断。
+// 已生成的部分内容会正常持久化为 assistant 消息（content 截断于中断点）。
+//
+// Response (200):
+{ "status": "stop_requested" }
+// 404: { "error": "message_id is required or buffer not found" }
+
+
+// ── 1.3e. 消息编辑 / 重生成 ──
+// 统一通过 edit_message_id 参数实现。
+// 语义：把指定用户消息当作最新输入，截断其后所有消息，重新获得 AI 回复。
+//
+// edit_message_id 指向一条 role='user' 的消息：
+//   - content 非空 → 编辑消息内容后重发（edit + regenerate）
+//   - content 为空   → 保留原内容，纯重生成（redo）
+//
+// 传 edit_message_id 时：
+//   - 不持久化 thinking_level / temperature（保留当前偏好不变）
+//   - 不创建新的 user message（复用原消息或覆盖其 content）
+//   - truncate 点 = edit_msg.index_in_session + 1（删除该用户消息之后的所有消息）
+//
+// Request 示例 — 纯 redo（content 留空）：
+{
+  "content": "",
+  "edit_message_id": 42,
+  "thinking_level": "medium",
+  "temperature": 1.0
+}
+//
+// Request 示例 — 编辑后重发：
+{
+  "content": "修改后的消息内容",
+  "edit_message_id": 42,
+  "thinking_level": "medium",
+  "temperature": 1.0
+}
+//
+// Response：与正常 SSE / async 流程完全一致，无额外字段。
 
 
 1.4  GET /api/agents/conversations/<pk>/history_chunks/  — HistoryChunk 列表
@@ -134,7 +179,7 @@
 {
   "conversation_id": 12,
   "session_name": "关于量子纠缠的讨论",
-  "session_type": "chat",
+  "session_type": "full",
   "history_chunks": [
     {
       "id": 7,
@@ -160,7 +205,7 @@
   "id": 7,
   "conversation": 12,
   "session_name": "关于量子纠缠的讨论",
-  "session_type": "chat",
+  "session_type": "full",
   "start_index": 0,       // 对应 Message.index_in_session 起始（用于加载原始消息）
   "end_index": 9,         // 对应 Message.index_in_session 结束
 
@@ -1278,41 +1323,24 @@ GET /api/tasks/completions/?entry=<pk>
   "title": "编译完成",
   "body": "前端构建已成功完成。",
   "data": {
-    "url": "/chat/agent/6",              // 点击「跳转」导航目标
+    "url": "/chat/agent/6",              // 点击通知跳转目标
     "sender_type": "agent",              // "agent" | "system"
     "sender_name": "G045",               // AgentPreset.name 或 "ExoCore"
     "preset_id": 6,                      // null 当 sender_type="system"
     "register_id": 42                    // 可选，关联的短期 Register 条目 ID
   },
-  "actions": [
-    {"action": "navigate", "title": "跳转"},
-    {"action": "dismiss", "title": "关闭"}
-  ],
   "requireInteraction": true             // false = low urgency 时自动关闭
 }
 // 多条推送始终堆叠，不替换。
 
-// Service Worker 收到后调用 showNotification()：
-//   title 拼为 "From: {sender_name}"
-//   body 拼为 "{title}\n{body}"
-
-// 点击行为：
-//   通知主体 / 「跳转」按钮 → action = "navigate"
-//   「关闭」按钮 → action = "dismiss"
-
-// notificationclick → postMessage({
-//   type: 'PUSH_NAVIGATE',
-//   url,            // dismiss 时为 null
-//   action,         // "navigate" | "dismiss"
-//   registerId,
-//   presetId,
-// })
-// 前端 PushNavigateListener → navigate 时跳转 + POST ack，dismiss 时仅 POST ack
+// Service Worker 收到后调用 showNotification()。
+// notificationclick → postMessage({ type: 'PUSH_NAVIGATE', url, registerId })
+// 前端先 navigate(url)，若有 registerId 则调 POST /ack/ 将前缀替换为 [已被用户查看]。
 
 
 9.4  POST /api/agents/registers/<pk>/ack/  — 通知查看回执
 ─────────────────────────────────────────────────────────────
-用途：用户操作通知后回调，无论跳转还是关闭都通知后端。
+用途：用户操作通知后回调，将 Register 内容前缀 [推送通知] 替换为用户行为。
 
 // Request:
 // POST /api/agents/registers/42/ack/?preset_id=6
@@ -1323,13 +1351,16 @@ GET /api/tasks/completions/?entry=<pk>
 //   dismiss  = 用户点击了「关闭」按钮（明确忽略）
 
 // Response (200):
-{ "id": 42, "content": "[推送通知] 编译完成: 前端构建已成功。 → 用户已查看" }
+// navigate → 前缀替换为 [已被用户查看]
+{ "id": 42, "content": "[已被用户查看] 编译完成" }
+
+// dismiss → 前缀替换为 [已被用户忽略]
+{ "id": 43, "content": "[已被用户忽略] 编译完成" }
 
 // 404: { "error": "Register id=42 not found for preset 6" }
 // 400: { "error": "preset_id query param is required" }
 
-// 幂等：重复 ack 不会追加多个「→ 用户已查看」。
-
+// 幂等：已替换前缀的 Register 不会再次替换。
 
 9.5  PushSubscription 模型字段
 ─────────────────────────────────────────────────────────────
