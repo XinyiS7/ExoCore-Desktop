@@ -8,7 +8,6 @@ import MobileBottomBar from './components/layout/MobileBottomBar';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Hooks
-import { useFont } from 'exo-shared';
 import { useProjects } from './hooks/useProjects';
 import { usePresets } from './hooks/usePresets';
 import { useActiveSession } from './hooks/useActiveSession';
@@ -42,9 +41,8 @@ import CreateProjectModal from './components/modals/CreateProjectModal';
 
 // ─── AppLayout shell ─────────────────────────────────────────────────
 function AppLayout() {
-  useFont(); // Inject --font-system, --font-message, --font-body (alias), --font-nav, --font-code CSS variables
   return (
-    <div className="w-full h-screen bg-chat-bg text-chat-text font-sans flex overflow-hidden">
+    <div className="w-full h-screen flex overflow-hidden">
       {/* Desktop: 16px icon sidebar */}
       <DesktopSidebar />
 

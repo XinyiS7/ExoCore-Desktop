@@ -1,76 +1,29 @@
-@import 'exo-shared/styles/fonts.css';
-@import 'exo-shared/styles/base.css';
-@import 'exo-shared/styles/transitions.css';
-@import 'highlight.js/styles/atom-one-dark.css';
+/* Minimal structural reset only.
+   All visual design removed — clean slate for NewVisual. */
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  body {
-    background-color: #0a0a0f;
-    color: #e2e8f0;
-    font-family: var(--font-system);
-  }
-
-  .glass-panel {
-    background: rgba(17, 17, 24, 0.8);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-  }
-
-  .glow-border {
-    border: 1px solid rgba(192, 57, 43, 0.3);
-    box-shadow: 0 0 1px #c0392b, 0 0 8px rgba(192, 57, 43, 0.4), 0 0 20px rgba(192, 57, 43, 0.1);
-  }
-
-  .prose {
-    --tw-prose-body: #e2e8f0;
-    --tw-prose-headings: #c0392b;
-    --tw-prose-links: #e74c3c;
-    --tw-prose-code: #c0392b;
-    --tw-prose-pre-bg: #111118;
-  }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-@layer components {
-  .nav-item {
-    @apply flex items-center gap-3 px-3 py-2 rounded-md text-chat-muted hover:text-chat-text hover:bg-white/5 transition-colors;
-  }
-  .nav-item.active {
-    @apply text-chat-accent bg-chat-accent/10 border-l-2 border-chat-accent;
-  }
-
-  .msg-bubble {
-    @apply glass-panel px-4 py-3 max-w-[85%];
-  }
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
-@layer utilities {
-  .text-glow-accent {
-    text-shadow: 0 0 8px rgba(192, 57, 43, 0.6);
-  }
+body {
+  min-height: 100dvh;
 }
 
-/* ── Status breathing light ── */
-@keyframes breathe-status {
-  0%, 100% {
-    background-color: #00509d;
-    box-shadow: 0 0 4px rgba(0, 80, 157, 0.6), 0 0 10px rgba(0, 80, 157, 0.3);
-  }
-  40% {
-    background-color: #fdc500;
-    box-shadow: 0 0 6px rgba(253, 197, 0, 0.7), 0 0 14px rgba(253, 197, 0, 0.4);
-  }
-  70% {
-    background-color: #fdc500;
-    box-shadow: 0 0 6px rgba(253, 197, 0, 0.7), 0 0 14px rgba(253, 197, 0, 0.4);
-  }
+img, svg, video, canvas {
+  display: block;
+  max-width: 100%;
 }
 
-.breathing-status {
-  animation: breathe-status 3.5s ease-in-out infinite;
+button {
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
 }

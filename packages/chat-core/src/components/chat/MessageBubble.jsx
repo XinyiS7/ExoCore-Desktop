@@ -174,7 +174,7 @@ function CodeBlock({ children, className }) {
   className={`text-[11px] px-1.5 transition-colors ${
   tab === t ? 'text-exo-muted/70' : 'text-exo-muted/25 hover:text-exo-muted/50'
   }`}
-  style={{ fontFamily: 'var(--font-code)' }}
+  style={undefined}
  >
   {label}
  </button>
@@ -184,7 +184,7 @@ function CodeBlock({ children, className }) {
  <div className="relative group/code my-4 rounded-[4px] overflow-hidden bg-exo-pure/8">
   <div className="flex items-center justify-between px-4 py-1.5">
   <div className="flex items-center gap-3 min-w-0">
-   <span className="text-[11px] text-exo-muted/35 select-none" style={{ fontFamily: 'var(--font-code)' }}>{lang}</span>
+   <span className="text-[11px] text-exo-muted/35 select-none" style={undefined}>{lang}</span>
    {isVisual && (
    <div className="flex gap-1">
     {tabBtn('preview', 'Preview')}
@@ -195,7 +195,7 @@ function CodeBlock({ children, className }) {
   <button
    onClick={handleCopy}
    className="flex items-center gap-1.5 text-[11px] text-exo-muted/20 hover:text-exo-muted/50 transition-colors"
-   style={{ fontFamily: 'var(--font-code)' }}
+   style={undefined}
   >
    {copied ? <Check size={11} strokeWidth={1} className="text-green-400" /> : <Copy size={11} strokeWidth={1} />}
    <span>{copied ? 'Copied' : 'Copy'}</span>
@@ -370,11 +370,11 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    </div>
   )}
   {isUser ? (
-   <div className="max-w-[92%] bg-exo-pure/40 backdrop-blur-md border border-white/[0.06] rounded-[4px] rounded-tr-none p-4 text-sm transition-all hover:border-white/[0.10] prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none text-white/90" style={{ fontFamily: 'var(--font-message)' }}>
+   <div className="max-w-[92%] bg-exo-pure/40 backdrop-blur-md border border-white/[0.06] rounded-[4px] rounded-tr-none p-4 text-sm transition-all hover:border-white/[0.10] prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none text-white/90">
    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
    </div>
   ) : (
-   <div className="w-full prose prose-invert prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none" style={{ fontFamily: 'var(--font-message)' }}>
+   <div className="w-full prose prose-invert prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none">
    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
    </div>
   )}

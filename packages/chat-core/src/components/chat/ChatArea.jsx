@@ -1259,7 +1259,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    }}
    placeholder="Chat to ExoCore..."
    className="w-full bg-transparent text-sm text-white/90 outline-none resize-none px-4 pt-2.5 pb-1 disabled:opacity-50 overflow-y-auto max-h-[40vh] font-sans font-normal placeholder:text-exo-muted/40"
-   style={{ minHeight: (inputFocused || inputValue) ? '4.5rem' : '2.5rem', fontFamily: 'var(--font-message)' }}
+   style={{ minHeight: (inputFocused || inputValue) ? '4.5rem' : '2.5rem' }}
    disabled={isGenerating}
    />
    <div className="flex items-center justify-between px-3 pb-2.5">
