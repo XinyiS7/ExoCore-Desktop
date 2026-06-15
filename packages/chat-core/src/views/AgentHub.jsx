@@ -1,101 +1,107 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Star, Zap, Cpu, GripVertical } from 'lucide-react';
 import { getAgentAvatarUrl } from '../utils/avatar';
 import { baseUrl } from 'exo-shared';
 import { getAgentHubOrder, isSuperiorType } from '../utils/presets';
 import MemoryAnchorTicker from '../components/agent/MemoryAnchorTicker';
 import BackToUpper from '../components/layout/BackButton';
 
-const SectionHeader = ({ icon: Icon, label, accent }) => (
-  <div className="mb-3">
-    <div className="flex items-center gap-2 mb-2">
-      <Icon size={14} strokeWidth={1.5} className={accent} />
-      <span className="text-[10px] tracking-[0.3em] text-exo-muted">{label}</span>
-    </div>
-    <div className="h-px bg-gradient-to-r from-exo-mist-10 to-transparent" />
+/* ── Motion helper ── */
+const fadeUp = (delay) => ({
+  animation: `fadeUp .5s ${delay}s cubic-bezier(.22,1,.36,1) both`,
+});
+
+/* ── Section header atom ── */
+const SectionHead = ({ label, children }) => (
+  <div className="flex items-center gap-2.5">
+    <div className="w-[18px] h-px" style={{ background: 'var(--cinder-line-glow)' }} />
+    <span
+      className="font-light"
+      style={{ fontSize: '10px', letterSpacing: '0.3em', color: 'var(--cinder-text-dim)' }}
+    >
+      {label}
+    </span>
+    {children && <span style={{ marginLeft: 'auto' }}>{children}</span>}
   </div>
 );
 
-const AgentCard = ({ preset, anchors, dragging, dragOver, onDragStart, onDragEnd, onDragOver, onDrop, onClick }) => {
-  const avatarUrl = getAgentAvatarUrl(preset.id, preset.name);
-  const showTicker = isSuperiorType(preset.agent_type);
-  const isDragging = dragging === preset.id;
-  const isDragOver = dragOver === preset.id;
+/* ── Corner glyph — engraved calibration marks ── */
+const CornerGlyph = ({ hovered }) => (
+  <svg
+    className="absolute inset-0 w-full h-full pointer-events-none z-[1] transition-all duration-500"
+    viewBox="0 0 280 20"
+    preserveAspectRatio="none"
+    fill="none"
+    stroke="currentColor"
+    style={{
+      opacity: hovered ? 0.45 : 0.07,
+      filter: hovered ? 'drop-shadow(0 0 5px rgba(248,191,116,0.55))' : 'none',
+    }}
+  >
+    <line x1="4" y1="14" x2="90" y2="14" strokeWidth="0.06" />
+    <line x1="0" y1="16" x2="196" y2="16" strokeWidth="0.10" />
+    <line x1="8" y1="17" x2="75" y2="17" strokeWidth="0.04" />
+    <line x1="3" y1="0" x2="3" y2="14" strokeWidth="0.07" />
+    <line x1="6" y1="5" x2="6" y2="20" strokeWidth="0.07" />
+  </svg>
+);
 
-  return (
-    <div
-      draggable
-      onDragStart={() => onDragStart(preset.id)}
-      onDragEnd={onDragEnd}
-      onDragOver={(e) => { e.preventDefault(); onDragOver(preset.id); }}
-      onDrop={() => onDrop(preset.id)}
-      onClick={() => onClick(preset)}
-      className={`relative p-4 bg-exo-panel border rounded-md cursor-pointer transition-all select-none
-        ${isDragging ? 'opacity-30 ring-2 ring-exo-accent/20' : 'opacity-100'}
-        ${isDragOver ? 'border-exo-accent/50 ring-1 ring-exo-accent/20' : 'border-exo-border'}
-        hover:border-exo-accent/30`}
-    >
-      {/* Drag handle -- top right, hidden on mobile */}
-      <div
-        className="hidden sm:block absolute top-2 right-2 p-1 text-exo-muted/30 cursor-grab active:cursor-grabbing hover:text-exo-muted/60 transition-colors rounded hover:bg-white/5"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <GripVertical size={14} strokeWidth={1.5} />
-      </div>
+/* ── Geometric SVG icons (no lucide) ── */
+const IconPrime = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.7">
+    <polygon points="12,3 15,9 21,10 16,15 18,21 12,18 6,21 8,15 3,10 9,9" strokeLinejoin="round" />
+    <circle cx="12" cy="12" r="1.5" />
+  </svg>
+);
 
-      {/* Avatar + Name + Badge */}
-      <div className="flex items-center gap-3 mb-2 pr-6 sm:pr-0">
-        <img
-          src={avatarUrl}
-          alt={preset.name}
-          className="w-10 h-10 rounded-[2px] border border-exo-border object-cover bg-exo-bg shrink-0"
-        />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium text-white truncate">{preset.name}</span>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded-[2px] tracking-wider whitespace-nowrap border ${
-              preset.agent_type === 'g045'
-                ? 'text-exo-accent border-exo-accent/30 bg-exo-accent/10'
-                : preset.agent_type === 'superior'
-                ? 'text-purple-400 border-purple-400/30 bg-purple-400/10'
-                : 'text-blue-400 border-blue-400/30 bg-blue-400/10'
-            }`}>
-              {preset.agent_type === 'g045' ? 'G045' : preset.agent_type}
-            </span>
-          </div>
-        </div>
-      </div>
+const IconSuperior = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.7">
+    <polygon points="13,3 10,11 14,11 11,21 17,11 13,11 16,3" strokeLinejoin="round" />
+  </svg>
+);
 
-      {/* Description */}
-      {preset.description && (
-        <p className="text-xs text-exo-muted/70 italic leading-relaxed line-clamp-2 mb-1">
-          {preset.description}
-        </p>
-      )}
+const IconStandard = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.7">
+    <rect x="5" y="5" width="14" height="14" rx="1" />
+    <circle cx="12" cy="12" r="3" />
+    <line x1="12" y1="2" x2="12" y2="5" />
+    <line x1="12" y1="19" x2="12" y2="22" />
+    <line x1="2" y1="12" x2="5" y2="12" />
+    <line x1="19" y1="12" x2="22" y2="12" />
+  </svg>
+);
 
-      {/* Anchor ticker for G045 & Superior */}
-      {showTicker && (
-        <>
-          <div className="border-t border-exo-border/50 my-2" />
-          <MemoryAnchorTicker anchors={anchors || []} />
-        </>
-      )}
-    </div>
-  );
-};
+const IconDrag = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.5">
+    <line x1="8" y1="7" x2="16" y2="7" />
+    <line x1="8" y1="12" x2="16" y2="12" />
+    <line x1="8" y1="17" x2="16" y2="17" />
+  </svg>
+);
 
+const IconLock = ({ size = 10 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.7">
+    <rect x="7" y="11" width="10" height="9" rx="1" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </svg>
+);
+
+/* ═══════════════════════════════════════════
+   AgentHub
+   ═══════════════════════════════════════════ */
 export default function AgentHub({ appState, setView, goBack }) {
   const { presets = [] } = appState;
   const [anchorMap, setAnchorMap] = useState({});
   const [dragging, setDragging] = useState(null);
   const [dragOver, setDragOver] = useState(null);
+  const [hoveredCard, setHoveredCard] = useState(null);
   const draggingRef = useRef(null);
 
-  // Fetch anchors for G045 & Superior agents on mount
+  /* ── Fetch anchors for G045 & Superior agents ── */
   const superiorPresetIds = useMemo(
     () => presets.filter((p) => isSuperiorType(p.agent_type)).map((p) => p.id).join(','),
     [presets],
   );
+
   useEffect(() => {
     const ids = superiorPresetIds ? superiorPresetIds.split(',') : [];
     if (ids.length === 0) return;
@@ -123,12 +129,10 @@ export default function AgentHub({ appState, setView, goBack }) {
     };
 
     fetchAnchors();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [superiorPresetIds]);
 
-  // Apply manual ordering from localStorage
+  /* ── Ordering ── */
   const applyOrder = (list) => {
     const order = getAgentHubOrder();
     return [...list].sort((a, b) => {
@@ -141,19 +145,13 @@ export default function AgentHub({ appState, setView, goBack }) {
     });
   };
 
-  // Filter and sort presets into three sections
-  const g045Presets = applyOrder(
-    presets.filter((p) => p.agent_type === 'g045'),
-  );
-  const superiorPresets = applyOrder(
-    presets.filter((p) => p.agent_type === 'superior'),
-  );
+  const g045Presets = applyOrder(presets.filter((p) => p.agent_type === 'g045'));
+  const superiorPresets = applyOrder(presets.filter((p) => p.agent_type === 'superior'));
   const standardPresets = applyOrder(
-    presets.filter(
-      (p) => p.agent_type !== 'g045' && p.agent_type !== 'superior',
-    ),
+    presets.filter((p) => p.agent_type !== 'g045' && p.agent_type !== 'superior'),
   );
 
+  /* ── Drag handlers ── */
   const handleDragStart = (id) => {
     setDragging(id);
     draggingRef.current = id;
@@ -183,123 +181,409 @@ export default function AgentHub({ appState, setView, goBack }) {
     const adjustedDst = newIds.indexOf(dstId);
     newIds.splice(adjustedDst, 0, srcId);
 
-    // Persist new order to localStorage
     const order = getAgentHubOrder();
-    newIds.forEach((id, i) => {
-      order[id] = i;
-    });
+    newIds.forEach((id, i) => { order[id] = i; });
     localStorage.setItem('agentHubOrder', JSON.stringify(order));
 
     handleDragEnd();
   };
 
   const handleAgentClick = (preset) => {
-    setView('agent_profile', {
-      agentId: preset.id,
-      agentName: preset.name,
-    });
+    setView('agent_profile', { agentId: preset.id, agentName: preset.name });
   };
 
+  /* ── Type badge style ── */
+  const typeBadgeStyle = (type) => {
+    if (type === 'g045') return {
+      background: 'rgba(255,74,8,0.12)',
+      color: 'var(--cinder-flame)',
+      border: '1px solid rgba(255,74,8,0.25)',
+    };
+    if (type === 'superior') return {
+      background: 'rgba(168,122,255,0.08)',
+      color: 'rgb(188,148,255)',
+      border: '1px solid rgba(168,122,255,0.2)',
+    };
+    return {
+      background: 'rgba(100,160,220,0.08)',
+      color: 'rgb(130,180,230)',
+      border: '1px solid rgba(100,160,220,0.2)',
+    };
+  };
+
+  /* ── Render ── */
   return (
     <div className="flex-1 h-full flex flex-col overflow-hidden" style={{ background: 'var(--cinder-base)' }}>
-      {/* Back bar — desktop only; mobile uses MobileHeader */}
+
+      {/* ═══ Fixed back bar — desktop only; mobile uses MobileHeader ═══ */}
       <div
         className="hidden md:flex items-center flex-shrink-0 px-4 md:px-12 py-3"
         style={{ borderBottom: '1px solid var(--cinder-line)' }}
       >
         <BackToUpper label="Home" onClick={() => goBack()} />
       </div>
-      <div className="flex-1 overflow-y-auto scrollbar-hide">
-        <div className="max-w-5xl mx-auto px-4 md:px-12 pt-4 md:pt-12 pb-12 space-y-10">
-        {/* G045 Superior Core */}
-        {g045Presets.length > 0 && (
-          <section>
-            <SectionHeader
-              icon={Star}
-              label="G045 Superior Core"
-              accent="text-exo-accent"
-            />
-            <div className="bg-exo-panel/50 border border-exo-accent/20 rounded-md p-4">
-              <div className="grid grid-cols-1 gap-3">
-                {g045Presets.map((p) => (
-                  <AgentCard
-                    key={p.id}
-                    preset={p}
-                    anchors={anchorMap[p.id]}
-                    dragging={dragging}
-                    dragOver={dragOver}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={handleDragOver}
-                    onDrop={(dstId) => handleDrop(dstId, g045Presets)}
-                    onClick={handleAgentClick}
-                  />
-                ))}
+
+      {/* ═══ Scrollable content ═══ */}
+      <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+        <div className="max-w-[900px] mx-auto px-6 md:px-10 py-[40px] md:py-[60px] pb-[100px] flex flex-col gap-14">
+
+          {/* ═══ Header ═══ */}
+          <section style={fadeUp(0)}>
+            <SectionHead label="AGENTS" />
+            <p
+              className="font-light mt-1.5 ml-[28px]"
+              style={{ fontSize: '9px', letterSpacing: '0.04em', color: 'var(--cinder-text-faint)' }}
+            >
+              Digital entities...
+            </p>
+          </section>
+
+          {/* ═══ G045 The Prime ═══ */}
+          {g045Presets.length > 0 && (
+            <section style={fadeUp(0.06)}>
+              <SectionHead label="THE PRIME" />
+              <div className="mt-3 flex flex-col gap-3">
+                {g045Presets.map((p) => {
+                  const anchors = anchorMap[p.id];
+                  const avatarUrl = getAgentAvatarUrl(p.id, p.name);
+                  const isHovered = hoveredCard === `g045-${p.id}`;
+                  const isDragging = dragging === p.id;
+                  const isDragOver = dragOver === p.id;
+
+                  return (
+                    <div
+                      key={p.id}
+                      draggable
+                      onDragStart={() => handleDragStart(p.id)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={(e) => { e.preventDefault(); handleDragOver(p.id); }}
+                      onDrop={() => handleDrop(p.id, g045Presets)}
+                      onClick={() => handleAgentClick(p)}
+                      className="relative cursor-pointer transition-all duration-400 select-none"
+                      style={{
+                        ...(isDragging
+                          ? { opacity: 0.3 }
+                          : { opacity: 1 }),
+                        padding: '20px 24px',
+                        background: isHovered ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.01)',
+                        border: `1px solid ${isDragOver ? 'rgba(255,74,8,0.35)' : isHovered ? 'rgba(196,77,0,0.3)' : 'rgba(166,61,0,0.12)'}`,
+                        borderRadius: '6px',
+                        boxShadow: isHovered ? '0 0 40px rgba(255,74,8,0.08), 0 8px 32px rgba(0,0,0,0.5)' : 'none',
+                        transform: isHovered ? 'translateY(-1px)' : 'none',
+                      }}
+                      onMouseEnter={() => setHoveredCard(`g045-${p.id}`)}
+                      onMouseLeave={() => setHoveredCard(null)}
+                    >
+                      {/* Breathing glow */}
+                      <span
+                        className="absolute inset-0 pointer-events-none transition-opacity duration-700 rounded-[6px]"
+                        style={{
+                          opacity: isHovered ? 1 : 0.3,
+                          background: 'radial-gradient(ellipse at 30% 50%, rgba(196,77,0,0.06) 0%, transparent 70%)',
+                          animation: 'breatheSlow 4s ease-in-out infinite',
+                        }}
+                      />
+
+                      {/* Corner glyph */}
+                      <CornerGlyph hovered={isHovered} />
+
+                      {/* Drag handle */}
+                      <div
+                        className="hidden sm:block absolute top-3 right-3 p-1 cursor-grab active:cursor-grabbing transition-opacity duration-300 z-[2] rounded"
+                        style={{
+                          opacity: isHovered ? 0.5 : 0,
+                          color: 'var(--cinder-text-faint)',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; e.currentTarget.style.color = 'var(--cinder-flame)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = ''; e.currentTarget.style.color = ''; }}
+                      >
+                        <IconDrag size={14} />
+                      </div>
+
+                      <div className="relative z-[1]">
+                        {/* Avatar + Name + Lock */}
+                        <div className="flex items-center gap-3 mb-2 pr-6 sm:pr-0">
+                          <img
+                            src={avatarUrl}
+                            alt={p.name}
+                            className="w-10 h-10 shrink-0 object-cover"
+                            style={{
+                              borderRadius: '2px',
+                              border: '1px solid rgba(255,255,255,0.06)',
+                              background: 'var(--cinder-base)',
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span
+                                className="font-light truncate"
+                                style={{ fontSize: '15px', letterSpacing: '0.05em', color: 'var(--cinder-text)' }}
+                              >
+                                {p.name}
+                              </span>
+                              <span
+                                className="tracking-wider whitespace-nowrap"
+                                style={{
+                                  fontSize: '9px',
+                                  padding: '2px 6px',
+                                  borderRadius: '2px',
+                                  ...typeBadgeStyle(p.agent_type),
+                                }}
+                              >
+                                G045
+                              </span>
+                              <span style={{ color: 'var(--cinder-ember-dim)', display: 'flex', alignItems: 'center' }} title="Immutable">
+                                <IconLock size={10} />
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Description */}
+                        {p.description && (
+                          <p
+                            className="italic line-clamp-2 mb-2"
+                            style={{
+                              fontSize: '12px',
+                              lineHeight: 1.6,
+                              color: 'var(--cinder-text-dim)',
+                              opacity: 0.7,
+                            }}
+                          >
+                            {p.description}
+                          </p>
+                        )}
+
+                        {/* Divider + Memory anchor ticker */}
+                        {isSuperiorType(p.agent_type) && (
+                          <>
+                            <div
+                              className="my-3"
+                              style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
+                            />
+                            <MemoryAnchorTicker anchors={anchors || []} />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          </section>
-        )}
+            </section>
+          )}
 
-        {/* Superior Agents */}
-        {superiorPresets.length > 0 && (
-          <section>
-            <SectionHeader
-              icon={Zap}
-              label="Superior Agents"
-              accent="text-purple-400"
-            />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {superiorPresets.map((p) => (
-                <AgentCard
-                  key={p.id}
-                  preset={p}
-                  anchors={anchorMap[p.id]}
-                  dragging={dragging}
-                  dragOver={dragOver}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={handleDragOver}
-                  onDrop={(dstId) => handleDrop(dstId, superiorPresets)}
-                  onClick={handleAgentClick}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+          {/* ═══ Superior Agents ═══ */}
+          {superiorPresets.length > 0 && (
+            <section style={fadeUp(0.12)}>
+              <SectionHead label="SUPERIOR" />
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {superiorPresets.map((p, i) => {
+                  const anchors = anchorMap[p.id];
+                  const avatarUrl = getAgentAvatarUrl(p.id, p.name);
+                  const isHovered = hoveredCard === `sup-${p.id}`;
+                  const isDragging = dragging === p.id;
+                  const isDragOver = dragOver === p.id;
 
-        {/* Standard Agents */}
-        {standardPresets.length > 0 && (
-          <section>
-            <SectionHeader
-              icon={Cpu}
-              label="Standard Agents"
-              accent="text-blue-400"
-            />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {standardPresets.map((p) => (
-                <AgentCard
-                  key={p.id}
-                  preset={p}
-                  dragging={dragging}
-                  dragOver={dragOver}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={handleDragOver}
-                  onDrop={(dstId) => handleDrop(dstId, standardPresets)}
-                  onClick={handleAgentClick}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+                  return (
+                    <div
+                      key={p.id}
+                      draggable
+                      onDragStart={() => handleDragStart(p.id)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={(e) => { e.preventDefault(); handleDragOver(p.id); }}
+                      onDrop={() => handleDrop(p.id, superiorPresets)}
+                      onClick={() => handleAgentClick(p)}
+                      className="relative cursor-pointer transition-all duration-400 select-none"
+                      style={{
+                        ...(isDragging
+                          ? { opacity: 0.3 }
+                          : { opacity: 1 }),
+                        padding: '16px 20px',
+                        background: isHovered ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.01)',
+                        border: `1px solid ${isDragOver ? 'rgba(255,74,8,0.35)' : isHovered ? 'rgba(196,77,0,0.3)' : 'rgba(166,61,0,0.12)'}`,
+                        borderRadius: '6px',
+                        boxShadow: isHovered ? '0 8px 32px rgba(0,0,0,0.5)' : 'none',
+                        transform: isHovered ? 'translateY(-1px)' : 'none',
+                        marginLeft: i % 2 === 1 ? '16px' : '0',
+                      }}
+                      onMouseEnter={() => setHoveredCard(`sup-${p.id}`)}
+                      onMouseLeave={() => setHoveredCard(null)}
+                    >
+                      {/* Hover glow */}
+                      <span
+                        className="absolute inset-0 pointer-events-none transition-opacity duration-500 rounded-[6px]"
+                        style={{
+                          opacity: isHovered ? 1 : 0,
+                          background: 'radial-gradient(ellipse at 30% 50%, rgba(196,77,0,0.06) 0%, transparent 70%)',
+                        }}
+                      />
 
-        {/* Empty state */}
-        {presets.length === 0 && (
-          <div className="text-center py-20 text-exo-muted">
-            <p className="font-mono text-sm">No agents configured</p>
-          </div>
-        )}
-      </div>
+                      <CornerGlyph hovered={isHovered} />
+
+                      {/* Drag handle */}
+                      <div
+                        className="hidden sm:block absolute top-2 right-2 p-1 cursor-grab active:cursor-grabbing transition-opacity duration-300 z-[2] rounded"
+                        style={{ opacity: isHovered ? 0.4 : 0, color: 'var(--cinder-text-faint)' }}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; e.currentTarget.style.color = 'var(--cinder-flame)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = ''; e.currentTarget.style.color = ''; }}
+                      >
+                        <IconDrag size={13} />
+                      </div>
+
+                      <div className="relative z-[1]">
+                        {/* Avatar + Name + Badge */}
+                        <div className="flex items-center gap-2.5 mb-2 pr-5 sm:pr-0">
+                          <img
+                            src={avatarUrl}
+                            alt={p.name}
+                            className="w-9 h-9 shrink-0 object-cover"
+                            style={{
+                              borderRadius: '2px',
+                              border: '1px solid rgba(255,255,255,0.06)',
+                              background: 'var(--cinder-base)',
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span
+                                className="font-light truncate"
+                                style={{ fontSize: '14px', letterSpacing: '0.04em', color: 'var(--cinder-text)' }}
+                              >
+                                {p.name}
+                              </span>
+                              <span
+                                className="tracking-wider whitespace-nowrap"
+                                style={{
+                                  fontSize: '8px',
+                                  padding: '1px 5px',
+                                  borderRadius: '2px',
+                                  ...typeBadgeStyle(p.agent_type),
+                                }}
+                              >
+                                superior
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Description */}
+                        {p.description && (
+                          <p
+                            className="italic line-clamp-2 mb-2"
+                            style={{
+                              fontSize: '11px',
+                              lineHeight: 1.5,
+                              color: 'var(--cinder-text-dim)',
+                              opacity: 0.65,
+                            }}
+                          >
+                            {p.description}
+                          </p>
+                        )}
+
+                        {/* Memory anchor ticker */}
+                        <div
+                          className="mt-2"
+                          style={{ borderTop: '1px solid rgba(255,255,255,0.03)' }}
+                        >
+                          <MemoryAnchorTicker anchors={anchors || []} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* ═══ Standard Agents ═══ */}
+          {standardPresets.length > 0 && (
+            <section style={fadeUp(0.18)}>
+              <SectionHead label="STANDARD" />
+              <div className="mt-3 flex flex-wrap gap-2">
+                {standardPresets.map((p) => {
+                  const avatarUrl = getAgentAvatarUrl(p.id, p.name);
+                  const isHovered = hoveredCard === `std-${p.id}`;
+                  const isDragging = dragging === p.id;
+                  const isDragOver = dragOver === p.id;
+
+                  return (
+                    <div
+                      key={p.id}
+                      draggable
+                      onDragStart={() => handleDragStart(p.id)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={(e) => { e.preventDefault(); handleDragOver(p.id); }}
+                      onDrop={() => handleDrop(p.id, standardPresets)}
+                      onClick={() => handleAgentClick(p)}
+                      className="flex items-center gap-2 cursor-pointer transition-all duration-300 select-none shrink-0"
+                      style={{
+                        ...(isDragging ? { opacity: 0.3 } : { opacity: 1 }),
+                        padding: '8px 14px',
+                        background: isHovered ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.01)',
+                        border: `1px solid ${isDragOver ? 'rgba(255,74,8,0.35)' : isHovered ? 'rgba(196,77,0,0.25)' : 'rgba(166,61,0,0.08)'}`,
+                        borderRadius: '4px',
+                        boxShadow: isHovered ? '0 4px 16px rgba(0,0,0,0.4)' : 'none',
+                        transform: isHovered ? 'translateY(-1px)' : 'none',
+                      }}
+                      onMouseEnter={() => setHoveredCard(`std-${p.id}`)}
+                      onMouseLeave={() => setHoveredCard(null)}
+                    >
+                      <img
+                        src={avatarUrl}
+                        alt={p.name}
+                        className="w-6 h-6 shrink-0 object-cover"
+                        style={{
+                          borderRadius: '2px',
+                          border: '1px solid rgba(255,255,255,0.06)',
+                          background: 'var(--cinder-base)',
+                        }}
+                      />
+                      <span
+                        className="font-light truncate"
+                        style={{ fontSize: '12px', letterSpacing: '0.03em', color: 'var(--cinder-text)' }}
+                      >
+                        {p.name}
+                      </span>
+                      <span
+                        className="tracking-wider whitespace-nowrap"
+                        style={{
+                          fontSize: '7px',
+                          padding: '1px 4px',
+                          borderRadius: '2px',
+                          ...typeBadgeStyle(p.agent_type),
+                        }}
+                      >
+                        std
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* ═══ Empty state ═══ */}
+          {presets.length === 0 && (
+            <section style={fadeUp(0.1)} className="text-center py-20">
+              <p
+                className="font-light"
+                style={{ fontSize: '13px', letterSpacing: '0.06em', color: 'var(--cinder-text-faint)' }}
+              >
+                No agents configured
+              </p>
+              <p
+                className="font-light mt-2"
+                style={{ fontSize: '11px', color: 'var(--cinder-text-faint)', opacity: 0.5 }}
+              >
+                Run init_g045 to create the prime agent
+              </p>
+            </section>
+          )}
+
+        </div>
       </div>
     </div>
   );

@@ -1,9 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, ShieldAlert } from 'lucide-react';
+
+/* ── Geometric SVG icons ── */
+const IconPulse = ({ size = 12 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.7">
+    <line x1="4" y1="17" x2="4" y2="12" />
+    <line x1="10" y1="17" x2="10" y2="7" />
+    <line x1="16" y1="17" x2="16" y2="9" />
+    <line x1="20" y1="17" x2="20" y2="14" />
+  </svg>
+);
+
+const IconPersist = ({ size = 10 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.7">
+    <polygon points="12,3 21,8 21,16 12,21 3,16 3,8" strokeLinejoin="round" />
+    <circle cx="12" cy="11" r="1.2" />
+    <line x1="12" y1="13" x2="12" y2="16" />
+  </svg>
+);
 
 const MemoryAnchorTicker = ({ anchors = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFading, setIsFading] = useState(true);
+
   useEffect(() => {
     if (anchors.length <= 1) return;
     const timer = setInterval(() => {
@@ -16,61 +34,133 @@ const MemoryAnchorTicker = ({ anchors = [] }) => {
     return () => clearInterval(timer);
   }, [anchors.length]);
 
+  /* ── Empty state ── */
   if (anchors.length === 0) {
     return (
-      <div className="h-16 flex items-center justify-center border border-dashed border-exo-mist-10 rounded-[2px] bg-black/20 text-[10px] text-exo-muted/40 tracking-widest">
-        <Activity size={12} className="mr-2 animate-pulse" /> Core Memory Scan: [NULL]
+      <div
+        className="h-16 flex items-center justify-center"
+        style={{
+          background: 'rgba(0,0,0,0.2)',
+          border: '1px dashed rgba(255,255,255,0.04)',
+          borderRadius: '2px',
+          fontSize: '10px',
+          letterSpacing: '0.15em',
+          color: 'var(--cinder-text-faint)',
+          opacity: 0.4,
+        }}
+      >
+        <span style={{ marginRight: '8px', display: 'flex', alignItems: 'center', animation: 'breathe 2s ease-in-out infinite' }}>
+          <IconPulse size={12} />
+        </span>
+        Core Memory Scan: [NULL]
       </div>
     );
   }
 
   const anchor = anchors[currentIndex];
   const keywords = (anchor.keywords || '').split(',').map(k => k.trim()).filter(Boolean).slice(0, 2);
-
   const needsScroll = anchor.note && anchor.note.length > 80;
 
   return (
-    <div className="rounded-[2px] bg-black/40 border border-exo-mist-10 p-4 shadow-inner">
-      <div className={`transition-all duration-400 ${isFading ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'}`}>
-        {/* Keywords row with fade-out + weight number */}
+    <div
+      style={{
+        background: 'rgba(0,0,0,0.4)',
+        border: '1px solid rgba(255,255,255,0.04)',
+        borderRadius: '2px',
+        padding: '16px',
+      }}
+    >
+      <div
+        className="transition-all duration-400"
+        style={{
+          opacity: isFading ? 1 : 0,
+          transform: isFading ? 'translateY(0)' : 'translateY(4px)',
+        }}
+      >
+        {/* Keywords row with fade gradient */}
         <div className="flex items-center gap-0 mb-3">
-          {/* Scrollable keywords area */}
           <div className="flex-1 min-w-0 overflow-hidden relative h-6">
-            <div className="flex gap-1.5 overflow-x-auto whitespace-nowrap pr-10 h-full items-center"
-              style={{ scrollbarWidth: 'none' }}>
+            <div
+              className="flex gap-1.5 overflow-x-auto whitespace-nowrap h-full items-center"
+              style={{ scrollbarWidth: 'none', paddingRight: '40px' }}
+            >
               {keywords.map((kw, i) => (
-                <span key={i} className={`text-[9px] px-2 py-0.5 rounded-[2px] font-bold tracking-widest whitespace-nowrap flex-shrink-0 ${
-                  anchor.is_persistent
-                    ? 'bg-exo-accent/15 text-exo-accent border border-exo-accent/30'
-                    : 'bg-white/5 text-exo-muted border border-exo-mist-10'
-                }`}>
+                <span
+                  key={i}
+                  className="font-bold tracking-widest whitespace-nowrap flex-shrink-0"
+                  style={{
+                    fontSize: '9px',
+                    padding: '2px 8px',
+                    borderRadius: '2px',
+                    ...(anchor.is_persistent
+                      ? {
+                          background: 'rgba(255,74,8,0.12)',
+                          color: 'var(--cinder-flame)',
+                          border: '1px solid rgba(255,74,8,0.25)',
+                        }
+                      : {
+                          background: 'rgba(255,255,255,0.05)',
+                          color: 'var(--cinder-text-dim)',
+                          border: '1px solid rgba(255,255,255,0.04)',
+                        }),
+                  }}
+                >
                   {kw}
                 </span>
               ))}
             </div>
-            {/* Fade gradient — no visible dividing line */}
-            <div className="absolute right-0 top-0 bottom-0 w-12 pointer-events-none"
-              style={{ background: 'linear-gradient(to right, transparent, rgba(0,0,0,0.4))' }} />
+            {/* Fade gradient */}
+            <div
+              className="absolute right-0 top-0 bottom-0 w-12 pointer-events-none"
+              style={{
+                background: 'linear-gradient(to right, transparent, rgba(0,0,0,0.4))',
+              }}
+            />
           </div>
 
-          {/* Weight badge — pure number, no "W:" prefix */}
+          {/* Weight badge */}
           <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-            {anchor.is_persistent && <ShieldAlert size={10} className="text-exo-accent animate-pulse" title="Persistent Weight" />}
-            <span className="text-[9px] text-exo-muted font-mono bg-black px-1.5 py-0.5 rounded-[2px] border border-exo-mist-10 font-bold min-w-[34px] text-center">
-              {anchor.weight.toFixed(2)}
+            {anchor.is_persistent && (
+              <span
+                className="animate-pulse"
+                style={{ color: 'var(--cinder-flame)', display: 'flex', alignItems: 'center' }}
+                title="Persistent Weight"
+              >
+                <IconPersist size={10} />
+              </span>
+            )}
+            <span
+              className="font-mono font-bold text-center"
+              style={{
+                fontSize: '9px',
+                color: 'var(--cinder-text-dim)',
+                background: 'rgba(0,0,0,0.4)',
+                padding: '2px 6px',
+                borderRadius: '2px',
+                border: '1px solid rgba(255,255,255,0.04)',
+                minWidth: '34px',
+              }}
+            >
+              {anchor.weight != null ? anchor.weight.toFixed(2) : '0.00'}
             </span>
           </div>
         </div>
 
-        {/* Essential note — smooth CSS auto-scroll */}
+        {/* Essential note with scroll animation */}
         <div className="h-10 overflow-hidden">
           <div className="h-full overflow-hidden">
             <p
               key={currentIndex}
-              className="text-[11px] text-white/50 leading-relaxed font-mono tracking-tight italic whitespace-pre-wrap"
-              style={needsScroll ? {
-                animation: 'ticker-scroll 8s linear infinite',
-              } : undefined}
+              className="font-mono tracking-tight italic whitespace-pre-wrap"
+              style={{
+                fontSize: '11px',
+                lineHeight: 1.6,
+                color: 'var(--cinder-text)',
+                opacity: 0.5,
+                ...(needsScroll
+                  ? { animation: 'ticker-scroll 8s linear infinite' }
+                  : {}),
+              }}
             >
               "{anchor.note}"
             </p>
