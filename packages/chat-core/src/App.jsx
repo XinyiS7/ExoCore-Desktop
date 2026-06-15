@@ -34,34 +34,56 @@ import GroupchatList from './views/GroupchatList';
 // Chat
 import ChatShell from './components/chat/ChatShell';
 
-// Modals
-import DestructorModal from './components/modals/DestructorModal';
-import NewSessionModal from './components/modals/NewSessionModal';
-import CreateProjectModal from './components/modals/CreateProjectModal';
+// Modal context (shared state across all routes)
+import { ModalProvider, useModalContext } from './contexts/ModalContext';
 
 // ─── AppLayout shell ─────────────────────────────────────────────────
 function AppLayout() {
+  const navigate = useNavigate();
+  const { projects, setProjects } = useProjects();
+  const { presets, setPresets } = usePresets();
+  const { activeSessionId, setActiveSessionId } = useActiveSession();
+
+  // Minimal setView for NewSessionModal default navigation
+  const setView = useCallback((view, params) => {
+    const routes = {
+      chat: params?.sessionId
+        ? { pathname: `/chat/${params.sessionId}`, state: { ...params } }
+        : '/chat',
+    };
+    const target = routes[view] || '/';
+    if (typeof target === 'string') {
+      navigate(target);
+    } else {
+      navigate(target.pathname, { state: target.state });
+    }
+  }, [navigate]);
+
+  const appStateForModals = { projects, setProjects, presets, setPresets, activeSessionId, setActiveSessionId };
+
   return (
-    <div className="w-full flex cinder-aura" style={{ height: '100dvh' }}>
-      {/* Desktop: 64px vertical-rl text sidebar */}
-      <DesktopSidebar />
+    <ModalProvider appState={appStateForModals} setView={setView}>
+      <div className="w-full flex cinder-aura" style={{ height: '100dvh' }}>
+        {/* Desktop: 64px vertical-rl text sidebar */}
+        <DesktopSidebar />
 
-      {/* Content column: main + mobile bar */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile: top back-navigation bar */}
-        <MobileHeader />
+        {/* Content column: main + mobile bar */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Mobile: top back-navigation bar */}
+          <MobileHeader />
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto flex flex-col relative z-[1]">
-          <ErrorBoundary>
-            <Outlet />
-          </ErrorBoundary>
-        </main>
+          {/* Page content — overflow-hidden: each view handles its own scrolling */}
+          <main className="flex-1 overflow-hidden flex flex-col relative z-[1]">
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
+          </main>
 
-        {/* Mobile: fixed bottom navigation bar */}
-        <MobileBottomBar />
+          {/* Mobile: fixed bottom navigation bar */}
+          <MobileBottomBar />
+        </div>
       </div>
-    </div>
+    </ModalProvider>
   );
 }
 
@@ -74,9 +96,12 @@ function useAppStateBridge() {
   const { memoryRefreshKey, triggerMemoryRefresh } = useMemoryManager();
 
   const [refreshKey, setRefreshKey] = useState(0);
-  const [destructorConfig, setDestructorConfig] = useState({ isOpen: false });
-  const [newSessionConfig, setNewSessionConfig] = useState({ isOpen: false, initialContext: null, onSuccess: null });
-  const [createProjectConfig, setCreateProjectConfig] = useState({ isOpen: false });
+
+  // Modal functions from shared context (single state across all routes)
+  const {
+    openNewSession, openDestructor, openCreateProject,
+    newSessionConfig, destructorConfig, createProjectConfig,
+  } = useModalContext();
 
   // setView: maps old string-based navigation → React Router
   const setView = useCallback((view, params) => {
@@ -105,58 +130,28 @@ function useAppStateBridge() {
 
   const goBack = useCallback(() => navigate(-1), [navigate]);
 
-  const openDestructor = useCallback((c) => setDestructorConfig({ ...c, isOpen: true }), []);
-  const openNewSession = useCallback((ctx, cb) => setNewSessionConfig({ isOpen: true, initialContext: ctx, onSuccess: cb }), []);
-  const openCreateProject = useCallback(() => setCreateProjectConfig({ isOpen: true }), []);
-
   return {
     appState: {
       projects, setProjects, presets, setPresets,
       activeSessionId, setActiveSessionId,
       refreshKey, setRefreshKey,
       memoryRefreshKey, triggerMemoryRefresh,
-      destructorConfig, setDestructorConfig,
-      newSessionConfig, setNewSessionConfig,
-      createProjectConfig, setCreateProjectConfig,
       openDestructor,
       openNewSession,
       openCreateProject,
       refreshPresets, refreshProjects,
+      // Keep these for backward compat (some components may destructure them)
+      destructorConfig, newSessionConfig, createProjectConfig,
     },
     setView,
     goBack,
-    destructorConfig, setDestructorConfig,
-    newSessionConfig, setNewSessionConfig,
-    createProjectConfig, setCreateProjectConfig,
   };
 }
 
 // ─── Route wrappers ───────────────────────────────────────────────────
 function DashboardRoute() {
-  const { appState, setView, destructorConfig, setDestructorConfig, newSessionConfig, setNewSessionConfig, createProjectConfig, setCreateProjectConfig } = useAppStateBridge();
-  return (
-    <>
-      <Dashboard appState={appState} setView={setView} />
-      <DestructorModal config={destructorConfig} onClose={() => setDestructorConfig({ isOpen: false })} />
-      {newSessionConfig.isOpen && (
-        <NewSessionModal
-          isOpen={newSessionConfig.isOpen}
-          onClose={() => setNewSessionConfig({ isOpen: false })}
-          projects={appState.projects}
-          presets={appState.presets}
-          initialContext={newSessionConfig.initialContext}
-          onSuccess={newSessionConfig.onSuccess}
-        />
-      )}
-      {createProjectConfig.isOpen && (
-        <CreateProjectModal
-          isOpen={createProjectConfig.isOpen}
-          onClose={() => setCreateProjectConfig({ isOpen: false })}
-          setProjects={appState.setProjects}
-        />
-      )}
-    </>
-  );
+  const { appState, setView } = useAppStateBridge();
+  return <Dashboard appState={appState} setView={setView} />;
 }
 
 function ChatShellRoute() {
@@ -191,19 +186,8 @@ function AgentMemoryRoute() {
 }
 
 function ProjectsRoute() {
-  const { appState, setView, goBack, createProjectConfig, setCreateProjectConfig } = useAppStateBridge();
-  return (
-    <>
-      <ProjectList appState={appState} setView={setView} goBack={goBack} />
-      {createProjectConfig.isOpen && (
-        <CreateProjectModal
-          isOpen={createProjectConfig.isOpen}
-          onClose={() => setCreateProjectConfig({ isOpen: false })}
-          setProjects={appState.setProjects}
-        />
-      )}
-    </>
-  );
+  const { appState, setView, goBack } = useAppStateBridge();
+  return <ProjectList appState={appState} setView={setView} goBack={goBack} />;
 }
 
 function ProjectDetailRoute() {

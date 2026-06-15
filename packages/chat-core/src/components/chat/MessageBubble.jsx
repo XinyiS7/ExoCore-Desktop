@@ -381,10 +381,10 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
   </div>
 
   {/* Action toolbar */}
-  <div className={`flex items-center gap-0.5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'flex-row-reverse mr-2' : 'ml-1'}`}>
+  <div className={`flex items-center gap-0.5 mt-2 ${isUser ? 'flex-row-reverse mr-2' : 'ml-1'}`} style={{ opacity: 0.5 }}>
   <button
    onClick={handleCopy}
-   className="p-1 text-exo-muted/30 hover:text-exo-accent transition-colors"
+   className="p-1 text-cinder-text-dim hover:text-cinder-text transition-colors"
    title="复制"
   >
    {copied ? <Check size={12} strokeWidth={1} className="text-green-400" /> : <Copy size={12} strokeWidth={1} />}
@@ -395,7 +395,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    <button
     onClick={() => onEdit && onEdit(msg)}
     disabled={isGenerating}
-    className="p-1 text-exo-muted/30 hover:text-exo-accent transition-colors disabled:opacity-20"
+    className="p-1 text-cinder-text-dim hover:text-cinder-text transition-colors disabled:opacity-20"
     title="编辑并重发"
    >
     <Edit2 size={12} strokeWidth={1} />
@@ -403,7 +403,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    <button
     onClick={() => onRegenerate && onRegenerate(msg)}
     disabled={isGenerating}
-    className="p-1 text-exo-muted/30 hover:text-exo-accent transition-colors disabled:opacity-20"
+    className="p-1 text-cinder-text-dim hover:text-cinder-text transition-colors disabled:opacity-20"
     title="重新生成"
    >
     <RotateCw size={12} strokeWidth={1} />
@@ -414,14 +414,14 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    <button
     onClick={() => onBranch && onBranch(msg.id)}
     disabled={isGenerating}
-    className="p-1 text-exo-muted/30 hover:text-blue-400 transition-colors disabled:opacity-20"
+    className="p-1 text-cinder-text-dim hover:text-blue-400 transition-colors disabled:opacity-20"
     title="从此分叉"
    >
     <GitFork size={12} strokeWidth={1} />
    </button>
    <button
     onClick={openBookmark}
-    className={`p-1 transition-colors ${showBookmark ? 'text-exo-accent' : 'text-exo-muted/30 hover:text-exo-accent'}`}
+    className={`p-1 transition-colors ${showBookmark ? 'text-cinder-flame' : 'text-cinder-text-dim hover:text-cinder-text'}`}
     title="标记到长期记忆"
    >
     <Bookmark size={12} strokeWidth={1} />

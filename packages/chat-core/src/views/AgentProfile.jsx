@@ -73,8 +73,8 @@ const IconBtn = ({ children, title, onClick, size: btnSize, style: baseStyle }) 
       background: 'none',
       border: 'none',
       padding: btnSize === 'sm' ? '2px' : '4px',
-      color: 'var(--cinder-text-faint)',
-      opacity: 0.35,
+      color: 'var(--cinder-text-dim)',
+      opacity: 0.6,
       ...(baseStyle || {}),
     }}
     onMouseEnter={e => {
@@ -488,8 +488,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                   appearance: 'none',
                   WebkitAppearance: 'none',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,74,8,0.35)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = ''; }}
+
               >
                 {!preset.default_model && <option value="">Select a model...</option>}
                 {MAIN_MODEL_IDS.map(m => (
@@ -523,12 +522,10 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 color: 'var(--cinder-flame-dim)',
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'rgba(255,74,8,0.4)';
                 e.currentTarget.style.color = 'var(--cinder-flame)';
                 e.currentTarget.style.boxShadow = '0 0 16px rgba(255,74,8,0.1)';
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.borderColor = '';
                 e.currentTarget.style.color = '';
                 e.currentTarget.style.boxShadow = '';
               }}
@@ -550,13 +547,11 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                   color: 'rgb(168,148,220)',
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = 'rgba(168,122,255,0.4)';
                   e.currentTarget.style.color = 'rgb(188,168,240)';
                   e.currentTarget.style.boxShadow = '0 0 16px rgba(168,122,255,0.1)';
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = '';
-                  e.currentTarget.style.color = '';
+                    e.currentTarget.style.color = '';
                   e.currentTarget.style.boxShadow = '';
                 }}
               >
@@ -585,8 +580,8 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                     background: 'none',
                     border: 'none',
                     padding: '2px',
-                    color: 'var(--cinder-text-faint)',
-                    opacity: 0.35,
+                    color: 'var(--cinder-text-dim)',
+                    opacity: 0.6,
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.opacity = '1';
@@ -664,8 +659,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                       appearance: 'none',
                       WebkitAppearance: 'none',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,74,8,0.35)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = ''; }}
+
                   >
                     <option value="superior">Superior</option>
                     <option value="standard">Standard</option>
@@ -710,14 +704,12 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                     maxWidth: '240px',
                   }}
                   onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = 'rgba(255,51,51,0.55)';
                     e.currentTarget.style.background = 'rgba(255,51,51,0.04)';
                     e.currentTarget.style.boxShadow = '0 0 16px rgba(255,51,51,0.1)';
                     e.currentTarget.style.opacity = '1';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = '';
-                    e.currentTarget.style.background = '';
+                        e.currentTarget.style.background = '';
                     e.currentTarget.style.boxShadow = '';
                     e.currentTarget.style.opacity = '';
                   }}

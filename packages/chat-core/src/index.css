@@ -18,11 +18,14 @@
   --cinder-flame:      #ff4a08;
   --cinder-flame-dim:  rgb(253 192 122 / 0.8);
   --cinder-glass:      rgba(255, 255, 255, 0.01);
+  --cinder-glass-heavy:rgba(15, 9, 9, 0.6);
   --cinder-line:       rgba(139, 0, 0, 0.25);
   --cinder-line-glow:  rgba(255, 51, 51, 0.2);
   --cinder-text:       #cecdd6;
   --cinder-text-dim:   rgb(156 156 170);
   --cinder-text-faint: rgb(113 112 120);
+  --cinder-panel:      rgba(255, 255, 255, 0.02);
+  --cinder-surface:    rgba(255, 255, 255, 0.015);
 }
 
 /* ── Structural reset (kept from original, Tailwind preflight covers most) ── */
@@ -73,4 +76,221 @@ button {
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
   }
+
+  /* ── Typography atoms ── */
+  .label-caps {
+    @apply text-[10px] font-bold tracking-[0.2em] uppercase;
+    color: var(--cinder-text-dim);
+  }
+
+  /* ── LCD / terminal surface ── */
+  .lcd-screen {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--cinder-line);
+  }
+
+  /* ── Shadows ── */
+  .shadow-brutalist {
+    box-shadow: 0 0 0 1px rgba(255, 74, 8, 0.3), 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+  .shadow-brutalist-gold {
+    box-shadow: 0 0 0 1px rgba(253, 192, 122, 0.35), 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+  .shadow-glow-gold {
+    box-shadow: 0 0 12px rgba(255, 74, 8, 0.3), 0 0 2px rgba(253, 192, 122, 0.4);
+  }
+
+  /* ── Chat prose overrides (cinder-toned typography) ── */
+  .prose-invert {
+    --tw-prose-body: var(--cinder-text);
+    --tw-prose-headings: var(--cinder-text);
+    --tw-prose-links: var(--cinder-flame);
+    --tw-prose-bold: var(--cinder-text);
+    --tw-prose-counters: var(--cinder-text-dim);
+    --tw-prose-bullets: var(--cinder-text-faint);
+    --tw-prose-hr: var(--cinder-line);
+    --tw-prose-quotes: var(--cinder-text-dim);
+    --tw-prose-quote-borders: var(--cinder-ember);
+    --tw-prose-captions: var(--cinder-text-dim);
+    --tw-prose-code: var(--cinder-flame-dim);
+    --tw-prose-pre-code: var(--cinder-text-dim);
+    --tw-prose-pre-bg: rgba(0, 0, 0, 0.3);
+    --tw-prose-th-borders: var(--cinder-line);
+    --tw-prose-td-borders: rgba(139, 0, 0, 0.12);
+  }
+  .prose-invert :where(code):not(:where([class~="not-prose"] *)) {
+    background: rgba(255, 74, 8, 0.08);
+    color: var(--cinder-flame-dim);
+    padding: 0.125em 0.375em;
+    border-radius: 2px;
+    font-family: var(--font-code);
+    font-size: 0.875em;
+  }
+  .prose-invert :where(pre):not(:where([class~="not-prose"] *)) {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--cinder-line);
+    border-radius: 4px;
+  }
+  .prose-invert :where(blockquote):not(:where([class~="not-prose"] *)) {
+    border-left-color: var(--cinder-ember);
+    background: rgba(196, 77, 0, 0.04);
+  }
+  .prose-invert :where(a):not(:where([class~="not-prose"] *)):hover {
+    color: var(--cinder-flame);
+  }
+  .prose-invert :where(h1, h2, h3, h4):not(:where([class~="not-prose"] *)) {
+    color: var(--cinder-text);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+  .prose-invert :where(table):not(:where([class~="not-prose"] *)) {
+    border-color: var(--cinder-line);
+  }
+  .prose-invert :where(thead):not(:where([class~="not-prose"] *)) {
+    border-bottom-color: var(--cinder-line-glow);
+  }
+}
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes blink-sharp {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.15; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease both;
+}
+
+.animate-blink-sharp {
+  animation: blink-sharp 1.4s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
+   Cinder · Highlight.js Theme (dark)
+   Maps hljs-* classes to Cinder palette.
+   Used by rehype-highlight in chat messages.
+   ═══════════════════════════════════════════ */
+.hljs {
+  color: var(--cinder-text-dim);
+  background: transparent;
+}
+
+/* ── Comments ── */
+.hljs-comment,
+.hljs-quote {
+  color: rgb(99 97 107);
+  font-style: italic;
+}
+
+/* ── Keywords / operators ── */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-type {
+  color: #d4734c;
+}
+
+/* ── Strings ── */
+.hljs-string,
+.hljs-addition {
+  color: #c4845c;
+}
+
+/* ── Numbers / constants ── */
+.hljs-number,
+.hljs-literal,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag .hljs-attr {
+  color: #e08855;
+}
+
+/* ── Functions / titles ── */
+.hljs-title,
+.hljs-section,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class {
+  color: var(--cinder-flame-dim);
+}
+
+/* ── Built-ins ── */
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-symbol {
+  color: #c4845c;
+}
+
+/* ── Meta / attributes ── */
+.hljs-meta,
+.hljs-attribute {
+  color: #c49478;
+}
+
+/* ── Regex / deletion ── */
+.hljs-regexp,
+.hljs-deletion {
+  color: #d44a3a;
+}
+
+/* ── Tags (xml/html) ── */
+.hljs-tag {
+  color: rgb(156 156 170);
+}
+
+/* ── Emphasis ── */
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: 700;
+}
+
+/* ── Links ── */
+.hljs-link {
+  color: var(--cinder-flame);
+  text-decoration: underline;
+}
+
+/* ── Subst (diff) ── */
+.hljs-subst {
+  color: var(--cinder-text-dim);
+}
+
+/* ── Bullet / code ── */
+.hljs-bullet,
+.hljs-code {
+  color: var(--cinder-text-faint);
+}
+
+/* ── Formula ── */
+.hljs-formula {
+  color: var(--cinder-text-dim);
 }

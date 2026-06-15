@@ -22,6 +22,34 @@ export default {
           'text-dim':  'var(--cinder-text-dim)',
           'text-faint':'var(--cinder-text-faint)',
         },
+        // Legacy exo-* design-system classes — mapped to Cinder palette.
+        // Hex / rgb() values (not var()) so Tailwind opacity modifiers work.
+        exo: {
+          pure:       '#080808',
+          accent:     '#ff4a08',
+          muted:      'rgb(156 156 170)',
+          text:       '#cecdd6',
+          bg:         '#050505',
+          panel:      'rgba(255,255,255,0.02)',
+          surface:    'rgba(255,255,255,0.015)',
+          metal:      '#121418',
+          border:     'rgba(139,0,0,0.25)',
+          accentGlow: '#ff6a28',
+          mist: {
+            8:  'rgba(139,0,0,0.08)',
+            10: 'rgba(139,0,0,0.10)',
+            12: 'rgba(139,0,0,0.12)',
+            20: 'rgba(139,0,0,0.20)',
+          },
+        },
+        // Legacy chat-* design-system classes — same mapping.
+        chat: {
+          accent: '#ff4a08',
+          muted:  'rgb(156 156 170)',
+          text:   '#cecdd6',
+          panel:  'rgba(255,255,255,0.02)',
+          bg:     '#050505',
+        },
       },
     },
   },

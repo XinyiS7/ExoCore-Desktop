@@ -1,6 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MoreVertical, Edit2, Trash2 } from 'lucide-react';
+import { Edit2, Trash2 } from 'lucide-react';
 import { conversationsApi } from 'exo-shared';
+
+/* ── icon-rename.svg — three vertical lines ── */
+const IconMenu = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.7" strokeLinecap="round">
+    <line x1="7" y1="10" x2="7" y2="14" />
+    <line x1="12" y1="6" x2="12" y2="18" />
+    <line x1="17" y1="9" x2="17" y2="15" />
+  </svg>
+);
 
 /**
  * SessionActionsMenu — three-dot dropdown for session list items.
@@ -62,10 +71,13 @@ export default function SessionActionsMenu({ session, onUpdated, onDeleted, open
  >
   <button
   onClick={() => setOpen(v => !v)}
-  className="p-1.5 text-exo-muted/30 hover:text-exo-muted hover:bg-white/5 rounded transition-all opacity-0 group-hover:opacity-100"
+  className="p-1.5 rounded transition-all"
   title="Session actions"
+  style={{ color: 'var(--cinder-text-dim)', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }}
+  onMouseEnter={e => { e.currentTarget.style.color = 'var(--cinder-text)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.opacity = '1'; }}
+  onMouseLeave={e => { e.currentTarget.style.color = ''; e.currentTarget.style.background = ''; e.currentTarget.style.opacity = ''; }}
   >
-  <MoreVertical size={14} strokeWidth={1} />
+  <IconMenu size={14} />
   </button>
 
   {open && (

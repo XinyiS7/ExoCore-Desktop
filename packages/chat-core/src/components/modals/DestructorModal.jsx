@@ -22,9 +22,11 @@ const DestructorModal = ({ isOpen, onClose, title, description, onArchive, onDel
         </div>
         <div className="p-4 bg-exo-pure border-t border-exo-mist-10 flex flex-wrap justify-end gap-3">
           <button onClick={onClose} className="px-5 py-2 rounded-[2px] text-[11px] font-bold tracking-widest text-exo-muted hover:text-white transition-colors">Abort</button>
-          <button onClick={() => { onArchive(); onClose(); }} className="px-5 py-2 rounded-[2px] text-[11px] font-bold tracking-widest flex items-center gap-2 text-exo-accent border border-exo-accent/30 hover:bg-exo-accent/10 transition-colors">
-            <Archive size={14} /> Archive
-          </button>
+          {typeof onArchive === 'function' && (
+            <button onClick={() => { onArchive(); onClose(); }} className="px-5 py-2 rounded-[2px] text-[11px] font-bold tracking-widest flex items-center gap-2 text-exo-accent border border-exo-accent/30 hover:bg-exo-accent/10 transition-colors">
+              <Archive size={14} /> Archive
+            </button>
+          )}
           <button onClick={() => { onDelete(); onClose(); }} className="px-6 py-2 rounded-[2px] text-[11px] font-bold tracking-widest flex items-center gap-2 bg-red-600 text-white hover:bg-red-500 transition-all shadow-brutalist active:scale-95">
             <Trash2 size={14} /> Purge
           </button>

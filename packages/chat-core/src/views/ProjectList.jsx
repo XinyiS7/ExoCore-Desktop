@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { conversationsApi, getConvProjectId } from 'exo-shared';
+import { conversationsApi, getConvProjectId, projectsApi } from 'exo-shared';
 
 /* ── Corner glyph — engraved calibration marks ── */
 const CornerGlyph = ({ hovered }) => (
@@ -29,6 +29,15 @@ const CornerGlyph = ({ hovered }) => (
   </svg>
 );
 
+/* ── Three-line menu icon ── */
+const IconMenu = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.7" strokeLinecap="round">
+    <line x1="7" y1="10" x2="7" y2="14" />
+    <line x1="12" y1="6" x2="12" y2="18" />
+    <line x1="17" y1="9" x2="17" y2="15" />
+  </svg>
+);
+
 /* ── Motion helper ── */
 const fadeUp = (delay) => ({
   animation: `fadeUp .5s ${delay}s cubic-bezier(.22,1,.36,1) both`,
@@ -54,9 +63,36 @@ const SectionHead = ({ label }) => (
 /* ── Component ── */
 export default function ProjectList({ appState, setView, goBack }) {
   const navigate = useNavigate();
-  const { projects, openCreateProject, setActiveSessionId } = appState;
+  const { projects, openCreateProject, setActiveSessionId, openDestructor, setProjects } = appState;
   const [conversations, setConversations] = useState([]);
   const [hoveredCard, setHoveredCard] = useState(null);
+  const [menuProjectId, setMenuProjectId] = useState(null);
+  const menuRef = useRef(null);
+
+  // Close project card menu on outside click
+  useEffect(() => {
+    if (!menuProjectId) return;
+    const close = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuProjectId(null);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [menuProjectId]);
+
+  const handleDeleteProject = (proj) => {
+    setMenuProjectId(null);
+    openDestructor?.({
+      title: proj.name,
+      description: 'Delete project and all its sessions. This cannot be undone.',
+      onDelete: () => {
+        projectsApi.deleteProject(proj.id).then(() => {
+          setProjects(prev => prev.filter(p => p.id !== proj.id));
+        }).catch(() => {});
+      },
+    });
+  };
 
   /* ── Fetch all conversations ── */
   useEffect(() => {
@@ -140,8 +176,8 @@ export default function ProjectList({ appState, setView, goBack }) {
                 background: 'none',
                 border: 'none',
                 padding: '4px',
-                color: 'var(--cinder-text-faint)',
-                opacity: 0.35,
+                color: 'var(--cinder-text-dim)',
+                opacity: 0.6,
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.opacity = '1';
@@ -182,19 +218,19 @@ export default function ProjectList({ appState, setView, goBack }) {
                     background: 'rgba(255,255,255,0.01)',
                     border: '1px solid rgba(166,61,0,0.12)',
                     borderRadius: '6px',
-                    marginLeft: i % 2 === 1 ? '24px' : '0',
+                    maxWidth: '520px',
+                    width: '100%',
+                    ...(i % 2 === 0 ? { marginRight: 'auto', marginLeft: '0' } : { marginLeft: 'auto', marginRight: '0' }),
                   }}
                   onMouseEnter={e => {
                     setHoveredCard(proj.id);
                     e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                    e.currentTarget.style.borderColor = 'rgba(196,77,0,0.3)';
                     e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.5)';
                     e.currentTarget.style.transform = 'translateY(-1px)';
                   }}
                   onMouseLeave={e => {
                     setHoveredCard(null);
                     e.currentTarget.style.background = '';
-                    e.currentTarget.style.borderColor = '';
                     e.currentTarget.style.boxShadow = '';
                     e.currentTarget.style.transform = '';
                   }}
@@ -245,6 +281,38 @@ export default function ProjectList({ appState, setView, goBack }) {
                       →
                     </span>
                   </span>
+
+                  {/* Three-line menu */}
+                  <div className="relative z-[2]" onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => setMenuProjectId(menuProjectId === proj.id ? null : proj.id)}
+                      className="p-1.5 rounded transition-all"
+                      title="Project actions"
+                      style={{ color: 'var(--cinder-text-dim)', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }}
+                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--cinder-text)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.opacity = '1'; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = ''; e.currentTarget.style.background = ''; e.currentTarget.style.opacity = ''; }}
+                    >
+                      <IconMenu size={14} />
+                    </button>
+
+                    {menuProjectId === proj.id && (
+                      <div
+                        ref={menuRef}
+                        className="absolute right-0 top-full mt-1 w-36 bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/[0.06] rounded-[2px] shadow-lg py-1 z-50"
+                      >
+                        <button
+                          onClick={() => handleDeleteProject(proj)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-[11px] text-red-500 font-mono tracking-wider hover:bg-red-500/10 transition-colors text-left"
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                          </svg>
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}

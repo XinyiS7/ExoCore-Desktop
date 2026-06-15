@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, X, Activity, Folder, Check, MessageSquare, Code2 } from 'lucide-react';
-import { baseUrl, getCsrfToken } from 'exo-shared';
+import { baseUrl, getCsrfToken, conversationsApi } from 'exo-shared';
 import { sortPresets, isSuperiorType } from '../../utils/presets';
 
-const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, onSuccess }) => {
+const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, onSuccess, setActiveSessionId, setView }) => {
  const sortedPresets = useMemo(() => sortPresets(presets), [presets, isOpen]);
  const [name, setName] = useState("");
  const [selectedPresetId, setSelectedPresetId] = useState("");
@@ -50,18 +50,24 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
  setIsSubmitting(true);
  const effectiveProjectId = selectedProjectId ||
   (initialContext?.projectId ? String(initialContext.projectId) : "");
+ const projectId = effectiveProjectId ? Number(effectiveProjectId) : 0;
+
+ // Build frozen_project_ids (Superior/G045 only)
+ const isG045Preset = isSuperiorType(currentPreset?.agent_type);
+ const frozenIds = isG045Preset
+  ? permissionProjectIds.filter(id => id !== Number(effectiveProjectId))
+  : [];
+
+ // Payload matches SuperiorSessionInitSerializer
  const payload = {
   preset_id: parseInt(selectedPresetId),
   name: name.trim() || undefined,
-  project_ids: [
-  ...(effectiveProjectId ? [Number(effectiveProjectId)] : []),
-  ...permissionProjectIds.filter(id => id !== Number(effectiveProjectId)),
-  ],
-  session_type: sessionType,
+  project_id: projectId,
+  frozen_project_ids: frozenIds,
+  thinking_level: 'auto',
+  temperature: 1.0,
  };
 
- console.log('[DEBUG] NewSessionModal SUBMIT — selectedProjectId:', selectedProjectId, 'type:', typeof selectedProjectId);
- console.log('[DEBUG] NewSessionModal SUBMIT — payload:', JSON.stringify(payload));
  try {
   const res = await fetch(`${baseUrl}/api/agents/sessions/init/`, {
   method: 'POST',
@@ -70,9 +76,11 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
   credentials: 'include'
   });
   const data = await res.json();
-  console.log('[DEBUG] NewSessionModal INIT RESPONSE:', JSON.stringify(data));
   if (res.ok) {
-  onSuccess(data.data.session_id);
+  const sessionId = data.data?.session_id;
+  if (sessionId && onSuccess) {
+   onSuccess(sessionId);
+  }
   onClose();
   } else {
   alert("创建失败: " + JSON.stringify(data));
