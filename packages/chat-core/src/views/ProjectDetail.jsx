@@ -394,18 +394,26 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-[780px] mx-auto px-6 md:px-10 py-[32px] pb-[120px] flex flex-col gap-8">
+    <div className="flex-1 h-full flex flex-col overflow-hidden" style={{ background: 'var(--cinder-base)' }}>
 
-        {/* ═══ Top Nav Bar ═══ */}
+      {/* ═══ Fixed back bar — desktop only; mobile uses MobileHeader ═══ */}
+      <div
+        className="hidden md:flex items-center flex-shrink-0 px-6 md:px-10 py-3"
+        style={{ borderBottom: '1px solid var(--cinder-line)' }}
+      >
+        <BackToUpper label="Project Hall" onClick={() => goBack()} />
+      </div>
+
+      {/* ═══ Scrollable content ═══ */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-[780px] mx-auto px-6 md:px-10 py-[32px] pb-[120px] flex flex-col gap-8">
+
+        {/* ═══ Header — project name + actions ═══ */}
         <section style={fadeUp(0)}>
-          <div className="flex items-center justify-between gap-4">
-            {/* Back */}
-            <BackToUpper label="Project Hall" onClick={() => goBack()} />
-
-            {/* Project name */}
+          <div className="flex items-center gap-4">
+            {/* Project name — centered */}
             <span
-              className="font-light text-center whitespace-nowrap"
+              className="flex-1 font-light text-center whitespace-nowrap"
               style={{
                 fontSize: '14px',
                 letterSpacing: '0.1em',
@@ -663,13 +671,14 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
       </div>
 
       {/* WorkDir Modal */}
-      <WorkDirModal
-        projectId={projectId}
-        currentWorkDir={project?.work_dir || ''}
-        setProjects={appState.setProjects}
-        isOpen={showWorkDirModal}
-        onClose={() => setShowWorkDirModal(false)}
-      />
+        <WorkDirModal
+          projectId={projectId}
+          currentWorkDir={project?.work_dir || ''}
+          setProjects={appState.setProjects}
+          isOpen={showWorkDirModal}
+          onClose={() => setShowWorkDirModal(false)}
+        />
+      </div>
     </div>
   );
 }

@@ -201,9 +201,12 @@ export default function AgentHub({ appState, setView, goBack }) {
   };
 
   return (
-    <div className="flex-1 h-full flex flex-col bg-exo-bg overflow-hidden">
+    <div className="flex-1 h-full flex flex-col overflow-hidden" style={{ background: 'var(--cinder-base)' }}>
       {/* Back bar — desktop only; mobile uses MobileHeader */}
-      <div className="hidden md:block flex-shrink-0 border-b border-exo-border px-4 md:px-12 py-3">
+      <div
+        className="hidden md:flex items-center flex-shrink-0 px-4 md:px-12 py-3"
+        style={{ borderBottom: '1px solid var(--cinder-line)' }}
+      >
         <BackToUpper label="Home" onClick={() => goBack()} />
       </div>
       <div className="flex-1 overflow-y-auto scrollbar-hide">
