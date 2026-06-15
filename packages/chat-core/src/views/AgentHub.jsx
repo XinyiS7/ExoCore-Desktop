@@ -37,10 +37,10 @@ const CornerGlyph = ({ hovered }) => (
       filter: hovered ? 'drop-shadow(0 0 5px rgba(248,191,116,0.55))' : 'none',
     }}
   >
-    <line x1="4" y1="14" x2="90" y2="14" strokeWidth="0.06" />
-    <line x1="0" y1="16" x2="196" y2="16" strokeWidth="0.10" />
-    <line x1="8" y1="17" x2="75" y2="17" strokeWidth="0.04" />
-    <line x1="3" y1="0" x2="3" y2="14" strokeWidth="0.07" />
+    <line x1="4" y1="18.5" x2="140" y2="18.5" strokeWidth="0.06" />
+    <line x1="0" y1="19" x2="200" y2="19" strokeWidth="0.10" />
+    <line x1="8" y1="19.4" x2="75" y2="19.4" strokeWidth="0.04" />
+    <line x1="3" y1="0" x2="3" y2="19" strokeWidth="0.07" />
     <line x1="6" y1="5" x2="6" y2="20" strokeWidth="0.07" />
   </svg>
 );
