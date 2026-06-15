@@ -1,1 +1,42 @@
-/* base.css gutted for NewVisual — scrollbar styling removed. */
+/* ═══════════════════════════════════════════
+   Cinder · Global Base
+   ═══════════════════════════════════════════ */
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(196, 77, 0, 0.15);
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 74, 8, 0.4); }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(196, 77, 0, 0.15) transparent;
+}
+
+/* ── Selection ── */
+::selection {
+  background: rgba(196, 77, 0, 0.25);
+  color: var(--cinder-text);
+}
+
+/* ── Body ── */
+body {
+  background: var(--cinder-base);
+  color: var(--cinder-text);
+}
+
+/* ── Background aura ── */
+.cinder-aura::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 30%, rgba(196,77,0,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 30% 25% at 80% 70%, rgba(253,200,122,0.03) 0%, transparent 50%);
+}

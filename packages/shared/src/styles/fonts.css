@@ -1,1 +1,16 @@
-/* fonts.css gutted for NewVisual — font packages kept installed but no CSS forced. */
+/* ═══════════════════════════════════════════
+   Cinder · Font System
+   ═══════════════════════════════════════════ */
+
+:root {
+  --font-body: 'LXGW WenKai', 'Noto Serif SC', 'Georgia', serif;
+  --font-nav:  'LXGW WenKai', 'Sarasa Gothic Mono', 'Segoe UI', sans-serif;
+  --font-code: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+body {
+  font-family: var(--font-body);
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

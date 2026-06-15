@@ -1,6 +1,31 @@
-/* Minimal structural reset only.
-   All visual design removed — clean slate for NewVisual. */
+/* ═══════════════════════════════════════════
+   Cinder · Entry Point
+   ═══════════════════════════════════════════ */
 
+@import 'exo-shared/styles/fonts.css';
+@import 'exo-shared/styles/base.css';
+@import 'exo-shared/styles/transitions.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Cinder Palette ── */
+:root {
+  --cinder-base:       #050505;
+  --cinder-ember:      #c44d00;
+  --cinder-ember-dim:  #885332;
+  --cinder-flame:      #ff4a08;
+  --cinder-flame-dim:  rgb(253 192 122 / 0.8);
+  --cinder-glass:      rgba(255, 255, 255, 0.01);
+  --cinder-line:       rgba(139, 0, 0, 0.25);
+  --cinder-line-glow:  rgba(255, 51, 51, 0.2);
+  --cinder-text:       #cecdd6;
+  --cinder-text-dim:   rgb(156 156 170);
+  --cinder-text-faint: rgb(113 112 120);
+}
+
+/* ── Structural reset (kept from original, Tailwind preflight covers most) ── */
 *,
 *::before,
 *::after {
@@ -26,4 +51,26 @@ button {
   cursor: pointer;
   font: inherit;
   color: inherit;
+}
+
+/* ── Utility layers ── */
+@layer components {
+  .sec-head {
+    @apply flex items-center gap-2.5;
+  }
+  .sec-head-line {
+    @apply w-[18px] h-px;
+    background: var(--cinder-line-glow);
+  }
+  .sec-head-label {
+    @apply text-[10px] font-light;
+    letter-spacing: 0.3em;
+    color: var(--cinder-text-dim);
+  }
+
+  .glass-panel {
+    background: var(--cinder-glass);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
 }

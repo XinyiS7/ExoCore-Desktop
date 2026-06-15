@@ -42,23 +42,23 @@ import CreateProjectModal from './components/modals/CreateProjectModal';
 // ─── AppLayout shell ─────────────────────────────────────────────────
 function AppLayout() {
   return (
-    <div className="w-full h-screen flex overflow-hidden">
-      {/* Desktop: 16px icon sidebar */}
+    <div className="w-full flex cinder-aura" style={{ height: '100dvh' }}>
+      {/* Desktop: 64px vertical-rl text sidebar */}
       <DesktopSidebar />
 
-      {/* Main column */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      {/* Content column: main + mobile bar */}
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile: top back-navigation bar */}
         <MobileHeader />
 
         {/* Page content */}
-        <main className="flex-1 overflow-hidden flex flex-col">
+        <main className="flex-1 overflow-y-auto flex flex-col relative z-[1]">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
         </main>
 
-        {/* Mobile: bottom navigation bar */}
+        {/* Mobile: fixed bottom navigation bar */}
         <MobileBottomBar />
       </div>
     </div>
