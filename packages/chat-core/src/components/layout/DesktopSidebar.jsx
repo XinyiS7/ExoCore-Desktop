@@ -6,8 +6,31 @@ import { getUserAvatar } from 'exo-shared/profile';
 /* ── Sidebar SVG icons ── */
 
 const LogoSvg = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.8">
-    <polygon points="12,2 22,7 22,17 12,22 2,17 2,7" />
+  <svg viewBox="0 0 64 64" fill="none">
+    <defs>
+      <radialGradient id="sbar-glow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#FF2E2E" stop-opacity="0.9"/>
+        <stop offset="50%" stop-color="#B30F0F" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="#050505" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    {/* Outer hex shell */}
+    <polygon points="46.5,7 61,32 46.5,57 17.5,57 3,32 17.5,7"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-opacity="0.7"/>
+    {/* Inner nested hex */}
+    <polygon points="32,14 50,25 50,39 32,50 14,39 14,25"
+             fill="none" stroke="currentColor" stroke-width="0.6" stroke-opacity="0.25"/>
+    {/* Core glow */}
+    <circle cx="32" cy="32" r="20" fill="url(#sbar-glow)" opacity="0.6"/>
+    {/* Floating EXO octagon */}
+    <path d="M32 4 L42 22 L60 32 L42 42 L32 60 L22 42 L4 32 L22 22 Z"
+          fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" opacity="0.85"
+          transform="translate(32 32) scale(0.6) translate(-32 -32)"/>
+    {/* Inner diamond */}
+    <path d="M32 16 L38 32 L32 48 L26 32 Z" fill="currentColor" opacity="0.5"
+          transform="translate(32 32) scale(0.6) translate(-32 -32)"/>
+    {/* Central core */}
+    <circle cx="32" cy="32" r="3" fill="#050505" stroke="currentColor" stroke-width="0.7"/>
   </svg>
 );
 
@@ -66,10 +89,16 @@ export default function DesktopSidebar() {
       <div className="flex flex-col items-center pt-6">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center justify-center w-[22px] h-[22px] mb-[18px] cursor-pointer"
-          style={{ color: 'var(--cinder-ember-dim)' }}
-          onMouseEnter={e => e.currentTarget.style.color = 'var(--cinder-flame)'}
-          onMouseLeave={e => e.currentTarget.style.color = ''}
+          className="flex items-center justify-center w-[28px] h-[28px] mb-[18px] cursor-pointer transition-all duration-500"
+          style={{ color: 'var(--cinder-ember-dim)', filter: 'drop-shadow(0 0 3px rgba(196,77,0,0.3))' }}
+          onMouseEnter={e => {
+            e.currentTarget.style.color = 'var(--cinder-flame)';
+            e.currentTarget.style.filter = 'drop-shadow(0 0 8px rgba(255,74,8,0.6))';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.color = '';
+            e.currentTarget.style.filter = '';
+          }}
         >
           <LogoSvg />
         </button>
