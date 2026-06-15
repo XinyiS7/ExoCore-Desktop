@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ArrowLeft, Pencil, ChevronLeft, ChevronRight, Activity } from 'lucide-react';
+import { Pencil, ChevronLeft, ChevronRight, Activity } from 'lucide-react';
 import {
  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
  ResponsiveContainer
 } from 'recharts';
 import AvatarCropModal from '../components/modals/AvatarCropModal';
+import BackToUpper from '../components/layout/BackButton';
 import { telemetryApi, MODEL_REGISTRY } from 'exo-shared';
 import { setUserAvatar, getUserAvatar } from 'exo-shared/profile';
 import { useUserPreset } from '../hooks/useUserPreset';
@@ -322,10 +323,7 @@ export default function UserProfile({ appState, setView, goBack }) {
 
   {/* Back bar — desktop only; mobile uses MobileHeader */}
   <div className="hidden md:block flex-shrink-0 border-b border-exo-border px-4 md:px-12 py-3">
-  <button onClick={() => goBack()} className="flex items-center gap-1.5 text-exo-muted hover:text-exo-accent transition-colors text-xs">
-   <ArrowLeft size={16} strokeWidth={1.5} />
-   Home
-  </button>
+  <BackToUpper label="Home" onClick={() => goBack()} />
   </div>
 
   <div className="flex-1 overflow-y-auto">

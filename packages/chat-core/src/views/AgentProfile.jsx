@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, MessageSquare, Plus, Pencil } from 'lucide-react';
+import { MessageSquare, Plus, Pencil } from 'lucide-react';
 import { baseUrl, getCsrfToken, MAIN_MODEL_IDS, useProfile } from 'exo-shared';
 import { setAgentAvatar } from 'exo-shared/profile';
 import EditPresetModal from '../components/modals/EditPresetModal';
 import AvatarCropModal from '../components/modals/AvatarCropModal';
 import SessionActionsMenu from '../components/chat/SessionActionsMenu';
+import BackToUpper from '../components/layout/BackButton';
 
 export default function AgentProfile({ appState, setView, goBack, viewParams }) {
  const { presets, setActiveSessionId, openNewSession, refreshKey, refreshPresets } = appState;
@@ -213,10 +214,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
 
   {/* Back bar — desktop only; mobile uses MobileHeader */}
   <div className="hidden md:block flex-shrink-0 border-b border-exo-border px-4 md:px-12 py-3">
-  <button onClick={() => goBack()} className="flex items-center gap-1.5 text-exo-muted hover:text-exo-accent transition-colors text-xs">
-   <ArrowLeft size={16} strokeWidth={1.5} />
-   Agent Hub
-  </button>
+  <BackToUpper label="Agent Hub" onClick={() => goBack()} />
   </div>
 
   <div className="flex-1 overflow-y-auto">

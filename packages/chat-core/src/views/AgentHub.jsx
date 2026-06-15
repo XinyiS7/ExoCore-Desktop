@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ArrowLeft, Star, Zap, Cpu, GripVertical } from 'lucide-react';
+import { Star, Zap, Cpu, GripVertical } from 'lucide-react';
 import { getAgentAvatarUrl } from '../utils/avatar';
 import { baseUrl } from 'exo-shared';
 import { getAgentHubOrder, isSuperiorType } from '../utils/presets';
 import MemoryAnchorTicker from '../components/agent/MemoryAnchorTicker';
+import BackToUpper from '../components/layout/BackButton';
 
 const SectionHeader = ({ icon: Icon, label, accent }) => (
   <div className="mb-3">
@@ -203,10 +204,7 @@ export default function AgentHub({ appState, setView, goBack }) {
     <div className="flex-1 h-full flex flex-col bg-exo-bg overflow-hidden">
       {/* Back bar — desktop only; mobile uses MobileHeader */}
       <div className="hidden md:block flex-shrink-0 border-b border-exo-border px-4 md:px-12 py-3">
-        <button onClick={() => goBack()} className="flex items-center gap-1.5 text-exo-muted hover:text-exo-accent transition-colors text-xs">
-          <ArrowLeft size={16} strokeWidth={1.5} />
-          Home
-        </button>
+        <BackToUpper label="Home" onClick={() => goBack()} />
       </div>
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         <div className="max-w-5xl mx-auto px-4 md:px-12 pt-4 md:pt-12 pb-12 space-y-10">

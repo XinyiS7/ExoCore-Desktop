@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Send, ArrowLeft, Settings, RefreshCw } from 'lucide-react';
+import { Send, Settings, RefreshCw } from 'lucide-react';
 import { groupchatApi } from 'exo-shared';
 import { getAgentAvatarUrl, getUserAvatarUrl } from '../utils/avatar';
 import { formatDateSeparator, isDifferentDay } from '../utils/time';
 import GroupchatMessage from '../components/groupchat/GroupchatMessage';
 import AuroraBackground from '../components/chat/AuroraBackground';
+import BackToUpper from '../components/layout/BackButton';
 
 const MSGS_PER_PAGE = 20;
 
@@ -373,13 +374,8 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
   {/* Header */}
   <div className="relative z-20 flex-shrink-0 border-b border-exo-mist-10 bg-exo-pure/40 backdrop-blur-md px-4 md:px-6 py-2 flex items-center justify-between">
   <div className="flex items-center gap-2 min-w-0">
-   {/* Mobile back button */}
-   <button
-   onClick={onBack}
-   className="md:hidden p-0.5 -ml-0.5 text-exo-muted hover:text-exo-text transition-colors flex-shrink-0"
-   >
-   <ArrowLeft size={16} strokeWidth={1.5} />
-   </button>
+   {/* Mobile back to groupchat list */}
+   <BackToUpper label="Groupchats" onClick={onBack} className="md:hidden" />
    <div className="min-w-0">
    <span className="text-sm font-sans font-medium text-white/90 truncate block">
     {groupchat?.name || 'Groupchat'}

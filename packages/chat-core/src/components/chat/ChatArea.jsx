@@ -3,6 +3,7 @@ import {
  Save, Plus, RefreshCw, X, FileText,
  Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2, SlidersHorizontal, Folder, ChevronDown
 } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { baseUrl, getCsrfToken, MAIN_MODEL_IDS } from 'exo-shared';
 import { getAgentAvatarUrl, getUserAvatarUrl } from '../../utils/avatar';
 import { filesToAttachmentData, saveAttachments, enrichMessages, uploadFilesToAttachments } from '../../utils/attachmentStorage';
@@ -12,6 +13,7 @@ import BranchSessionModal from '../modals/BranchSessionModal';
 import ContextCacheIndicator from './ContextCacheIndicator';
 import { usePollingChat } from '../../hooks/usePollingChat';
 import AuroraBackground from './AuroraBackground';
+import BackToUpper from '../layout/BackButton';
 import ControlsDrawer from './ControlsDrawer';
 import { DEFAULT_PALETTE_ID, getPalette } from './palettes';
 import AutocompletePopup from './AutocompletePopup';
@@ -42,6 +44,15 @@ const applyDeltaToMessage = (msg, text, eventType) => {
 };
 
 const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowConvList, openNewSession, presets, headerTitleOverride, rightExtraButton, onBack, fileTree, pendingInsert, onInsertConsumed, onLoadDirectory, project }) => {
+ const navigate = useNavigate();
+ const location = useLocation();
+ const locationState = location.state || {};
+ const chatBackLabel =
+   locationState.from === 'agent'    ? locationState.agentName || 'Agent Hub' :
+   locationState.from === 'project'  ? locationState.projectName || 'Project' :
+   locationState.from === 'projects' ? 'Project Hall' :
+   locationState.from === 'home'     ? 'Home' :
+   'Back';
  const [messages, setMessages] = useState([]);
  const [sessionInfo, setSessionInfo] = useState(null);
  const [inputValue, setInputValue] = useState("");
@@ -938,8 +949,10 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
 
   {/* v2 header: status dot · session name (left) | cache + docs (right) */}
   {onBack && (
-   <div className="border-b border-white/[0.04] bg-exo-pure/20 backdrop-blur-md z-20 px-4 md:px-6 py-2 flex items-center justify-between">
+   <div className="z-20 px-4 md:px-6 py-2 flex items-center justify-between">
    <div className="flex items-center gap-2 min-w-0">
+    {/* Mobile back to upper level */}
+    <BackToUpper label={chatBackLabel} onClick={() => navigate(-1)} className="md:hidden" />
     <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors duration-500 ${isGenerating ? 'breathing-status' : 'bg-[#00509d]/30'}`} />
     {sessionInfo?.name && (
     <span className="text-[11px] font-light text-exo-muted/60 truncate">

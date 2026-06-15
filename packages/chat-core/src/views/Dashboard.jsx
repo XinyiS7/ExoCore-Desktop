@@ -68,6 +68,7 @@ export default function Dashboard({ appState, setView }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [allConversations, setAllConversations] = useState([]);
+  const [hoveredNav, setHoveredNav] = useState(null);
   const searchRef = useRef(null);
 
   /* ── Fetch recent sessions ── */
@@ -302,16 +303,18 @@ export default function Dashboard({ appState, setView }) {
                     style={{
                       background: 'none',
                       border: 'none',
-                      borderBottom: '1px solid rgba(255,255,255,0.03)',
+                      borderBottom: '1px solid transparent',
+                      borderImage: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04) 20%, rgba(255,255,255,0.04) 80%, transparent) 1',
+                      borderImageSlice: 1,
                       color: 'inherit',
                       cursor: 'pointer',
                     }}
                     onMouseEnter={e => {
-                      e.currentTarget.style.borderBottomColor = 'rgba(255,74,8,0.35)';
+                      e.currentTarget.style.borderImage = 'linear-gradient(90deg, transparent, rgba(255,74,8,0.35) 20%, rgba(255,74,8,0.35) 80%, transparent) 1';
                       e.currentTarget.style.background = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.01) 50%, transparent)';
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.borderBottomColor = '';
+                      e.currentTarget.style.borderImage = '';
                       e.currentTarget.style.background = '';
                     }}
                   >
@@ -377,7 +380,9 @@ export default function Dashboard({ appState, setView }) {
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              {QUICK_NAV.map(({ route, Glyph, label, sub }) => (
+              {QUICK_NAV.map(({ route, Glyph, label, sub }) => {
+                const isHovered = hoveredNav === route;
+                return (
                 <button
                   key={route}
                   onClick={() => navigate(route)}
@@ -389,41 +394,34 @@ export default function Dashboard({ appState, setView }) {
                     transition-all duration-500
                   "
                   style={{
-                    background: 'rgba(255, 255, 255, 0.01)',
-                    border: '1px solid rgba(255, 255, 255, 0.02)',
+                    background: isHovered ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.01)',
+                    border: isHovered ? '1px solid rgba(196, 77, 0, 0.25)' : '1px solid rgba(255, 255, 255, 0.02)',
                     borderRadius: '12px',
-                    color: 'var(--cinder-text-faint)',
+                    boxShadow: isHovered ? '0 10px 30px rgba(0, 0, 0, 0.5)' : 'none',
+                    transform: isHovered ? 'translateY(-2px)' : 'none',
                   }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
-                    e.currentTarget.style.borderColor = 'rgba(196, 77, 0, 0.25)';
-                    e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.5)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = '';
-                    e.currentTarget.style.borderColor = '';
-                    e.currentTarget.style.boxShadow = '';
-                    e.currentTarget.style.transform = '';
-                  }}
+                  onMouseEnter={() => setHoveredNav(route)}
+                  onMouseLeave={() => setHoveredNav(null)}
                 >
                   {/* Radial glow on hover */}
                   <span
-                    className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    className="absolute inset-0 pointer-events-none transition-opacity duration-500"
                     style={{
+                      opacity: isHovered ? 1 : 0,
                       background: 'radial-gradient(circle at center, rgba(196,77,0,0.1) 0%, transparent 70%)',
                     }}
                   />
 
                   {/* Glyph */}
                   <span
-                    className="relative z-[1] flex items-center justify-center transition-all duration-500 group-hover:scale-105 group-hover:-translate-y-0.5"
+                    className="relative z-[1] flex items-center justify-center transition-all duration-500"
                     style={{
                       width: '44px',
                       height: '44px',
-                      opacity: 0.25,
-                      color: 'var(--cinder-text-faint)',
-                      filter: 'none',
+                      opacity: isHovered ? 0.55 : 0.25,
+                      color: isHovered ? 'var(--cinder-flame)' : 'var(--cinder-text-faint)',
+                      filter: isHovered ? 'drop-shadow(0 0 6px rgba(255,74,8,0.5))' : 'none',
+                      transform: isHovered ? 'scale(1.05) translateY(-2px)' : 'none',
                     }}
                   >
                     <Glyph />
@@ -431,11 +429,11 @@ export default function Dashboard({ appState, setView }) {
 
                   {/* Label */}
                   <span
-                    className="relative z-[1] font-light transition-all duration-300 group-hover:tracking-[0.1em]"
+                    className="relative z-[1] font-light transition-all duration-300"
                     style={{
                       fontSize: '13px',
-                      letterSpacing: '0.08em',
-                      color: 'var(--cinder-text-dim)',
+                      letterSpacing: isHovered ? '0.1em' : '0.08em',
+                      color: isHovered ? 'var(--cinder-flame-dim)' : 'var(--cinder-text-dim)',
                     }}
                   >
                     {label}
@@ -447,13 +445,14 @@ export default function Dashboard({ appState, setView }) {
                     style={{
                       fontSize: '9px',
                       letterSpacing: '0.05em',
-                      color: 'var(--cinder-text-faint)',
+                      color: isHovered ? 'var(--cinder-text-dim)' : 'var(--cinder-text-faint)',
                     }}
                   >
                     {sub}
                   </span>
                 </button>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>

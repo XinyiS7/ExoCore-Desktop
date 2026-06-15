@@ -191,8 +191,19 @@ function AgentMemoryRoute() {
 }
 
 function ProjectsRoute() {
-  const { appState, setView, goBack } = useAppStateBridge();
-  return <ProjectList appState={appState} setView={setView} goBack={goBack} />;
+  const { appState, setView, goBack, createProjectConfig, setCreateProjectConfig } = useAppStateBridge();
+  return (
+    <>
+      <ProjectList appState={appState} setView={setView} goBack={goBack} />
+      {createProjectConfig.isOpen && (
+        <CreateProjectModal
+          isOpen={createProjectConfig.isOpen}
+          onClose={() => setCreateProjectConfig({ isOpen: false })}
+          setProjects={appState.setProjects}
+        />
+      )}
+    </>
+  );
 }
 
 function ProjectDetailRoute() {

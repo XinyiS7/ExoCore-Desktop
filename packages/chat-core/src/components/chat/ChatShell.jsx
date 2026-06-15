@@ -141,7 +141,7 @@ export default function ChatShell({
   const chatKey = resolvedSessionId ? `chat-${resolvedSessionId}` : 'chat-empty';
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative" style={{ animation: 'slideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both' }}>
       {/* Stage Header */}
       <StageHeader
         onToggleFilesDrawer={() => setFilesDrawerOpen(v => !v)}
