@@ -13,7 +13,6 @@ import BranchSessionModal from '../modals/BranchSessionModal';
 import ContextCacheIndicator from './ContextCacheIndicator';
 import { usePollingChat } from '../../hooks/usePollingChat';
 import AuroraBackground from './AuroraBackground';
-import BackToUpper from '../layout/BackButton';
 import ControlsDrawer from './ControlsDrawer';
 import { DEFAULT_PALETTE_ID, getPalette } from './palettes';
 import AutocompletePopup from './AutocompletePopup';
@@ -951,8 +950,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   {onBack && (
    <div className="z-20 px-4 md:px-6 py-2 flex items-center justify-between">
    <div className="flex items-center gap-2 min-w-0">
-    {/* Mobile back to upper level */}
-    <BackToUpper label={chatBackLabel} onClick={() => navigate(-1)} className="md:hidden" />
+    {/* Mobile back handled by MobileHeader (unified shell) */}
     <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors duration-500 ${isGenerating ? 'breathing-status' : 'bg-[#00509d]/30'}`} />
     {sessionInfo?.name && (
     <span className="text-[11px] font-light text-exo-muted/60 truncate">
