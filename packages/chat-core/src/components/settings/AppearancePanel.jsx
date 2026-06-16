@@ -1,5 +1,40 @@
 import React from 'react';
-import { useFont, AVAILABLE_FONTS } from 'exo-shared';
+import { useFont, AVAILABLE_FONTS, FONT_SCALE_OPTIONS } from 'exo-shared';
+
+function ScaleSelector({ label, description, value, onChange, options }) {
+  return (
+    <div className="space-y-2.5">
+      <div>
+        <span className="text-[10px] tracking-[0.12em] text-chat-text/70">
+          {label}
+        </span>
+        {description && (
+          <p className="text-[9px] text-chat-muted/40 mt-0.5 leading-relaxed">
+            {description}
+          </p>
+        )}
+      </div>
+      <div className="flex gap-2">
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => onChange(opt.value)}
+            className={`flex-1 py-2.5 rounded-md border text-center transition-all ${
+              value === opt.value
+                ? 'border-chat-accent/30 bg-chat-accent/5 text-chat-text'
+                : 'border-transparent bg-white/[0.02] text-chat-muted hover:border-exo-mist-10 hover:bg-exo-accent/[0.03]'
+            }`}
+          >
+            <p className="text-xs font-medium">{opt.shortLabel}</p>
+            <p className="text-[9px] text-chat-muted/50 mt-0.5">
+              {opt.value}x
+            </p>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function FontSelector({ label, description, value, onChange }) {
   return (
@@ -60,7 +95,7 @@ function FontSelector({ label, description, value, onChange }) {
 }
 
 export default function AppearancePanel() {
-  const { systemFont, messageFont, setSystemFont, setMessageFont } = useFont();
+  const { systemFont, messageFont, fontScale, setSystemFont, setMessageFont, setFontScale } = useFont();
 
   return (
     <div className="flex-1 h-full overflow-y-auto">
@@ -86,6 +121,17 @@ export default function AppearancePanel() {
             description="仅应用于聊天消息气泡、群桥消息内容和消息输入框"
             value={messageFont}
             onChange={setMessageFont}
+          />
+
+          <div className="border-t border-white/5" />
+
+          {/* Font Scale */}
+          <ScaleSelector
+            label="🔤 Font Scale · 全局缩放"
+            description="缩放所有文本大小。不影响界面间距、图标和装饰元素。"
+            value={fontScale}
+            onChange={setFontScale}
+            options={FONT_SCALE_OPTIONS}
           />
         </div>
 

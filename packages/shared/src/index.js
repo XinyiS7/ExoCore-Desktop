@@ -30,7 +30,7 @@ export { getUserAvatar, setUserAvatar, getUserNick, setUserNick, getAgentAvatar,
 
 // Hooks — useProfile and useFont
 export { useProfile } from './hooks/useProfile';
-export { useFont, AVAILABLE_FONTS } from './hooks/useFont';
+export { useFont, AVAILABLE_FONTS, FONT_SCALE_OPTIONS } from './hooks/useFont';
 
 // Avatar utility
 export { resizeAndStoreAvatar } from './utils/avatar';

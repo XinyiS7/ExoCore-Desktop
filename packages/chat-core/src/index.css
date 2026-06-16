@@ -39,6 +39,7 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  font-size: calc(16px * var(--exo-font-scale, 1));
 }
 
 body {
