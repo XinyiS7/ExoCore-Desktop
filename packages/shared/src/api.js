@@ -34,7 +34,7 @@ export const MAIN_MODEL_IDS = MODEL_REGISTRY
 
 /** Safely extract project ID from a conversation object, handling number, string, or nested object forms. */
 export const getConvProjectId = (conv) => {
-  if (conv.project === null || conv.project === undefined) return null;
+  if (conv.project === null || conv.project === undefined || conv.project === 0) return null;
   return typeof conv.project === 'object' ? Number(conv.project.id) : Number(conv.project);
 };
 
