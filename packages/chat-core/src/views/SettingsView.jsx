@@ -65,7 +65,7 @@ export default function SettingsView() {
  return (
  <div className="flex-1 h-full flex overflow-hidden">
   {/* Left nav — hidden on mobile when collapsed */}
-  <nav className={`w-52 flex-shrink-0 border-r border-white/5 bg-chat-panel/50 py-6 flex flex-col md:flex ${navVisible ? 'flex' : 'hidden'}`}>
+  <nav className={`w-52 flex-shrink-0 border-r border-white/5 bg-chat-bg py-6 flex flex-col md:flex ${navVisible ? 'flex' : 'hidden'}`}>
   <div className="px-4 mb-4">
    <h1 className="text-sm font-semibold text-chat-text/90 tracking-tight">Settings</h1>
   </div>

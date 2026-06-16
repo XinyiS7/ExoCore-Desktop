@@ -20,7 +20,7 @@ export default function NotificationsPanel() {
         </div>
 
         {/* Status card */}
-        <div className="bg-chat-panel/60 border border-white/5 rounded-xl p-6 space-y-4">
+        <div className="bg-chat-panel border border-white/5 rounded-xl p-6 space-y-4">
           {/* Permission status */}
           <div className="flex items-center gap-3">
             <span className="text-xs font-mono tracking-wider text-chat-muted/50 w-20">
@@ -72,7 +72,7 @@ export default function NotificationsPanel() {
         {permission !== 'denied' && (
           isSubscribed ? (
             deviceName ? (
-              <div className="flex items-center gap-3 bg-chat-panel/60 border border-white/5 rounded-xl px-6 py-4">
+              <div className="flex items-center gap-3 bg-chat-panel border border-white/5 rounded-xl px-6 py-4">
                 <span className="text-xs font-mono tracking-wider text-chat-muted/50 w-20">
                   设备名称
                 </span>
@@ -93,7 +93,7 @@ export default function NotificationsPanel() {
                 onChange={(e) => setLocalName(e.target.value)}
                 placeholder="例如：我的台式机"
                 maxLength={200}
-                className="w-full bg-chat-panel/40 border border-white/5 rounded-lg px-3 py-2 text-sm text-chat-text placeholder:text-chat-muted/30 focus:outline-none focus:border-chat-accent/30 transition-colors"
+                className="w-full bg-chat-panel border border-white/5 rounded-lg px-3 py-2 text-sm text-chat-text placeholder:text-chat-muted/30 focus:outline-none focus:border-chat-accent/30 transition-colors"
               />
             </div>
           )
@@ -105,7 +105,7 @@ export default function NotificationsPanel() {
           disabled={isLoading || permission === 'denied'}
           className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
             isLoading
-              ? 'bg-chat-panel/40 text-chat-muted/40 cursor-wait'
+              ? 'bg-chat-panel text-chat-muted/40 cursor-wait'
               : permission === 'denied'
                 ? 'bg-red-500/5 border border-red-500/15 text-red-400/50 cursor-not-allowed'
                 : isSubscribed
