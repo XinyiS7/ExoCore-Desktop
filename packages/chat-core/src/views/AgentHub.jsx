@@ -296,7 +296,7 @@ export default function AgentHub({ appState, setView, goBack }) {
                         }}
                         onClick={(e) => e.stopPropagation()}
                         onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; e.currentTarget.style.color = 'var(--cinder-flame)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.opacity = ''; e.currentTarget.style.color = ''; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = String(isHovered ? 0.5 : 0); e.currentTarget.style.color = 'var(--cinder-text-faint)'; }}
                       >
                         <IconDrag size={14} />
                       </div>
@@ -427,7 +427,7 @@ export default function AgentHub({ appState, setView, goBack }) {
                         style={{ opacity: isHovered ? 0.4 : 0, color: 'var(--cinder-text-faint)' }}
                         onClick={(e) => e.stopPropagation()}
                         onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; e.currentTarget.style.color = 'var(--cinder-flame)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.opacity = ''; e.currentTarget.style.color = ''; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = String(isHovered ? 0.4 : 0); e.currentTarget.style.color = 'var(--cinder-text-faint)'; }}
                       >
                         <IconDrag size={13} />
                       </div>

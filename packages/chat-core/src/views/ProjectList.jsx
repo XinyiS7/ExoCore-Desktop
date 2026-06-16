@@ -171,7 +171,7 @@ export default function ProjectList({ appState, setView, goBack }) {
             {/* New project — icon-create SVG */}
             <button
               onClick={() => openCreateProject()}
-              className="flex items-center justify-center cursor-pointer transition-all duration-400"
+              className="flex items-center justify-center cursor-pointer transition-colors duration-400"
               style={{
                 background: 'none',
                 border: 'none',
@@ -182,12 +182,11 @@ export default function ProjectList({ appState, setView, goBack }) {
               onMouseEnter={e => {
                 e.currentTarget.style.opacity = '1';
                 e.currentTarget.style.color = 'var(--cinder-flame)';
-                e.currentTarget.style.filter = 'drop-shadow(0 0 6px rgba(255,74,8,0.5))';
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.opacity = '';
-                e.currentTarget.style.color = '';
-                e.currentTarget.style.filter = '';
+                e.currentTarget.style.opacity = '0.6';
+                e.currentTarget.style.color = 'var(--cinder-text-dim)';
+                e.currentTarget.style.filter = 'none';
               }}
               title="New Project"
             >
@@ -211,7 +210,7 @@ export default function ProjectList({ appState, setView, goBack }) {
                 <div
                   key={proj.id}
                   onClick={() => handleProjectClick(proj)}
-                  className="flex items-center justify-between cursor-pointer relative overflow-hidden transition-all duration-300 group"
+                  className="flex items-center justify-between cursor-pointer relative overflow-hidden transition-colors duration-300 group"
                   style={{
                     ...fadeUp(0.05 * i),
                     padding: '18px 24px',
@@ -225,14 +224,13 @@ export default function ProjectList({ appState, setView, goBack }) {
                   onMouseEnter={e => {
                     setHoveredCard(proj.id);
                     e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                    e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.5)';
                     e.currentTarget.style.transform = 'translateY(-1px)';
                   }}
                   onMouseLeave={e => {
                     setHoveredCard(null);
-                    e.currentTarget.style.background = '';
-                    e.currentTarget.style.boxShadow = '';
-                    e.currentTarget.style.transform = '';
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.01)';
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.transform = 'none';
                   }}
                 >
                   {/* Hover glow */}
@@ -286,11 +284,11 @@ export default function ProjectList({ appState, setView, goBack }) {
                   <div className="relative z-[2]" onClick={e => e.stopPropagation()}>
                     <button
                       onClick={() => setMenuProjectId(menuProjectId === proj.id ? null : proj.id)}
-                      className="p-1.5 rounded transition-all"
+                      className="p-1.5 rounded transition-colors"
                       title="Project actions"
                       style={{ color: 'var(--cinder-text-dim)', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }}
                       onMouseEnter={e => { e.currentTarget.style.color = 'var(--cinder-text)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.opacity = '1'; }}
-                      onMouseLeave={e => { e.currentTarget.style.color = ''; e.currentTarget.style.background = ''; e.currentTarget.style.opacity = ''; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--cinder-text-dim)'; e.currentTarget.style.background = 'none'; e.currentTarget.style.opacity = '0.5'; }}
                     >
                       <IconMenu size={14} />
                     </button>
@@ -334,7 +332,7 @@ export default function ProjectList({ appState, setView, goBack }) {
             </p>
             <button
               onClick={() => openCreateProject()}
-              className="mt-4 font-light text-sm cursor-pointer transition-all duration-300"
+              className="mt-4 font-light text-sm cursor-pointer transition-colors duration-300"
               style={{
                 background: 'none',
                 border: 'none',
@@ -344,11 +342,9 @@ export default function ProjectList({ appState, setView, goBack }) {
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.color = 'var(--cinder-flame)';
-                e.currentTarget.style.textShadow = '0 0 8px rgba(255,74,8,0.4)';
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.color = '';
-                e.currentTarget.style.textShadow = '';
+                e.currentTarget.style.color = 'var(--cinder-text-faint)';
               }}
             >
               + 创建第一个项目
@@ -386,7 +382,7 @@ export default function ProjectList({ appState, setView, goBack }) {
                 <button
                   key={s.id}
                   onClick={() => handleSessionClick(s)}
-                  className="flex items-center gap-3 py-2.5 w-full text-left font-[inherit] transition-all duration-300"
+                  className="flex items-center gap-3 py-2.5 w-full text-left font-[inherit] transition-colors duration-300"
                   style={{
                     ...fadeUp(0.25 + 0.04 * i),
                     background: 'none',
@@ -402,8 +398,8 @@ export default function ProjectList({ appState, setView, goBack }) {
                     e.currentTarget.style.background = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.008) 50%, transparent)';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.borderImage = '';
-                    e.currentTarget.style.background = '';
+                    e.currentTarget.style.borderImage = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04) 20%, rgba(255,255,255,0.04) 80%, transparent) 1';
+                    e.currentTarget.style.background = 'none';
                   }}
                 >
                   {/* Dot */}

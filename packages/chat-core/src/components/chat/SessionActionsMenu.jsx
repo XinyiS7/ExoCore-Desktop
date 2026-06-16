@@ -71,11 +71,11 @@ export default function SessionActionsMenu({ session, onUpdated, onDeleted, open
  >
   <button
   onClick={() => setOpen(v => !v)}
-  className="p-1.5 rounded transition-all"
+  className="p-1.5 rounded transition-colors"
   title="Session actions"
   style={{ color: 'var(--cinder-text-dim)', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }}
   onMouseEnter={e => { e.currentTarget.style.color = 'var(--cinder-text)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.opacity = '1'; }}
-  onMouseLeave={e => { e.currentTarget.style.color = ''; e.currentTarget.style.background = ''; e.currentTarget.style.opacity = ''; }}
+  onMouseLeave={e => { e.currentTarget.style.color = 'var(--cinder-text-dim)'; e.currentTarget.style.background = 'none'; e.currentTarget.style.opacity = '0.5'; }}
   >
   <IconMenu size={14} />
   </button>

@@ -68,7 +68,7 @@ const IconBtn = ({ children, title, onClick, size: btnSize, style: baseStyle }) 
   <button
     onClick={onClick}
     title={title}
-    className="flex items-center justify-center cursor-pointer transition-all duration-400"
+    className="flex items-center justify-center cursor-pointer transition-colors duration-400"
     style={{
       background: 'none',
       border: 'none',
@@ -80,12 +80,11 @@ const IconBtn = ({ children, title, onClick, size: btnSize, style: baseStyle }) 
     onMouseEnter={e => {
       e.currentTarget.style.opacity = '1';
       e.currentTarget.style.color = baseStyle?.color || 'var(--cinder-flame)';
-      e.currentTarget.style.filter = 'drop-shadow(0 0 6px rgba(255,74,8,0.5))';
     }}
     onMouseLeave={e => {
-      e.currentTarget.style.opacity = baseStyle?.opacity != null ? String(baseStyle.opacity) : '';
-      e.currentTarget.style.color = baseStyle?.color || '';
-      e.currentTarget.style.filter = '';
+      e.currentTarget.style.opacity = baseStyle?.opacity != null ? String(baseStyle.opacity) : '0.6';
+      e.currentTarget.style.color = baseStyle?.color || 'var(--cinder-text-dim)';
+      e.currentTarget.style.filter = 'none';
     }}
   >
     {children}
@@ -379,7 +378,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
               ) : (
                 <h2
                   onClick={() => { setNameDraft(preset.name); setEditingName(true); }}
-                  className="font-light cursor-pointer transition-all duration-300"
+                  className="font-light cursor-pointer transition-colors duration-300"
                   style={{
                     fontSize: '20px',
                     letterSpacing: '0.05em',
@@ -387,11 +386,9 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.color = 'var(--cinder-flame)';
-                    e.currentTarget.style.textShadow = '0 0 12px rgba(255,74,8,0.3)';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.color = '';
-                    e.currentTarget.style.textShadow = '';
+                    e.currentTarget.style.color = 'var(--cinder-text)';
                   }}
                 >
                   {preset.name}
@@ -441,7 +438,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
               ) : (
                 <p
                   onClick={() => { setDescDraft(preset.description || ''); setEditingDesc(true); }}
-                  className="font-light italic cursor-pointer transition-all duration-300"
+                  className="font-light italic cursor-pointer transition-colors duration-300"
                   style={{
                     fontSize: '13px',
                     color: preset.description ? 'var(--cinder-text-dim)' : 'var(--cinder-text-faint)',
@@ -451,7 +448,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                     e.currentTarget.style.color = 'var(--cinder-flame-dim)';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.color = '';
+                    e.currentTarget.style.color = preset.description ? 'var(--cinder-text-dim)' : 'var(--cinder-text-faint)';
                   }}
                 >
                   {preset.description || 'Click to add a description...'}
@@ -511,7 +508,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
           <section style={fadeUp(0.1)} className="flex items-center gap-4 justify-center">
             <button
               onClick={() => openNewSession({ presetId: preset.id })}
-              className="flex items-center gap-2 font-light cursor-pointer transition-all duration-300"
+              className="flex items-center gap-2 font-light cursor-pointer transition-colors duration-300"
               style={{
                 background: 'none',
                 border: '1px solid rgba(166,61,0,0.15)',
@@ -523,11 +520,9 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.color = 'var(--cinder-flame)';
-                e.currentTarget.style.boxShadow = '0 0 16px rgba(255,74,8,0.1)';
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.color = '';
-                e.currentTarget.style.boxShadow = '';
+                e.currentTarget.style.color = 'var(--cinder-flame-dim)';
               }}
             >
               <IconCreate size={14} />
@@ -536,7 +531,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
             {showMemoryBtn && (
               <button
                 onClick={() => setView('agent_memory', { agentId: preset.id, agentName: preset.name })}
-                className="flex items-center gap-2 font-light cursor-pointer transition-all duration-300"
+                className="flex items-center gap-2 font-light cursor-pointer transition-colors duration-300"
                 style={{
                   background: 'none',
                   border: '1px solid rgba(168,122,255,0.15)',
@@ -548,11 +543,9 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.color = 'rgb(188,168,240)';
-                  e.currentTarget.style.boxShadow = '0 0 16px rgba(168,122,255,0.1)';
                 }}
                 onMouseLeave={e => {
-                    e.currentTarget.style.color = '';
-                  e.currentTarget.style.boxShadow = '';
+                  e.currentTarget.style.color = 'rgb(168,148,220)';
                 }}
               >
                 <IconMemory size={14} />
@@ -575,7 +568,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 <span style={{ color: 'var(--cinder-text-faint)', fontSize: '11px', opacity: 0.5 }}>]</span>
                 <button
                   onClick={() => setShowEditModal(true)}
-                  className="ml-auto flex items-center cursor-pointer transition-all duration-400"
+                  className="ml-auto flex items-center cursor-pointer transition-colors duration-400"
                   style={{
                     background: 'none',
                     border: 'none',
@@ -586,12 +579,11 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                   onMouseEnter={e => {
                     e.currentTarget.style.opacity = '1';
                     e.currentTarget.style.color = 'var(--cinder-flame)';
-                    e.currentTarget.style.filter = 'drop-shadow(0 0 4px rgba(255,74,8,0.3))';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.opacity = '';
-                    e.currentTarget.style.color = '';
-                    e.currentTarget.style.filter = '';
+                    e.currentTarget.style.opacity = '0.6';
+                    e.currentTarget.style.color = 'var(--cinder-text-dim)';
+                    e.currentTarget.style.filter = 'none';
                   }}
                 >
                   <IconRename size={14} />
@@ -691,7 +683,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                       },
                     });
                   }}
-                  className="font-light cursor-pointer transition-all duration-300"
+                  className="font-light cursor-pointer transition-colors duration-300"
                   style={{
                     background: 'none',
                     border: '1px solid rgba(255,51,51,0.25)',
@@ -705,13 +697,11 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.background = 'rgba(255,51,51,0.04)';
-                    e.currentTarget.style.boxShadow = '0 0 16px rgba(255,51,51,0.1)';
                     e.currentTarget.style.opacity = '1';
                   }}
                   onMouseLeave={e => {
-                        e.currentTarget.style.background = '';
-                    e.currentTarget.style.boxShadow = '';
-                    e.currentTarget.style.opacity = '';
+                    e.currentTarget.style.background = 'none';
+                    e.currentTarget.style.opacity = '0.7';
                   }}
                 >
                   抹除该实体 Erase Entity
@@ -745,15 +735,15 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                   <div
                     key={s.id}
                     style={fadeUp(0.26 + i * 0.03)}
-                    className="group flex items-center gap-3 w-full transition-all duration-300"
+                    className="group flex items-center gap-3 w-full transition-colors duration-300"
                     onClick={() => handleSessionClick(s)}
                     onMouseEnter={e => {
                       e.currentTarget.style.borderImage = 'linear-gradient(90deg, transparent, rgba(255,74,8,0.35) 20%, rgba(255,74,8,0.35) 80%, transparent) 1';
                       e.currentTarget.style.background = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.006) 50%, transparent)';
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.borderImage = '';
-                      e.currentTarget.style.background = '';
+                      e.currentTarget.style.borderImage = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04) 20%, rgba(255,255,255,0.04) 80%, transparent) 1';
+                      e.currentTarget.style.background = 'none';
                     }}
                     style={{
                       cursor: 'pointer',

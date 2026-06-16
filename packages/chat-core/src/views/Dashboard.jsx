@@ -299,7 +299,7 @@ export default function Dashboard({ appState, setView }) {
                   <button
                     key={convo.id}
                     onClick={() => handleSessionClick(convo)}
-                    className="flex items-center gap-3.5 py-3 w-full text-left font-[inherit] transition-all duration-300"
+                    className="flex items-center gap-3.5 py-3 w-full text-left font-[inherit] transition-colors duration-300"
                     style={{
                       background: 'none',
                       border: 'none',
@@ -314,8 +314,8 @@ export default function Dashboard({ appState, setView }) {
                       e.currentTarget.style.background = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.01) 50%, transparent)';
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.borderImage = '';
-                      e.currentTarget.style.background = '';
+                      e.currentTarget.style.borderImage = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04) 20%, rgba(255,255,255,0.04) 80%, transparent) 1';
+                      e.currentTarget.style.background = 'none';
                     }}
                   >
                     {/* Dot indicator */}

@@ -62,7 +62,7 @@ const IconBtn = ({ children, title, onClick, size = 'md', style: baseStyle }) =>
   <button
     onClick={onClick}
     title={title}
-    className="flex items-center justify-center cursor-pointer transition-all duration-400"
+    className="flex items-center justify-center cursor-pointer transition-colors duration-400"
     style={{
       background: 'none',
       border: 'none',
@@ -74,12 +74,11 @@ const IconBtn = ({ children, title, onClick, size = 'md', style: baseStyle }) =>
     onMouseEnter={e => {
       e.currentTarget.style.opacity = '1';
       e.currentTarget.style.color = baseStyle?.color || 'var(--cinder-flame)';
-      e.currentTarget.style.filter = 'drop-shadow(0 0 6px rgba(255,74,8,0.5))';
     }}
     onMouseLeave={e => {
-      e.currentTarget.style.opacity = baseStyle?.opacity != null ? String(baseStyle.opacity) : '';
-      e.currentTarget.style.color = baseStyle?.color || '';
-      e.currentTarget.style.filter = '';
+      e.currentTarget.style.opacity = baseStyle?.opacity != null ? String(baseStyle.opacity) : '0.35';
+      e.currentTarget.style.color = baseStyle?.color || 'var(--cinder-text-faint)';
+      e.currentTarget.style.filter = 'none';
     }}
   >
     {children}
@@ -126,7 +125,7 @@ const ThreadRow = ({ session, agentName, onClick, onRename, onDelete, openDestru
   };
 
   return (
-    <div className="group flex items-center gap-3 w-full transition-all duration-300"
+    <div className="group flex items-center gap-3 w-full transition-colors duration-300"
       style={{
         padding: '12px 0',
         cursor: 'pointer',
@@ -141,8 +140,8 @@ const ThreadRow = ({ session, agentName, onClick, onRename, onDelete, openDestru
         e.currentTarget.style.background = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.006) 50%, transparent)';
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.borderImage = '';
-        e.currentTarget.style.background = '';
+        e.currentTarget.style.borderImage = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04) 20%, rgba(255,255,255,0.04) 80%, transparent) 1';
+        e.currentTarget.style.background = 'none';
       }}
     >
       {/* Dot */}
@@ -182,7 +181,7 @@ const ThreadRow = ({ session, agentName, onClick, onRename, onDelete, openDestru
       <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
         <button
           ref={triggerRef}
-          className="opacity-0 group-hover:opacity-50 hover:opacity-100! flex items-center shrink-0 transition-all duration-300 cursor-pointer p-0.5"
+          className="opacity-0 group-hover:opacity-50 hover:opacity-100! flex items-center shrink-0 transition-colors duration-300 cursor-pointer p-0.5"
           style={{
             color: 'var(--cinder-text-faint)',
             background: 'none',
@@ -192,12 +191,10 @@ const ThreadRow = ({ session, agentName, onClick, onRename, onDelete, openDestru
           onClick={() => setMenuOpen(v => !v)}
           onMouseEnter={e => {
             e.currentTarget.style.color = 'var(--cinder-flame)';
-            e.currentTarget.style.filter = 'drop-shadow(0 0 5px rgba(255,74,8,0.4))';
           }}
           onMouseLeave={e => {
             if (!menuOpen) {
-              e.currentTarget.style.color = '';
-              e.currentTarget.style.filter = '';
+              e.currentTarget.style.color = 'var(--cinder-text-faint)';
             }
           }}
         >
@@ -231,7 +228,7 @@ const ThreadRow = ({ session, agentName, onClick, onRename, onDelete, openDestru
                 color: 'var(--cinder-text)',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = ''; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
             >
               <span style={{ fontSize: '10px', opacity: 0.5 }}>✎</span> Rename
             </button>
@@ -246,7 +243,7 @@ const ThreadRow = ({ session, agentName, onClick, onRename, onDelete, openDestru
                 color: 'var(--cinder-flame)',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,74,8,0.08)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = ''; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
             >
               <span style={{ fontSize: '11px' }}>×</span> Delete
             </button>
@@ -502,7 +499,7 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
                         setEditingPrompt(false);
                       }
                     }}
-                    className="font-light cursor-pointer transition-all duration-300"
+                    className="font-light cursor-pointer transition-colors duration-300"
                     style={{
                       fontSize: '10px',
                       letterSpacing: '0.06em',
@@ -511,14 +508,12 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
                       border: 'none',
                       padding: 0,
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.textShadow = '0 0 6px rgba(255,74,8,0.4)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.textShadow = ''; }}
                   >
                     Done
                   </button>
                   <button
                     onClick={() => setEditingPrompt(false)}
-                    className="font-light cursor-pointer transition-all duration-300"
+                    className="font-light cursor-pointer transition-colors duration-300"
                     style={{
                       fontSize: '10px',
                       letterSpacing: '0.06em',
@@ -528,7 +523,7 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
                       padding: 0,
                     }}
                     onMouseEnter={e => { e.currentTarget.style.color = 'var(--cinder-text-dim)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = ''; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--cinder-text-faint)'; }}
                   >
                     Cancel
                   </button>
@@ -592,11 +587,11 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
                   <FileChip key={f.id} file={f} onDelete={handleDeleteFile} />
                 ))}
                 <div
-                  className="flex items-center gap-2 shrink-0 cursor-pointer transition-all duration-300"
+                  className="flex items-center gap-2 shrink-0 cursor-pointer transition-colors duration-300"
                   style={{ padding: '4px 0', opacity: 0.4 }}
                   onClick={() => fileInputRef.current?.click()}
                   onMouseEnter={e => { e.currentTarget.style.opacity = '0.7'; }}
-                  onMouseLeave={e => { e.currentTarget.style.opacity = ''; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '0.4'; }}
                 >
                   <span style={{ fontSize: '11px', color: 'var(--cinder-text-faint)' }}>+</span>
                   <span className="font-light" style={{ fontSize: '12px', color: 'var(--cinder-text-faint)' }}>Upload</span>
