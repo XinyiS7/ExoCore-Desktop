@@ -75,11 +75,38 @@ Verified: Lucide ships zero CSS, uses `fill="none"` + `stroke="currentColor"` on
   className="... transition-colors duration-200"
   style={{ color: 'var(--cinder-ember-dim)' }}
   onMouseEnter={e => { e.currentTarget.style.color = 'var(--cinder-flame)'; }}
-  onMouseLeave={e => { e.currentTarget.style.color = ''; }}
+  onMouseLeave={e => { e.currentTarget.style.color = 'var(--cinder-ember-dim)'; }}
 >
   <LogoSvg />
 </button>
 ```
+
+### The REAL root cause: `style.color = ''` resets to inherited white
+
+Setting `e.currentTarget.style.color = ''` **removes** the inline style property entirely. The browser then falls back to CSS cascade inheritance — which on a dark-themed app resolves to the `<body>` color: `var(--cinder-text)` = `#cecdd6` (**near-white**). With `transition-colors`, this white is smoothly animated for 200ms, producing the visible "white flash."
+
+**The fix: always set the explicit target color, never empty string:**
+
+```js
+// ❌ BROKEN — falls back to inherited white during transition
+onMouseLeave={e => { e.currentTarget.style.color = ''; }}
+
+// ✅ CORRECT — transitions back to the intended color
+onMouseLeave={e => { e.currentTarget.style.color = 'var(--cinder-text-faint)'; }}
+```
+
+Same rule applies to `style.background`, `style.borderColor`, `style.textShadow`, `style.filter`, `style.boxShadow`, `style.opacity` — never set to `''`, always set to the explicit desired value.
+
+## Known Files With This Bug Pattern
+
+As of 2026-06-16, these files still have `style.* = ''` in onMouseLeave handlers and may exhibit white-on-hover:
+
+- `views/AgentProfile.jsx` — 10 occurrences
+- `views/ProjectDetail.jsx` — 8 occurrences
+- `views/ProjectList.jsx` — 7 occurrences
+- `views/AgentHub.jsx` — 2 occurrences
+- `views/Dashboard.jsx` — 1 occurrence
+- `components/chat/SessionActionsMenu.jsx` — 1 occurrence
 
 ## Checklist — When Touching Any Nav/Icon Button
 
@@ -87,4 +114,5 @@ Verified: Lucide ships zero CSS, uses `fill="none"` + `stroke="currentColor"` on
 - [ ] No `filter` or `textShadow` changes in JS hover handlers
 - [ ] Duration ≤ 200ms
 - [ ] SVGs use `stroke="currentColor"` (standard) — verified no extra CSS interferes
+- [ ] **CRITICAL: `onMouseLeave` sets explicit color, NEVER empty string `''`**
 - [ ] Test on both light and dark backgrounds

@@ -95,7 +95,7 @@ export default function DesktopSidebar() {
             e.currentTarget.style.color = 'var(--cinder-flame)';
           }}
           onMouseLeave={e => {
-            e.currentTarget.style.color = '';
+            e.currentTarget.style.color = 'var(--cinder-ember-dim)';
           }}
         >
           <LogoSvg />
@@ -130,7 +130,7 @@ export default function DesktopSidebar() {
               }}
               onMouseLeave={e => {
                 if (!active) {
-                  e.currentTarget.style.color = '';
+                  e.currentTarget.style.color = 'var(--cinder-text-faint)';
                 }
               }}
             >
@@ -177,7 +177,7 @@ export default function DesktopSidebar() {
             e.currentTarget.style.color = 'var(--cinder-flame)';
           }}
           onMouseLeave={e => {
-            e.currentTarget.style.color = '';
+            e.currentTarget.style.color = 'var(--cinder-text-faint)';
           }}
         >
           设置
@@ -206,7 +206,7 @@ export default function DesktopSidebar() {
               e.currentTarget.style.borderColor = 'rgba(255,74,8,0.4)';
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.borderColor = '';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
             }}
           />
         </button>

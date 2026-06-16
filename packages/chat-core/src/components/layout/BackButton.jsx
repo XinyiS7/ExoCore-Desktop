@@ -15,7 +15,7 @@ export default function BackToUpper({ label, onClick, className = '' }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 font-[inherit] font-light cursor-pointer transition-all duration-400 whitespace-nowrap ${className}`}
+      className={`flex items-center gap-1.5 font-[inherit] font-light cursor-pointer transition-colors duration-200 whitespace-nowrap ${className}`}
       style={{
         fontSize: '12px',
         letterSpacing: '0.08em',
@@ -26,11 +26,9 @@ export default function BackToUpper({ label, onClick, className = '' }) {
       }}
       onMouseEnter={e => {
         e.currentTarget.style.color = 'var(--cinder-flame)';
-        e.currentTarget.style.textShadow = '0 0 8px rgba(255,74,8,0.3)';
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.color = '';
-        e.currentTarget.style.textShadow = '';
+        e.currentTarget.style.color = 'var(--cinder-text-faint)';
       }}
     >
       <span style={{ fontSize: '14px', transition: 'transform 0.3s' }}>‹</span>
