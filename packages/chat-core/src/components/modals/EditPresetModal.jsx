@@ -51,7 +51,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
    <h2 className="text-sm font-bold text-white flex items-center gap-2 font-mono tracking-[0.2em]">
     <Edit3 size={16} className="text-exo-accent" /> {isSystemPromptOnly ? 'System Prompt / 系统提示词' : 'Core Config / 内核配置'}
    </h2>
-   <span className="text-[9px] text-exo-muted font-mono tracking-widest opacity-40 mt-1">Preset Mapping: {preset?.name}</span>
+   <span className="text-[0.5625rem] text-exo-muted font-mono tracking-widest opacity-40 mt-1">Preset Mapping: {preset?.name}</span>
    </div>
    <button onClick={onClose} className="p-2 text-exo-muted hover:text-white transition-colors">
    <X size={18} />
@@ -94,7 +94,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
    <div className={`space-y-2 ${isSystemPromptOnly ? 'h-full' : ''}`}>
    <div className="flex justify-between items-center">
     <label className="label-caps opacity-50">System Directives / 系统提示词</label>
-    <span className="text-[9px] font-mono text-exo-accent opacity-40 tracking-tighter">L3 Access Required</span>
+    <span className="text-[0.5625rem] font-mono text-exo-accent opacity-40 tracking-tighter">L3 Access Required</span>
    </div>
    <textarea
     rows={isSystemPromptOnly ? 20 : 10}
@@ -107,13 +107,13 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
 
   {/* Footer */}
   <div className="flex items-center justify-end gap-3 p-5 border-t border-exo-mist-10 bg-exo-pure/80 backdrop-blur-md">
-   <button onClick={onClose} className="px-6 py-2 rounded-[2px] text-[11px] font-bold tracking-widest text-exo-muted hover:text-white transition-colors">
+   <button onClick={onClose} className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest text-exo-muted hover:text-white transition-colors">
    Abort
    </button>
    <button
    onClick={handleSave}
    disabled={isSaving}
-   className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[11px] font-bold tracking-[0.2em] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
+   className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[0.6875rem] font-bold tracking-[0.2em] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
    >
    {isSaving ? <Activity size={14} className="animate-spin" /> : <Save size={14} />}
    {isSaving ? 'COMMITTING...' : 'COMMIT CHANGES'}

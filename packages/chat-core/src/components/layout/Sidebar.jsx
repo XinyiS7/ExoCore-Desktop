@@ -32,7 +32,7 @@ const NavIcon = ({ icon: Icon, isActive, onClick, title, label, isExpanded, show
 
  {/* Tooltip for collapsed state */}
  {!isExpanded && (
-  <div className="absolute left-14 px-2 py-1 bg-exo-panel border border-exo-border rounded text-[10px] text-exo-accent opacity-0 group-hover/nav:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[100] tracking-widest hidden md:block">
+  <div className="absolute left-14 px-2 py-1 bg-exo-panel border border-exo-border rounded text-[0.625rem] text-exo-accent opacity-0 group-hover/nav:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[100] tracking-widest hidden md:block">
   {title}
   </div>
  )}
@@ -89,7 +89,7 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, onO
    }`}>
     <Hexagon size={20} className={currentTab === 'home' ? 'animate-pulse-glow drop-shadow-[0_0_2px_#fff]' : ''} />
    </div>
-   <span className={`text-[10px] font-bold tracking-[0.3em] text-exo-accent transition-all duration-300 overflow-hidden ${
+   <span className={`text-[0.625rem] font-bold tracking-[0.3em] text-exo-accent transition-all duration-300 overflow-hidden ${
     isExpanded ? 'opacity-100 w-32' : 'opacity-0 w-0'
    }`}>
     ExoCore
@@ -130,7 +130,7 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, onO
    isExpanded ? 'opacity-100 w-32' : 'opacity-0 w-0'
    }`}>
    <p className="text-xs font-bold text-exo-accent/80 truncate">{userNick}</p>
-   <p className="text-[10px] text-exo-muted truncate tracking-tighter opacity-70">EXO-CORE AUTH</p>
+   <p className="text-[0.625rem] text-exo-muted truncate tracking-tighter opacity-70">EXO-CORE AUTH</p>
    </div>
   </div>
   </div>

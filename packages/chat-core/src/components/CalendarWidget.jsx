@@ -283,7 +283,7 @@ export default function CalendarWidget() {
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
                 <span className="label-caps text-exo-muted/60">Google Calendar</span>
               </div>
-              <span className="text-[10px] text-exo-muted/30">{selectedGcalEvents.length} 事件</span>
+              <span className="text-[0.625rem] text-exo-muted/30">{selectedGcalEvents.length} 事件</span>
             </div>
             <div className="divide-y divide-exo-border/10">
               {selectedGcalEvents.map(ev => (
@@ -301,16 +301,16 @@ export default function CalendarWidget() {
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       {!ev.all_day && ev.start && (
-                        <span className="text-[10px] text-exo-muted/40">
+                        <span className="text-[0.625rem] text-exo-muted/40">
                           {ev.start.slice(11, 16)}
                           {ev.end ? ` – ${ev.end.slice(11, 16)}` : ''}
                         </span>
                       )}
                       {ev.all_day && (
-                        <span className="text-[10px] text-exo-muted/40">全天</span>
+                        <span className="text-[0.625rem] text-exo-muted/40">全天</span>
                       )}
                       {ev.location && (
-                        <span className="text-[10px] text-exo-muted/30 truncate">{ev.location}</span>
+                        <span className="text-[0.625rem] text-exo-muted/30 truncate">{ev.location}</span>
                       )}
                     </div>
                   </div>
@@ -326,11 +326,11 @@ export default function CalendarWidget() {
             <div className="flex items-center justify-between px-4 py-2 border-b border-exo-border/20">
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400/40" />
-                <span className="label-caps text-[10px] text-exo-muted/40">Google Calendar</span>
+                <span className="label-caps text-[0.625rem] text-exo-muted/40">Google Calendar</span>
               </div>
             </div>
             <div className="px-4 py-3">
-              <span className="text-[11px] text-exo-muted/30">该日期无外部日历事件</span>
+              <span className="text-[0.6875rem] text-exo-muted/30">该日期无外部日历事件</span>
             </div>
           </div>
         )}
@@ -365,11 +365,11 @@ function TodoItem({ entry, onToggle, onDelete }) {
           {entry.title}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className={`text-[10px] tracking-widest px-1 rounded bg-white/5 text-exo-muted/40`}>
+          <span className={`text-[0.625rem] tracking-widest px-1 rounded bg-white/5 text-exo-muted/40`}>
             {entry.entry_type}
           </span>
           {entry.description && (
-            <span className="text-[10px] text-exo-muted/30 truncate">{entry.description}</span>
+            <span className="text-[0.625rem] text-exo-muted/30 truncate">{entry.description}</span>
           )}
         </div>
       </div>

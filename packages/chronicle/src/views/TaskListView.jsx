@@ -6,7 +6,7 @@ import TaskRow from '../components/TaskRow';
 import { tasksApi } from 'exo-shared';
 
 const SectionHeader = ({ label }) => (
-  <div className="px-4 pt-4 pb-2 text-[9px] tracking-[0.2em] font-bold text-chron-muted/40 font-mono border-b border-chron-border/50 mb-1">
+  <div className="px-4 pt-4 pb-2 text-[0.5625rem] tracking-[0.2em] font-bold text-chron-muted/40 font-mono border-b border-chron-border/50 mb-1">
     {label}
   </div>
 );
@@ -91,7 +91,7 @@ export default function TaskListView() {
       </div>
       <div className="flex-1 overflow-y-auto px-3 pb-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[9px] font-mono tracking-[0.3em] text-chron-muted">
+          <p className="text-[0.5625rem] font-mono tracking-[0.3em] text-chron-muted">
             {selectedDate}
           </p>
           <button
@@ -103,7 +103,7 @@ export default function TaskListView() {
           </button>
         </div>
         {filteredTasks.length === 0 ? (
-          <p className="text-[10px] text-chron-muted/40 italic">No tasks</p>
+          <p className="text-[0.625rem] text-chron-muted/40 italic">No tasks</p>
         ) : (
           <div className="space-y-1">
             {filteredTasks.map(task => (
@@ -143,7 +143,7 @@ export default function TaskListView() {
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowCalendar(false)} />
           <div className="absolute inset-y-0 left-0 w-72 bg-chron-panel border-r border-chron-border shadow-2xl z-[140]">
             <div className="flex items-center justify-between px-3 py-2 border-b border-chron-border">
-              <span className="text-[10px] font-mono tracking-[0.3em] text-chron-muted">Calendar</span>
+              <span className="text-[0.625rem] font-mono tracking-[0.3em] text-chron-muted">Calendar</span>
               <button onClick={() => setShowCalendar(false)} className="p-1 text-chron-muted hover:text-chron-text">
                 <X size={14} />
               </button>
@@ -163,10 +163,10 @@ export default function TaskListView() {
             <button onClick={() => setShowCalendar(true)} className="md:hidden p-1 text-chron-muted hover:text-chron-accent">
               <ChevronLeft size={16} strokeWidth={1.5} />
             </button>
-            <span className="text-[9px] font-mono text-chron-muted/40 hidden sm:block">{selectedDate}</span>
+            <span className="text-[0.5625rem] font-mono text-chron-muted/40 hidden sm:block">{selectedDate}</span>
             <button
               onClick={() => setModalEntry({})}
-              className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold tracking-widest text-chron-muted/50 hover:text-chron-accent hover:bg-chron-accent/10 rounded transition-all"
+              className="flex items-center gap-1 px-2 py-1 text-[0.625rem] font-bold tracking-widest text-chron-muted/50 hover:text-chron-accent hover:bg-chron-accent/10 rounded transition-all"
             >
               <Plus size={12} />
               New
@@ -193,15 +193,15 @@ export default function TaskListView() {
             ) : (
               <div className="bg-chron-panel/40 border border-chron-border/50 rounded-lg overflow-hidden">
                 <div className="px-4 py-2.5 border-b border-chron-border/50 flex items-center justify-between">
-                  <span className="text-[10px] font-mono tracking-[0.2em] text-chron-muted">
+                  <span className="text-[0.625rem] font-mono tracking-[0.2em] text-chron-muted">
                     Tasks · {selectedDate}
                   </span>
-                  <span className="text-[9px] text-chron-muted/30 font-mono">{filteredTasks.length} items</span>
+                  <span className="text-[0.5625rem] text-chron-muted/30 font-mono">{filteredTasks.length} items</span>
                 </div>
 
                 {pinned.length > 0 && (
                   <div className="border border-chron-accent/30 bg-chron-accent/[0.03] rounded m-3 overflow-hidden">
-                    <div className="px-4 py-2 bg-chron-accent/10 border-b border-chron-accent/20 text-[10px] tracking-[0.2em] font-bold text-chron-accent font-mono flex items-center gap-2">
+                    <div className="px-4 py-2 bg-chron-accent/10 border-b border-chron-accent/20 text-[0.625rem] tracking-[0.2em] font-bold text-chron-accent font-mono flex items-center gap-2">
                       <span className="w-1.5 h-1.5 bg-chron-accent rounded-full" />
                       Pinned
                     </div>

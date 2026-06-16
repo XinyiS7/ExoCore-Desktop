@@ -101,7 +101,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
    <h3 className="font-bold tracking-[0.2em] text-white flex items-center gap-2 text-sm">
     <Activity size={16} className="text-exo-accent" /> Node Initialization
    </h3>
-   <span className="text-[9px] text-exo-muted tracking-widest opacity-40 mt-1">Establishing Secure Neural Link</span>
+   <span className="text-[0.5625rem] text-exo-muted tracking-widest opacity-40 mt-1">Establishing Secure Neural Link</span>
    </div>
    <button onClick={onClose} className="p-2 text-exo-muted hover:text-white transition-colors"><X size={18}/></button>
   </div>
@@ -144,7 +144,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
      >
      <div className="flex flex-col gap-1">
       <span className={`text-[13px] font-bold tracking-tight ${isSelected ? (isSuperiorType(preset.agent_type) ? 'text-exo-accent' : 'text-white') : ''}`}>{preset.name}</span>
-      <span className="text-[10px] opacity-40 font-mono tracking-widest">{preset.default_model}</span>
+      <span className="text-[0.625rem] opacity-40 font-mono tracking-widest">{preset.default_model}</span>
      </div>
      {isSelected ? (
       <div className={`p-1 rounded-full ${isSuperiorType(preset.agent_type) ? 'bg-exo-accent text-exo-pure' : 'bg-white text-exo-pure'}`}>
@@ -180,8 +180,8 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
      >
      <Icon size={16} className={sessionType === value ? 'text-exo-accent' : ''} />
      <div className="flex flex-col">
-      <span className="text-[11px] font-bold tracking-widest">{label}</span>
-      <span className="text-[9px] opacity-40 font-mono">{desc}</span>
+      <span className="text-[0.6875rem] font-bold tracking-widest">{label}</span>
+      <span className="text-[0.5625rem] opacity-40 font-mono">{desc}</span>
      </div>
      </div>
     ))}
@@ -193,13 +193,13 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
    <div className="space-y-3">
    <label className="label-caps flex justify-between items-center">
     <span>所属 Project / 归属项目</span>
-    <span className="text-[9px] text-exo-muted font-mono tracking-tighter opacity-60">
+    <span className="text-[0.5625rem] text-exo-muted font-mono tracking-tighter opacity-60">
     [Optional · Single]
     </span>
    </label>
    <div className="max-h-40 overflow-y-auto border border-exo-mist-10 rounded-[2px] bg-black/40 p-2 space-y-1 scrollbar-hide">
     {projects.length === 0 && (
-    <div className="text-center py-4 text-[10px] font-mono text-exo-muted/30 italic">No project clusters found</div>
+    <div className="text-center py-4 text-[0.625rem] font-mono text-exo-muted/30 italic">No project clusters found</div>
     )}
     {projects.map(proj => {
     const isSelected = selectedProjectId === String(proj.id);
@@ -208,7 +208,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
      key={proj.id}
      onClick={() => handleBelongingProject(proj.id)}
      className={`
-      px-4 py-2.5 rounded-[2px] text-[11px] font-mono cursor-pointer flex justify-between items-center transition-all
+      px-4 py-2.5 rounded-[2px] text-[0.6875rem] font-mono cursor-pointer flex justify-between items-center transition-all
       ${isSelected
       ? 'bg-exo-accent/10 text-white border border-exo-accent/20'
       : 'text-exo-muted/60 hover:text-white hover:bg-exo-accent/[0.04] border border-transparent'}
@@ -226,7 +226,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
    <div className="space-y-3">
    <label className="label-caps flex justify-between items-center">
     <span>权限 Project / 权限项目</span>
-    <span className={`text-[9px] font-mono tracking-tighter ${
+    <span className={`text-[0.5625rem] font-mono tracking-tighter ${
     isG045 ? 'text-exo-accent opacity-60' : 'text-exo-muted/30'
     }`}>
     {isG045 ? '[Multi-Select Enabled]' : '[Superior/G045 Only]'}
@@ -239,7 +239,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
     }`}
    >
     {projects.length === 0 && (
-    <div className="text-center py-4 text-[10px] font-mono text-exo-muted/30 italic">No project clusters found</div>
+    <div className="text-center py-4 text-[0.625rem] font-mono text-exo-muted/30 italic">No project clusters found</div>
     )}
     {projects.map(proj => {
     const isSelected = permissionProjectIds.includes(proj.id);
@@ -248,7 +248,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
      key={proj.id}
      onClick={() => handlePermissionProject(proj.id)}
      className={`
-      px-4 py-2.5 rounded-[2px] text-[11px] font-mono cursor-pointer flex justify-between items-center transition-all
+      px-4 py-2.5 rounded-[2px] text-[0.6875rem] font-mono cursor-pointer flex justify-between items-center transition-all
       ${isSelected
       ? 'bg-purple-500/10 text-purple-300 border border-purple-500/20'
       : 'text-exo-muted/60 hover:text-white hover:bg-exo-accent/[0.04] border border-transparent'}
@@ -267,14 +267,14 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
   <div className="p-4 border-t border-exo-mist-10 flex justify-end gap-3 bg-exo-pure/80 backdrop-blur-md">
    <button 
    onClick={onClose} 
-   className="px-6 py-2 rounded-[2px] text-[11px] font-bold tracking-widest text-exo-muted hover:text-white transition-colors"
+   className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest text-exo-muted hover:text-white transition-colors"
    >
    Abort
    </button>
    <button 
    onClick={handleSubmit} 
    disabled={isSubmitting} 
-   className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[11px] font-bold tracking-[0.2em] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
+   className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[0.6875rem] font-bold tracking-[0.2em] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
    >
    {isSubmitting ? <Activity size={14} className="animate-spin" /> : <Plus size={14} />} Commit Link
    </button>

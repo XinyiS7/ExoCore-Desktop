@@ -88,11 +88,11 @@ const GroupchatMessage = React.memo(({ msg, isUser, senderName, senderAvatarUrl,
    className={`w-6 h-6 rounded-[2px] border bg-exo-pure object-cover ${isUser ? 'border-exo-mist-20' : 'border-exo-accent/40 shadow-glow-gold'}`}
    alt={senderName}
   />
-  <span className={`text-[10px] font-mono font-bold tracking-[0.2em] ${isUser ? 'text-exo-muted' : 'text-exo-accent'}`}>
+  <span className={`text-[0.625rem] font-mono font-bold tracking-[0.2em] ${isUser ? 'text-exo-muted' : 'text-exo-accent'}`}>
    {senderName}
   </span>
   {msg.created_at && (
-   <span className="text-[9px] font-mono text-exo-muted/40 tracking-tight">
+   <span className="text-[0.5625rem] font-mono text-exo-muted/40 tracking-tight">
    {formatMessageTime(msg.created_at)}
    </span>
   )}

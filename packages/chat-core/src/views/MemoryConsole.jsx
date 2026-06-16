@@ -13,7 +13,7 @@ export default function MemoryConsole() {
    Centralized memory management — scopes, portraits, knowledge fragments,
    and triggered notes — will be available here.
   </p>
-  <p className="text-[10px] font-mono text-chat-muted/40 tracking-widest">
+  <p className="text-[0.625rem] font-mono text-chat-muted/40 tracking-widest">
    Coming Soon
   </p>
   </div>

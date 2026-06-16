@@ -31,8 +31,8 @@ const toDateStr = (d) => d.toISOString().slice(0, 10);
 const CustomTooltip = ({ active, payload, label }) => {
  if (!active || !payload?.length) return null;
  return (
- <div className="bg-exo-panel border border-exo-border rounded-[3px] px-3 py-2 text-[11px] shadow-xl">
-  <p className="text-exo-muted mb-1.5 tracking-widest text-[9px]">{label}</p>
+ <div className="bg-exo-panel border border-exo-border rounded-[3px] px-3 py-2 text-[0.6875rem] shadow-xl">
+  <p className="text-exo-muted mb-1.5 tracking-widest text-[0.5625rem]">{label}</p>
   {payload.map(p => (
   <div key={p.dataKey} className="flex items-center gap-2 mb-0.5">
    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.color }} />
@@ -56,7 +56,7 @@ const ChartSummary = ({ data, models, valueKey, label, modelColor }) => {
   const avg = convTotal > 0 ? Math.round(total / convTotal) : 0;
   if (total === 0) return null;
   return (
-   <div key={model} className="flex items-center gap-2 text-[10px] ">
+   <div key={model} className="flex items-center gap-2 text-[0.625rem] ">
    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: modelColor(model) }} />
    <span className="text-exo-muted truncate max-w-[100px]" title={model}>{model}</span>
    <span className="text-white">{total.toLocaleString()}</span>
@@ -253,7 +253,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
   >
    {/* Header */}
    <div className="h-14 border-b border-exo-border flex items-center justify-between px-5 shrink-0">
-   <span className="text-[11px] font-bold tracking-[0.25em] text-exo-muted">User Profile</span>
+   <span className="text-[0.6875rem] font-bold tracking-[0.25em] text-exo-muted">User Profile</span>
    <button onClick={onClose} className="p-1.5 text-exo-muted hover:text-white transition-colors rounded">
     <X size={16} />
    </button>
@@ -300,7 +300,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
      title="点击修改名称"
      >
      <p className="text-[15px] font-bold text-white group-hover/nick:text-exo-accent transition-colors truncate">{userNick}</p>
-     <p className="text-[10px] text-exo-muted tracking-widest mt-0.5 opacity-60">EXO-CORE AUTH · 点击修改</p>
+     <p className="text-[0.625rem] text-exo-muted tracking-widest mt-0.5 opacity-60">EXO-CORE AUTH · 点击修改</p>
      </button>
     )}
     </div>
@@ -318,7 +318,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
      <button
      key={p.key}
      onClick={() => setPlatform(p.key)}
-     className={`px-3 py-1.5 text-[10px] font-bold tracking-widest transition-colors ${
+     className={`px-3 py-1.5 text-[0.625rem] font-bold tracking-widest transition-colors ${
       platform === p.key
       ? 'bg-exo-accent/15 text-exo-accent'
       : 'text-exo-muted hover:text-exo-text'
@@ -339,7 +339,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
     </button>
     <button
      onClick={toggleMode}
-     className="px-3 py-1.5 text-[10px] font-bold tracking-widest text-exo-text hover:text-exo-accent transition-colors min-w-[80px] text-center"
+     className="px-3 py-1.5 text-[0.625rem] font-bold tracking-widest text-exo-text hover:text-exo-accent transition-colors min-w-[80px] text-center"
      title={mode === 'week' ? '切换为按月显示' : '切换为按周显示'}
     >
      {rawData?.is_current
@@ -362,24 +362,24 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
 
    {/* Loading / Error / No data */}
    {isLoadingStats && (
-    <div className="flex-1 flex items-center justify-center text-exo-muted text-[11px] tracking-widest gap-2">
+    <div className="flex-1 flex items-center justify-center text-exo-muted text-[0.6875rem] tracking-widest gap-2">
     <Activity size={14} className="animate-spin text-exo-accent" /> Loading...
     </div>
    )}
 
    {!isLoadingStats && statsError && (
     <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
-    <p className="text-[11px] text-exo-muted tracking-widest opacity-60">
+    <p className="text-[0.6875rem] text-exo-muted tracking-widest opacity-60">
      统计接口暂未接入
     </p>
-    <p className="text-[10px] text-exo-muted/40 ">
+    <p className="text-[0.625rem] text-exo-muted/40 ">
      需要后端实现 GET /api/core/stats/usage/
     </p>
     </div>
    )}
 
    {!isLoadingStats && !statsError && !hasData && rawData && (
-    <div className="flex-1 flex items-center justify-center text-exo-muted text-[11px] tracking-widest opacity-40">
+    <div className="flex-1 flex items-center justify-center text-exo-muted text-[0.6875rem] tracking-widest opacity-40">
     当前周期暂无数据
     </div>
    )}
@@ -431,7 +431,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
 const ChartBlock = ({ title, data, models, valueKey, onActivate, activePoint, modelColor }) => {
  return (
  <div className="shrink-0">
-  <p className="text-[10px] font-bold tracking-[0.25em] text-exo-muted mb-3">{title}</p>
+  <p className="text-[0.625rem] font-bold tracking-[0.25em] text-exo-muted mb-3">{title}</p>
   <ResponsiveContainer width="100%" height={160}>
   <LineChart
    data={data}

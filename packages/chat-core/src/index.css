@@ -67,7 +67,7 @@ button {
     background: var(--cinder-line-glow);
   }
   .sec-head-label {
-    @apply text-[10px] font-light;
+    @apply text-[0.625rem] font-light;
     letter-spacing: 0.3em;
     color: var(--cinder-text-dim);
   }
@@ -80,7 +80,7 @@ button {
 
   /* ── Typography atoms ── */
   .label-caps {
-    @apply text-[10px] font-bold tracking-[0.2em];
+    @apply text-[0.625rem] font-bold tracking-[0.2em];
     color: var(--cinder-text-dim);
   }
 

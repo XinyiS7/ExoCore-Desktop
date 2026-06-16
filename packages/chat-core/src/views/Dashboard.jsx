@@ -251,7 +251,7 @@ export default function Dashboard({ appState, setView }) {
                         <span className="text-sm block truncate" style={{ color: 'var(--cinder-text)' }}>
                           {convo.name || `Session #${convo.id}`}
                         </span>
-                        <span className="text-[9px]" style={{ color: 'var(--cinder-text-faint)' }}>
+                        <span className="text-[0.5625rem]" style={{ color: 'var(--cinder-text-faint)' }}>
                           {getAgentName(convo.agent_preset_id)} · {convo.agent_type}
                         </span>
                       </div>

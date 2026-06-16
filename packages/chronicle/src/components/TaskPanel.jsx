@@ -25,7 +25,7 @@ const STATUS_OPTS = [
 
 function SectionHeader({ label }) {
   return (
-    <div className="px-6 pt-6 pb-2 text-[10px] tracking-[0.2em] font-bold text-exo-muted/40 font-mono border-b border-exo-mist-6 mb-2">
+    <div className="px-6 pt-6 pb-2 text-[0.625rem] tracking-[0.2em] font-bold text-exo-muted/40 font-mono border-b border-exo-mist-6 mb-2">
       {label}
     </div>
   );
@@ -113,7 +113,7 @@ export default function TaskPanel({ openDestructor }) {
         ${showSidebar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="flex items-center justify-between px-4 h-14 border-b border-exo-mist-10 lg:hidden">
-          <span className="text-[10px] font-bold text-exo-accent tracking-[0.2em] font-mono">CHRONOS_FLTR</span>
+          <span className="text-[0.625rem] font-bold text-exo-accent tracking-[0.2em] font-mono">CHRONOS_FLTR</span>
           <button onClick={() => setShowSidebar(false)} className="p-1 text-exo-muted hover:text-chron-text">
             <X size={18} />
           </button>
@@ -136,7 +136,7 @@ export default function TaskPanel({ openDestructor }) {
                   key={t.value}
                   onClick={() => setTypeFilter(t.value)}
                   className={`
-                    group flex items-center gap-3 w-full text-[11px] py-2 px-3 rounded-[2px] transition-all text-left font-mono tracking-tight
+                    group flex items-center gap-3 w-full text-[0.6875rem] py-2 px-3 rounded-[2px] transition-all text-left font-mono tracking-tight
                     ${typeFilter === t.value
                       ? 'text-exo-accent bg-exo-accent/5 border-l-2 border-exo-accent'
                       : 'text-exo-muted/60 hover:text-chron-text hover:bg-chron-accent/5 border-l-2 border-transparent'}
@@ -157,7 +157,7 @@ export default function TaskPanel({ openDestructor }) {
                   key={s.value}
                   onClick={() => setStatusFilter(s.value)}
                   className={`
-                    group flex items-center gap-3 w-full text-[11px] py-2 px-3 rounded-[2px] transition-all text-left font-mono tracking-tight
+                    group flex items-center gap-3 w-full text-[0.6875rem] py-2 px-3 rounded-[2px] transition-all text-left font-mono tracking-tight
                     ${statusFilter === s.value
                       ? 'text-exo-accent bg-exo-accent/5 border-l-2 border-exo-accent'
                       : 'text-exo-muted/60 hover:text-chron-text hover:bg-chron-accent/5 border-l-2 border-transparent'}
@@ -183,14 +183,14 @@ export default function TaskPanel({ openDestructor }) {
               <Filter size={18} />
             </button>
             <div className="flex flex-col">
-              <span className="text-[10px] tracking-[0.3em] text-exo-accent font-bold font-mono">Chronos / {selectedDate}</span>
-              <span className="text-[8px] tracking-[0.1em] text-exo-muted font-mono opacity-40">Operational Pipeline Monitor</span>
+              <span className="text-[0.625rem] tracking-[0.3em] text-exo-accent font-bold font-mono">Chronos / {selectedDate}</span>
+              <span className="text-[0.5rem] tracking-[0.1em] text-exo-muted font-mono opacity-40">Operational Pipeline Monitor</span>
             </div>
           </div>
           
           <button
             onClick={() => setModalEntry({})}
-            className="flex items-center gap-2 px-4 py-1.5 bg-chron-accent text-white rounded-[2px] text-[11px] font-bold tracking-widest hover:bg-chron-accent/80 transition-all shadow-brutalist active:scale-95"
+            className="flex items-center gap-2 px-4 py-1.5 bg-chron-accent text-white rounded-[2px] text-[0.6875rem] font-bold tracking-widest hover:bg-chron-accent/80 transition-all shadow-brutalist active:scale-95"
           >
             <Plus size={14} />
             <span className="hidden sm:inline">Initialize Task</span>
@@ -201,15 +201,15 @@ export default function TaskPanel({ openDestructor }) {
         {/* Task list */}
         <div className="flex-1 overflow-y-auto px-4 lg:px-8">
           {loading && (
-            <div className="flex items-center justify-center h-48 text-[11px] text-exo-muted font-mono tracking-[0.3em] animate-pulse">
+            <div className="flex items-center justify-center h-48 text-[0.6875rem] text-exo-muted font-mono tracking-[0.3em] animate-pulse">
               Synchronizing with Chronos Core...
             </div>
           )}
 
           {!loading && filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center h-64 opacity-20">
-              <span className="text-[11px] text-chron-text/40 font-mono tracking-[0.3em]">No Active Tasks</span>
-              <span className="text-[9px] text-chron-text/30 font-mono tracking-[0.1em] mt-2">Cycle: {selectedDate}</span>
+              <span className="text-[0.6875rem] text-chron-text/40 font-mono tracking-[0.3em]">No Active Tasks</span>
+              <span className="text-[0.5625rem] text-chron-text/30 font-mono tracking-[0.1em] mt-2">Cycle: {selectedDate}</span>
             </div>
           )}
 
@@ -218,7 +218,7 @@ export default function TaskPanel({ openDestructor }) {
               {/* 📌 Pinned */}
               {pinned.length > 0 && (
                 <div className="mb-8 border border-exo-accent/30 bg-exo-accent/[0.03] rounded-[4px] overflow-hidden shadow-[0_0_30px_rgba(212,175,55,0.05)]">
-                  <div className="px-4 py-2 bg-exo-accent/10 border-b border-exo-accent/20 text-[10px] tracking-[0.2em] font-bold text-exo-accent font-mono flex items-center gap-2">
+                  <div className="px-4 py-2 bg-exo-accent/10 border-b border-exo-accent/20 text-[0.625rem] tracking-[0.2em] font-bold text-exo-accent font-mono flex items-center gap-2">
                     <span className="w-1.5 h-1.5 bg-exo-accent rounded-full animate-pulse-glow" />
                     Escalated Priority
                   </div>

@@ -115,7 +115,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
                 <span className="truncate">{preset.name}</span>
                 {isG045 && <Sparkles size={14} className="text-exo-accent animate-pulse-glow shrink-0" />}
               </h3>
-              <p className="text-[10px] text-exo-muted tracking-[0.1em] truncate opacity-60">Model: {preset.default_model}</p>
+              <p className="text-[0.625rem] text-exo-muted tracking-[0.1em] truncate opacity-60">Model: {preset.default_model}</p>
             </div>
           </div>
 
@@ -146,7 +146,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
                 openNewSession({ presetId: preset.id });
                 setCurrentTab('chat');
               }}
-              className="px-4 py-2 bg-white text-exo-pure rounded-[2px] flex items-center gap-2 text-[11px] font-bold tracking-widest hover:bg-exo-accent transition-all shadow-brutalist active:scale-95"
+              className="px-4 py-2 bg-white text-exo-pure rounded-[2px] flex items-center gap-2 text-[0.6875rem] font-bold tracking-widest hover:bg-exo-accent transition-all shadow-brutalist active:scale-95"
             >
               <Play size={12} fill="currentColor" /> Initiate
             </button>
@@ -160,10 +160,10 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
         {isG045 && (
           <div className="mt-auto pt-4 border-t border-exo-accent/20">
             <div className="flex items-center justify-between mb-3">
-              <div className="text-[10px] font-bold text-exo-accent tracking-[0.2em] flex items-center gap-2">
+              <div className="text-[0.625rem] font-bold text-exo-accent tracking-[0.2em] flex items-center gap-2">
                 <Clock size={12} className="animate-pulse" /> Active Neural Trace
               </div>
-              <span className="text-[9px] text-exo-accent/40 tracking-tighter">[L3_SYNC_ACTIVE]</span>
+              <span className="text-[0.5625rem] text-exo-accent/40 tracking-tighter">[L3_SYNC_ACTIVE]</span>
             </div>
             <MemoryAnchorTicker anchors={anchorCache[preset.id] || []} />
           </div>
@@ -185,7 +185,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
         <div className="space-y-4 animate-fade-in">
           <div className="flex items-center gap-3">
             <div className="h-px w-8 bg-exo-accent" />
-            <div className="text-[10px] tracking-[0.5em] text-exo-accent">ExoCore Agent Cluster // Management.Console</div>
+            <div className="text-[0.625rem] tracking-[0.5em] text-exo-accent">ExoCore Agent Cluster // Management.Console</div>
           </div>
           <h2 className="text-4xl font-light text-white tracking-tight flex items-center gap-4">
             <BrainCircuit className="text-exo-accent" size={36} /> Central Neural Hub

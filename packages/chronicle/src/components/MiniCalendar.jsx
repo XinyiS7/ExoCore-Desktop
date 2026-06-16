@@ -91,7 +91,7 @@ export default function MiniCalendar({ selectedDate, onSelectDate, entries = [],
         <button onClick={prevMonth} className="p-1 text-exo-muted/40 hover:text-exo-muted transition-colors rounded">
           <ChevronLeft size={13} />
         </button>
-        <span className="text-[10px] tracking-widest text-exo-text/70">{monthLabel}</span>
+        <span className="text-[0.625rem] tracking-widest text-exo-text/70">{monthLabel}</span>
         <button onClick={nextMonth} className="p-1 text-exo-muted/40 hover:text-exo-muted transition-colors rounded">
           <ChevronRight size={13} />
         </button>
@@ -100,7 +100,7 @@ export default function MiniCalendar({ selectedDate, onSelectDate, entries = [],
       {/* DOW header */}
       <div className="grid grid-cols-7 mb-1">
         {DOW.map(d => (
-          <div key={d} className="text-center text-[9px] text-exo-muted/30 tracking-wide py-0.5">{d}</div>
+          <div key={d} className="text-center text-[0.5625rem] text-exo-muted/30 tracking-wide py-0.5">{d}</div>
         ))}
       </div>
 
@@ -117,7 +117,7 @@ export default function MiniCalendar({ selectedDate, onSelectDate, entries = [],
               key={cell.iso}
               onClick={() => onSelectDate(cell.iso)}
               className={[
-                'relative flex flex-col items-center justify-center rounded-lg py-1 text-[11px] transition-all',
+                'relative flex flex-col items-center justify-center rounded-lg py-1 text-[0.6875rem] transition-all',
                 isSelected
                   ? 'bg-exo-accent/20 text-exo-accent'
                   : isToday

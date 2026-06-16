@@ -137,10 +137,10 @@ const ProjectFilesArea = ({ projectId, projects, setProjects, openDestructor }) 
       <div className="flex-1 overflow-hidden">
       <p className="text-sm font-bold text-exo-text truncate" title={file.name}>{file.name}</p>
       <div className="flex items-center gap-2 mt-1">
-       <span className="text-[10px] text-exo-muted bg-black px-1.5 py-0.5 rounded border border-exo-border">
+       <span className="text-[0.625rem] text-exo-muted bg-black px-1.5 py-0.5 rounded border border-exo-border">
        {file.source === 'obsidian_sync' ? 'OBSIDIAN' : 'MANUAL'}
        </span>
-       <span className="text-[10px] text-exo-muted ">{formatBytes(file.size)}</span>
+       <span className="text-[0.625rem] text-exo-muted ">{formatBytes(file.size)}</span>
       </div>
       </div>
      </div>

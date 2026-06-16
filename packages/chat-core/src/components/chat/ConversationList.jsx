@@ -116,11 +116,11 @@ const ConversationList = ({
   </div>
   <div className="flex flex-col min-w-0">
    <span className={`text-sm truncate tracking-wide font-light ${inactive && activeSessionId !== conv.id ? 'opacity-50' : ''}`}>{conv.name || `Session #${conv.id}`}</span>
-   {isMainView && <span className="text-[9px] opacity-40 tracking-tighter">TIMESTAMP: {new Date(conv.last_message_at || conv.created_at).toLocaleString()}</span>}
+   {isMainView && <span className="text-[0.5625rem] opacity-40 tracking-tighter">TIMESTAMP: {new Date(conv.last_message_at || conv.created_at).toLocaleString()}</span>}
   </div>
   </div>
   {inactive && activeSessionId !== conv.id && (
-  <span className="text-[8px] font-mono tracking-[0.15em] text-exo-muted/20 border border-exo-mist-6 rounded-[2px] px-1.5 py-0.5 flex-shrink-0">休眠</span>
+  <span className="text-[0.5rem] font-mono tracking-[0.15em] text-exo-muted/20 border border-exo-mist-6 rounded-[2px] px-1.5 py-0.5 flex-shrink-0">休眠</span>
   )}
  </div>
  );
@@ -135,7 +135,7 @@ const ConversationList = ({
   {/* Search & Header */}
   <div className={`p-8 space-y-6 shrink-0 ${isMainView ? 'max-w-4xl mx-auto w-full' : ''}`}>
   <div className="flex items-center justify-between">
-   <h2 className="text-[10px] font-bold tracking-[0.4em] text-exo-accent">
+   <h2 className="text-[0.625rem] font-bold tracking-[0.4em] text-exo-accent">
    {mode === 'chat' && 'Nodes Hub'}
    {mode === 'council' && 'Council Hub'}
    {mode === 'project' && 'Project Repos'}
@@ -158,7 +158,7 @@ const ConversationList = ({
    placeholder="Search active nodes..."
    value={searchQuery}
    onChange={(e) => setSearchQuery(e.target.value)}
-   className="w-full bg-exo-pure border border-exo-mist-10 rounded-[4px] py-2.5 pl-10 pr-4 text-[11px] font-mono tracking-widest focus:border-exo-accent/40 focus:bg-exo-accent/5 outline-none transition-all placeholder:text-exo-muted/20"
+   className="w-full bg-exo-pure border border-exo-mist-10 rounded-[4px] py-2.5 pl-10 pr-4 text-[0.6875rem] font-mono tracking-widest focus:border-exo-accent/40 focus:bg-exo-accent/5 outline-none transition-all placeholder:text-exo-muted/20"
    />
   </div>
   </div>
@@ -170,7 +170,7 @@ const ConversationList = ({
     {/* G045 cognitively superior */}
     {g045Sessions.length > 0 && (
     <div className="flex flex-col shrink-0">
-     <div className="text-[9px] font-mono font-bold text-exo-accent/60 flex items-center gap-2 tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
+     <div className="text-[0.5625rem] font-mono font-bold text-exo-accent/60 flex items-center gap-2 tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
      <Sparkles size={12} /> Superior Cognitive
      </div>
      <div className="grid gap-1 pb-4">
@@ -187,7 +187,7 @@ const ConversationList = ({
     {/* Projects Zone */}
     {sortedProjects.length > 0 && (
     <div className="flex flex-col shrink-0">
-     <div className="text-[9px] font-mono font-bold text-exo-muted/40 flex items-center gap-2 tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
+     <div className="text-[0.5625rem] font-mono font-bold text-exo-muted/40 flex items-center gap-2 tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
      <Box size={12} /> Project Repositories
      </div>
      <div className="flex-1 pb-4">
@@ -206,7 +206,7 @@ const ConversationList = ({
         </div>
         <div className="flex-1 min-w-0">
         <div className="text-sm font-light truncate leading-tight">{proj.name}</div>
-        <div className="text-[9px] font-mono opacity-30 tracking-tighter">{projSessions.length} active nodes</div>
+        <div className="text-[0.5625rem] font-mono opacity-30 tracking-tighter">{projSessions.length} active nodes</div>
         </div>
         <button
         onClick={(e) => { e.stopPropagation(); handleRenameProject(proj); }}
@@ -221,7 +221,7 @@ const ConversationList = ({
         <div className="pl-4 space-y-1 border-l border-exo-mist-6 ml-6 py-1 animate-fade-in">
         <div
          onClick={() => { setActiveFileProjectId(proj.id); setActiveSessionId(null); onClose(); }}
-         className={`flex items-center gap-3 p-2.5 rounded-[4px] cursor-pointer text-[10px] font-mono tracking-[0.2em] transition-all border border-transparent ${
+         className={`flex items-center gap-3 p-2.5 rounded-[4px] cursor-pointer text-[0.625rem] font-mono tracking-[0.2em] transition-all border border-transparent ${
          activeFileProjectId === proj.id
           ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]'
           : 'text-blue-400/60 hover:bg-blue-500/5 hover:text-blue-400 hover:border-blue-500/10'
@@ -239,7 +239,7 @@ const ConversationList = ({
      {sortedProjects.length > 2 && (
       <button
       onClick={() => setShowAllProjects(p => !p)}
-      className="text-[9px] font-mono tracking-[0.2em] text-exo-muted/40 hover:text-exo-accent transition-colors px-2 pt-3"
+      className="text-[0.5625rem] font-mono tracking-[0.2em] text-exo-muted/40 hover:text-exo-accent transition-colors px-2 pt-3"
       >
       {showAllProjects ? '<< Collapse' : '>> Reveal more'}
       </button>
@@ -256,7 +256,7 @@ const ConversationList = ({
     {/* Standard Sessions */}
     {standardSessions.length > 0 && (
     <div className="flex flex-col">
-     <div className="text-[9px] font-mono font-bold text-exo-muted/40 flex items-center gap-2 tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
+     <div className="text-[0.5625rem] font-mono font-bold text-exo-muted/40 flex items-center gap-2 tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
      <MessageSquare size={12} /> Recent Links
      </div>
      <div className="grid gap-1 pb-8">
@@ -272,7 +272,7 @@ const ConversationList = ({
     {councilSessions.length === 0 ? (
      <div className="py-20 text-center opacity-10">
      <Users size={48} className="mx-auto mb-4" />
-     <p className="text-[10px] font-mono tracking-[0.4em]">No Active Councils</p>
+     <p className="text-[0.625rem] font-mono tracking-[0.4em]">No Active Councils</p>
      </div>
     ) : councilSessions.map(cs => (
     <div
@@ -290,8 +290,8 @@ const ConversationList = ({
      <div className="flex-1 min-w-0">
      <div className="text-base font-light truncate mb-1">{cs.topic || cs.arbitrator_preset_name || `Council #${cs.id}`}</div>
      <div className="flex items-center gap-3">
-      <span className="text-[9px] font-mono font-bold tracking-[0.2em] px-2 py-0.5 rounded-[2px] bg-exo-accent/10 border border-exo-accent/30 text-exo-accent">{cs.status}</span>
-      <span className="text-[9px] font-mono opacity-30 tracking-tighter">{new Date(cs.created_at).toLocaleDateString()}</span>
+      <span className="text-[0.5625rem] font-mono font-bold tracking-[0.2em] px-2 py-0.5 rounded-[2px] bg-exo-accent/10 border border-exo-accent/30 text-exo-accent">{cs.status}</span>
+      <span className="text-[0.5625rem] font-mono opacity-30 tracking-tighter">{new Date(cs.created_at).toLocaleDateString()}</span>
      </div>
      </div>
     </div>
@@ -301,7 +301,7 @@ const ConversationList = ({
 
    {mode === 'project' && (
     <div className="space-y-6">
-    <div className="text-[9px] font-mono font-bold text-exo-muted/40 flex items-center gap-2 tracking-[0.3em] px-2">
+    <div className="text-[0.5625rem] font-mono font-bold text-exo-muted/40 flex items-center gap-2 tracking-[0.3em] px-2">
      <Box size={12} /> Project Repositories
     </div>
     <div className="grid gap-3">
@@ -319,7 +319,7 @@ const ConversationList = ({
        </div>
        <div className="flex-1 min-w-0">
        <div className="text-base font-light truncate">{proj.name}</div>
-       <div className="text-[9px] font-mono opacity-30 tracking-tighter">{projSessions.length} active nodes</div>
+       <div className="text-[0.5625rem] font-mono opacity-30 tracking-tighter">{projSessions.length} active nodes</div>
        </div>
        <button
        onClick={(e) => { e.stopPropagation(); handleRenameProject(proj); }}
@@ -334,7 +334,7 @@ const ConversationList = ({
        <div className="pl-6 space-y-1 border-l border-exo-mist-6 ml-8 py-1 animate-fade-in">
         <div
         onClick={() => { setActiveFileProjectId(proj.id); setActiveSessionId(null); onClose(); }}
-        className={`flex items-center gap-3 p-3 rounded-[4px] cursor-pointer text-[10px] font-mono tracking-[0.2em] transition-all border border-transparent ${
+        className={`flex items-center gap-3 p-3 rounded-[4px] cursor-pointer text-[0.625rem] font-mono tracking-[0.2em] transition-all border border-transparent ${
          activeFileProjectId === proj.id
          ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
          : 'text-blue-400/60 hover:bg-blue-500/5 hover:text-blue-400'
@@ -355,7 +355,7 @@ const ConversationList = ({
    {filteredConversations.length === 0 && (
    <div className="flex flex-col items-center justify-center py-20 opacity-10 text-center gap-6">
     <ShieldAlert size={48} strokeWidth={1} />
-    <p className="text-[10px] font-mono tracking-[0.5em] font-light leading-relaxed">No Nodes Detected<br/>Establish Connection</p>
+    <p className="text-[0.625rem] font-mono tracking-[0.5em] font-light leading-relaxed">No Nodes Detected<br/>Establish Connection</p>
    </div>
    )}
   </div>

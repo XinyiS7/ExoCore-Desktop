@@ -29,8 +29,8 @@ const toDateStr = (d) => d.toISOString().slice(0, 10);
 const CustomTooltip = ({ active, payload, label }) => {
  if (!active || !payload?.length) return null;
  return (
- <div className="bg-exo-panel border border-exo-border rounded-[3px] px-3 py-2 text-[11px] shadow-xl">
-  <p className="text-exo-muted mb-1.5 tracking-widest text-[9px]">{label}</p>
+ <div className="bg-exo-panel border border-exo-border rounded-[3px] px-3 py-2 text-[0.6875rem] shadow-xl">
+  <p className="text-exo-muted mb-1.5 tracking-widest text-[0.5625rem]">{label}</p>
   {payload.map(p => (
   <div key={p.dataKey} className="flex items-center gap-2 mb-0.5">
    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.color }} />
@@ -52,7 +52,7 @@ const ChartSummary = ({ data, models, valueKey }) => {
   const avg = convTotal > 0 ? Math.round(total / convTotal) : 0;
   if (total === 0) return null;
   return (
-   <div key={model} className="flex items-center gap-2 text-[10px] ">
+   <div key={model} className="flex items-center gap-2 text-[0.625rem] ">
    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: modelColor(model) }} />
    <span className="text-exo-muted truncate max-w-[100px]" title={model}>{model}</span>
    <span className="text-white">{total.toLocaleString()}</span>
@@ -70,7 +70,7 @@ const ChartSummary = ({ data, models, valueKey }) => {
 const ChartBlock = ({ title, data, models, valueKey }) => {
  return (
  <div className="shrink-0">
-  <p className="text-[10px] font-bold tracking-[0.25em] text-exo-muted mb-3">{title}</p>
+  <p className="text-[0.625rem] font-bold tracking-[0.25em] text-exo-muted mb-3">{title}</p>
   <ResponsiveContainer width="100%" height={160}>
   <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
@@ -371,11 +371,11 @@ export default function UserProfile({ appState, setView, goBack }) {
      {user.name}
      </h2>
     )}
-    <span className="text-[10px] tracking-wider px-2 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
+    <span className="text-[0.625rem] tracking-wider px-2 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
      user
     </span>
     {fieldSaving === 'name' && (
-     <span className="text-[10px] text-exo-accent animate-pulse">saving...</span>
+     <span className="text-[0.625rem] text-exo-accent animate-pulse">saving...</span>
     )}
     </div>
 
@@ -402,12 +402,12 @@ export default function UserProfile({ appState, setView, goBack }) {
     </p>
     )}
     {fieldSaving === 'description' && (
-    <span className="text-[10px] text-exo-accent animate-pulse">saving...</span>
+    <span className="text-[0.625rem] text-exo-accent animate-pulse">saving...</span>
     )}
 
     {/* Model — editable text string */}
     <div className="flex items-center gap-2">
-    <span className="text-[10px] tracking-wider text-exo-muted">Model:</span>
+    <span className="text-[0.625rem] tracking-wider text-exo-muted">Model:</span>
     {editingModel ? (
      <input
      ref={modelInputRef}
@@ -430,7 +430,7 @@ export default function UserProfile({ appState, setView, goBack }) {
      </span>
     )}
     {fieldSaving === 'default_model' && (
-     <span className="text-[10px] text-exo-accent animate-pulse">saving...</span>
+     <span className="text-[0.625rem] text-exo-accent animate-pulse">saving...</span>
     )}
     </div>
    </div>
@@ -447,13 +447,13 @@ export default function UserProfile({ appState, setView, goBack }) {
    </div>
 
    {saveError && (
-   <p className="text-[10px] text-red-400 mt-2">{saveError}</p>
+   <p className="text-[0.625rem] text-red-400 mt-2">{saveError}</p>
    )}
   </div>
 
   {/* Stats Area */}
   <div className="px-4 md:px-12 py-6 flex flex-col gap-5">
-   <h3 className="text-[10px] tracking-[0.3em] text-exo-muted mb-1">Usage Statistics</h3>
+   <h3 className="text-[0.625rem] tracking-[0.3em] text-exo-muted mb-1">Usage Statistics</h3>
 
    {/* Controls row */}
    <div className="flex items-center gap-3 shrink-0">
@@ -462,7 +462,7 @@ export default function UserProfile({ appState, setView, goBack }) {
     <button
      key={p.key}
      onClick={() => setPlatform(p.key)}
-     className={`px-3 py-1.5 text-[10px] font-bold tracking-widest transition-colors ${
+     className={`px-3 py-1.5 text-[0.625rem] font-bold tracking-widest transition-colors ${
      platform === p.key
       ? 'bg-exo-accent/15 text-exo-accent'
       : 'text-exo-muted hover:text-exo-text'
@@ -477,7 +477,7 @@ export default function UserProfile({ appState, setView, goBack }) {
     <button onClick={prevPeriod} className="px-2 py-1.5 text-exo-muted hover:text-white transition-colors border-r border-exo-border">
     <ChevronLeft size={14} />
     </button>
-    <button onClick={toggleMode} className="px-3 py-1.5 text-[10px] font-bold tracking-widest text-exo-text hover:text-exo-accent transition-colors min-w-[80px] text-center">
+    <button onClick={toggleMode} className="px-3 py-1.5 text-[0.625rem] font-bold tracking-widest text-exo-text hover:text-exo-accent transition-colors min-w-[80px] text-center">
     {rawData?.is_current
      ? (mode === 'week' ? '本周' : '本月')
      : (mode === 'week'
@@ -494,21 +494,21 @@ export default function UserProfile({ appState, setView, goBack }) {
    </div>
 
    {isLoadingStats && (
-   <div className="flex-1 flex items-center justify-center text-exo-muted text-[11px] tracking-widest gap-2 py-24">
+   <div className="flex-1 flex items-center justify-center text-exo-muted text-[0.6875rem] tracking-widest gap-2 py-24">
     <Activity size={14} className="animate-spin text-exo-accent" /> Loading...
    </div>
    )}
 
    {!isLoadingStats && statsError && (
    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-24">
-    <p className="text-[11px] text-exo-muted tracking-widest opacity-60">
+    <p className="text-[0.6875rem] text-exo-muted tracking-widest opacity-60">
     Statistics API unavailable
     </p>
    </div>
    )}
 
    {!isLoadingStats && !statsError && !hasData && rawData && (
-   <div className="flex-1 flex items-center justify-center text-exo-muted text-[11px] tracking-widest opacity-40 py-24">
+   <div className="flex-1 flex items-center justify-center text-exo-muted text-[0.6875rem] tracking-widest opacity-40 py-24">
     No data for current period
    </div>
    )}

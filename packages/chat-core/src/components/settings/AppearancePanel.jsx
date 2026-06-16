@@ -5,11 +5,11 @@ function FontSelector({ label, description, value, onChange }) {
   return (
     <div className="space-y-2.5">
       <div>
-        <span className="text-[10px] tracking-[0.12em] text-chat-text/70">
+        <span className="text-[0.625rem] tracking-[0.12em] text-chat-text/70">
           {label}
         </span>
         {description && (
-          <p className="text-[9px] text-chat-muted/40 mt-0.5 leading-relaxed">{description}</p>
+          <p className="text-[0.5625rem] text-chat-muted/40 mt-0.5 leading-relaxed">{description}</p>
         )}
       </div>
 
@@ -36,11 +36,11 @@ function FontSelector({ label, description, value, onChange }) {
                 <p className="text-xs font-medium truncate">
                   {font.label}
                   {font.value === 'sarasa' && (
-                    <span className="ml-1.5 text-[9px] text-chat-muted font-normal">默认</span>
+                    <span className="ml-1.5 text-[0.5625rem] text-chat-muted font-normal">默认</span>
                   )}
                 </p>
                 <p
-                  className="text-[10px] text-chat-muted/50 mt-0.5 truncate"
+                  className="text-[0.625rem] text-chat-muted/50 mt-0.5 truncate"
                   style={{ fontFamily: getFontStack(font.value) }}
                 >
                   {font.preview}
@@ -65,7 +65,7 @@ function ScaleSlider({ value, onChange, config }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] tracking-[0.12em] text-chat-text/70">
+        <span className="text-[0.625rem] tracking-[0.12em] text-chat-text/70">
           🔤 Font Scale · 全局缩放
         </span>
         <span className="text-sm font-medium text-chat-accent tabular-nums">
@@ -104,7 +104,7 @@ function ScaleSlider({ value, onChange, config }) {
             <button
               key={p}
               onClick={() => onChange(p)}
-              className={`text-[9px] transition-colors ${
+              className={`text-[0.5625rem] transition-colors ${
                 Math.abs(value - p) < config.step
                   ? 'text-chat-accent font-medium'
                   : 'text-chat-muted/40 hover:text-chat-muted/70'
@@ -116,7 +116,7 @@ function ScaleSlider({ value, onChange, config }) {
         </div>
       </div>
 
-      <p className="text-[9px] text-chat-muted/40 leading-relaxed">
+      <p className="text-[0.5625rem] text-chat-muted/40 leading-relaxed">
         基准字号 16px。拖动滑块调整全局文本缩放，所有 rem 单位同步响应。
       </p>
     </div>
@@ -180,7 +180,7 @@ export default function AppearancePanel() {
         <div className="mt-8 space-y-4">
           {/* System font preview */}
           <div className="p-4 rounded-lg border border-white/5 bg-chat-panel">
-            <p className="text-[10px] tracking-[0.2em] text-chat-muted/40 mb-3">
+            <p className="text-[0.625rem] tracking-[0.2em] text-chat-muted/40 mb-3">
               System Font Preview · 系统字体
             </p>
             <div style={{ fontFamily: 'var(--font-system)' }}>
@@ -195,7 +195,7 @@ export default function AppearancePanel() {
 
           {/* Message font preview */}
           <div className="p-4 rounded-lg border border-white/5 bg-chat-panel">
-            <p className="text-[10px] tracking-[0.2em] text-chat-muted/40 mb-3">
+            <p className="text-[0.625rem] tracking-[0.2em] text-chat-muted/40 mb-3">
               Message Font Preview · 消息字体
             </p>
             <div style={{ fontFamily: 'var(--font-message)' }}>
@@ -210,7 +210,7 @@ export default function AppearancePanel() {
 
           {/* Code font preview */}
           <div className="p-4 rounded-lg border border-white/5 bg-chat-panel">
-            <p className="text-[10px] tracking-[0.2em] text-chat-muted/40 mb-3">
+            <p className="text-[0.625rem] tracking-[0.2em] text-chat-muted/40 mb-3">
               Code Font Preview · 代码字体
             </p>
             <div style={{ fontFamily: 'var(--font-code)' }}>

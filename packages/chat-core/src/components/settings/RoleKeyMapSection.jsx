@@ -135,13 +135,13 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
   <div className="flex items-center justify-between">
   <div className="flex items-center gap-2">
    <Shield size={13} className="text-chat-muted/50" />
-   <span className="text-[10px] font-mono tracking-[0.12em] text-chat-text/70">Key Map</span>
-   {dirty && <span className="text-[8px] font-mono text-chat-accent/50">(modified)</span>}
+   <span className="text-[0.625rem] font-mono tracking-[0.12em] text-chat-text/70">Key Map</span>
+   {dirty && <span className="text-[0.5rem] font-mono text-chat-accent/50">(modified)</span>}
   </div>
   <button
    onClick={handleSave}
    disabled={!canSave}
-   className="px-3 py-1.5 bg-chat-accent text-white text-[9px] font-bold tracking-[0.12em] rounded hover:brightness-110 disabled:opacity-20 disabled:grayscale transition-all flex items-center gap-1"
+   className="px-3 py-1.5 bg-chat-accent text-white text-[0.5625rem] font-bold tracking-[0.12em] rounded hover:brightness-110 disabled:opacity-20 disabled:grayscale transition-all flex items-center gap-1"
   >
    {saving ? (
    <span className="inline-block w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -153,7 +153,7 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
   </div>
 
   {aliasOptions.length === 0 ? (
-  <div className="text-center py-4 text-[10px] text-chat-muted/40 font-mono">
+  <div className="text-center py-4 text-[0.625rem] text-chat-muted/40 font-mono">
    No keys available. Create keys in the Key Pool section first.
   </div>
   ) : (
@@ -179,7 +179,7 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
      onClick={() => toggleDropdown(role)}
     >
      {/* Role label */}
-     <span className="text-[10px] font-mono text-chat-text/70 w-[72px] flex-shrink-0 select-none">
+     <span className="text-[0.625rem] font-mono text-chat-text/70 w-[72px] flex-shrink-0 select-none">
      {ROLE_LABELS[role]}
      {isSystemRole && <span className="text-chat-accent/50 ml-0.5">*</span>}
      </span>
@@ -193,7 +193,7 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
 
      {/* Warning for empty system role */}
      {isSystemRole && isEmpty && dirty && (
-     <span className="text-[8px] text-red-400/60 font-mono flex items-center gap-0.5 flex-shrink-0">
+     <span className="text-[0.5rem] text-red-400/60 font-mono flex items-center gap-0.5 flex-shrink-0">
       <AlertCircle size={9} /> required
      </span>
      )}
@@ -216,7 +216,7 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
        <button
        key={alias}
        onClick={(e) => { e.stopPropagation(); toggleKey(role, alias); }}
-       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-[3px] border text-[9px] font-mono transition-all ${
+       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-[3px] border text-[0.5625rem] font-mono transition-all ${
         checked
         ? 'bg-chat-accent/8 border-chat-accent/20 text-chat-accent'
         : 'bg-transparent border-white/[0.06] text-chat-muted/40 hover:border-exo-mist-12'
@@ -240,13 +240,13 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
      {/* Default selector — only show when multiple keys selected */}
      {selectedArr.length > 1 && (
       <div className="border-t border-white/[0.04] pt-1.5">
-      <span className="text-[8px] font-mono tracking-[0.1em] text-chat-muted/40 px-1">Default</span>
+      <span className="text-[0.5rem] font-mono tracking-[0.1em] text-chat-muted/40 px-1">Default</span>
       <div className="flex flex-wrap gap-1 mt-1">
        {selectedArr.map(alias => (
        <button
         key={alias}
         onClick={(e) => { e.stopPropagation(); setDefault(role, alias); }}
-        className={`inline-flex items-center gap-1 text-[9px] font-mono transition-colors ${
+        className={`inline-flex items-center gap-1 text-[0.5625rem] font-mono transition-colors ${
         ra.defaultAlias === alias ? 'text-chat-accent' : 'text-chat-muted/40 hover:text-chat-muted/70'
         }`}
        >

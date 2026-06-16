@@ -154,7 +154,7 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
         <div className="w-full flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Camera size={16} className="text-exo-accent" />
-            <h3 className="text-[11px] font-bold text-white tracking-[0.2em]">Avatar Calibration</h3>
+            <h3 className="text-[0.6875rem] font-bold text-white tracking-[0.2em]">Avatar Calibration</h3>
           </div>
           <button onClick={onCancel} className="text-exo-muted hover:text-white transition-colors">
             <X size={16} />
@@ -192,20 +192,20 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
         </div>
 
         <div className="text-center space-y-1">
-          <p className="text-[10px] text-exo-muted tracking-widest opacity-60">Visual Normalization</p>
-          <p className="text-[9px] text-exo-muted/40 font-mono italic">DRAG TO PAN · SCROLL / PINCH TO SCALE</p>
+          <p className="text-[0.625rem] text-exo-muted tracking-widest opacity-60">Visual Normalization</p>
+          <p className="text-[0.5625rem] text-exo-muted/40 font-mono italic">DRAG TO PAN · SCROLL / PINCH TO SCALE</p>
         </div>
 
         <div className="flex gap-3 w-full pt-2">
           <button
             onClick={onCancel}
-            className="flex-1 py-2 text-[11px] font-bold tracking-widest text-exo-muted border border-exo-mist-10 rounded-[2px] hover:text-white hover:bg-exo-accent/[0.04] transition-all"
+            className="flex-1 py-2 text-[0.6875rem] font-bold tracking-widest text-exo-muted border border-exo-mist-10 rounded-[2px] hover:text-white hover:bg-exo-accent/[0.04] transition-all"
           >
             Abort
           </button>
           <button
             onClick={handleConfirm}
-            className="flex-1 py-2 text-[11px] font-bold text-exo-pure bg-white rounded-[2px] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 tracking-widest flex items-center justify-center gap-2"
+            className="flex-1 py-2 text-[0.6875rem] font-bold text-exo-pure bg-white rounded-[2px] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 tracking-widest flex items-center justify-center gap-2"
           >
             <Check size={14} /> Commit
           </button>

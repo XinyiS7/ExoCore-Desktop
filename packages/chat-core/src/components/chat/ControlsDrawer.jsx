@@ -172,30 +172,30 @@ export default function ControlsDrawer({
   <select
    value={currentModel}
    onChange={e => onPreferenceChange({ model: e.target.value })}
-   className="bg-transparent outline-none text-[11px] font-sans text-white/50 cursor-pointer max-w-[140px] truncate hover:text-white/80 transition-colors"
+   className="bg-transparent outline-none text-[0.6875rem] font-sans text-white/50 cursor-pointer max-w-[140px] truncate hover:text-white/80 transition-colors"
   >
    {MAIN_MODEL_IDS.map(m => (
    <option key={m} value={m} className="bg-exo-pure text-white">{m}</option>
    ))}
   </select>
 
-  <span className="text-exo-muted/12 text-[9px] select-none flex-shrink-0">|</span>
+  <span className="text-exo-muted/12 text-[0.5625rem] select-none flex-shrink-0">|</span>
 
   <select
    value={chatMode}
    onChange={e => onChatModeChange(e.target.value)}
-   className="bg-transparent outline-none text-[11px] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors"
+   className="bg-transparent outline-none text-[0.6875rem] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors"
   >
    <option value="sse" className="bg-exo-pure">SSE</option>
    <option value="async" className="bg-exo-pure">Async</option>
   </select>
 
-  <span className="text-exo-muted/12 text-[9px] select-none flex-shrink-0">|</span>
+  <span className="text-exo-muted/12 text-[0.5625rem] select-none flex-shrink-0">|</span>
 
   <select
    value={thinkingLevel}
    onChange={e => onPreferenceChange({ thinking_level: e.target.value })}
-   className="bg-transparent outline-none text-[11px] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors"
+   className="bg-transparent outline-none text-[0.6875rem] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors"
   >
    <option value="off" className="bg-exo-pure">Off</option>
    <option value="auto" className="bg-exo-pure">Auto</option>
@@ -204,12 +204,12 @@ export default function ControlsDrawer({
    <option value="high" className="bg-exo-pure">High</option>
   </select>
 
-  <span className="text-exo-muted/12 text-[9px] select-none flex-shrink-0">|</span>
+  <span className="text-exo-muted/12 text-[0.5625rem] select-none flex-shrink-0">|</span>
 
   <select
    value={temperature}
    onChange={e => onPreferenceChange({ temperature: e.target.value })}
-   className="bg-transparent outline-none text-[11px] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors"
+   className="bg-transparent outline-none text-[0.6875rem] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors"
   >
    <option value="1.0" className="bg-exo-pure">1.0</option>
    <option value="1.3" className="bg-exo-pure">1.3</option>
@@ -221,7 +221,7 @@ export default function ControlsDrawer({
    <div className="ml-auto flex items-center gap-2 relative flex-shrink-0">
    <button
     onClick={() => setTelemetryExpanded(v => !v)}
-    className="font-sans text-[10px] text-exo-muted/25 tabular-nums tracking-wider hover:text-exo-accent/50 transition-colors flex items-center gap-1.5 whitespace-nowrap"
+    className="font-sans text-[0.625rem] text-exo-muted/25 tabular-nums tracking-wider hover:text-exo-accent/50 transition-colors flex items-center gap-1.5 whitespace-nowrap"
    >
     <span className="inline-block w-1 h-1 rounded-full bg-exo-accent/50" />
     <span className="text-exo-muted/35">{lastTelemetry.model_name || lastTelemetry.platform}</span>
@@ -235,8 +235,8 @@ export default function ControlsDrawer({
     )}
    </button>
    {telemetryExpanded && (
-    <div className="absolute bottom-full right-0 mb-2 px-4 py-3 bg-exo-panel border border-exo-border rounded-[4px] font-mono text-[10px] text-exo-muted shadow-xl z-50 min-w-[260px] animate-fade-in">
-    <div className="text-exo-accent/60 text-[9px] tracking-[0.2em] mb-2 font-bold">Session Totals</div>
+    <div className="absolute bottom-full right-0 mb-2 px-4 py-3 bg-exo-panel border border-exo-border rounded-[4px] font-mono text-[0.625rem] text-exo-muted shadow-xl z-50 min-w-[260px] animate-fade-in">
+    <div className="text-exo-accent/60 text-[0.5625rem] tracking-[0.2em] mb-2 font-bold">Session Totals</div>
     <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
      <span className="opacity-50">Requests</span>
      <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.requests}</span>
@@ -264,28 +264,28 @@ export default function ControlsDrawer({
   {/* Row 2: Key Alias + Memory Injection */}
   <div className="flex items-center gap-3">
   <Key size={10} className="text-exo-muted/25 flex-shrink-0" />
-  <span className="text-[10px] text-exo-muted/40 flex-shrink-0">
+  <span className="text-[0.625rem] text-exo-muted/40 flex-shrink-0">
    Key
   </span>
   {aliases.length > 0 ? (
    <select
    value={selectedAlias}
    onChange={e => handleAliasChange(e.target.value)}
-   className="bg-transparent outline-none text-[11px] font-sans text-white/50 cursor-pointer hover:text-white/80 transition-colors max-w-[160px] truncate"
+   className="bg-transparent outline-none text-[0.6875rem] font-sans text-white/50 cursor-pointer hover:text-white/80 transition-colors max-w-[160px] truncate"
    >
    {aliases.map(a => (
     <option key={a} value={a} className="bg-exo-pure text-white">{a}</option>
    ))}
    </select>
   ) : (
-   <span className="text-[10px] text-exo-muted/25 italic">
+   <span className="text-[0.625rem] text-exo-muted/25 italic">
    {platform ? `No keys configured for ${platform}` : 'Select a model first'}
    </span>
   )}
 
-  <span className="text-exo-muted/12 text-[9px] select-none flex-shrink-0">|</span>
+  <span className="text-exo-muted/12 text-[0.5625rem] select-none flex-shrink-0">|</span>
 
-  <span className="text-[10px] text-exo-muted/40 flex-shrink-0">
+  <span className="text-[0.625rem] text-exo-muted/40 flex-shrink-0">
    Mem
   </span>
   <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -310,7 +310,7 @@ export default function ControlsDrawer({
     }`}
    />
    </span>
-   <span className="text-[10px] font-sans text-exo-muted/40">
+   <span className="text-[0.625rem] font-sans text-exo-muted/40">
    {memInjectEnabled ? 'On' : 'Off'}
    </span>
   </label>
@@ -321,14 +321,14 @@ export default function ControlsDrawer({
   {/* Selector row */}
   <div className="flex items-center gap-3">
    <Palette size={10} className="text-exo-muted/25 flex-shrink-0" />
-   <span className="text-[10px] text-exo-muted/40 flex-shrink-0">
+   <span className="text-[0.625rem] text-exo-muted/40 flex-shrink-0">
    Palette
    </span>
    <select
    ref={paletteSelectRef}
    value={paletteId || DEFAULT_PALETTE_ID}
    onChange={e => onPaletteChange && onPaletteChange(e.target.value)}
-   className="bg-transparent outline-none text-[11px] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors max-w-[140px] truncate"
+   className="bg-transparent outline-none text-[0.6875rem] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors max-w-[140px] truncate"
    >
    {BUILTIN.map(p => (
     <option key={p.id} value={p.id} className="bg-exo-pure text-white">{p.label}</option>
@@ -351,13 +351,13 @@ export default function ControlsDrawer({
    </button>
    )}
    {isDirty && !isCustomSelected && (
-   <span className="text-[9px] text-exo-accent/50 font-mono animate-fade-in">modified</span>
+   <span className="text-[0.5625rem] text-exo-accent/50 font-mono animate-fade-in">modified</span>
    )}
   </div>
 
   {/* 3-Keypoint color pickers */}
   <div className="flex items-center gap-3 pl-5">
-   <span className="text-[9px] text-exo-muted/30 w-8 flex-shrink-0">Key</span>
+   <span className="text-[0.5625rem] text-exo-muted/30 w-8 flex-shrink-0">Key</span>
    <div className="flex items-center gap-2">
    <label className="flex flex-col items-center gap-0.5">
     <input
@@ -415,7 +415,7 @@ export default function ControlsDrawer({
      placeholder="name..."
      autoFocus
      maxLength={24}
-     className="w-20 bg-exo-bg border border-exo-mist-10 rounded-[2px] px-1.5 py-0.5 text-[10px] text-white outline-none focus:border-exo-accent/50 font-mono"
+     className="w-20 bg-exo-bg border border-exo-mist-10 rounded-[2px] px-1.5 py-0.5 text-[0.625rem] text-white outline-none focus:border-exo-accent/50 font-mono"
      />
      <button
      onClick={handleSaveCustom}
@@ -436,7 +436,7 @@ export default function ControlsDrawer({
     <button
      onClick={() => setShowSaveInput(true)}
      disabled={customCount >= MAX_CUSTOM}
-     className="text-[9px] text-exo-accent/60 hover:text-exo-accent disabled:opacity-20 transition-colors"
+     className="text-[0.5625rem] text-exo-accent/60 hover:text-exo-accent disabled:opacity-20 transition-colors"
      title={customCount >= MAX_CUSTOM ? `Max ${MAX_CUSTOM} custom palettes` : 'Save as custom palette'}
     >
      {customCount >= MAX_CUSTOM ? `[${MAX_CUSTOM}/${MAX_CUSTOM}]` : '+ Save'}

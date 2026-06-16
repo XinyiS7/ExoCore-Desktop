@@ -17,10 +17,10 @@ export default function App() {
       <header className="hidden md:flex items-center justify-between h-10 px-4 border-b border-chron-accent/10 bg-chron-panel/80 shrink-0">
         <div className="flex items-center gap-2">
           <BookOpen size={14} strokeWidth={1.5} className="text-chron-accent" />
-          <span className="text-[11px] tracking-wide text-chron-muted font-mono">Chronicle</span>
+          <span className="text-[0.6875rem] tracking-wide text-chron-muted font-mono">Chronicle</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-chron-text/70">{userNick}</span>
+          <span className="text-[0.6875rem] text-chron-text/70">{userNick}</span>
           <img
             src={userAvatar}
             alt={userNick}
@@ -51,7 +51,7 @@ export default function App() {
           }
         >
           <MessageCircle size={18} strokeWidth={1.5} />
-          <span className="text-[10px] tracking-wide">Feed</span>
+          <span className="text-[0.625rem] tracking-wide">Feed</span>
         </NavLink>
         <NavLink
           to="/tasks"
@@ -62,7 +62,7 @@ export default function App() {
           }
         >
           <CheckSquare size={18} strokeWidth={1.5} />
-          <span className="text-[10px] tracking-wide">Tasks</span>
+          <span className="text-[0.625rem] tracking-wide">Tasks</span>
         </NavLink>
         <NavLink
           to="/chronicle"
@@ -73,7 +73,7 @@ export default function App() {
           }
         >
           <BookOpen size={18} strokeWidth={1.5} />
-          <span className="text-[10px] tracking-wide">Chronicle</span>
+          <span className="text-[0.625rem] tracking-wide">Chronicle</span>
         </NavLink>
         <NavLink
           to="/calendar"
@@ -84,7 +84,7 @@ export default function App() {
           }
         >
           <Calendar size={18} strokeWidth={1.5} />
-          <span className="text-[10px] tracking-wide">Calendar</span>
+          <span className="text-[0.625rem] tracking-wide">Calendar</span>
         </NavLink>
       </nav>
     </div>

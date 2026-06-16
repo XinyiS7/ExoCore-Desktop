@@ -84,7 +84,7 @@ export default function TaskCreateModal({ entry, onClose, onSave }) {
   };
 
   const inp = 'w-full bg-transparent border-b border-exo-border/60 focus:border-exo-accent/40 outline-none text-sm text-exo-text pb-1 transition-colors placeholder:text-exo-muted/25';
-  const lbl = 'text-[9px] tracking-widest text-exo-muted/35 mb-1.5 block';
+  const lbl = 'text-[0.5625rem] tracking-widest text-exo-muted/35 mb-1.5 block';
   const datePick = 'bg-exo-surface border border-exo-border/40 rounded px-2 py-1.5 text-xs text-exo-text outline-none focus:border-exo-accent/30 transition-colors';
 
   return (
@@ -160,7 +160,7 @@ export default function TaskCreateModal({ entry, onClose, onSave }) {
               <Pin size={12} className={form.is_pinned ? 'fill-exo-accent' : ''} />
               {form.is_pinned ? '已置顶' : '置顶 / Pin'}
             </button>
-            <span className="text-[9px] text-exo-muted/30">置顶任务始终显示在列表顶部</span>
+            <span className="text-[0.5625rem] text-exo-muted/30">置顶任务始终显示在列表顶部</span>
           </div>
 
           {/* ── Todo fields ── */}

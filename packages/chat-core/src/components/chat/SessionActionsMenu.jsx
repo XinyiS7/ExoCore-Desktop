@@ -84,13 +84,13 @@ export default function SessionActionsMenu({ session, onUpdated, onDeleted, open
   <div className="absolute right-0 top-full mt-1 w-36 bg-exo-pure/80 backdrop-blur-xl border border-white/[0.06] rounded-[2px] shadow-lg py-1 z-50">
    <button
    onClick={handleRename}
-   className="w-full flex items-center gap-2 px-3 py-2 text-[11px] text-white font-mono tracking-wider hover:bg-exo-accent/[0.04] transition-colors text-left"
+   className="w-full flex items-center gap-2 px-3 py-2 text-[0.6875rem] text-white font-mono tracking-wider hover:bg-exo-accent/[0.04] transition-colors text-left"
    >
    <Edit2 size={11} strokeWidth={1} /> Rename
    </button>
    <button
    onClick={handleDelete}
-   className="w-full flex items-center gap-2 px-3 py-2 text-[11px] text-red-500 font-mono tracking-wider hover:bg-red-500/10 transition-colors text-left"
+   className="w-full flex items-center gap-2 px-3 py-2 text-[0.6875rem] text-red-500 font-mono tracking-wider hover:bg-red-500/10 transition-colors text-left"
    >
    <Trash2 size={11} strokeWidth={1} /> Delete
    </button>

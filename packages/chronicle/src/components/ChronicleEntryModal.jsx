@@ -65,7 +65,7 @@ export default function ChronicleEntryModal({ entry, presets = [], onClose, onSa
   };
 
   const inp = 'w-full bg-transparent border-b border-exo-border/60 focus:border-exo-accent/40 outline-none text-sm text-exo-text pb-1 transition-colors placeholder:text-exo-muted/25';
-  const lbl = 'text-[9px] tracking-widest text-exo-muted/35 mb-1.5 block';
+  const lbl = 'text-[0.5625rem] tracking-widest text-exo-muted/35 mb-1.5 block';
   const datePick = 'bg-exo-surface border border-exo-border/40 rounded px-2 py-1.5 text-xs text-exo-text outline-none focus:border-exo-accent/30 transition-colors';
 
   return (
@@ -106,8 +106,8 @@ export default function ChronicleEntryModal({ entry, presets = [], onClose, onSa
                     }`}
                   >
                     <Icon size={16} />
-                    <span className="text-[10px] font-bold tracking-widest">{s.label}</span>
-                    <span className="text-[8px] opacity-50">{s.desc}</span>
+                    <span className="text-[0.625rem] font-bold tracking-widest">{s.label}</span>
+                    <span className="text-[0.5rem] opacity-50">{s.desc}</span>
                   </button>
                 );
               })}

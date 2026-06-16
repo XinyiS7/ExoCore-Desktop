@@ -98,7 +98,7 @@ export default function TaskRow({
       const d = fmtDate(due_date);
       if (!d) return null;
       return (
-        <span className={`text-[11px] ${d.overdue ? 'text-amber-400/80' : d.urgent ? 'text-amber-300/60' : 'text-exo-muted/40'}`}>
+        <span className={`text-[0.6875rem] ${d.overdue ? 'text-amber-400/80' : d.urgent ? 'text-amber-300/60' : 'text-exo-muted/40'}`}>
           {d.overdue ? '⚠ ' : ''}due {d.label}
         </span>
       );
@@ -107,7 +107,7 @@ export default function TaskRow({
       const d = fmtDate(next_periodic_due);
       if (!d) return null;
       return (
-        <span className={`text-[11px] ${d.overdue ? 'text-amber-400/80' : 'text-exo-muted/40'}`}>
+        <span className={`text-[0.6875rem] ${d.overdue ? 'text-amber-400/80' : 'text-exo-muted/40'}`}>
           {d.overdue ? '⚠ 逾期  ' : ''}下次: {d.label}
         </span>
       );
@@ -125,7 +125,7 @@ export default function TaskRow({
               style={{ width: `${pct * 100}%` }}
             />
           </div>
-          <span className={`text-[11px] ${done_ ? 'text-green-400/60' : 'text-exo-muted/40'}`}>
+          <span className={`text-[0.6875rem] ${done_ ? 'text-green-400/60' : 'text-exo-muted/40'}`}>
             {done}/{total}{done_ ? ' ✓' : ''}
           </span>
         </div>
@@ -155,7 +155,7 @@ export default function TaskRow({
             {is_pinned && <span className="text-exo-accent/50 mr-1 text-xs">📌</span>}
             {title}
           </span>
-          <span className={`text-[9px] tracking-widest px-1.5 py-0.5 rounded flex-shrink-0 ${cfg.bg} ${cfg.color}`}>
+          <span className={`text-[0.5625rem] tracking-widest px-1.5 py-0.5 rounded flex-shrink-0 ${cfg.bg} ${cfg.color}`}>
             {cfg.label}
           </span>
           {renderMeta()}
@@ -167,7 +167,7 @@ export default function TaskRow({
             onClick={handleComplete}
             disabled={completing || status === 'suspended'}
             title="打卡"
-            className="flex items-center gap-1 px-2 py-1 rounded-lg border border-white/10 text-exo-muted/30 hover:border-exo-accent/40 hover:text-exo-accent transition-all text-[11px] disabled:opacity-20 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 px-2 py-1 rounded-lg border border-white/10 text-exo-muted/30 hover:border-exo-accent/40 hover:text-exo-accent transition-all text-[0.6875rem] disabled:opacity-20 disabled:cursor-not-allowed"
           >
             <Check size={11} />
           </button>
@@ -212,7 +212,7 @@ export default function TaskRow({
             <p className="text-xs text-exo-muted/60 leading-relaxed">{description}</p>
           )}
 
-          <div className="flex flex-wrap gap-3 text-[9px] text-exo-muted/30 tracking-widest">
+          <div className="flex flex-wrap gap-3 text-[0.5625rem] text-exo-muted/30 tracking-widest">
             <span>开始 {start_date}</span>
             {tags?.length > 0 && (
               <span className="flex gap-1">
@@ -225,13 +225,13 @@ export default function TaskRow({
 
           {/* Completion history */}
           <div>
-            <div className="text-[9px] tracking-widest text-exo-muted/25 mb-1.5">打卡记录</div>
+            <div className="text-[0.5625rem] tracking-widest text-exo-muted/25 mb-1.5">打卡记录</div>
             {loadingCompletions && <div className="text-xs text-exo-muted/25">加载中...</div>}
             {!loadingCompletions && completions?.length === 0 && (
               <div className="text-xs text-exo-muted/20">暂无记录</div>
             )}
             {completions?.slice(0, 5).map(c => (
-              <div key={c.id} className="flex items-center gap-2 text-[11px] text-exo-muted/35 py-0.5">
+              <div key={c.id} className="flex items-center gap-2 text-[0.6875rem] text-exo-muted/35 py-0.5">
                 <Check size={9} className="text-exo-accent/30 flex-shrink-0" />
                 <span>{c.completed_at.slice(0, 16).replace('T', ' ')}</span>
                 {c.note && <span className="text-exo-muted/25 truncate">"{c.note}"</span>}
@@ -245,7 +245,7 @@ export default function TaskRow({
               href={gcal_event_link}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[10px] text-exo-muted/40 hover:text-exo-accent transition-colors"
+              className="inline-flex items-center gap-1 text-[0.625rem] text-exo-muted/40 hover:text-exo-accent transition-colors"
             >
               <ExternalLink size={9} />
               在 Google Calendar 查看

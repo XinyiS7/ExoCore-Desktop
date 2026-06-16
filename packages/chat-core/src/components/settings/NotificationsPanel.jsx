@@ -138,14 +138,14 @@ export default function NotificationsPanel() {
 
         {/* Hint for denied */}
         {permission === 'denied' && (
-          <p className="text-[11px] text-chat-muted/30 text-center leading-relaxed">
+          <p className="text-[0.6875rem] text-chat-muted/30 text-center leading-relaxed">
             请在浏览器「网站设置」中允许通知权限后刷新页面
           </p>
         )}
 
         {/* Info for unsubscribed */}
         {!isSubscribed && permission !== 'denied' && !isLoading && (
-          <p className="text-[11px] text-chat-muted/30 text-center leading-relaxed">
+          <p className="text-[0.6875rem] text-chat-muted/30 text-center leading-relaxed">
             点击后浏览器会弹出权限请求，允许后即可在 PC 和 Android 上接收推送通知
           </p>
         )}

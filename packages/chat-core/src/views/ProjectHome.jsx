@@ -40,7 +40,7 @@ export default function ProjectHome({ appState, setView }) {
   <div className="flex-shrink-0 border-b border-exo-mist-8 px-4 md:px-8 py-4 flex items-center justify-between">
   <div>
    <h2 className="text-xs font-mono tracking-[0.3em] text-exo-muted">Chat Without Project</h2>
-   <p className="text-[9px] text-exo-muted/50 mt-0.5">{unassignedSessions.length} unassigned sessions</p>
+   <p className="text-[0.5625rem] text-exo-muted/50 mt-0.5">{unassignedSessions.length} unassigned sessions</p>
   </div>
   <button
    onClick={() => openNewSession()}
@@ -58,7 +58,7 @@ export default function ProjectHome({ appState, setView }) {
    <div className="text-center">
     <MessageSquare size={24} className="mx-auto mb-2 opacity-20" />
     <p className="text-xs font-mono">No unassigned sessions</p>
-    <p className="text-[10px] text-exo-muted/50 mt-1">Create a new chat or select a project</p>
+    <p className="text-[0.625rem] text-exo-muted/50 mt-1">Create a new chat or select a project</p>
    </div>
    </div>
   ) : (
@@ -74,7 +74,7 @@ export default function ProjectHome({ appState, setView }) {
     </div>
     <div className="flex-1 min-w-0">
      <p className="text-xs font-medium text-white truncate">{s.name || `Session #${s.id}`}</p>
-     <p className="text-[9px] text-exo-muted mt-0.5">
+     <p className="text-[0.5625rem] text-exo-muted mt-0.5">
      {s.agent_type || 'standard'} · {new Date(s.created_at).toLocaleDateString()}
      {s.agent_type && (
       <span className={`ml-1.5 px-1 py-0.5 rounded-[1px] text-[7px] font-mono ${

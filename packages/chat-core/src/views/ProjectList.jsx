@@ -302,7 +302,7 @@ export default function ProjectList({ appState, setView, goBack }) {
                       >
                         <button
                           onClick={() => handleDeleteProject(proj)}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-[11px] text-red-500 font-mono tracking-wider hover:bg-red-500/10 transition-colors text-left"
+                          className="w-full flex items-center gap-2 px-3 py-2 text-[0.6875rem] text-red-500 font-mono tracking-wider hover:bg-red-500/10 transition-colors text-left"
                         >
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
                             <polyline points="3 6 5 6 21 6" />

@@ -68,12 +68,12 @@ export default function ProjectFilesDrawer({
   <div className="flex-1 overflow-y-auto p-4 space-y-6">
    {/* ── Work Directory ── */}
    <div>
-   <h3 className="text-[10px] font-mono tracking-[0.2em] text-chat-muted/50 mb-2">
+   <h3 className="text-[0.625rem] font-mono tracking-[0.2em] text-chat-muted/50 mb-2">
     Work Directory
    </h3>
    {hasWorkDir ? (
     <div>
-    <p className="text-[10px] font-mono text-chat-muted/30 mb-2 truncate">{project.work_dir}</p>
+    <p className="text-[0.625rem] font-mono text-chat-muted/30 mb-2 truncate">{project.work_dir}</p>
     {treeLoading && !fileTree ? (
      <div className="flex items-center gap-2 text-xs text-chat-muted/40 italic py-2">
      <div className="w-3 h-3 border-2 border-chat-accent/30 border-t-chat-accent rounded-full animate-spin" />
@@ -99,7 +99,7 @@ export default function ProjectFilesDrawer({
 
    {/* ── Project Files ── */}
    <div>
-   <h3 className="text-[10px] font-mono tracking-[0.2em] text-chat-muted/50 mb-2">
+   <h3 className="text-[0.625rem] font-mono tracking-[0.2em] text-chat-muted/50 mb-2">
     Project Files
     {projectFiles.length > 0 && (
     <span className="ml-1 text-chat-muted/30">· {projectFiles.length}</span>

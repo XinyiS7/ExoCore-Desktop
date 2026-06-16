@@ -108,12 +108,12 @@ const WorkDirModal = ({ projectId, currentWorkDir, setProjects, isOpen, onClose 
   </div>
 
   <p className="text-xs text-exo-muted mb-4 leading-relaxed">
-   设置后，项目文件将上传至 <code className="text-[10px] bg-black/30 px-1 py-0.5 rounded border border-exo-border">{'{工作目录}\\ExoCore_Files\\uploads\\'}</code>，
-   而非默认存储路径。同时 <code className="text-[10px] bg-black/30 px-1 py-0.5 rounded border border-exo-border">read_project</code> 工具将以该目录为根目录。
+   设置后，项目文件将上传至 <code className="text-[0.625rem] bg-black/30 px-1 py-0.5 rounded border border-exo-border">{'{工作目录}\\ExoCore_Files\\uploads\\'}</code>，
+   而非默认存储路径。同时 <code className="text-[0.625rem] bg-black/30 px-1 py-0.5 rounded border border-exo-border">read_project</code> 工具将以该目录为根目录。
   </p>
 
   <div className="mb-4">
-   <label className="text-[10px] tracking-wider text-exo-muted block mb-1.5">目录路径</label>
+   <label className="text-[0.625rem] tracking-wider text-exo-muted block mb-1.5">目录路径</label>
    <input
    type="text"
    value={workDirDraft}

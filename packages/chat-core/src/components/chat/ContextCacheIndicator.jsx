@@ -239,7 +239,7 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
   const tooltipEl = hovered && tooltipPos
     ? createPortal(
         <div
-          className="fixed px-3 py-1.5 bg-exo-panel border border-exo-border rounded-[3px] text-[10px] font-mono text-white whitespace-nowrap shadow-xl pointer-events-none"
+          className="fixed px-3 py-1.5 bg-exo-panel border border-exo-border rounded-[3px] text-[0.625rem] font-mono text-white whitespace-nowrap shadow-xl pointer-events-none"
           style={{
             left: tooltipPos.left,
             top: tooltipPos.above ? tooltipPos.anchorTop - 6 : tooltipPos.anchorBottom + 6,
@@ -293,7 +293,7 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
               : '无缓存可释放'
             }
           >
-            <span className="text-[8px] font-bold font-mono leading-none">−</span>
+            <span className="text-[0.5rem] font-bold font-mono leading-none">−</span>
           </button>
 
           {/* Remaining time (centered, clicks pass through) */}

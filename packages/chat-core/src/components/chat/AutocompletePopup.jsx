@@ -171,14 +171,14 @@ export default function AutocompletePopup({
  >
   {/* Header */}
   <div className="px-3 py-1.5 border-b border-white/5 flex items-center gap-2">
-  <span className="text-[9px] font-mono tracking-[0.2em] text-chat-muted/40">
+  <span className="text-[0.5625rem] font-mono tracking-[0.2em] text-chat-muted/40">
    {dirDisplay ? `@${dirDisplay}/` : '@'}
   </span>
   {nameFilter && (
-   <span className="text-[10px] font-mono text-chat-text/60">{nameFilter}</span>
+   <span className="text-[0.625rem] font-mono text-chat-text/60">{nameFilter}</span>
   )}
   {!nameFilter && !dirDisplay && (
-   <span className="text-[9px] text-chat-muted/30">Files in root</span>
+   <span className="text-[0.5625rem] text-chat-muted/30">Files in root</span>
   )}
   </div>
 
@@ -209,11 +209,11 @@ export default function AutocompletePopup({
      {highlightMatch(entry.name, query || '')}
      </span>
      {entry._parentPath && (
-     <span className="text-[9px] text-chat-muted/20 truncate ml-1">
+     <span className="text-[0.5625rem] text-chat-muted/20 truncate ml-1">
       {entry._parentPath}/
      </span>
      )}
-     <span className="text-[9px] text-chat-muted/20 ml-auto shrink-0">/</span>
+     <span className="text-[0.5625rem] text-chat-muted/20 ml-auto shrink-0">/</span>
     </>
     ) : (
     <>
@@ -223,12 +223,12 @@ export default function AutocompletePopup({
      </span>
      {/* Show parent directory for global search results */}
      {entry._parentPath && (
-     <span className="text-[9px] text-chat-muted/30 truncate ml-auto shrink-0">
+     <span className="text-[0.5625rem] text-chat-muted/30 truncate ml-auto shrink-0">
       {entry._parentPath}/
      </span>
      )}
      {entry.size != null && !entry._parentPath && (
-     <span className="text-[9px] text-chat-muted/20 ml-auto shrink-0">
+     <span className="text-[0.5625rem] text-chat-muted/20 ml-auto shrink-0">
       {formatSize(entry.size)}
      </span>
      )}
@@ -237,7 +237,7 @@ export default function AutocompletePopup({
    </button>
    ))}
    {sorted.length > 50 && (
-   <div className="px-3 py-1.5 text-[9px] text-chat-muted/30 text-center">
+   <div className="px-3 py-1.5 text-[0.5625rem] text-chat-muted/30 text-center">
     ... 还有 {sorted.length - 50} 个结果，输入更多字符缩小范围
    </div>
    )}

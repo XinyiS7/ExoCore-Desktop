@@ -75,7 +75,7 @@ const CreateProjectModal = ({ isOpen, onClose, setProjects }) => {
 
   <div className="space-y-4 mb-4">
    <div>
-   <label className="text-[10px] font-mono tracking-wider text-exo-muted block mb-1.5">Project Name</label>
+   <label className="text-[0.625rem] font-mono tracking-wider text-exo-muted block mb-1.5">Project Name</label>
    <input
     ref={inputRef}
     type="text"
@@ -87,7 +87,7 @@ const CreateProjectModal = ({ isOpen, onClose, setProjects }) => {
    />
    </div>
    <div>
-   <label className="text-[10px] font-mono tracking-wider text-exo-muted block mb-1.5">Description (optional)</label>
+   <label className="text-[0.625rem] font-mono tracking-wider text-exo-muted block mb-1.5">Description (optional)</label>
    <input
     type="text"
     value={description}

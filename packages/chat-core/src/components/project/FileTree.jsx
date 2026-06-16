@@ -96,13 +96,13 @@ function TreeNode({ entry, indent, onFileClick, onExpand, expandedDirs, onToggle
         )}
 
         {/* Name */}
-        <span className={`text-[11px] truncate ${isDir ? 'text-chat-text/70' : 'text-chat-text/60'}`}>
+        <span className={`text-[0.6875rem] truncate ${isDir ? 'text-chat-text/70' : 'text-chat-text/60'}`}>
           {entry.name}
         </span>
 
         {/* Size for files */}
         {!isDir && entry.size != null && (
-          <span className="text-[9px] text-chat-muted/20 ml-auto shrink-0 hidden group-hover:inline">
+          <span className="text-[0.5625rem] text-chat-muted/20 ml-auto shrink-0 hidden group-hover:inline">
             {formatSize(entry.size)}
           </span>
         )}

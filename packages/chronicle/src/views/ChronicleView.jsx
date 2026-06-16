@@ -64,7 +64,7 @@ export default function ChronicleView({ presets: presetsProp = [] }) {
       {/* Header */}
       <header className="h-12 flex items-center px-5 border-b border-chron-border bg-chron-panel shrink-0">
         <h1 className="font-serif text-lg tracking-wide text-chron-accent">Chronicle</h1>
-        <span className="ml-auto text-[9px] font-mono text-chron-muted/40 tracking-widest">
+        <span className="ml-auto text-[0.5625rem] font-mono text-chron-muted/40 tracking-widest">
           {filtered.length} 条大事记
         </span>
       </header>
@@ -82,7 +82,7 @@ export default function ChronicleView({ presets: presetsProp = [] }) {
                   <button
                     key={s.value}
                     onClick={() => setScopeFilter(s.value)}
-                    className={`flex items-center gap-1 px-2.5 py-1 text-[10px] rounded-full border transition-all font-mono ${
+                    className={`flex items-center gap-1 px-2.5 py-1 text-[0.625rem] rounded-full border transition-all font-mono ${
                       scopeFilter === s.value
                         ? 'border-chron-accent/40 bg-chron-accent/10 text-chron-accent'
                         : 'border-chron-border/50 text-chron-muted/50 hover:border-chron-border hover:text-chron-muted'
@@ -97,7 +97,7 @@ export default function ChronicleView({ presets: presetsProp = [] }) {
 
             <button
               onClick={() => setModalEntry({})}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-chron-accent text-chron-bg text-[10px] font-bold tracking-widest rounded hover:brightness-110 transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-chron-accent text-chron-bg text-[0.625rem] font-bold tracking-widest rounded hover:brightness-110 transition-all active:scale-95"
             >
               <Plus size={12} />
               新建
@@ -123,7 +123,7 @@ export default function ChronicleView({ presets: presetsProp = [] }) {
                   <div className="sticky top-0 z-10 flex items-center gap-3 mb-3 px-1">
                     <span className="text-2xl font-serif text-chron-accent/60 tracking-wide">{year}</span>
                     <div className="flex-1 h-px bg-chron-border/50" />
-                    <span className="text-[9px] font-mono text-chron-muted/30">{grouped[year].length} 条</span>
+                    <span className="text-[0.5625rem] font-mono text-chron-muted/30">{grouped[year].length} 条</span>
                   </div>
                   <div className="bg-chron-panel/40 border border-chron-border/50 rounded-lg overflow-hidden">
                     {grouped[year]
