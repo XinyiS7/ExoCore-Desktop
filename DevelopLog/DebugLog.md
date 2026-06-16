@@ -162,6 +162,51 @@
 
 ---
 
+# DEBUG: Inline Style `style.* = ''` → White Flash on Hover (✅ FIXED)
+
+- **Date**: 2026-06-16
+- **Phenomenon**:
+  - Sidebar navigation icons + text turn white for ~200ms on hover exit
+  - Project Hall cards flash white on mouse leave
+  - AgentProfile buttons, BackButton, SessionActionsMenu — any element with JS `onMouseEnter`/`onMouseLeave` handlers that reset inline styles to empty string
+  - Effect is a brief white flash, most visible on dark backgrounds
+  - Same bug reported across 3 sessions with different attempted fixes (replacing `hover:bg-white/X`, `transition-all` → `transition-colors`, removing `filter`/`textShadow` handlers) — none resolved it
+- **Inference & Evidence**:
+  1. **First attempt — `hover:bg-white/X` replacement (commit `05a3163`)**: Replaced all Tailwind `hover:bg-white/X` / `hover:border-white/X` with `exo-accent` / `exo-mist` equivalents. Result: didn't fix it — the sidebar doesn't use Tailwind hover classes at all, it uses JS `onMouseEnter`/`onMouseLeave` with inline styles. Also missed `bg-white/[0.03]` in ProjectHome and HomePanel that were hiding in plain sight.
+  2. **Second attempt — `transition-all` → `transition-colors` (commit `e798825`)**: Replaced `transition-all` with `transition-colors` on 24 files, reasoning that filter/textShadow interpolation causes white artifacts. Also removed `filter`/`textShadow` from JS hover handlers. Result: didn't fix it — `transition-colors` still animates `color` changes, and the inherited body color is `var(--cinder-text)` = `#cecdd6` (near-white).
+  3. **Third attempt — `filter`/`textShadow` removal + duration reduction (commit `6702ec1`)**: Removed all filter/textShadow/boxShadow changes from DesktopSidebar JS handlers, reduced duration from 500ms/300ms to 200ms. Result: STILL didn't fix it.
+  4. **Root cause — `e.currentTarget.style.color = ''`**: Every `onMouseLeave` handler was doing `style.color = ''`. Setting an inline style property to empty string **removes** the property from the element's inline style. The browser then falls back to CSS cascade inheritance: `body { color: var(--cinder-text) }` = `#cecdd6` (**near-white** on dark backgrounds). With `transition-colors` active, this near-white is smoothly animated for ~200ms until React's next re-render restores the correct inline style. The user sees: orange/accent → **white** → correct gray.
+  5. **Why previous fixes didn't work**: They all addressed the wrong layer — changing WHAT color to transition to, or reducing WHAT properties transition. But the problem isn't the target color or the transition scope — it's that the start-of-transition color is WRONG. Setting `style.color = ''` says "I don't care what color this is, let CSS decide" — and CSS decides near-white.
+  6. **Lucide-react confirmed NOT the culprit**: Lucide ships zero CSS, `fill="none"` + `stroke="currentColor"`, no hover styles. Tailwind preflight only sets `display: block` on SVGs. The active sidebar (`DesktopSidebar.jsx`) doesn't even use Lucide — it uses custom inline SVGs with `stroke="currentColor"`.
+- **Correction Plan**:
+  - [Plan A]: Replace ALL `style.* = ''` in every `onMouseLeave` handler with explicit values matching the element's `style={{}}` prop. ✅
+  - [Plan B]: For properties not in the base style (e.g., `filter` only set on hover), reset to CSS default (`'none'`). ✅
+  - [Plan C]: Also convert remaining `transition-all` → `transition-colors`, remove `filter`/`textShadow`/`boxShadow` changes from JS hover handlers. ✅
+- **Correction Result**:
+  - Fixed 33 occurrences across 7 files:
+    - `DesktopSidebar.jsx`: 4 handlers (logo, nav items × 2, settings, avatar)
+    - `AgentProfile.jsx`: 8 handlers (IconBtn, headings, buttons, session rows)
+    - `ProjectDetail.jsx`: 8 handlers (IconBtn, ThreadRow, menu buttons, upload)
+    - `ProjectList.jsx`: 5 handlers (New Project button, cards, menu, empty state, session rows)
+    - `AgentHub.jsx`: 2 handlers (drag handle)
+    - `Dashboard.jsx`: 1 handler (session row)
+    - `SessionActionsMenu.jsx`: 1 handler (actions button)
+    - `BackButton.jsx`: 1 handler (back navigation)
+  - Verified: `grep -rn "style\.[a-zA-Z]*\s*=\s*''" packages/chat-core/src/` returns **zero matches**
+  - Also committed `transition-all` → `transition-colors` + `filter`/`textShadow`/`boxShadow` handler removals for all affected elements
+- **Prevention rule**:
+  ```js
+  // ❌ NEVER do this — removes the property, CSS cascade takes over
+  onMouseLeave={e => { e.currentTarget.style.color = ''; }}
+  
+  // ✅ ALWAYS set the explicit target value
+  onMouseLeave={e => { e.currentTarget.style.color = 'var(--cinder-text-faint)'; }}
+  ```
+  Same rule applies to `background`, `borderColor`, `borderImage`, `opacity`, `filter`, `textShadow`, `boxShadow`, `transform` — never set to `''`, always to the explicit desired CSS value. **Empty string is not "reset to default" — it's "let the cascade decide, and on dark themes the cascade usually picks white."**
+- **Footgun doc**: `.agents/footgun/SidebarWhiteHover.md` — full root cause analysis, fix pattern, and checklist
+
+---
+
 ## Frontend JavaScript Mistakes
 
 ### [2026-06-04] `const` TDZ — Accessing Variable Before Declaration in React Components
