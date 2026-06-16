@@ -1060,7 +1060,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    <React.Fragment key={msg.id || idx}>
     {showDateSep && (
     <div className="flex items-center justify-center py-2">
-     <span className="text-[0.625rem] text-exo-muted/30 tracking-wider bg-exo-pure px-3 py-1 rounded-[2px] border border-exo-mist-8">
+     <span className="text-[0.625rem] text-exo-muted/30 tracking-wider">
      {formatDateSeparator(msg.created_at)}
      </span>
     </div>

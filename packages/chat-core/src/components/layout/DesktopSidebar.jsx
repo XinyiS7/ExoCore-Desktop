@@ -89,15 +89,13 @@ export default function DesktopSidebar() {
       <div className="flex flex-col items-center pt-6">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center justify-center w-[28px] h-[28px] mb-[18px] cursor-pointer transition-all duration-500"
-          style={{ color: 'var(--cinder-ember-dim)', filter: 'drop-shadow(0 0 3px rgba(196,77,0,0.3))' }}
+          className="flex items-center justify-center w-[28px] h-[28px] mb-[18px] cursor-pointer transition-colors duration-200"
+          style={{ color: 'var(--cinder-ember-dim)' }}
           onMouseEnter={e => {
             e.currentTarget.style.color = 'var(--cinder-flame)';
-            e.currentTarget.style.filter = 'drop-shadow(0 0 8px rgba(255,74,8,0.6))';
           }}
           onMouseLeave={e => {
             e.currentTarget.style.color = '';
-            e.currentTarget.style.filter = '';
           }}
         >
           <LogoSvg />
@@ -112,7 +110,7 @@ export default function DesktopSidebar() {
               className="
                 relative bg-transparent border-none cursor-pointer font-[inherit]
                 px-1 py-3
-                transition-all duration-300
+                transition-colors duration-200
               "
               style={{
                 writingMode: 'vertical-rl',
@@ -124,20 +122,15 @@ export default function DesktopSidebar() {
                 color: active
                   ? 'var(--cinder-flame)'
                   : 'var(--cinder-text-faint)',
-                textShadow: active
-                  ? '0 0 10px rgba(255,74,8,0.4)'
-                  : 'none',
               }}
               onMouseEnter={e => {
                 if (!active) {
                   e.currentTarget.style.color = 'var(--cinder-flame)';
-                  e.currentTarget.style.textShadow = '0 0 8px rgba(255,74,8,0.3)';
                 }
               }}
               onMouseLeave={e => {
                 if (!active) {
                   e.currentTarget.style.color = '';
-                  e.currentTarget.style.textShadow = '';
                 }
               }}
             >
@@ -167,7 +160,7 @@ export default function DesktopSidebar() {
           className="
             relative bg-transparent border-none cursor-pointer font-[inherit]
             px-1 py-3
-            transition-all duration-300
+            transition-colors duration-200
           "
           style={{
             writingMode: 'vertical-rl',
@@ -182,11 +175,9 @@ export default function DesktopSidebar() {
           }}
           onMouseEnter={e => {
             e.currentTarget.style.color = 'var(--cinder-flame)';
-            e.currentTarget.style.textShadow = '0 0 8px rgba(255,74,8,0.3)';
           }}
           onMouseLeave={e => {
             e.currentTarget.style.color = '';
-            e.currentTarget.style.textShadow = '';
           }}
         >
           设置
@@ -199,7 +190,7 @@ export default function DesktopSidebar() {
 
         <button
           onClick={() => navigate('/user')}
-          className="cursor-pointer transition-all duration-300"
+          className="cursor-pointer transition-colors duration-200"
           title={userNick}
         >
           <img
@@ -213,11 +204,9 @@ export default function DesktopSidebar() {
             alt="User"
             onMouseEnter={e => {
               e.currentTarget.style.borderColor = 'rgba(255,74,8,0.4)';
-              e.currentTarget.style.boxShadow = '0 0 8px rgba(255,74,8,0.2)';
             }}
             onMouseLeave={e => {
               e.currentTarget.style.borderColor = '';
-              e.currentTarget.style.boxShadow = '';
             }}
           />
         </button>
