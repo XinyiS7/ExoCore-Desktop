@@ -523,7 +523,7 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
    <button
    onClick={handleSend}
    disabled={isSending || !inputValue.trim()}
-   className="p-2.5 bg-exo-accent text-exo-pure rounded-[4px] hover:shadow-glow-gold hover:bg-exo-accentGlow disabled:opacity-20 disabled:grayscale transition-all flex-shrink-0"
+   className="p-2.5 bg-exo-accent text-exo-pure rounded-[4px] hover:shadow-glow-gold hover:bg-exo-accentGlow disabled:opacity-20 disabled:grayscale transition-colors flex-shrink-0"
    >
    <Send size={16} />
    </button>

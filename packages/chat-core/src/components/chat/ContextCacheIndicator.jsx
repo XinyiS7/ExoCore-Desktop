@@ -313,7 +313,7 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
         <button
           onClick={handleToggleCache}
           className="h-full px-1.5 flex items-center justify-center flex-shrink-0
-                     z-10 active:scale-90 transition-all hover:bg-exo-accent/[0.04]"
+                     z-10 active:scale-90 transition-colors hover:bg-exo-accent/[0.04]"
           title={cacheEnabled ? 'Context Cache ON — click to disable' : 'Context Cache OFF — click to enable'}
         >
           <span className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors ${

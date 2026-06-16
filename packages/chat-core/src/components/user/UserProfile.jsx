@@ -259,7 +259,7 @@ const UserProfile = ({ presets }) => {
                   <button
                     onClick={handlePost}
                     disabled={!newPostContent.trim() || isPosting}
-                    className="px-6 py-2 bg-white text-exo-pure text-[0.6875rem] font-bold rounded-[2px] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-2 tracking-widest"
+                    className="px-6 py-2 bg-white text-exo-pure text-[0.6875rem] font-bold rounded-[2px] hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-2 tracking-widest"
                   >
                     {isPosting ? <Activity size={12} className="animate-spin" /> : <Send size={12} />}
                     Inscribe
@@ -382,7 +382,7 @@ const TweetCard = ({
               <button
                 onClick={() => handleReply(tweet.id)}
                 disabled={!replyContent.trim() || isSubmittingReply}
-                className="px-4 py-2.5 bg-white text-exo-pure rounded-[2px] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 shrink-0"
+                className="px-4 py-2.5 bg-white text-exo-pure rounded-[2px] hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95 disabled:opacity-30 shrink-0"
               >
                 <Send size={14} />
               </button>
@@ -433,7 +433,7 @@ const TweetCard = ({
                     <button
                       onClick={() => handleReply(reply.id)}
                       disabled={!replyContent.trim() || isSubmittingReply}
-                      className="px-4 py-2.5 bg-white text-exo-pure rounded-[2px] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 shrink-0"
+                      className="px-4 py-2.5 bg-white text-exo-pure rounded-[2px] hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95 disabled:opacity-30 shrink-0"
                     >
                       <Send size={14} />
                     </button>

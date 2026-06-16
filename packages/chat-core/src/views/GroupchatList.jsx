@@ -82,7 +82,7 @@ export default function GroupchatList({ appState, viewParams, goBack }) {
    </div>
    <button
    onClick={() => { setEditingGroupchat(null); setShowCreateModal(true); }}
-   className="p-2 rounded-[4px] bg-exo-accent/10 text-exo-accent border border-exo-accent/20 hover:bg-exo-accent hover:text-black transition-all"
+   className="p-2 rounded-[4px] bg-exo-accent/10 text-exo-accent border border-exo-accent/20 hover:bg-exo-accent hover:text-black transition-colors"
    title="New groupchat"
    >
    <Plus size={16} />

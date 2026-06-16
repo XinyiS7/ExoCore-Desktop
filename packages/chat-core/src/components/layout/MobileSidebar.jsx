@@ -118,7 +118,7 @@ const MobileSidebar = ({
         {/* Close X */}
         <button
           onClick={onClose}
-          className="w-7 h-7 flex items-center justify-center rounded-[4px] text-exo-muted hover:text-exo-text hover:bg-exo-accent/[0.04] transition-all border border-exo-mist-8"
+          className="w-7 h-7 flex items-center justify-center rounded-[4px] text-exo-muted hover:text-exo-text hover:bg-exo-accent/[0.04] transition-colors border border-exo-mist-8"
         >
           <X size={14} />
         </button>

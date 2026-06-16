@@ -113,7 +113,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
    <button
    onClick={handleSave}
    disabled={isSaving}
-   className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[0.6875rem] font-bold tracking-[0.2em] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
+   className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[0.6875rem] font-bold tracking-[0.2em] hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
    >
    {isSaving ? <Activity size={14} className="animate-spin" /> : <Save size={14} />}
    {isSaving ? 'COMMITTING...' : 'COMMIT CHANGES'}

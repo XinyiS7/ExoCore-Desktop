@@ -113,7 +113,7 @@ const CreateProjectModal = ({ isOpen, onClose, setProjects }) => {
    <button
    onClick={handleSubmit}
    disabled={saving || !name.trim()}
-   className="px-4 py-1.5 text-xs font-bold text-black bg-exo-accent rounded-md hover:bg-exo-accent/80 active:scale-95 transition-all disabled:opacity-50"
+   className="px-4 py-1.5 text-xs font-bold text-black bg-exo-accent rounded-md hover:bg-exo-accent/80 active:scale-95 transition-colors disabled:opacity-50"
    >
    {saving ? 'Creating...' : 'Create'}
    </button>

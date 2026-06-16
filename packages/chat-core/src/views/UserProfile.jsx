@@ -439,7 +439,7 @@ export default function UserProfile({ appState, setView, goBack }) {
    <div className="flex items-start gap-2 w-full md:w-auto md:self-start">
     <button
     onClick={() => setView('agent_memory', { agentId: userId, agentName: user.name })}
-    className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-md text-purple-400 text-xs font-medium hover:bg-purple-500/20 active:scale-95 transition-all"
+    className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-md text-purple-400 text-xs font-medium hover:bg-purple-500/20 active:scale-95 transition-colors"
     >
     Manage Memory
     </button>

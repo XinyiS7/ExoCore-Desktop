@@ -193,7 +193,7 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="px-3 py-1.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 rounded-[2px] text-[0.625rem] tracking-widest transition-all flex items-center gap-1.5 disabled:opacity-30"
+                className="px-3 py-1.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 rounded-[2px] text-[0.625rem] tracking-widest transition-colors flex items-center gap-1.5 disabled:opacity-30"
               >
                 <Trash2 size={12} />
                 {deleting ? 'Deleting...' : 'Delete'}
@@ -210,7 +210,7 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
             <button
               onClick={handleSave}
               disabled={saving || !name.trim()}
-              className="px-4 py-1.5 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[0.625rem] tracking-widest hover:bg-exo-accent hover:text-black transition-all flex items-center gap-1.5 disabled:opacity-30"
+              className="px-4 py-1.5 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[0.625rem] tracking-widest hover:bg-exo-accent hover:text-black transition-colors flex items-center gap-1.5 disabled:opacity-30"
             >
               <Plus size={12} />
               {saving ? 'Saving...' : isEdit ? 'Save' : 'Create'}

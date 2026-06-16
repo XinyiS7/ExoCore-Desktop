@@ -1028,14 +1028,14 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
      />
      <div className="flex justify-end gap-2">
      <button onClick={() => { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); }} className="px-3 py-1 text-exo-muted hover:text-white text-[0.6875rem] tracking-widest">取消</button>
-     <button onClick={handleAddAttachment} className="px-3 py-1 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[0.6875rem] tracking-widest hover:bg-exo-accent hover:text-black transition-all">确认</button>
+     <button onClick={handleAddAttachment} className="px-3 py-1 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[0.6875rem] tracking-widest hover:bg-exo-accent hover:text-black transition-colors">确认</button>
      </div>
     </div>
     )}
    </div>
    {!isAddingAttach && (
     <div className="p-2 border-t border-exo-mist-10 bg-white/5">
-    <button onClick={() => setIsAddingAttach(true)} className="w-full py-2 text-[0.6875rem] tracking-widest text-exo-muted hover:text-white hover:bg-exo-accent/[0.04] flex items-center justify-center gap-2 rounded-[2px] border border-dashed border-exo-mist-10 hover:border-exo-mist-20 transition-all">
+    <button onClick={() => setIsAddingAttach(true)} className="w-full py-2 text-[0.6875rem] tracking-widest text-exo-muted hover:text-white hover:bg-exo-accent/[0.04] flex items-center justify-center gap-2 rounded-[2px] border border-dashed border-exo-mist-10 hover:border-exo-mist-20 transition-colors">
      <Plus size={13} strokeWidth={1} /> 挂载外部路径
     </button>
     </div>
@@ -1085,7 +1085,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   {showScrollBtn && (
    <button
    onClick={handleScrollToBottomClick}
-   className="sticky bottom-2 left-1/2 -translate-x-1/2 z-30 px-3 py-1.5 rounded-full bg-exo-accent/90 text-black text-[0.625rem] tracking-[0.15em] shadow-lg hover:bg-exo-accent transition-all animate-fade-in flex items-center gap-1.5"
+   className="sticky bottom-2 left-1/2 -translate-x-1/2 z-30 px-3 py-1.5 rounded-full bg-exo-accent/90 text-black text-[0.625rem] tracking-[0.15em] shadow-lg hover:bg-exo-accent transition-colors animate-fade-in flex items-center gap-1.5"
    >
    <ChevronDown size={12} strokeWidth={1} /> 回到底部
    </button>
@@ -1292,7 +1292,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     {isGenerating ? (
     <button
      onClick={handleStop}
-     className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-[2px] hover:bg-red-500 hover:text-white transition-all flex items-center gap-1.5 text-[0.625rem] tracking-[0.2em]"
+     className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-[2px] hover:bg-red-500 hover:text-white transition-colors flex items-center gap-1.5 text-[0.625rem] tracking-[0.2em]"
      title="中止上行链路"
     >
      <X size={12} strokeWidth={1} />
@@ -1302,7 +1302,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     <button
      onClick={() => handleSend(editingMessageId ? { editMessageId: editingMessageId } : {})}
      disabled={isGenerating || (!inputValue.trim() && composeAttachments.length === 0)}
-     className="p-1.5 bg-exo-accent text-exo-pure rounded-[2px] hover:shadow-glow-gold hover:bg-exo-accentGlow disabled:opacity-20 disabled:grayscale transition-all"
+     className="p-1.5 bg-exo-accent text-exo-pure rounded-[2px] hover:shadow-glow-gold hover:bg-exo-accentGlow disabled:opacity-20 disabled:grayscale transition-colors"
     >
      <Send size={15} strokeWidth={1} />
     </button>

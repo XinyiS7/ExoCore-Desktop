@@ -274,7 +274,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
    <button 
    onClick={handleSubmit} 
    disabled={isSubmitting} 
-   className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[0.6875rem] font-bold tracking-[0.2em] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
+   className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[0.6875rem] font-bold tracking-[0.2em] hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
    >
    {isSubmitting ? <Activity size={14} className="animate-spin" /> : <Plus size={14} />} Commit Link
    </button>

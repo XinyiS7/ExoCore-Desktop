@@ -248,7 +248,7 @@ export default function CalendarWidget() {
                 />
                 <div className="flex gap-1.5 ml-auto">
                   <button onClick={() => { setShowAddForm(false); setForm(EmptyForm); }} className="px-2 py-1 text-xs text-exo-muted hover:text-white transition-colors">取消</button>
-                  <button onClick={addTask} className="px-3 py-1 text-xs bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded hover:bg-exo-accent hover:text-black transition-all">添加</button>
+                  <button onClick={addTask} className="px-3 py-1 text-xs bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded hover:bg-exo-accent hover:text-black transition-colors">添加</button>
                 </div>
               </div>
             </div>

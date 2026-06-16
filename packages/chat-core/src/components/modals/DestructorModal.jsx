@@ -27,7 +27,7 @@ const DestructorModal = ({ isOpen, onClose, title, description, onArchive, onDel
               <Archive size={14} /> Archive
             </button>
           )}
-          <button onClick={() => { onDelete(); onClose(); }} className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest flex items-center gap-2 bg-red-600 text-white hover:bg-red-500 transition-all shadow-brutalist active:scale-95">
+          <button onClick={() => { onDelete(); onClose(); }} className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest flex items-center gap-2 bg-red-600 text-white hover:bg-red-500 transition-colors shadow-brutalist active:scale-95">
             <Trash2 size={14} /> Purge
           </button>
         </div>

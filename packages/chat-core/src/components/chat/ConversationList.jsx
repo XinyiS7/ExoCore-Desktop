@@ -143,7 +143,7 @@ const ConversationList = ({
    <div className="flex items-center gap-3">
    <button
     onClick={() => mode === 'council' ? onCreateCouncil() : mode === 'project' ? openCreateProject() : openNewSession()}
-    className="p-2 rounded-[4px] bg-exo-accent/10 text-exo-accent border border-exo-accent/20 hover:bg-exo-accent hover:text-black transition-all"
+    className="p-2 rounded-[4px] bg-exo-accent/10 text-exo-accent border border-exo-accent/20 hover:bg-exo-accent hover:text-black transition-colors"
    >
     <Plus size={18} />
    </button>
@@ -199,7 +199,7 @@ const ConversationList = ({
        <div key={proj.id} className="space-y-1">
        <div
         onClick={() => toggleProject(proj.id)}
-        className={`group flex items-center gap-4 p-3 rounded-[4px] cursor-pointer transition-all border ${isExpanded ? 'bg-exo-pure border-exo-mist-12' : 'border-transparent hover:bg-exo-accent/[0.02] hover:border-exo-mist-10'}`}
+        className={`group flex items-center gap-4 p-3 rounded-[4px] cursor-pointer transition-colors border ${isExpanded ? 'bg-exo-pure border-exo-mist-12' : 'border-transparent hover:bg-exo-accent/[0.02] hover:border-exo-mist-10'}`}
        >
         <div className={`p-2 rounded-[2px] transition-all border ${isExpanded ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-white/5 text-exo-muted border-transparent'}`}>
         {isExpanded ? <FolderOpen size={16}/> : <Folder size={16}/>}
@@ -312,7 +312,7 @@ const ConversationList = ({
       <div key={proj.id} className="space-y-2">
       <div
        onClick={() => toggleProject(proj.id)}
-       className={`group flex items-center gap-4 p-4 rounded-[4px] cursor-pointer transition-all border ${isExpanded ? 'bg-exo-pure border-exo-mist-12 shadow-brutalist' : 'border-transparent hover:bg-exo-accent/[0.02] hover:border-exo-mist-10'}`}
+       className={`group flex items-center gap-4 p-4 rounded-[4px] cursor-pointer transition-colors border ${isExpanded ? 'bg-exo-pure border-exo-mist-12 shadow-brutalist' : 'border-transparent hover:bg-exo-accent/[0.02] hover:border-exo-mist-10'}`}
       >
        <div className={`p-2 rounded-[2px] transition-all border ${isExpanded ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-white/5 text-exo-muted border-transparent'}`}>
        {isExpanded ? <FolderOpen size={18}/> : <Folder size={18}/>}

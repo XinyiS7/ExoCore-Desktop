@@ -8,15 +8,15 @@ import { getUserAvatarUrl } from '../../utils/avatar';
 const NavIcon = ({ icon: Icon, isActive, onClick, title, label, isExpanded, showLabel = true }) => (
  <button
  onClick={onClick}
- className={`flex items-center gap-3 w-full p-2.5 transition-all group/nav relative ${
+ className={`flex items-center gap-3 w-full p-2.5 transition-colors group/nav relative focus:outline-none ${
   isActive
   ? 'text-exo-accent'
   : 'text-exo-muted hover:text-exo-text'
  }`}
  >
- <div className={`p-2 rounded-xl transition-all shrink-0 ${
-  isActive 
-  ? 'bg-exo-accent/10 shadow-[0_0_15px_rgba(255,215,0,0.1)]' 
+ <div className={`p-2 rounded-xl transition-colors shrink-0 bg-transparent ${
+  isActive
+  ? 'bg-exo-accent/10 shadow-[0_0_15px_rgba(255,215,0,0.1)]'
   : 'group-hover/nav:bg-exo-accent/[0.03]'
  }`}>
   <Icon size={20} className={isActive ? 'drop-shadow-[0_0_5px_rgba(255,215,0,0.5)]' : ''} />
@@ -80,9 +80,9 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, onO
   <div className="flex items-center w-full px-2">
    <button
    onClick={() => { setCurrentTab('home'); }}
-   className={`flex items-center gap-3 p-2 group/logo transition-all flex-1 min-w-0`}
+   className={`flex items-center gap-3 p-2 group/logo transition-colors focus:outline-none flex-1 min-w-0`}
    >
-   <div className={`p-2 rounded-[4px] border transition-all shrink-0 ${
+   <div className={`p-2 rounded-[4px] border transition-colors shrink-0 bg-transparent ${
     currentTab === 'home' 
     ? 'border-exo-accent/40 bg-exo-accent/5 text-exo-accent shadow-glow-gold' 
     : 'border-exo-mist-10 text-exo-muted group-hover/logo:border-exo-accent/30 group-hover/logo:text-exo-accent/70'
@@ -115,7 +115,7 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, onO
   <div className="w-full h-px bg-exo-mist-6 my-2" />
   
   <div
-   className="relative cursor-pointer group/avatar flex items-center gap-3 w-full p-1 rounded-[4px] transition-all hover:bg-exo-accent/[0.04] px-3"
+   className="relative cursor-pointer group/avatar flex items-center gap-3 w-full p-1 rounded-[4px] transition-colors hover:bg-exo-accent/[0.04] px-3"
    onClick={onOpenProfile}
   >
    <div className="relative shrink-0">

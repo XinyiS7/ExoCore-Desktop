@@ -96,7 +96,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
       <div className="flex items-center gap-4 px-6 h-16 border-b border-exo-mist-10 bg-exo-pure/40 backdrop-blur-md shrink-0">
         <button
           onClick={onBack}
-          className="p-2 -ml-2 text-exo-muted hover:text-white transition-all hover:bg-exo-accent/[0.04] rounded-[2px]"
+          className="p-2 -ml-2 text-exo-muted hover:text-white transition-colors hover:bg-exo-accent/[0.04] rounded-[2px]"
         >
           <ArrowLeft size={18} />
         </button>
@@ -213,7 +213,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-6 py-2 bg-white text-exo-pure rounded-[2px] text-[0.6875rem] font-bold tracking-[0.2em] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-2 shrink-0"
+                className="px-6 py-2 bg-white text-exo-pure rounded-[2px] text-[0.6875rem] font-bold tracking-[0.2em] hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-2 shrink-0"
               >
                 {isSaving ? <Activity size={13} className="animate-spin" /> : <Save size={13} />}
                 {isSaving ? 'Committing...' : 'Commit'}

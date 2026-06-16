@@ -123,7 +123,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
           <div className="flex items-center gap-2 pl-10">
             <button
               onClick={() => setEditTarget(preset)}
-              className="p-2 text-exo-muted hover:text-white border border-exo-mist-10 rounded-[2px] hover:bg-exo-accent/[0.04] transition-all" title="Edit Core"
+              className="p-2 text-exo-muted hover:text-white border border-exo-mist-10 rounded-[2px] hover:bg-exo-accent/[0.04] transition-colors" title="Edit Core"
             >
               <Edit3 size={14} />
             </button>
@@ -136,7 +136,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
                   onDelete: () => alert("Purge protocol initiated.")
                 });
               }}
-              className="p-2 text-red-500/50 hover:text-red-500 border border-red-900/20 rounded-[2px] hover:bg-red-500/10 transition-all" title="Destroy Core"
+              className="p-2 text-red-500/50 hover:text-red-500 border border-red-900/20 rounded-[2px] hover:bg-red-500/10 transition-colors" title="Destroy Core"
             >
               <Trash2 size={14} />
             </button>
@@ -146,7 +146,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
                 openNewSession({ presetId: preset.id });
                 setCurrentTab('chat');
               }}
-              className="px-4 py-2 bg-white text-exo-pure rounded-[2px] flex items-center gap-2 text-[0.6875rem] font-bold tracking-widest hover:bg-exo-accent transition-all shadow-brutalist active:scale-95"
+              className="px-4 py-2 bg-white text-exo-pure rounded-[2px] flex items-center gap-2 text-[0.6875rem] font-bold tracking-widest hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95"
             >
               <Play size={12} fill="currentColor" /> Initiate
             </button>

@@ -240,7 +240,7 @@ export default function Dashboard({ appState, setView }) {
                         setActiveSessionId(convo.id);
                         setView('chat', { from: 'home', sessionId: convo.id, sessionTitle: convo.name });
                       }}
-                      className="flex items-center gap-3 w-full px-4 py-3 text-left transition-all hover:bg-exo-accent/[0.02]"
+                      className="flex items-center gap-3 w-full px-4 py-3 text-left transition-colors hover:bg-exo-accent/[0.02]"
                       style={{ fontFamily: 'inherit', color: 'inherit' }}
                     >
                       <span

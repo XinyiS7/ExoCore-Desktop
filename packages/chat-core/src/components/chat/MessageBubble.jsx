@@ -457,7 +457,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
     <button
     onClick={handleBookmarkSubmit}
     disabled={bookmarkStatus === 'saving' || bookmarkStatus === 'done'}
-    className="px-4 py-1.5 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[0.625rem] tracking-widest hover:bg-exo-accent hover:text-black transition-all disabled:opacity-50"
+    className="px-4 py-1.5 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[0.625rem] tracking-widest hover:bg-exo-accent hover:text-black transition-colors disabled:opacity-50"
     >
     {bookmarkStatus === 'saving' ? 'UPLOADING...'
      : bookmarkStatus === 'done' ? '✓ ARCHIVED'

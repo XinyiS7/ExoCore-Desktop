@@ -44,7 +44,7 @@ export default function ProjectHome({ appState, setView }) {
   </div>
   <button
    onClick={() => openNewSession()}
-   className="flex items-center gap-2 px-4 py-2 bg-exo-accent/10 border border-exo-accent/30 rounded-md text-exo-accent text-xs font-medium hover:bg-exo-accent/20 active:scale-95 transition-all"
+   className="flex items-center gap-2 px-4 py-2 bg-exo-accent/10 border border-exo-accent/30 rounded-md text-exo-accent text-xs font-medium hover:bg-exo-accent/20 active:scale-95 transition-colors"
   >
    <Plus size={14} strokeWidth={1.5} />
    New Chat
