@@ -80,7 +80,7 @@ button {
 
   /* ── Typography atoms ── */
   .label-caps {
-    @apply text-[10px] font-bold tracking-[0.2em] uppercase;
+    @apply text-[10px] font-bold tracking-[0.2em];
     color: var(--cinder-text-dim);
   }
 

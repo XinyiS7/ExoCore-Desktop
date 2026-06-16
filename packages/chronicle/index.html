@@ -8,24 +8,26 @@
   <title>Chronicle</title>
   <!--
     ⚠️ SYNC ALERT ⚠️
-    此脚本中的 STACKS / DEFAULT / localStorage key 必须与以下文件保持一致:
+    This script's STACKS / DEFAULTS / localStorage keys MUST match:
       packages/shared/src/hooks/useFont.js
-    改任意一边都要同步改另一边，否则字体闪烁 FOUC 会回来。
+    Change either side → sync the other, or FOUC returns.
   -->
   <script>
     (function() {
-      // ⚠️ 这些常量与 packages/shared/src/hooks/useFont.js 保持同步
+      // ⚠️ Keep in sync with useFont.js FONT_STACKS
       var STACKS = {
         sarasa:  "'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace",
         wenkai:  "'LXGW WenKai', 'Sarasa Gothic Mono', 'Georgia', serif",
         maple:   "'Maple Mono', 'Sarasa Gothic Mono', 'Consolas', monospace",
       };
-      var DEFAULT = 'sarasa';
-      var NAV  = "'LXGW WenKai', 'Sarasa Gothic Mono', 'Segoe UI', sans-serif";
-      var CODE = "'Maple Mono', 'Consolas', 'Cascadia Code', monospace";
+      var DEFAULT_SYSTEM  = 'sarasa';
+      var DEFAULT_MESSAGE = 'sarasa';
+      var DEFAULT_CODE    = 'maple';
+      var DEFAULT_SCALE   = 100;
 
-      var sys = DEFAULT, msg = DEFAULT;
+      var sys = DEFAULT_SYSTEM, msg = DEFAULT_MESSAGE, code = DEFAULT_CODE, scale = DEFAULT_SCALE;
       try {
+        // Legacy migration
         var legacy = localStorage.getItem('exo_font_preference');
         if (legacy) {
           localStorage.setItem('exo_font_system', legacy);
@@ -33,17 +35,26 @@
           localStorage.removeItem('exo_font_preference');
           sys = msg = legacy;
         } else {
-          sys = localStorage.getItem('exo_font_system') || DEFAULT;
-          msg = localStorage.getItem('exo_font_message') || DEFAULT;
+          sys  = localStorage.getItem('exo_font_system')  || DEFAULT_SYSTEM;
+          msg  = localStorage.getItem('exo_font_message') || DEFAULT_MESSAGE;
+          code = localStorage.getItem('exo_font_code')    || DEFAULT_CODE;
+        }
+        // Scale: migrate old decimal (0.5–2.0) to percentage (80–150)
+        var rawScale = localStorage.getItem('exo_font_scale');
+        if (rawScale != null) {
+          var s = parseFloat(rawScale);
+          if (!isNaN(s)) {
+            scale = s < 10 ? Math.round(s * 100) : Math.round(s);
+          }
         }
       } catch(e) {}
 
       var root = document.documentElement;
-      root.style.setProperty('--font-system',  STACKS[sys] || STACKS[DEFAULT]);
-      root.style.setProperty('--font-message', STACKS[msg] || STACKS[DEFAULT]);
-      root.style.setProperty('--font-body',    STACKS[sys] || STACKS[DEFAULT]);
-      root.style.setProperty('--font-nav',     NAV);
-      root.style.setProperty('--font-code',    CODE);
+      root.style.setProperty('--font-system',  STACKS[sys]  || STACKS[DEFAULT_SYSTEM]);
+      root.style.setProperty('--font-message', STACKS[msg]  || STACKS[DEFAULT_MESSAGE]);
+      root.style.setProperty('--font-code',    STACKS[code] || STACKS[DEFAULT_CODE]);
+      root.style.setProperty('--font-body',    STACKS[sys]  || STACKS[DEFAULT_SYSTEM]);
+      root.style.setProperty('--exo-font-scale', String(scale / 100));
     })();
   </script>
 </head>

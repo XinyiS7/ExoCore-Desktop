@@ -68,7 +68,7 @@ export default function CalendarView() {
             <div className="bg-chron-panel/40 border border-chron-border/50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-serif text-chron-accent">Today at a Glance</h3>
-                <span className="text-[9px] font-mono text-chron-muted/40 uppercase">48h window</span>
+                <span className="text-[9px] font-mono text-chron-muted/40">48h window</span>
               </div>
               <div className="space-y-2">
                 {todayEvents.map(ev => (
@@ -94,7 +94,7 @@ export default function CalendarView() {
                         )}
                         {ev.all_day && <span className="text-[9px] text-chron-muted/40 font-mono">全天</span>}
                         {ev.source === 'exocore' && ev.entry_type && (
-                          <span className="text-[8px] uppercase tracking-wider text-chron-muted/30">{ev.entry_type}</span>
+                          <span className="text-[8px] tracking-wider text-chron-muted/30">{ev.entry_type}</span>
                         )}
                       </div>
                     </div>
@@ -110,7 +110,7 @@ export default function CalendarView() {
               <h3 className="text-sm font-serif text-chron-accent">
                 {selectedDate === today ? 'Today' : selectedDate}
               </h3>
-              <span className="text-[9px] font-mono text-chron-muted/40 uppercase">
+              <span className="text-[9px] font-mono text-chron-muted/40">
                 {dayTasks.length} task{dayTasks.length !== 1 ? 's' : ''}
               </span>
             </div>

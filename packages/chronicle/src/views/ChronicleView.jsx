@@ -64,7 +64,7 @@ export default function ChronicleView({ presets: presetsProp = [] }) {
       {/* Header */}
       <header className="h-12 flex items-center px-5 border-b border-chron-border bg-chron-panel shrink-0">
         <h1 className="font-serif text-lg tracking-wide text-chron-accent">Chronicle</h1>
-        <span className="ml-auto text-[9px] font-mono text-chron-muted/40 uppercase tracking-widest">
+        <span className="ml-auto text-[9px] font-mono text-chron-muted/40 tracking-widest">
           {filtered.length} 条大事记
         </span>
       </header>
@@ -97,7 +97,7 @@ export default function ChronicleView({ presets: presetsProp = [] }) {
 
             <button
               onClick={() => setModalEntry({})}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-chron-accent text-chron-bg text-[10px] font-bold uppercase tracking-widest rounded hover:brightness-110 transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-chron-accent text-chron-bg text-[10px] font-bold tracking-widest rounded hover:brightness-110 transition-all active:scale-95"
             >
               <Plus size={12} />
               新建

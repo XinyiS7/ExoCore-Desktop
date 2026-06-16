@@ -134,7 +134,7 @@ export default function TimelineView() {
       {/* Header */}
       <header className="h-12 flex items-center px-5 border-b border-chron-border bg-chron-panel shrink-0">
         <h1 className="font-serif text-lg tracking-wide text-chron-accent">Feed</h1>
-        <span className="ml-auto text-[9px] font-mono text-chron-muted/40 uppercase tracking-widest">
+        <span className="ml-auto text-[9px] font-mono text-chron-muted/40 tracking-widest">
           {tweets.length} posts
         </span>
       </header>
@@ -163,7 +163,7 @@ export default function TimelineView() {
                   <button
                     onClick={handlePost}
                     disabled={!postContent.trim() || isPosting}
-                    className="px-5 py-1.5 bg-chron-accent text-chron-bg text-[10px] font-bold rounded hover:brightness-110 transition-all active:scale-95 disabled:opacity-30 flex items-center gap-1.5 uppercase tracking-widest ml-auto"
+                    className="px-5 py-1.5 bg-chron-accent text-chron-bg text-[10px] font-bold rounded hover:brightness-110 transition-all active:scale-95 disabled:opacity-30 flex items-center gap-1.5 tracking-widest ml-auto"
                   >
                     {isPosting ? <Activity size={11} className="animate-spin" /> : <Send size={11} />}
                     Post
@@ -201,7 +201,7 @@ export default function TimelineView() {
                         <p className="text-sm text-chron-text/80 whitespace-pre-wrap leading-relaxed">{tweet.content}</p>
                         <button
                           onClick={() => { setReplyingToId(isReplyingHere ? null : tweet.id); setReplyContent(''); }}
-                          className="mt-2 text-[9px] font-bold uppercase tracking-widest text-chron-muted/40 hover:text-chron-accent transition-colors flex items-center gap-1"
+                          className="mt-2 text-[9px] font-bold tracking-widest text-chron-muted/40 hover:text-chron-accent transition-colors flex items-center gap-1"
                         >
                           <CornerDownLeft size={11} /> Reply
                         </button>

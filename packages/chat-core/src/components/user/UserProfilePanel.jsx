@@ -442,13 +442,13 @@ const ChartBlock = ({ title, data, models, valueKey, onActivate, activePoint, mo
    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
    <XAxis
    dataKey="date"
-   tick={{ fill: '#818190', fontSize: 9, fontFamily: 'monospace' }}
+   tick={{ fill: '#818190', fontSize: 9, fontFamily: 'var(--font-code)' }}
    tickLine={false}
    axisLine={false}
    interval="preserveStartEnd"
    />
    <YAxis
-   tick={{ fill: '#818190', fontSize: 9, fontFamily: 'monospace' }}
+   tick={{ fill: '#818190', fontSize: 9, fontFamily: 'var(--font-code)' }}
    tickLine={false}
    axisLine={false}
    tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}

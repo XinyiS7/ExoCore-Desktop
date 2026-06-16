@@ -625,7 +625,7 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
                 fontSize: '11px',
                 letterSpacing: '0.04em',
                 color: project?.work_dir ? 'var(--cinder-text)' : 'var(--cinder-text-faint)',
-                fontFamily: "'Courier New', monospace",
+                fontFamily: 'var(--font-code)',
               }}
             >
               {project?.work_dir || '~ / (no working directory)'}

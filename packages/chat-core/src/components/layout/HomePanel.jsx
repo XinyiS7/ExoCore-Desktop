@@ -55,7 +55,7 @@ export default function HomePanel({ setCurrentTab }) {
           
           <div className="space-y-4">
             <h1 className="text-5xl md:text-7xl font-light leading-ultra-tight tracking-tight text-white">
-              Welcome back, <span className="text-exo-accent font-medium">{userNick.toUpperCase()}</span>
+              Welcome back, <span className="text-exo-accent font-medium">{userNick}</span>
             </h1>
             <p className="text-lg text-exo-muted max-w-2xl font-light leading-tight-12">
               您的个人 AI 协作中枢已就绪。所有子系统运行正常，<span className="text-exo-accent/60 font-mono">链路延迟 2ms</span>。

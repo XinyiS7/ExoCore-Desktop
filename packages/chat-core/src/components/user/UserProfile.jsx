@@ -375,7 +375,7 @@ const TweetCard = ({
                 value={replyContent}
                 onChange={e => setReplyContent(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleReply(tweet.id); } }}
-                placeholder={`REPLY TO ${name.toUpperCase()}...`}
+                placeholder={`Reply to ${name}...`}
                 autoFocus
                 className="flex-1 bg-black/40 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white outline-none focus:border-exo-accent/40 resize-none transition-all placeholder:opacity-20"
               />
@@ -426,7 +426,7 @@ const TweetCard = ({
                       value={replyContent}
                       onChange={e => setReplyContent(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleReply(reply.id); } }}
-                      placeholder={`REPLY TO ${replyAuthor.name.toUpperCase()}...`}
+                      placeholder={`Reply to ${replyAuthor.name}...`}
                       autoFocus
                       className="flex-1 bg-black/40 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white outline-none focus:border-exo-accent/40 resize-none transition-all placeholder:opacity-20"
                     />

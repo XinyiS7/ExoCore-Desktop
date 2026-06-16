@@ -1,11 +1,22 @@
 /* ═══════════════════════════════════════════
-   Cinder · Font System
+   Cinder · Font System — CSS Fallback
+
+   These are the DEFAULT values, applied before JS runs.
+   useFont.js + index.html inline <script> override them
+   once localStorage is read.
+
+   KEEP IN SYNC with:
+     packages/shared/src/hooks/useFont.js  (FONT_STACKS)
+     packages/chat-core/index.html         (inline script)
+     packages/chronicle/index.html         (inline script)
    ═══════════════════════════════════════════ */
 
 :root {
-  --font-body: 'LXGW WenKai', 'Noto Serif SC', 'Georgia', serif;
-  --font-nav:  'LXGW WenKai', 'Sarasa Gothic Mono', 'Segoe UI', sans-serif;
-  --font-code: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --font-system:  'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
+  --font-message: 'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
+  --font-code:    'Maple Mono', 'Sarasa Gothic Mono', 'Consolas', monospace;
+  /* backward compat */
+  --font-body:    var(--font-system);
 }
 
 body {

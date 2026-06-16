@@ -155,7 +155,7 @@ export default function TaskRow({
             {is_pinned && <span className="text-exo-accent/50 mr-1 text-xs">📌</span>}
             {title}
           </span>
-          <span className={`text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded flex-shrink-0 ${cfg.bg} ${cfg.color}`}>
+          <span className={`text-[9px] tracking-widest px-1.5 py-0.5 rounded flex-shrink-0 ${cfg.bg} ${cfg.color}`}>
             {cfg.label}
           </span>
           {renderMeta()}
@@ -212,7 +212,7 @@ export default function TaskRow({
             <p className="text-xs text-exo-muted/60 leading-relaxed">{description}</p>
           )}
 
-          <div className="flex flex-wrap gap-3 text-[9px] text-exo-muted/30 uppercase tracking-widest">
+          <div className="flex flex-wrap gap-3 text-[9px] text-exo-muted/30 tracking-widest">
             <span>开始 {start_date}</span>
             {tags?.length > 0 && (
               <span className="flex gap-1">
@@ -225,7 +225,7 @@ export default function TaskRow({
 
           {/* Completion history */}
           <div>
-            <div className="text-[9px] uppercase tracking-widest text-exo-muted/25 mb-1.5">打卡记录</div>
+            <div className="text-[9px] tracking-widest text-exo-muted/25 mb-1.5">打卡记录</div>
             {loadingCompletions && <div className="text-xs text-exo-muted/25">加载中...</div>}
             {!loadingCompletions && completions?.length === 0 && (
               <div className="text-xs text-exo-muted/20">暂无记录</div>

@@ -14,7 +14,7 @@ html {
   body {
     background-color: #faf6f0;
     color: #3d2b1f;
-    font-family: var(--font-body);
+    font-family: var(--font-system);
   }
 
   .paper-card {

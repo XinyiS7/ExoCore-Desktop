@@ -4,11 +4,64 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#050505" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260616" />
+  <link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.png?v=20260616" />
+  <link rel="apple-touch-icon" sizes="512x512" href="/icon-512x512.png?v=20260616" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai:wght@300;400;700&display=swap" rel="stylesheet" />
   <title>Chat</title>
+  <!--
+    ⚠️ SYNC ALERT ⚠️
+    This script's STACKS / DEFAULTS / localStorage keys MUST match:
+      packages/shared/src/hooks/useFont.js
+    Change either side → sync the other, or FOUC returns.
+  -->
+  <script>
+    (function() {
+      // ⚠️ Keep in sync with useFont.js FONT_STACKS
+      var STACKS = {
+        sarasa:  "'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace",
+        wenkai:  "'LXGW WenKai', 'Sarasa Gothic Mono', 'Georgia', serif",
+        maple:   "'Maple Mono', 'Sarasa Gothic Mono', 'Consolas', monospace",
+      };
+      var DEFAULT_SYSTEM  = 'sarasa';
+      var DEFAULT_MESSAGE = 'sarasa';
+      var DEFAULT_CODE    = 'maple';
+      var DEFAULT_SCALE   = 100;
+
+      var sys = DEFAULT_SYSTEM, msg = DEFAULT_MESSAGE, code = DEFAULT_CODE, scale = DEFAULT_SCALE;
+      try {
+        // Legacy migration
+        var legacy = localStorage.getItem('exo_font_preference');
+        if (legacy) {
+          localStorage.setItem('exo_font_system', legacy);
+          localStorage.setItem('exo_font_message', legacy);
+          localStorage.removeItem('exo_font_preference');
+          sys = msg = legacy;
+        } else {
+          sys  = localStorage.getItem('exo_font_system')  || DEFAULT_SYSTEM;
+          msg  = localStorage.getItem('exo_font_message') || DEFAULT_MESSAGE;
+          code = localStorage.getItem('exo_font_code')    || DEFAULT_CODE;
+        }
+        // Scale: migrate old decimal (0.5–2.0) to percentage (80–150)
+        var rawScale = localStorage.getItem('exo_font_scale');
+        if (rawScale != null) {
+          var s = parseFloat(rawScale);
+          if (!isNaN(s)) {
+            scale = s < 10 ? Math.round(s * 100) : Math.round(s);
+          }
+        }
+      } catch(e) {}
+
+      var root = document.documentElement;
+      root.style.setProperty('--font-system',  STACKS[sys]  || STACKS[DEFAULT_SYSTEM]);
+      root.style.setProperty('--font-message', STACKS[msg]  || STACKS[DEFAULT_MESSAGE]);
+      root.style.setProperty('--font-code',    STACKS[code] || STACKS[DEFAULT_CODE]);
+      root.style.setProperty('--font-body',    STACKS[sys]  || STACKS[DEFAULT_SYSTEM]);
+      root.style.setProperty('--exo-font-scale', String(scale / 100));
+    })();
+  </script>
 </head>
 <body>
   <div id="root"></div>

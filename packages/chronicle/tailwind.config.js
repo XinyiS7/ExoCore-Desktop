@@ -3,8 +3,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-body)'],
-        serif: ['Merriweather', 'Georgia', 'serif'],
+        sans: ['var(--font-system)'],
         mono: ['var(--font-code)'],
       },
       colors: {

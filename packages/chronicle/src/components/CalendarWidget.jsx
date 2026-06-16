@@ -370,7 +370,7 @@ function TodoItem({ entry, onToggle, onDelete }) {
           {entry.title}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className={`text-[10px] uppercase tracking-widest px-1 rounded bg-white/5 text-exo-muted/40`}>
+          <span className={`text-[10px] tracking-widest px-1 rounded bg-white/5 text-exo-muted/40`}>
             {entry.entry_type}
           </span>
           {entry.description && (

@@ -5,7 +5,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-body)'],
+        sans: ['var(--font-system)'],
         mono: ['var(--font-code)'],
       },
       colors: {

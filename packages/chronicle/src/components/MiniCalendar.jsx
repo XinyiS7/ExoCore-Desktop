@@ -91,7 +91,7 @@ export default function MiniCalendar({ selectedDate, onSelectDate, entries = [],
         <button onClick={prevMonth} className="p-1 text-exo-muted/40 hover:text-exo-muted transition-colors rounded">
           <ChevronLeft size={13} />
         </button>
-        <span className="text-[10px] uppercase tracking-widest text-exo-text/70">{monthLabel}</span>
+        <span className="text-[10px] tracking-widest text-exo-text/70">{monthLabel}</span>
         <button onClick={nextMonth} className="p-1 text-exo-muted/40 hover:text-exo-muted transition-colors rounded">
           <ChevronRight size={13} />
         </button>
@@ -100,7 +100,7 @@ export default function MiniCalendar({ selectedDate, onSelectDate, entries = [],
       {/* DOW header */}
       <div className="grid grid-cols-7 mb-1">
         {DOW.map(d => (
-          <div key={d} className="text-center text-[9px] text-exo-muted/30 uppercase tracking-wide py-0.5">{d}</div>
+          <div key={d} className="text-center text-[9px] text-exo-muted/30 tracking-wide py-0.5">{d}</div>
         ))}
       </div>
 

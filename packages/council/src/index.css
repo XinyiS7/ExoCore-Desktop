@@ -4,8 +4,12 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  font-size: calc(16px * var(--exo-font-scale, 1));
+}
+
 @layer base {
   body {
-    font-family: var(--font-body);
+    font-family: var(--font-system);
   }
 }

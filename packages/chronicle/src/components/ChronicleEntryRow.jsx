@@ -42,13 +42,13 @@ export default function ChronicleEntryRow({ entry, onEdit, onDelete }) {
         <div className={`p-1.5 rounded-lg ${scope === '里' ? 'bg-rose-400/10' : 'bg-blue-400/10'}`}>
           <ScopeIcon size={14} className={scopeCfg.color} />
         </div>
-        <span className="text-[8px] uppercase tracking-widest text-exo-muted/30 font-mono">{event_time?.slice(0, 7) || ''}</span>
+        <span className="text-[8px] tracking-widest text-exo-muted/30 font-mono">{event_time?.slice(0, 7) || ''}</span>
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-white/5 text-exo-muted/40 font-mono">
+          <span className="text-[9px] tracking-widest px-1.5 py-0.5 rounded bg-white/5 text-exo-muted/40 font-mono">
             {scopeCfg.label}
           </span>
           <span className="text-[10px] text-exo-muted/30 font-mono">{event_time}</span>

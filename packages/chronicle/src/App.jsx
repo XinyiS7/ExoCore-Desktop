@@ -9,7 +9,7 @@ import ChronicleView from './views/ChronicleView';
 
 export default function App() {
   const { userAvatar, userNick } = useProfile();
-  useFont(); // Inject --font-body, --font-nav, --font-code CSS variables
+  useFont(); // Inject --font-system, --font-message, --font-code CSS variables
 
   return (
     <div className="w-full h-screen flex flex-col bg-chron-bg text-chron-text font-sans">
