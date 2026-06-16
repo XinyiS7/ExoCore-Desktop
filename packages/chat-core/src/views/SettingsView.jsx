@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Key, Clock, Bell, Palette, Database, Cpu, Menu, X } from 'lucide-react';
+import { Key, Clock, Bell, Palette, Database, Cpu, X } from 'lucide-react';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 const NAV_ITEMS = [
@@ -54,6 +54,13 @@ export default function SettingsView() {
 	const [navVisible, setNavVisible] = useState(true);
 
 	const isActive = (route) => location.pathname === route;
+
+	// Reset nav visibility when navigating back to /settings (MobileHeader back)
+	useEffect(() => {
+		if (location.pathname === '/settings') {
+			setNavVisible(true);
+		}
+	}, [location.pathname]);
 
 	const handleNavClick = (route, enabled) => {
 	if (!enabled) return;
@@ -120,19 +127,6 @@ export default function SettingsView() {
 
 		{/* Right content area */}
 		<div className="flex-1 min-w-0 overflow-hidden flex flex-col">
-			{/* Mobile menu toggle — visible when nav is hidden on mobile */}
-			{!navVisible && (
-				<div className="md:hidden flex-shrink-0 h-10 bg-chat-panel border-b border-white/5 flex items-center px-3">
-					<button
-						onClick={() => setNavVisible(true)}
-						className="p-1 text-chat-muted hover:text-chat-accent active:scale-90 transition-all flex items-center gap-2"
-					>
-						<Menu size={16} strokeWidth={1.5} />
-						<span className="text-xs font-medium text-chat-text">Settings Menu</span>
-					</button>
-				</div>
-			)}
-
 			<div className="flex-1 min-h-0 overflow-hidden">
 				<ErrorBoundary>
 					<Outlet />
