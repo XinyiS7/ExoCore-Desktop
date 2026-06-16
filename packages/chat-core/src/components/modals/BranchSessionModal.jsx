@@ -27,7 +27,7 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
    <h3 className="font-bold tracking-[0.2em] text-white flex items-center gap-2 text-sm">
     <GitFork size={18} className="text-exo-accent" /> Branch Context
    </h3>
-   <span className="text-[0.5625rem] text-exo-muted tracking-widest opacity-40 mt-1">Forking Active Neural Stream</span>
+   <span className="text-[0.6625rem] text-exo-muted tracking-widest opacity-40 mt-1">Forking Active Neural Stream</span>
    </div>
    <button onClick={onClose} className="p-2 text-exo-muted hover:text-white transition-colors"><X size={18}/></button>
   </div>
@@ -61,13 +61,13 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
     <button
      key={value}
      onClick={() => setSessionType(value)}
-     className={`px-4 py-2.5 rounded-[2px] border text-[0.625rem] tracking-wider transition-all
+     className={`px-4 py-2.5 rounded-[2px] border text-[0.725rem] tracking-wider transition-all
      ${sessionType === value
       ? 'bg-exo-accent/10 border-exo-accent/60 text-white'
       : 'bg-black/30 border-exo-mist-10 text-exo-muted/60 hover:border-exo-mist-20'}`}
     >
-     <span className="block text-[0.6875rem] font-bold">{label}</span>
-     <span className="block text-[0.5rem] opacity-50 mt-0.5">{desc}</span>
+     <span className="block text-[0.7875rem] font-bold">{label}</span>
+     <span className="block text-[0.6rem] opacity-50 mt-0.5">{desc}</span>
     </button>
     ))}
    </div>
@@ -78,14 +78,14 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
   <div className="p-4 border-t border-exo-mist-10 flex justify-end gap-3 bg-exo-pure/80 backdrop-blur-md">
    <button 
    onClick={onClose} 
-   className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest text-exo-muted hover:text-white transition-colors"
+   className="px-6 py-2 rounded-[2px] text-[0.7875rem] font-bold tracking-widest text-exo-muted hover:text-white transition-colors"
    >
    Abort
    </button>
    <button 
    onClick={handleConfirm}
    disabled={isSubmitting} 
-   className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[0.6875rem] font-bold tracking-[0.2em] hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
+   className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[0.7875rem] font-bold tracking-[0.2em] hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
    >
    {isSubmitting ? <Activity size={14} className="animate-spin" /> : <GitFork size={14} />} Confirm Branch
    </button>

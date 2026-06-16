@@ -42,25 +42,25 @@ export default function ChronicleEntryRow({ entry, onEdit, onDelete }) {
         <div className={`p-1.5 rounded-lg ${scope === '里' ? 'bg-rose-400/10' : 'bg-blue-400/10'}`}>
           <ScopeIcon size={14} className={scopeCfg.color} />
         </div>
-        <span className="text-[0.5rem] tracking-widest text-exo-muted/30 font-mono">{event_time?.slice(0, 7) || ''}</span>
+        <span className="text-[0.6rem] tracking-widest text-exo-muted/30 font-mono">{event_time?.slice(0, 7) || ''}</span>
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-[0.5625rem] tracking-widest px-1.5 py-0.5 rounded bg-white/5 text-exo-muted/40 font-mono">
+          <span className="text-[0.6625rem] tracking-widest px-1.5 py-0.5 rounded bg-white/5 text-exo-muted/40 font-mono">
             {scopeCfg.label}
           </span>
-          <span className="text-[0.625rem] text-exo-muted/30 font-mono">{event_time}</span>
+          <span className="text-[0.725rem] text-exo-muted/30 font-mono">{event_time}</span>
           {preset_name && (
-            <span className="text-[0.625rem] text-exo-muted/20 font-mono">via {preset_name}</span>
+            <span className="text-[0.725rem] text-exo-muted/20 font-mono">via {preset_name}</span>
           )}
         </div>
         <p className="text-sm text-exo-text/80 leading-relaxed whitespace-pre-wrap">{content}</p>
         {keywords?.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {keywords.map(k => (
-              <span key={k} className="text-[0.5625rem] px-1.5 py-0.5 rounded bg-exo-accent/5 text-exo-accent/50 font-mono">
+              <span key={k} className="text-[0.6625rem] px-1.5 py-0.5 rounded bg-exo-accent/5 text-exo-accent/50 font-mono">
                 #{k}
               </span>
             ))}

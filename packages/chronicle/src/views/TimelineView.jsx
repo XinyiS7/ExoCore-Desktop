@@ -134,7 +134,7 @@ export default function TimelineView() {
       {/* Header */}
       <header className="h-12 flex items-center px-5 border-b border-chron-border bg-chron-panel shrink-0">
         <h1 className="font-serif text-lg tracking-wide text-chron-accent">Feed</h1>
-        <span className="ml-auto text-[0.5625rem] font-mono text-chron-muted/40 tracking-widest">
+        <span className="ml-auto text-[0.6625rem] font-mono text-chron-muted/40 tracking-widest">
           {tweets.length} posts
         </span>
       </header>
@@ -159,11 +159,11 @@ export default function TimelineView() {
                   className="w-full bg-transparent text-sm text-chron-text outline-none resize-none placeholder:text-chron-muted/30 leading-relaxed"
                 />
                 <div className="flex justify-between items-center pt-2 border-t border-chron-border">
-                  <span className="text-[0.5625rem] text-chron-muted/30 font-mono hidden sm:block">Ctrl+Enter to post</span>
+                  <span className="text-[0.6625rem] text-chron-muted/30 font-mono hidden sm:block">Ctrl+Enter to post</span>
                   <button
                     onClick={handlePost}
                     disabled={!postContent.trim() || isPosting}
-                    className="px-5 py-1.5 bg-chron-accent text-chron-bg text-[0.625rem] font-bold rounded hover:brightness-110 transition-all active:scale-95 disabled:opacity-30 flex items-center gap-1.5 tracking-widest ml-auto"
+                    className="px-5 py-1.5 bg-chron-accent text-chron-bg text-[0.725rem] font-bold rounded hover:brightness-110 transition-all active:scale-95 disabled:opacity-30 flex items-center gap-1.5 tracking-widest ml-auto"
                   >
                     {isPosting ? <Activity size={11} className="animate-spin" /> : <Send size={11} />}
                     Post
@@ -196,12 +196,12 @@ export default function TimelineView() {
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-baseline gap-2">
                           <span className={`text-xs font-bold ${isUser ? 'text-chron-text' : 'text-chron-accent'}`}>{name}</span>
-                          <span className="text-[0.5625rem] text-chron-muted/40 font-mono">[{formatTime(tweet.created_at)}]</span>
+                          <span className="text-[0.6625rem] text-chron-muted/40 font-mono">[{formatTime(tweet.created_at)}]</span>
                         </div>
                         <p className="text-sm text-chron-text/80 whitespace-pre-wrap leading-relaxed">{tweet.content}</p>
                         <button
                           onClick={() => { setReplyingToId(isReplyingHere ? null : tweet.id); setReplyContent(''); }}
-                          className="mt-2 text-[0.5625rem] font-bold tracking-widest text-chron-muted/40 hover:text-chron-accent transition-colors flex items-center gap-1"
+                          className="mt-2 text-[0.6625rem] font-bold tracking-widest text-chron-muted/40 hover:text-chron-accent transition-colors flex items-center gap-1"
                         >
                           <CornerDownLeft size={11} /> Reply
                         </button>
@@ -229,7 +229,7 @@ export default function TimelineView() {
                             <div key={reply.id} className="text-xs leading-relaxed">
                               <span className={`font-bold mr-1.5 ${ri.isUser ? 'text-chron-text' : 'text-chron-accent'}`}>{ri.name}:</span>
                               <span className="text-chron-text/60 whitespace-pre-wrap">{reply.content}</span>
-                              <span className="text-[0.5rem] text-chron-muted/30 ml-2">[{formatTime(reply.created_at)}]</span>
+                              <span className="text-[0.6rem] text-chron-muted/30 ml-2">[{formatTime(reply.created_at)}]</span>
                             </div>
                           );
                         })}

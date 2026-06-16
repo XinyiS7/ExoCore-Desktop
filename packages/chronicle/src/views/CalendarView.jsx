@@ -51,7 +51,7 @@ export default function CalendarView() {
       {/* Header */}
       <header className="h-12 flex items-center px-5 border-b border-chron-border bg-chron-panel shrink-0">
         <h1 className="font-serif text-lg tracking-wide text-chron-accent">Calendar</h1>
-        <span className="ml-auto text-[0.5625rem] font-mono text-chron-muted/40">
+        <span className="ml-auto text-[0.6625rem] font-mono text-chron-muted/40">
           {selectedDate}
         </span>
       </header>
@@ -68,7 +68,7 @@ export default function CalendarView() {
             <div className="bg-chron-panel/40 border border-chron-border/50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-serif text-chron-accent">Today at a Glance</h3>
-                <span className="text-[0.5625rem] font-mono text-chron-muted/40">48h window</span>
+                <span className="text-[0.6625rem] font-mono text-chron-muted/40">48h window</span>
               </div>
               <div className="space-y-2">
                 {todayEvents.map(ev => (
@@ -88,13 +88,13 @@ export default function CalendarView() {
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
                         {!ev.all_day && ev.start && (
-                          <span className="text-[0.5625rem] text-chron-muted/40 font-mono">
+                          <span className="text-[0.6625rem] text-chron-muted/40 font-mono">
                             {ev.start.slice(11, 16)}{ev.end ? ` – ${ev.end.slice(11, 16)}` : ''}
                           </span>
                         )}
-                        {ev.all_day && <span className="text-[0.5625rem] text-chron-muted/40 font-mono">全天</span>}
+                        {ev.all_day && <span className="text-[0.6625rem] text-chron-muted/40 font-mono">全天</span>}
                         {ev.source === 'exocore' && ev.entry_type && (
-                          <span className="text-[0.5rem] tracking-wider text-chron-muted/30">{ev.entry_type}</span>
+                          <span className="text-[0.6rem] tracking-wider text-chron-muted/30">{ev.entry_type}</span>
                         )}
                       </div>
                     </div>
@@ -110,7 +110,7 @@ export default function CalendarView() {
               <h3 className="text-sm font-serif text-chron-accent">
                 {selectedDate === today ? 'Today' : selectedDate}
               </h3>
-              <span className="text-[0.5625rem] font-mono text-chron-muted/40">
+              <span className="text-[0.6625rem] font-mono text-chron-muted/40">
                 {dayTasks.length} task{dayTasks.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -140,7 +140,7 @@ export default function CalendarView() {
                       )}
                     </div>
                     {task.entry_type === 'goal' && (
-                      <span className="text-[0.5625rem] font-mono text-chron-muted/40">
+                      <span className="text-[0.6625rem] font-mono text-chron-muted/40">
                         {task.current_cycle_completions ?? 0}/{task.goal_count ?? 1}
                       </span>
                     )}

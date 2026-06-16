@@ -942,7 +942,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    <div className="border-b border-white/[0.04] bg-exo-pure/20 backdrop-blur-md z-20 px-4 md:px-6 py-2 flex items-center gap-2 min-w-0">
    <button onClick={() => setShowConvList(true)} className="md:hidden p-0.5 -ml-0.5 text-exo-muted hover:text-exo-text transition-colors flex-shrink-0"><ArrowLeft size={15} strokeWidth={1} /></button>
    <span className="text-sm font-sans font-medium text-white/90 truncate">{headerTitleOverride || sessionInfo?.name || `Session`}</span>
-   <span className="text-[0.625rem] font-sans text-exo-muted/30 flex-shrink-0">#{activeSessionId}</span>
+   <span className="text-[0.725rem] font-sans text-exo-muted/30 flex-shrink-0">#{activeSessionId}</span>
    </div>
   )}
 
@@ -953,7 +953,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     {/* Mobile back handled by MobileHeader (unified shell) */}
     <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors duration-500 ${isGenerating ? 'breathing-status' : 'bg-[#00509d]/30'}`} />
     {sessionInfo?.name && (
-    <span className="text-[0.6875rem] font-light text-exo-muted/60 truncate">
+    <span className="text-[0.7875rem] font-light text-exo-muted/60 truncate">
      {sessionInfo.name}
     </span>
     )}
@@ -1007,7 +1007,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     </div>
     ))}
     {filteredSessionAttachments.length === 0 && filteredPendingAttachments.length === 0 && !isAddingAttach && (
-    <div className="py-8 text-center text-[0.625rem] text-exo-muted/30 tracking-widest">
+    <div className="py-8 text-center text-[0.725rem] text-exo-muted/30 tracking-widest">
      [ 无挂载文档 ]
     </div>
     )}
@@ -1027,15 +1027,15 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
      className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-2 py-1.5 text-xs text-white outline-none focus:border-exo-accent/50 transition-colors"
      />
      <div className="flex justify-end gap-2">
-     <button onClick={() => { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); }} className="px-3 py-1 text-exo-muted hover:text-white text-[0.6875rem] tracking-widest">取消</button>
-     <button onClick={handleAddAttachment} className="px-3 py-1 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[0.6875rem] tracking-widest hover:bg-exo-accent hover:text-black transition-colors">确认</button>
+     <button onClick={() => { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); }} className="px-3 py-1 text-exo-muted hover:text-white text-[0.7875rem] tracking-widest">取消</button>
+     <button onClick={handleAddAttachment} className="px-3 py-1 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[0.7875rem] tracking-widest hover:bg-exo-accent hover:text-black transition-colors">确认</button>
      </div>
     </div>
     )}
    </div>
    {!isAddingAttach && (
     <div className="p-2 border-t border-exo-mist-10 bg-white/5">
-    <button onClick={() => setIsAddingAttach(true)} className="w-full py-2 text-[0.6875rem] tracking-widest text-exo-muted hover:text-white hover:bg-exo-accent/[0.04] flex items-center justify-center gap-2 rounded-[2px] border border-dashed border-exo-mist-10 hover:border-exo-mist-20 transition-colors">
+    <button onClick={() => setIsAddingAttach(true)} className="w-full py-2 text-[0.7875rem] tracking-widest text-exo-muted hover:text-white hover:bg-exo-accent/[0.04] flex items-center justify-center gap-2 rounded-[2px] border border-dashed border-exo-mist-10 hover:border-exo-mist-20 transition-colors">
      <Plus size={13} strokeWidth={1} /> 挂载外部路径
     </button>
     </div>
@@ -1048,7 +1048,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   <div ref={topSentinelRef} className="h-px" />
   {isLoadingMore && (
    <div className="flex justify-center py-3">
-   <span className="text-[0.625rem] tracking-[0.2em] text-exo-muted flex items-center gap-2 animate-pulse"><RefreshCw size={12} strokeWidth={1} className="animate-spin" /> 正在加载历史协议记录...</span>
+   <span className="text-[0.725rem] tracking-[0.2em] text-exo-muted flex items-center gap-2 animate-pulse"><RefreshCw size={12} strokeWidth={1} className="animate-spin" /> 正在加载历史协议记录...</span>
    </div>
   )}
   {messages.map((msg, idx) => {
@@ -1060,7 +1060,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    <React.Fragment key={msg.id || idx}>
     {showDateSep && (
     <div className="flex items-center justify-center py-2">
-     <span className="text-[0.625rem] text-exo-muted/30 tracking-wider">
+     <span className="text-[0.725rem] text-exo-muted/30 tracking-wider">
      {formatDateSeparator(msg.created_at)}
      </span>
     </div>
@@ -1085,7 +1085,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   {showScrollBtn && (
    <button
    onClick={handleScrollToBottomClick}
-   className="sticky bottom-2 left-1/2 -translate-x-1/2 z-30 px-3 py-1.5 rounded-full bg-exo-accent/90 text-black text-[0.625rem] tracking-[0.15em] shadow-lg hover:bg-exo-accent transition-colors animate-fade-in flex items-center gap-1.5"
+   className="sticky bottom-2 left-1/2 -translate-x-1/2 z-30 px-3 py-1.5 rounded-full bg-exo-accent/90 text-black text-[0.725rem] tracking-[0.15em] shadow-lg hover:bg-exo-accent transition-colors animate-fade-in flex items-center gap-1.5"
    >
    <ChevronDown size={12} strokeWidth={1} /> 回到底部
    </button>
@@ -1102,7 +1102,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   <div className="flex-shrink-0 p-4 border-t border-white/[0.04] bg-exo-pure/40 backdrop-blur-xl flex flex-col gap-2 relative z-10">
   {editingMessageId && (
    <div className="flex items-center justify-between px-3 py-1.5 bg-exo-accent/10 border border-exo-accent/20 rounded-[2px] animate-fade-in">
-   <div className="flex items-center gap-2 text-exo-accent text-[0.625rem] tracking-widest">
+   <div className="flex items-center gap-2 text-exo-accent text-[0.725rem] tracking-widest">
     <Edit2 size={11} strokeWidth={1} />
     <span>正在修正通讯协议数据区块 #{editingMessageId}</span>
    </div>
@@ -1139,7 +1139,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     {fileRefs.map((ref, i) => (
     <span
      key={`${ref.path}-${i}`}
-     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] bg-chat-accent/10 border border-chat-accent/20 text-[0.625rem] text-chat-accent "
+     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] bg-chat-accent/10 border border-chat-accent/20 text-[0.725rem] text-chat-accent "
     >
      {ref.path.includes('/') && !ref.path.endsWith('/') ? (
      <FileText size={9} strokeWidth={1} className="shrink-0" />
@@ -1185,12 +1185,12 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
       )}
       {e.error && (
       <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
-       <span className="text-[0.5rem] text-red-400 ">!</span>
+       <span className="text-[0.7rem] text-red-400 ">!</span>
       </div>
       )}
      </div>
      ) : (
-     <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[0.625rem] ${
+     <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[0.725rem] ${
       e.error ? 'border-red-500/30 text-red-400 bg-red-500/5' :
       e.uploading ? 'border-exo-mist-10 text-exo-muted bg-exo-pure' :
       'border-exo-accent/20 text-exo-accent bg-exo-accent/5'
@@ -1292,7 +1292,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     {isGenerating ? (
     <button
      onClick={handleStop}
-     className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-[2px] hover:bg-red-500 hover:text-white transition-colors flex items-center gap-1.5 text-[0.625rem] tracking-[0.2em]"
+     className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-[2px] hover:bg-red-500 hover:text-white transition-colors flex items-center gap-1.5 text-[0.725rem] tracking-[0.2em]"
      title="中止上行链路"
     >
      <X size={12} strokeWidth={1} />
@@ -1338,7 +1338,7 @@ const SessionTypeToggle = ({ value, onChange }) => {
    }`}
   />
   </span>
-  <span className="text-[0.625rem] text-exo-muted/50">
+  <span className="text-[0.725rem] text-exo-muted/50">
   {isFull ? 'Full' : 'Lite'}
   </span>
  </label>
