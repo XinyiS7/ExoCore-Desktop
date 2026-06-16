@@ -484,7 +484,7 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
      className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
       i === mentionIndex
       ? 'bg-exo-accent/10 text-exo-accent'
-      : 'text-exo-muted hover:bg-white/[0.03]'
+      : 'text-exo-muted hover:bg-exo-accent/[0.02]'
      }`}
      >
      <img

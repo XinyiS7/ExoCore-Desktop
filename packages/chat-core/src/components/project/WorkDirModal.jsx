@@ -139,7 +139,7 @@ const WorkDirModal = ({ projectId, currentWorkDir, setProjects, isOpen, onClose 
    <div className="flex items-center gap-2">
    <button
     onClick={onClose}
-    className="px-4 py-1.5 text-xs text-exo-muted hover:text-white border border-exo-border rounded-md hover:border-white/30 transition-all"
+    className="px-4 py-1.5 text-xs text-exo-muted hover:text-white border border-exo-border rounded-md hover:border-exo-accent/30 transition-all"
    >
     取消
    </button>

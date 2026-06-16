@@ -123,7 +123,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
           <div className="flex items-center gap-2 pl-10">
             <button
               onClick={() => setEditTarget(preset)}
-              className="p-2 text-exo-muted hover:text-white border border-exo-mist-10 rounded-[2px] hover:bg-white/5 transition-all" title="Edit Core"
+              className="p-2 text-exo-muted hover:text-white border border-exo-mist-10 rounded-[2px] hover:bg-exo-accent/[0.04] transition-all" title="Edit Core"
             >
               <Edit3 size={14} />
             </button>

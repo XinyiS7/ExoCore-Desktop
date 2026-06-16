@@ -194,7 +194,7 @@ export default function AutocompletePopup({
     key={entry.path}
     data-index={i}
     className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors ${
-    i === highlightIndex ? 'bg-white/10' : 'hover:bg-white/5'
+    i === highlightIndex ? 'bg-white/10' : 'hover:bg-exo-accent/[0.04]'
     }`}
     onMouseEnter={() => setHighlightIndex(i)}
     onMouseDown={(e) => {

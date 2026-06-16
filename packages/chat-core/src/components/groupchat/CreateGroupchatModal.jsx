@@ -149,7 +149,7 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
                     <label
                       key={preset.id}
                       className={`flex items-center gap-3 px-3 py-2 rounded-[2px] cursor-pointer transition-all ${
-                        checked ? 'bg-exo-accent/10 border border-exo-accent/20' : 'hover:bg-white/[0.03] border border-transparent'
+                        checked ? 'bg-exo-accent/10 border border-exo-accent/20' : 'hover:bg-exo-accent/[0.02] border border-transparent'
                       }`}
                     >
                       <input

@@ -80,7 +80,7 @@ export default function SettingsView() {
     enabled && isActive(route)
      ? 'bg-chat-accent/10 text-chat-accent border-l-2 border-chat-accent'
      : enabled
-     ? 'text-chat-muted hover:text-chat-text hover:bg-white/5'
+     ? 'text-chat-muted hover:text-chat-text hover:bg-exo-accent/[0.04]'
      : 'text-chat-muted/25 cursor-not-allowed'
     }`}
    >

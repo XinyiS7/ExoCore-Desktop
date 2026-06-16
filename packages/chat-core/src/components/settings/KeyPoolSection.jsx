@@ -239,7 +239,7 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
     className={`flex items-center justify-between px-2.5 py-1.5 rounded border transition-colors ${
     editing === k.alias
      ? 'bg-chat-bg border-chat-accent/20'
-     : 'bg-chat-bg border-transparent hover:border-white/5'
+     : 'bg-chat-bg border-transparent hover:border-exo-mist-10'
     }`}
    >
     {/* Alias */}

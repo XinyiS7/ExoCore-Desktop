@@ -106,7 +106,7 @@ const CreateProjectModal = ({ isOpen, onClose, setProjects }) => {
   <div className="flex items-center justify-end gap-2">
    <button
    onClick={onClose}
-   className="px-4 py-1.5 text-xs text-exo-muted hover:text-white border border-exo-border rounded-md hover:border-white/30 transition-all"
+   className="px-4 py-1.5 text-xs text-exo-muted hover:text-white border border-exo-border rounded-md hover:border-exo-accent/30 transition-all"
    >
    Cancel
    </button>

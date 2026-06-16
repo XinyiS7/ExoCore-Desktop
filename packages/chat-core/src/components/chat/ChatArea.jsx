@@ -990,7 +990,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    </div>
    <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-hide">
     {filteredSessionAttachments.map(att => (
-    <div key={att.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 rounded-[2px] group transition-colors border border-transparent hover:border-exo-mist-10">
+    <div key={att.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-exo-accent/[0.04] rounded-[2px] group transition-colors border border-transparent hover:border-exo-mist-10">
      <FileText size={13} strokeWidth={1} className="text-blue-400 shrink-0" />
      <span className="flex-1 text-xs text-exo-muted group-hover:text-white break-all leading-tight">{att.display_name || att.original_filename}</span>
      <button onClick={() => handleRemoveAttachment(att)} className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-all"><X size={11} strokeWidth={1} /></button>
@@ -1035,7 +1035,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    </div>
    {!isAddingAttach && (
     <div className="p-2 border-t border-exo-mist-10 bg-white/5">
-    <button onClick={() => setIsAddingAttach(true)} className="w-full py-2 text-[11px] tracking-widest text-exo-muted hover:text-white hover:bg-white/5 flex items-center justify-center gap-2 rounded-[2px] border border-dashed border-exo-mist-10 hover:border-exo-mist-20 transition-all">
+    <button onClick={() => setIsAddingAttach(true)} className="w-full py-2 text-[11px] tracking-widest text-exo-muted hover:text-white hover:bg-exo-accent/[0.04] flex items-center justify-center gap-2 rounded-[2px] border border-dashed border-exo-mist-10 hover:border-exo-mist-20 transition-all">
      <Plus size={13} strokeWidth={1} /> 挂载外部路径
     </button>
     </div>

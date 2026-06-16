@@ -21,7 +21,7 @@ function FontSelector({ label, description, value, onChange }) {
             className={`w-full text-left px-3 py-2 rounded-md border transition-all ${
               value === font.value
                 ? 'border-chat-accent/30 bg-chat-accent/5 text-chat-text'
-                : 'border-transparent bg-white/[0.02] text-chat-muted hover:border-white/8 hover:bg-white/[0.04]'
+                : 'border-transparent bg-white/[0.02] text-chat-muted hover:border-exo-mist-10 hover:bg-exo-accent/[0.03]'
             }`}
           >
             <div className="flex items-center gap-2.5">

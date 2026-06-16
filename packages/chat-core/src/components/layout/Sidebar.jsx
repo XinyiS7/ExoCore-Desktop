@@ -17,7 +17,7 @@ const NavIcon = ({ icon: Icon, isActive, onClick, title, label, isExpanded, show
  <div className={`p-2 rounded-xl transition-all shrink-0 ${
   isActive 
   ? 'bg-exo-accent/10 shadow-[0_0_15px_rgba(255,215,0,0.1)]' 
-  : 'group-hover/nav:bg-white/5'
+  : 'group-hover/nav:bg-exo-accent/[0.03]'
  }`}>
   <Icon size={20} className={isActive ? 'drop-shadow-[0_0_5px_rgba(255,215,0,0.5)]' : ''} />
  </div>
@@ -115,7 +115,7 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, onO
   <div className="w-full h-px bg-exo-mist-6 my-2" />
   
   <div
-   className="relative cursor-pointer group/avatar flex items-center gap-3 w-full p-1 rounded-[4px] transition-all hover:bg-white/5 px-3"
+   className="relative cursor-pointer group/avatar flex items-center gap-3 w-full p-1 rounded-[4px] transition-all hover:bg-exo-accent/[0.04] px-3"
    onClick={onOpenProfile}
   >
    <div className="relative shrink-0">

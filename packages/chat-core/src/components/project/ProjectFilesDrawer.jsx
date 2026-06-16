@@ -112,7 +112,7 @@ export default function ProjectFilesDrawer({
     {projectFiles.map(f => (
      <div
      key={f.id || f.name}
-     className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-white/5 transition-colors text-xs text-chat-muted/70"
+     className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-exo-accent/[0.04] transition-colors text-xs text-chat-muted/70"
      >
      <FileText size={12} className="text-chat-muted/40 shrink-0" />
      <span className="truncate">{f.display_name || f.original_filename || f.name}</span>

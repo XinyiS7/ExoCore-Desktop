@@ -51,7 +51,7 @@ export default class ErrorBoundary extends React.Component {
               </button>
               <button
                 onClick={this.handleGoHome}
-                className="px-4 py-2 text-xs font-medium rounded border border-white/10 text-chat-muted hover:bg-white/5 transition-colors flex items-center gap-1.5"
+                className="px-4 py-2 text-xs font-medium rounded border border-white/10 text-chat-muted hover:bg-exo-accent/[0.04] transition-colors flex items-center gap-1.5"
               >
                 <Home size={13} /> Go Home
               </button>

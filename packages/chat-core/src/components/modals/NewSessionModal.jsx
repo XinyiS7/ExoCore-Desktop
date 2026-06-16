@@ -211,7 +211,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
       px-4 py-2.5 rounded-[2px] text-[11px] font-mono cursor-pointer flex justify-between items-center transition-all
       ${isSelected
       ? 'bg-exo-accent/10 text-white border border-exo-accent/20'
-      : 'text-exo-muted/60 hover:text-white hover:bg-white/5 border border-transparent'}
+      : 'text-exo-muted/60 hover:text-white hover:bg-exo-accent/[0.04] border border-transparent'}
      `}
      >
      <div className="flex items-center gap-3"><Folder size={12} className={isSelected ? 'text-exo-accent' : 'opacity-40'}/> {proj.name}</div>
@@ -251,7 +251,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
       px-4 py-2.5 rounded-[2px] text-[11px] font-mono cursor-pointer flex justify-between items-center transition-all
       ${isSelected
       ? 'bg-purple-500/10 text-purple-300 border border-purple-500/20'
-      : 'text-exo-muted/60 hover:text-white hover:bg-white/5 border border-transparent'}
+      : 'text-exo-muted/60 hover:text-white hover:bg-exo-accent/[0.04] border border-transparent'}
      `}
      >
      <div className="flex items-center gap-3"><Folder size={12} className={isSelected ? 'text-purple-400' : 'opacity-40'}/> {proj.name}</div>

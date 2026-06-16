@@ -370,7 +370,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    </div>
   )}
   {isUser ? (
-   <div className="max-w-[92%] bg-exo-pure/40 backdrop-blur-md border border-white/[0.06] rounded-[4px] rounded-tr-none p-4 text-sm transition-all hover:border-white/[0.10] prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none text-white/90">
+   <div className="max-w-[92%] bg-exo-pure/40 backdrop-blur-md border border-white/[0.06] rounded-[4px] rounded-tr-none p-4 text-sm transition-all hover:border-exo-mist-20 prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none text-white/90">
    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
    </div>
   ) : (

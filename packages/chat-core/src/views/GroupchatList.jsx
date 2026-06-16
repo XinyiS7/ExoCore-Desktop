@@ -108,7 +108,7 @@ export default function GroupchatList({ appState, viewParams, goBack }) {
     className={`group flex items-center gap-3 w-full p-3 rounded-md transition-all text-left ${
      isSelected
      ? 'bg-exo-accent/10 border border-exo-accent/20 text-exo-accent'
-     : 'border border-transparent hover:bg-white/[0.03] hover:border-exo-mist-10 text-exo-muted hover:text-white'
+     : 'border border-transparent hover:bg-exo-accent/[0.02] hover:border-exo-mist-10 text-exo-muted hover:text-white'
     }`}
     >
     <div className={`p-2 rounded-md transition-all shrink-0 ${

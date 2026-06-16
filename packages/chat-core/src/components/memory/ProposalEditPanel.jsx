@@ -96,7 +96,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
       <div className="flex items-center gap-4 px-6 h-16 border-b border-exo-mist-10 bg-exo-pure/40 backdrop-blur-md shrink-0">
         <button
           onClick={onBack}
-          className="p-2 -ml-2 text-exo-muted hover:text-white transition-all hover:bg-white/5 rounded-[2px]"
+          className="p-2 -ml-2 text-exo-muted hover:text-white transition-all hover:bg-exo-accent/[0.04] rounded-[2px]"
         >
           <ArrowLeft size={18} />
         </button>

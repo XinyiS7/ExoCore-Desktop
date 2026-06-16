@@ -103,7 +103,7 @@ export default function ModelAssignPanel() {
    return (
     <div
     key={key}
-    className="flex items-center px-3 py-2 border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors"
+    className="flex items-center px-3 py-2 border-b border-white/[0.02] hover:bg-exo-accent/[0.02] transition-colors"
     >
     <span className="w-[110px] flex-shrink-0 font-mono text-[10px] text-chat-text/70">
      {label}

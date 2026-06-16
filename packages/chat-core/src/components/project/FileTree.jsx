@@ -71,7 +71,7 @@ function TreeNode({ entry, indent, onFileClick, onExpand, expandedDirs, onToggle
     <div>
       <button
         onClick={handleClick}
-        className="w-full flex items-center gap-1 py-0.5 text-left hover:bg-white/5 transition-colors rounded-[2px] group"
+        className="w-full flex items-center gap-1 py-0.5 text-left hover:bg-exo-accent/[0.04] transition-colors rounded-[2px] group"
         style={{ paddingLeft: indent * 12 + 4 }}
       >
         {/* Expand/collapse chevron for dirs */}

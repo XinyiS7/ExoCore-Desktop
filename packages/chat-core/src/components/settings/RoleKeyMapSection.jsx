@@ -174,7 +174,7 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
       ? 'border-red-500/10 bg-red-500/[0.03]'
       : isOpen
       ? 'border-chat-accent/20 bg-chat-bg'
-      : 'border-transparent hover:border-white/5 bg-chat-bg'
+      : 'border-transparent hover:border-exo-mist-10 bg-chat-bg'
      }`}
      onClick={() => toggleDropdown(role)}
     >
@@ -219,7 +219,7 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-[3px] border text-[9px] font-mono transition-all ${
         checked
         ? 'bg-chat-accent/8 border-chat-accent/20 text-chat-accent'
-        : 'bg-transparent border-white/[0.06] text-chat-muted/40 hover:border-white/15'
+        : 'bg-transparent border-white/[0.06] text-chat-muted/40 hover:border-exo-mist-12'
        }`}
        >
        <span className={`w-2.5 h-2.5 rounded-[2px] border flex items-center justify-center flex-shrink-0 ${

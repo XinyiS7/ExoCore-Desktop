@@ -192,7 +192,7 @@ export default function CalendarWidget() {
                           ? 'bg-exo-accent text-black font-bold'
                           : today_
                           ? 'border border-exo-accent/40 text-exo-accent'
-                          : 'text-exo-text/60 hover:bg-white/5 hover:text-exo-text'
+                          : 'text-exo-text/60 hover:bg-exo-accent/[0.04] hover:text-exo-text'
                         }`}
                     >
                       {d}
@@ -292,7 +292,7 @@ export default function CalendarWidget() {
                   href={ev.html_link || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-start gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors group"
+                  className="flex items-start gap-3 px-4 py-3 hover:bg-exo-accent/[0.02] transition-colors group"
                 >
                   <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-blue-400/40 shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -351,7 +351,7 @@ function TodoItem({ entry, onToggle, onDelete }) {
   const isCompleted = entry.status === 'completed';
 
   return (
-    <div className="group flex items-start gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors">
+    <div className="group flex items-start gap-3 px-4 py-3 hover:bg-exo-accent/[0.02] transition-colors">
       <button
         onClick={() => onToggle(entry.id)}
         className="mt-0.5 flex-shrink-0 text-exo-muted hover:text-exo-accent transition-colors"

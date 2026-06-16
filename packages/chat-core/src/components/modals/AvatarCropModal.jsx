@@ -199,7 +199,7 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
         <div className="flex gap-3 w-full pt-2">
           <button
             onClick={onCancel}
-            className="flex-1 py-2 text-[11px] font-bold tracking-widest text-exo-muted border border-exo-mist-10 rounded-[2px] hover:text-white hover:bg-white/5 transition-all"
+            className="flex-1 py-2 text-[11px] font-bold tracking-widest text-exo-muted border border-exo-mist-10 rounded-[2px] hover:text-white hover:bg-exo-accent/[0.04] transition-all"
           >
             Abort
           </button>

@@ -102,7 +102,7 @@ const ProjectFilesArea = ({ projectId, projects, setProjects, openDestructor }) 
    <div
    onClick={() => fileInputRef.current?.click()}
    className={`border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center cursor-pointer transition-all ${
-    isUploading ? 'border-blue-500 bg-blue-500/10' : 'border-exo-border bg-exo-panel hover:border-exo-accent/50 hover:bg-white/5'
+    isUploading ? 'border-blue-500 bg-blue-500/10' : 'border-exo-border bg-exo-panel hover:border-exo-accent/50 hover:bg-exo-accent/[0.04]'
    }`}
    >
    <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple className="hidden" />
@@ -148,7 +148,7 @@ const ProjectFilesArea = ({ projectId, projects, setProjects, openDestructor }) 
      <div className="flex items-center justify-end gap-2 border-t border-exo-border/50 pt-3">
       <button
       onClick={() => alert(`将在此处预览或下载文件: ${file.preview_url || file.url || '暂无链接'}`)}
-      className="text-xs text-exo-muted hover:text-white px-2 py-1 rounded bg-white/5 hover:bg-white/10 transition-colors"
+      className="text-xs text-exo-muted hover:text-white px-2 py-1 rounded bg-white/5 hover:bg-exo-accent/[0.08] transition-colors"
       >
       VIEW
       </button>
