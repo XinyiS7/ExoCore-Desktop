@@ -5,6 +5,7 @@
 @import 'exo-shared/styles/fonts.css';
 @import 'exo-shared/styles/base.css';
 @import 'exo-shared/styles/transitions.css';
+@import './styles/typography.css';
 
 @tailwind base;
 @tailwind components;

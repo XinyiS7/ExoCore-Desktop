@@ -89,11 +89,11 @@ export default function SettingsView() {
 			`}
 		>
 			<div className="px-4 mb-4 flex items-center justify-between">
-				<h1 className="text-sm font-semibold text-chat-text/90 tracking-tight">Settings</h1>
+				<h1 className="text-sm font-semibold tx-system-normal opacity-90 tracking-tight">Settings</h1>
 				{/* Close button — mobile only */}
 				<button
 					onClick={() => setNavVisible(false)}
-					className="md:hidden p-1 text-chat-muted hover:text-chat-text transition-colors"
+					className="md:hidden p-1 tx-system-mute hover:tx-system-normal transition-colors"
 				>
 					<X size={16} strokeWidth={1.5} />
 				</button>
@@ -107,16 +107,16 @@ export default function SettingsView() {
 					disabled={!enabled}
 					className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all text-left ${
 					enabled && isActive(route)
-						? 'bg-chat-accent/10 text-chat-accent border-l-2 border-chat-accent'
+						? 'bg-chat-accent/10 tx-system-accent border-l-2 border-chat-accent'
 						: enabled
-						? 'text-chat-muted hover:text-chat-text hover:bg-exo-accent/[0.04]'
-						: 'text-chat-muted/25 cursor-not-allowed'
+						? 'tx-system-mute hover:tx-system-normal hover:bg-exo-accent/[0.04]'
+						: 'tx-system-mute opacity-25 cursor-not-allowed'
 					}`}
 				>
 					<Icon size={16} strokeWidth={1.5} />
 					<span className="font-sans text-[13px]">{label}</span>
 					{!enabled && (
-					<span className="text-[0.5625rem] tracking-wider text-chat-muted/20 ml-auto">
+					<span className="text-[0.5625rem] tracking-wider tx-system-mute opacity-20 ml-auto">
 						soon
 					</span>
 					)}

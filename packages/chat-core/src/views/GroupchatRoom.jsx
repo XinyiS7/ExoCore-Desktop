@@ -377,10 +377,10 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
    {/* Mobile back to groupchat list */}
    <BackToUpper label="Groupchats" onClick={onBack} className="md:hidden" />
    <div className="min-w-0">
-   <span className="text-sm font-sans font-medium text-white/90 truncate block">
+   <span className="text-sm font-sans font-medium tx-system-normal opacity-90 truncate block">
     {groupchat?.name || 'Groupchat'}
    </span>
-   <span className="text-[0.5625rem] text-exo-muted/40">
+   <span className="text-[0.5625rem] tx-system-mute opacity-40">
     {participantCount} participant{participantCount !== 1 ? 's' : ''}
    </span>
    </div>
@@ -388,14 +388,14 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
   <div className="flex items-center gap-1 flex-shrink-0 ml-2">
    <button
    onClick={refreshMessages}
-   className="p-1.5 text-exo-muted/30 hover:text-exo-muted/60 transition-colors"
+   className="p-1.5 tx-system-mute opacity-30 hover:tx-system-mute opacity-60 transition-colors"
    title="Refresh messages"
    >
    <RefreshCw size={14} strokeWidth={1.5} />
    </button>
    <button
    onClick={onManage}
-   className="p-1.5 text-exo-muted/30 hover:text-exo-accent transition-colors"
+   className="p-1.5 tx-system-mute opacity-30 hover:tx-system-accent transition-colors"
    title="Manage groupchat"
    >
    <Settings size={14} strokeWidth={1.5} />
@@ -412,7 +412,7 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
 
   {isLoadingMore && (
    <div className="flex justify-center py-3">
-   <span className="text-[0.625rem] tracking-[0.2em] text-exo-muted flex items-center gap-2 animate-pulse">
+   <span className="text-[0.625rem] tracking-[0.2em] tx-system-mute flex items-center gap-2 animate-pulse">
     <RefreshCw size={12} className="animate-spin" /> Loading older messages...
    </span>
    </div>
@@ -421,8 +421,8 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
   {messages.length === 0 && !isLoadingMore && (
    <div className="flex items-center justify-center h-full py-20">
    <div className="text-center space-y-3">
-    <p className="text-sm text-exo-muted/40 font-light">No messages yet</p>
-    <p className="text-[0.625rem] text-exo-muted/20 tracking-widest">Start the conversation</p>
+    <p className="text-sm tx-system-mute opacity-40 font-light">No messages yet</p>
+    <p className="text-[0.625rem] tx-system-mute opacity-20 tracking-widest">Start the conversation</p>
    </div>
    </div>
   )}
@@ -436,7 +436,7 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
    <React.Fragment key={msg.id || idx}>
     {showDateSep && (
     <div className="flex items-center justify-center py-2">
-     <span className="text-[0.625rem] text-exo-muted/30 tracking-wider bg-exo-pure px-3 py-1 rounded-[2px] border border-exo-mist-8">
+     <span className="text-[0.625rem] tx-system-mute opacity-30 tracking-wider bg-exo-pure px-3 py-1 rounded-[2px] border border-exo-mist-8">
      {formatDateSeparator(msg.created_at)}
      </span>
     </div>
@@ -483,8 +483,8 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
      onMouseEnter={() => setMentionIndex(i)}
      className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
       i === mentionIndex
-      ? 'bg-exo-accent/10 text-exo-accent'
-      : 'text-exo-muted hover:bg-exo-accent/[0.02]'
+      ? 'bg-exo-accent/10 tx-system-accent'
+      : 'tx-system-mute hover:bg-exo-accent/[0.02]'
      }`}
      >
      <img
@@ -494,12 +494,12 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
      />
      <span className="text-sm truncate">{p.name}</span>
      {p.isUser && (
-      <span className="text-[0.5rem] text-exo-muted/40 tracking-wider ml-auto flex-shrink-0">You</span>
+      <span className="text-[0.5rem] tx-system-mute opacity-40 tracking-wider ml-auto flex-shrink-0">You</span>
      )}
      </button>
     ))}
     {filteredParticipants.length === 0 && (
-     <div className="px-3 py-4 text-center text-[0.625rem] text-exo-muted/40 tracking-wider">
+     <div className="px-3 py-4 text-center text-[0.625rem] tx-system-mute opacity-40 tracking-wider">
      No matches
      </div>
     )}
@@ -516,7 +516,7 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
     placeholder="Message... (@ to mention)"
     rows={1}
     disabled={isSending}
-    className="w-full bg-exo-pure border border-exo-mist-10 rounded-[4px] px-4 py-2.5 text-sm text-white/90 outline-none resize-none focus:border-exo-accent/40 transition-colors font-sans placeholder:text-exo-muted/40 disabled:opacity-50 max-h-[40vh]"
+    className="w-full bg-exo-pure border border-exo-mist-10 rounded-[4px] px-4 py-2.5 text-sm tx-system-normal opacity-90 outline-none resize-none focus:border-exo-accent/40 transition-colors font-sans placeholder:tx-system-mute opacity-40 disabled:opacity-50 max-h-[40vh]"
     style={{ minHeight: '2.75rem' }}
    />
    </div>

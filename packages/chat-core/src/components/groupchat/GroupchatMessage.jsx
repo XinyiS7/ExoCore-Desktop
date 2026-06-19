@@ -46,14 +46,14 @@ const MD_COMPONENTS = {
  code({ children, className, ...props }) {
  const isInline = !className?.includes('language-');
  if (isInline) {
-  return <code className="bg-white/10 text-exo-accent px-1 py-0.5 rounded-[2px] font-mono text-[0.9em]" {...props}>{children}</code>;
+  return <code className="bg-white/10 tx-message-accent px-1 py-0.5 rounded-[2px] font-mono text-[0.9em]" {...props}>{children}</code>;
  }
  return <code className={className} {...props}>{children}</code>;
  },
  span({ children, className, ...props }) {
  if (className === 'mention-inline') {
   return (
-  <span className="text-exo-accent font-semibold bg-exo-accent/10 px-1 py-0.5 rounded-[2px] inline-flex items-baseline gap-0.5" {...props}>
+  <span className="tx-message-accent font-semibold bg-exo-accent/10 px-1 py-0.5 rounded-[2px] inline-flex items-baseline gap-0.5" {...props}>
    {children}
   </span>
   );
@@ -88,11 +88,11 @@ const GroupchatMessage = React.memo(({ msg, isUser, senderName, senderAvatarUrl,
    className={`w-6 h-6 rounded-[2px] border bg-exo-pure object-cover ${isUser ? 'border-exo-mist-20' : 'border-exo-accent/40 shadow-glow-gold'}`}
    alt={senderName}
   />
-  <span className={`text-[0.625rem] font-mono font-bold tracking-[0.2em] ${isUser ? 'text-exo-muted' : 'text-exo-accent'}`}>
+  <span className={`text-[0.625rem] font-mono font-bold tracking-[0.2em] ${isUser ? 'tx-message-mute' : 'tx-message-accent'}`}>
    {senderName}
   </span>
   {msg.created_at && (
-   <span className="text-[0.5625rem] font-mono text-exo-muted/40 tracking-tight">
+   <span className="text-[0.5625rem] font-mono tx-message-mute opacity-40 tracking-tight">
    {formatMessageTime(msg.created_at)}
    </span>
   )}
@@ -100,7 +100,7 @@ const GroupchatMessage = React.memo(({ msg, isUser, senderName, senderAvatarUrl,
 
   {/* Content */}
   {isUser ? (
-  <div className="max-w-[92%] bg-exo-pure border border-exo-mist-12 rounded-[4px] rounded-tr-none p-4 text-sm shadow-brutalist transition-all hover:border-exo-mist-20 prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none text-white/90" style={undefined}>
+  <div className="max-w-[92%] bg-exo-pure border border-exo-mist-12 rounded-[4px] rounded-tr-none p-4 text-sm shadow-brutalist transition-all hover:border-exo-mist-20 prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none tx-message-normal opacity-90" style={undefined}>
    <ReactMarkdown
    remarkPlugins={[remarkGfm, remarkMath]}
    rehypePlugins={[rehypeHighlight, rehypeKatex, rehypeRaw]}

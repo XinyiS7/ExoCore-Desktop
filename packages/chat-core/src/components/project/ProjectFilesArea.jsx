@@ -75,12 +75,12 @@ const ProjectFilesArea = ({ projectId, projects, setProjects, openDestructor }) 
  return (
  <div className="flex-1 flex flex-col h-full bg-noise relative">
   <div className="h-14 border-b border-exo-border flex items-center justify-between px-6 bg-exo-panel/50 backdrop-blur-md">
-  <div className="flex items-center gap-3 text-exo-text">
+  <div className="flex items-center gap-3 tx-body-normal">
    <HardDrive size={18} className="text-blue-400" />
    <span className="font-semibold tracking-widest">DATABANK // {project?.name || 'UNKNOWN_PROJECT'}</span>
   </div>
   <div className="flex gap-2">
-   <button onClick={fetchFiles} className="p-2 text-exo-muted hover:text-white transition-colors" title="Sync">
+   <button onClick={fetchFiles} className="p-2 tx-body-mute hover:tx-body-normal transition-colors" title="Sync">
    <RefreshCw size={16} />
    </button>
    <button
@@ -88,7 +88,7 @@ const ProjectFilesArea = ({ projectId, projects, setProjects, openDestructor }) 
    className={`p-2 transition-colors ${
     workDirStatus === 'error' ? 'text-red-400 hover:text-red-300' :
     workDirStatus === 'saved' ? 'text-green-400 hover:text-green-300' :
-    'text-exo-muted hover:text-white'
+    'tx-body-mute hover:tx-body-normal'
    }`}
    title="工作目录设置"
    >
@@ -109,16 +109,16 @@ const ProjectFilesArea = ({ projectId, projects, setProjects, openDestructor }) 
    {isUploading ? (
     <Activity size={32} className="text-blue-400 animate-pulse mb-3" />
    ) : (
-    <UploadCloud size={32} className="text-exo-muted mb-3" />
+    <UploadCloud size={32} className="tx-body-mute mb-3" />
    )}
-   <p className="text-sm font-bold text-exo-text">
+   <p className="text-sm font-bold tx-body-normal">
     {isUploading ? 'UPLOADING DATA TO CORE...' : 'Click or Drag files to inject into Project Memory'}
    </p>
-   <p className="text-xs text-exo-muted mt-2">Supports PDF, Markdown, Images, and Text Arrays.</p>
+   <p className="text-xs tx-body-mute mt-2">Supports PDF, Markdown, Images, and Text Arrays.</p>
    </div>
 
    <div>
-   <h3 className="text-sm font-bold text-exo-text mb-4 border-b border-exo-border pb-2 flex items-center gap-2">
+   <h3 className="text-sm font-bold tx-body-normal mb-4 border-b border-exo-border pb-2 flex items-center gap-2">
     <FileBox size={16} /> INDEXED FRAGMENTS ({files.length})
    </h3>
 
@@ -135,12 +135,12 @@ const ProjectFilesArea = ({ projectId, projects, setProjects, openDestructor }) 
       <FileIcon size={18} />
       </div>
       <div className="flex-1 overflow-hidden">
-      <p className="text-sm font-bold text-exo-text truncate" title={file.name}>{file.name}</p>
+      <p className="text-sm font-bold tx-body-normal truncate" title={file.name}>{file.name}</p>
       <div className="flex items-center gap-2 mt-1">
-       <span className="text-[0.625rem] text-exo-muted bg-black px-1.5 py-0.5 rounded border border-exo-border">
+       <span className="text-[0.625rem] tx-body-mute bg-black px-1.5 py-0.5 rounded border border-exo-border">
        {file.source === 'obsidian_sync' ? 'OBSIDIAN' : 'MANUAL'}
        </span>
-       <span className="text-[0.625rem] text-exo-muted ">{formatBytes(file.size)}</span>
+       <span className="text-[0.625rem] tx-body-mute ">{formatBytes(file.size)}</span>
       </div>
       </div>
      </div>
@@ -148,7 +148,7 @@ const ProjectFilesArea = ({ projectId, projects, setProjects, openDestructor }) 
      <div className="flex items-center justify-end gap-2 border-t border-exo-border/50 pt-3">
       <button
       onClick={() => alert(`将在此处预览或下载文件: ${file.preview_url || file.url || '暂无链接'}`)}
-      className="text-xs text-exo-muted hover:text-white px-2 py-1 rounded bg-white/5 hover:bg-exo-accent/[0.08] transition-colors"
+      className="text-xs tx-body-mute hover:tx-body-normal px-2 py-1 rounded bg-white/5 hover:bg-exo-accent/[0.08] transition-colors"
       >
       VIEW
       </button>
@@ -178,7 +178,7 @@ const ProjectFilesArea = ({ projectId, projects, setProjects, openDestructor }) 
     })}
 
     {files.length === 0 && (
-    <div className="col-span-full py-10 text-center text-exo-muted text-sm border border-dashed border-exo-border rounded-lg">
+    <div className="col-span-full py-10 text-center tx-body-mute text-sm border border-dashed border-exo-border rounded-lg">
      [ DATABANK EMPTY ]
     </div>
     )}

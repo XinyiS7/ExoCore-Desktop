@@ -96,24 +96,24 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
       <div className="flex items-center gap-4 px-6 h-16 border-b border-exo-mist-10 bg-exo-pure/40 backdrop-blur-md shrink-0">
         <button
           onClick={onBack}
-          className="p-2 -ml-2 text-exo-muted hover:text-white transition-colors hover:bg-exo-accent/[0.04] rounded-[2px]"
+          className="p-2 -ml-2 tx-system-mute hover:tx-system-normal transition-colors hover:bg-exo-accent/[0.04] rounded-[2px]"
         >
           <ArrowLeft size={18} />
         </button>
         <div className="flex flex-col overflow-hidden">
           <div className="flex items-center gap-2">
-            <BookOpen size={14} className="text-exo-accent shrink-0" />
-            <span className="text-[13px] font-bold text-white tracking-[0.2em]">
+            <BookOpen size={14} className="tx-system-accent shrink-0" />
+            <span className="text-[13px] font-bold tx-system-normal tracking-[0.2em]">
               History Chunk / 记忆片段
             </span>
           </div>
-          <span className="text-[0.6625rem] text-exo-muted tracking-widest opacity-40 mt-0.5 truncate">
+          <span className="text-[0.6625rem] tx-system-mute tracking-widest opacity-40 mt-0.5 truncate">
             {conversationName}{proposal?.topic ? ` · ${proposal.topic}` : ''}
             {' · '}Index {proposal?.start_index ?? '?'} – {proposal?.end_index ?? '?'}
           </span>
         </div>
         {isLoadingDetail && (
-          <Activity size={12} className="animate-spin text-exo-accent ml-auto shrink-0" />
+          <Activity size={12} className="animate-spin tx-system-accent ml-auto shrink-0" />
         )}
       </div>
 
@@ -127,7 +127,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
           <div className="p-5 border-b border-exo-mist-6 space-y-5">
             <div className="flex items-center gap-2 opacity-40 mb-1">
               <Tag size={12} />
-              <span className="text-[0.725rem] font-bold text-white tracking-[0.2em]">
+              <span className="text-[0.725rem] font-bold tx-system-normal tracking-[0.2em]">
                 Editable Meta
               </span>
             </div>
@@ -136,7 +136,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
             <div className="space-y-2">
               <label className="label-caps opacity-50">Topic Label / 话题标签</label>
               <input
-                className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
+                className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
                 value={topicLabel}
                 onChange={e => setTopicLabel(e.target.value)}
                 placeholder="TOPIC LABEL..."
@@ -147,7 +147,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
             <div className="space-y-2">
               <label className="label-caps opacity-50">Content / 内容摘要</label>
               <textarea
-                className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-3 text-sm text-white focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20 resize-y min-h-[120px]"
+                className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-3 text-sm tx-system-normal focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20 resize-y min-h-[120px]"
                 value={summary}
                 onChange={e => setSummary(e.target.value)}
                 placeholder="DETAILED SUMMARY..."
@@ -158,7 +158,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
             <div className="space-y-2">
               <label className="label-caps opacity-50">Keywords / 关键词 (COMMA SEPARATED)</label>
               <input
-                className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2 text-sm text-white focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
+                className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2 text-sm tx-system-normal focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
                 value={keywords}
                 onChange={e => setKeywords(e.target.value)}
                 placeholder="KEYWORD_A, KEYWORD_B..."
@@ -168,7 +168,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
                   {keywordList.map((kw, i) => (
                     <span
                       key={i}
-                      className="text-[0.6625rem] font-bold px-2 py-0.5 rounded-[2px] bg-exo-accent/5 border border-exo-accent/20 text-exo-accent/70 tracking-tighter"
+                      className="text-[0.6625rem] font-bold px-2 py-0.5 rounded-[2px] bg-exo-accent/5 border border-exo-accent/20 tx-system-accent opacity-70 tracking-tighter"
                     >
                       {kw}
                     </span>
@@ -180,8 +180,8 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
             {/* unresolved toggle */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <AlertCircle size={13} className={unresolved ? 'text-exo-accent' : 'text-exo-muted opacity-40'} />
-                <span className="text-[0.7875rem] text-exo-muted tracking-wider">
+                <AlertCircle size={13} className={unresolved ? 'tx-system-accent' : 'tx-system-mute opacity-40'} />
+                <span className="text-[0.7875rem] tx-system-mute tracking-wider">
                   Unresolved / 未竟事宜
                 </span>
               </div>
@@ -204,7 +204,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
               <div className="flex-1 mr-4">
                 {saveMsg && (
                   <span className={`text-[0.725rem] font-bold tracking-widest ${
-                    saveMsgType === 'ok' ? 'text-exo-accent' : 'text-red-400'
+                    saveMsgType === 'ok' ? 'tx-system-accent' : 'text-red-400'
                   }`}>
                     &gt;&gt; {saveMsg}
                   </span>
@@ -225,7 +225,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
           <div className="p-5 space-y-3">
             <div className="flex items-center gap-2 opacity-40 mb-1">
               <Zap size={12} />
-              <span className="text-[0.725rem] font-bold text-white tracking-[0.2em]">
+              <span className="text-[0.725rem] font-bold tx-system-normal tracking-[0.2em]">
                 Neural Context
               </span>
             </div>
@@ -235,10 +235,10 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
                 {/* time_ref */}
                 {readonlyMeta.time_ref && (
                   <div className="flex items-start gap-3 px-3 py-2.5 bg-black/30 border border-exo-mist-6 rounded-[2px]">
-                    <Clock size={11} className="text-exo-muted shrink-0 mt-0.5" />
+                    <Clock size={11} className="tx-system-mute shrink-0 mt-0.5" />
                     <div>
-                      <div className="text-[0.6rem] font-bold tracking-widest text-exo-muted mb-0.5">Time Ref</div>
-                      <div className="text-[0.7875rem] text-exo-text ">{readonlyMeta.time_ref}</div>
+                      <div className="text-[0.6rem] font-bold tracking-widest tx-system-mute mb-0.5">Time Ref</div>
+                      <div className="text-[0.7875rem] tx-system-normal ">{readonlyMeta.time_ref}</div>
                     </div>
                   </div>
                 )}
@@ -248,8 +248,8 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
                   <div className="flex items-start gap-3 px-3 py-2.5 bg-black/30 border border-exo-mist-6 rounded-[2px]">
                     <span className="text-[0.7875rem] shrink-0 mt-0.5">◈</span>
                     <div>
-                      <div className="text-[0.6rem] font-bold tracking-widest text-exo-muted mb-0.5">Emotion</div>
-                      <div className="text-[0.7875rem] text-exo-text ">{readonlyMeta.emotion}</div>
+                      <div className="text-[0.6rem] font-bold tracking-widest tx-system-mute mb-0.5">Emotion</div>
+                      <div className="text-[0.7875rem] tx-system-normal ">{readonlyMeta.emotion}</div>
                     </div>
                   </div>
                 )}
@@ -257,10 +257,10 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
                 {/* entities */}
                 {readonlyMeta.entities.length > 0 && (
                   <div className="px-3 py-2.5 bg-black/30 border border-exo-mist-6 rounded-[2px]">
-                    <div className="text-[0.6rem] font-bold tracking-widest text-exo-muted mb-1.5">Entities</div>
+                    <div className="text-[0.6rem] font-bold tracking-widest tx-system-mute mb-1.5">Entities</div>
                     <div className="flex flex-wrap gap-1.5">
                       {readonlyMeta.entities.map((e, i) => (
-                        <span key={i} className="text-[0.6625rem] px-2 py-0.5 rounded-[2px] bg-white/5 border border-exo-mist-10 text-exo-text/70">
+                        <span key={i} className="text-[0.6625rem] px-2 py-0.5 rounded-[2px] bg-white/5 border border-exo-mist-10 tx-system-normal opacity-70">
                           {e}
                         </span>
                       ))}
@@ -272,8 +272,8 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
                 {importancePct !== null && (
                   <div className="px-3 py-2.5 bg-black/30 border border-exo-mist-6 rounded-[2px]">
                     <div className="flex items-center justify-between mb-1.5">
-                      <div className="text-[0.6rem] font-bold tracking-widest text-exo-muted">Importance</div>
-                      <span className="text-[0.725rem] font-bold text-exo-accent">{importancePct}%</span>
+                      <div className="text-[0.6rem] font-bold tracking-widest tx-system-mute">Importance</div>
+                      <span className="text-[0.725rem] font-bold tx-system-accent">{importancePct}%</span>
                     </div>
                     <div className="h-1 bg-white/5 rounded-full overflow-hidden">
                       <div
@@ -298,7 +298,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
         <div className="flex-1 min-w-0 overflow-y-auto p-5 bg-black/20 scrollbar-hide">
           <div className="flex items-center gap-2 mb-5 opacity-40">
             <History size={13} />
-            <h3 className="text-[0.725rem] font-bold text-white tracking-[0.2em]">
+            <h3 className="text-[0.725rem] font-bold tx-system-normal tracking-[0.2em]">
               Neural Trace Context ({proposal?.start_index ?? '?'} – {proposal?.end_index ?? '?'})
             </h3>
           </div>
@@ -320,7 +320,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
                     max-w-[92%] px-4 py-3 rounded-[2px] text-[12px] tracking-tight leading-relaxed border
                     ${msg.role === 'user'
                       ? 'bg-white text-exo-pure border-white shadow-brutalist'
-                      : 'bg-exo-pure text-white/80 border-exo-mist-10'
+                      : 'bg-exo-pure tx-system-normal opacity-80 border-exo-mist-10'
                     }
                   `}>
                     {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}

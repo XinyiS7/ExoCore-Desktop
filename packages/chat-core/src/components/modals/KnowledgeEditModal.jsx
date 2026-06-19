@@ -56,12 +56,12 @@ const KnowledgeEditModal = ({ isOpen, onClose, knowledgeId }) => {
   {/* Header */}
   <div className="flex items-center justify-between p-5 border-b border-exo-mist-10 bg-exo-pure/50">
    <div className="flex flex-col">
-   <h2 className="text-sm font-bold text-white flex items-center gap-2 font-mono tracking-[0.2em]">
-    <BookOpen size={16} className="text-exo-accent" /> Knowledge Fragment / 知识片段
+   <h2 className="text-sm font-bold tx-system-normal flex items-center gap-2 font-mono tracking-[0.2em]">
+    <BookOpen size={16} className="tx-system-accent" /> Knowledge Fragment / 知识片段
    </h2>
-   <span className="text-[0.5625rem] text-exo-muted font-mono tracking-widest opacity-40 mt-1">Fragment ID: {knowledgeId}</span>
+   <span className="text-[0.5625rem] tx-system-mute font-mono tracking-widest opacity-40 mt-1">Fragment ID: {knowledgeId}</span>
    </div>
-   <button onClick={onClose} className="p-2 text-exo-muted hover:text-white transition-colors">
+   <button onClick={onClose} className="p-2 tx-system-mute hover:tx-system-normal transition-colors">
    <X size={18} />
    </button>
   </div>
@@ -69,22 +69,22 @@ const KnowledgeEditModal = ({ isOpen, onClose, knowledgeId }) => {
   {/* Content */}
   <div className="overflow-y-auto p-6 space-y-6 flex-1 scrollbar-hide">
    {isLoading ? (
-   <div className="flex justify-center py-16 text-exo-muted font-mono text-[0.6875rem] tracking-[0.3em] animate-pulse">Synchronizing fragment...</div>
+   <div className="flex justify-center py-16 tx-system-mute font-mono text-[0.6875rem] tracking-[0.3em] animate-pulse">Synchronizing fragment...</div>
    ) : data ? (
    <>
     <div className="space-y-2">
     <label className="label-caps opacity-50">Cluster Origin / 标题 (READ-ONLY)</label>
-    <div className="px-4 py-2.5 bg-black/30 border border-exo-mist-10 rounded-[2px] text-sm text-exo-muted font-mono opacity-60 italic">{data.title}</div>
+    <div className="px-4 py-2.5 bg-black/30 border border-exo-mist-10 rounded-[2px] text-sm tx-system-mute font-mono opacity-60 italic">{data.title}</div>
     </div>
 
     <div className="space-y-2">
     <div className="flex justify-between items-center">
      <label className="label-caps opacity-50">Neural Abstract / 摘要</label>
-     <span className="text-[0.5625rem] font-mono text-exo-accent opacity-40">Vector Encoding Enabled</span>
+     <span className="text-[0.5625rem] font-mono tx-system-accent opacity-40">Vector Encoding Enabled</span>
     </div>
     <textarea
      rows={6}
-     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-3 text-[13px] text-white font-mono focus:border-exo-accent/40 outline-none transition-all resize-none leading-relaxed"
+     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-3 text-[13px] tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all resize-none leading-relaxed"
      value={abstract}
      onChange={e => setAbstract(e.target.value)}
      placeholder="INPUT SEMANTIC OVERVIEW..."
@@ -94,14 +94,14 @@ const KnowledgeEditModal = ({ isOpen, onClose, knowledgeId }) => {
     <div className="space-y-3">
     <label className="label-caps opacity-50">Taxonomy Tags / 关键词 (COMMA SEPARATED)</label>
     <input
-     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
+     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
      value={keywords}
      onChange={e => setKeywords(e.target.value)}
      placeholder="EG: QUANTUM, ENTANGLEMENT, WAVE..."
     />
     <div className="flex flex-wrap gap-1.5 pt-1">
      {keywords.split(',').map(k => k.trim()).filter(Boolean).map((kw, i) => (
-     <span key={i} className="text-[0.5625rem] font-bold px-2 py-0.5 rounded-[2px] bg-exo-accent/5 border border-exo-accent/20 text-exo-accent/70 tracking-tighter">{kw}</span>
+     <span key={i} className="text-[0.5625rem] font-bold px-2 py-0.5 rounded-[2px] bg-exo-accent/5 border border-exo-accent/20 tx-system-accent opacity-70 tracking-tighter">{kw}</span>
      ))}
     </div>
     </div>
@@ -109,21 +109,21 @@ const KnowledgeEditModal = ({ isOpen, onClose, knowledgeId }) => {
     {/* Technical Metadata */}
     <div className="mt-4 p-4 bg-exo-pure border border-exo-mist-10 rounded-[2px] space-y-2">
     <div className="flex items-center gap-2 mb-2 opacity-30">
-     <Activity size={10} className="text-white" />
-     <span className="text-[0.5625rem] font-mono text-white tracking-widest">Retrieval Pipeline Specs</span>
+     <Activity size={10} className="tx-system-normal" />
+     <span className="text-[0.5625rem] font-mono tx-system-normal tracking-widest">Retrieval Pipeline Specs</span>
     </div>
     <div className="space-y-1.5 opacity-60">
-     <p className="text-[0.625rem] font-mono text-exo-muted leading-normal">
-     <span className="text-exo-accent font-bold">L1_PROTOCOL</span>: Keyword-based taxonomy matching for high-speed recall.
+     <p className="text-[0.625rem] font-mono tx-system-mute leading-normal">
+     <span className="tx-system-accent font-bold">L1_PROTOCOL</span>: Keyword-based taxonomy matching for high-speed recall.
      </p>
-     <p className="text-[0.625rem] font-mono text-exo-muted leading-normal">
-     <span className="text-exo-accent font-bold">L2_VECTOR</span>: Deep semantic analysis via neural embedding of Abstract field.
+     <p className="text-[0.625rem] font-mono tx-system-mute leading-normal">
+     <span className="tx-system-accent font-bold">L2_VECTOR</span>: Deep semantic analysis via neural embedding of Abstract field.
      </p>
     </div>
     </div>
    </>
    ) : (
-   <div className="text-center py-16 text-exo-muted font-mono text-[0.6875rem] tracking-widest text-red-500/50">Fragment Retrieval Failed</div>
+   <div className="text-center py-16 tx-system-mute font-mono text-[0.6875rem] tracking-widest text-red-500/50">Fragment Retrieval Failed</div>
    )}
   </div>
 
@@ -131,13 +131,13 @@ const KnowledgeEditModal = ({ isOpen, onClose, knowledgeId }) => {
   <div className="flex items-center justify-between gap-3 p-5 border-t border-exo-mist-10 bg-exo-pure/80 backdrop-blur-md">
    <div className="flex-1">
    {saveMsg && (
-    <span className={`text-[0.625rem] font-mono font-bold tracking-widest ${saveMsg.includes('SUCCESS') ? 'text-exo-accent' : 'text-red-500'}`}>
+    <span className={`text-[0.625rem] font-mono font-bold tracking-widest ${saveMsg.includes('SUCCESS') ? 'tx-system-accent' : 'text-red-500'}`}>
     &gt;&gt; STATUS: {saveMsg}
     </span>
    )}
    </div>
    <div className="flex items-center gap-3">
-   <button onClick={onClose} className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest text-exo-muted hover:text-white transition-colors">Abort</button>
+   <button onClick={onClose} className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest tx-system-mute hover:tx-system-normal transition-colors">Abort</button>
    <button
     onClick={handleSave}
     disabled={isSaving || isLoading}

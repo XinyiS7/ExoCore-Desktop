@@ -10,9 +10,9 @@ const DestructorModal = ({ isOpen, onClose, title, description, onArchive, onDel
           <AlertTriangle size={18} className="animate-pulse" />
           <h3 className="font-bold tracking-[0.2em] text-[0.6875rem]">Destruction Protocol / 销毁协议</h3>
         </div>
-        <div className="p-6 space-y-3 text-sm text-white">
+        <div className="p-6 space-y-3 text-sm tx-system-normal">
           <p className="font-bold text-lg tracking-tight">{title}</p>
-          <p className="text-exo-muted leading-relaxed font-mono text-[12px] opacity-80">{description}</p>
+          <p className="tx-system-mute leading-relaxed font-mono text-[12px] opacity-80">{description}</p>
           
           <div className="mt-6 p-3 bg-red-500/5 border-l-2 border-red-500/30">
             <p className="text-[0.625rem] font-mono text-red-500/60 leading-normal">
@@ -21,13 +21,13 @@ const DestructorModal = ({ isOpen, onClose, title, description, onArchive, onDel
           </div>
         </div>
         <div className="p-4 bg-exo-pure border-t border-exo-mist-10 flex flex-wrap justify-end gap-3">
-          <button onClick={onClose} className="px-5 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest text-exo-muted hover:text-white transition-colors">Abort</button>
+          <button onClick={onClose} className="px-5 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest tx-system-mute hover:tx-system-normal transition-colors">Abort</button>
           {typeof onArchive === 'function' && (
-            <button onClick={() => { onArchive(); onClose(); }} className="px-5 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest flex items-center gap-2 text-exo-accent border border-exo-accent/30 hover:bg-exo-accent/10 transition-colors">
+            <button onClick={() => { onArchive(); onClose(); }} className="px-5 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest flex items-center gap-2 tx-system-accent border border-exo-accent/30 hover:bg-exo-accent/10 transition-colors">
               <Archive size={14} /> Archive
             </button>
           )}
-          <button onClick={() => { onDelete(); onClose(); }} className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest flex items-center gap-2 bg-red-600 text-white hover:bg-red-500 transition-colors shadow-brutalist active:scale-95">
+          <button onClick={() => { onDelete(); onClose(); }} className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest flex items-center gap-2 bg-red-600 tx-system-normal hover:bg-red-500 transition-colors shadow-brutalist active:scale-95">
             <Trash2 size={14} /> Purge
           </button>
         </div>

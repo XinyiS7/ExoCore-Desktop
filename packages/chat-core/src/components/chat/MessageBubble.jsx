@@ -97,7 +97,7 @@ function SvgPreview({ text }) {
  // Quick pre-check: if it doesn't look like SVG at all, bail early
  if (!/<svg\b/i.test(text)) {
  return (
-  <div className="p-6 text-center text-[0.6875rem] text-exo-muted/50 bg-white/[0.02] border border-exo-mist-8 rounded-b-[4px]">
+  <div className="p-6 text-center text-[0.6875rem] tx-message-mute opacity-50 bg-white/[0.02] border border-exo-mist-8 rounded-b-[4px]">
   No SVG content detected — switch to Code tab to view source
   </div>
  );
@@ -172,7 +172,7 @@ function CodeBlock({ children, className }) {
  <button
   onClick={() => setTab(t)}
   className={`text-[0.6875rem] px-1.5 transition-colors ${
-  tab === t ? 'text-exo-muted/70' : 'text-exo-muted/25 hover:text-exo-muted/50'
+  tab === t ? 'tx-message-mute opacity-70' : 'tx-message-mute opacity-25 hover:tx-message-mute opacity-50'
   }`}
   style={undefined}
  >
@@ -184,7 +184,7 @@ function CodeBlock({ children, className }) {
  <div className="relative group/code my-4 rounded-[4px] overflow-hidden bg-exo-pure/8">
   <div className="flex items-center justify-between px-4 py-1.5">
   <div className="flex items-center gap-3 min-w-0">
-   <span className="text-[0.6875rem] text-exo-muted/35 select-none" style={undefined}>{lang}</span>
+   <span className="text-[0.6875rem] tx-message-mute opacity-35 select-none" style={undefined}>{lang}</span>
    {isVisual && (
    <div className="flex gap-1">
     {tabBtn('preview', 'Preview')}
@@ -194,7 +194,7 @@ function CodeBlock({ children, className }) {
   </div>
   <button
    onClick={handleCopy}
-   className="flex items-center gap-1.5 text-[0.6875rem] text-exo-muted/20 hover:text-exo-muted/50 transition-colors"
+   className="flex items-center gap-1.5 text-[0.6875rem] tx-message-mute opacity-20 hover:tx-message-mute opacity-50 transition-colors"
    style={undefined}
   >
    {copied ? <Check size={11} strokeWidth={1} className="text-green-400" /> : <Copy size={11} strokeWidth={1} />}
@@ -229,7 +229,7 @@ const MD_COMPONENTS = {
  // so we can't use !className. Only block code has 'language-*' class.
  const isInline = !className?.includes('language-');
  if (isInline) {
-  return <code className="bg-white/10 text-exo-accent px-1 py-0.5 rounded-[2px] font-mono text-[0.9em]" {...props}>{children}</code>;
+  return <code className="bg-white/10 tx-message-accent px-1 py-0.5 rounded-[2px] font-mono text-[0.9em]" {...props}>{children}</code>;
  }
  return <code className={className} {...props}>{children}</code>;
  }
@@ -293,11 +293,11 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    className={`w-6 h-6 rounded-[2px] border bg-exo-pure object-cover ${isUser ? 'border-exo-mist-20' : 'border-exo-accent/40 shadow-glow-gold'}`}
    alt={isUser ? (userNick || 'You') : (agentName || 'Core')}
   />
-  <span className={`text-[0.625rem] font-bold tracking-[0.2em] ${isUser ? 'text-exo-muted' : 'text-exo-accent'}`}>
+  <span className={`text-[0.625rem] font-bold tracking-[0.2em] ${isUser ? 'tx-message-mute' : 'tx-message-accent'}`}>
    {isUser ? (userNick || 'You') : (agentName || 'Core')}
   </span>
   {msg.created_at && (
-   <span className="text-[0.5625rem] text-exo-muted/40 tracking-tight">
+   <span className="text-[0.5625rem] tx-message-mute opacity-40 tracking-tight">
    {formatMessageTime(msg.created_at)}
    </span>
   )}
@@ -310,18 +310,18 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    </div>
   )}
   {!isUser && msg.reasoning_content && (
-   <details className="lcd-screen rounded-[4px] text-xs text-exo-muted cursor-pointer w-full group/think transition-all hover:border-exo-mist-20 bg-exo-pure/30 backdrop-blur-md">
-   <summary className="p-2 flex items-center gap-2 label-caps text-exo-accent/60 group-hover/think:text-exo-accent transition-colors">Thinking Process</summary>
+   <details className="lcd-screen rounded-[4px] text-xs tx-message-mute cursor-pointer w-full group/think transition-all hover:border-exo-mist-20 bg-exo-pure/30 backdrop-blur-md">
+   <summary className="p-2 flex items-center gap-2 label-caps tx-message-accent opacity-60 group-hover/think:tx-message-accent transition-colors">Thinking Process</summary>
    <div className="p-4 border-t border-exo-mist-10 bg-exo-pure/30 whitespace-pre-wrap font-mono leading-relaxed text-[0.6875rem]">
     {msg.reasoning_steps && msg.reasoning_steps.map((step, sIdx) => (
-    <div key={sIdx} className="inline-block text-[0.625rem] font-mono tracking-widest text-exo-accent/70 bg-exo-accent/5 px-2 py-0.5 rounded-[2px] border border-exo-accent/10 mb-2 mr-2">{step}</div>
+    <div key={sIdx} className="inline-block text-[0.625rem] font-mono tracking-widest tx-message-accent opacity-70 bg-exo-accent/5 px-2 py-0.5 rounded-[2px] border border-exo-accent/10 mb-2 mr-2">{step}</div>
     ))}
     {msg.reasoning_content}
    </div>
    </details>
   )}
   {!isUser && msg.status_text && (
-   <div className="flex items-center gap-2 text-[0.6875rem] tracking-widest text-exo-accent/80 bg-exo-accent/5 border border-exo-accent/15 rounded-[4px] px-3 py-2 animate-fade-in">
+   <div className="flex items-center gap-2 text-[0.6875rem] tracking-widest tx-message-accent opacity-80 bg-exo-accent/5 border border-exo-accent/15 rounded-[4px] px-3 py-2 animate-fade-in">
    <span className="inline-block w-1.5 h-1.5 rounded-full bg-exo-accent animate-blink-sharp shrink-0" />
    <span>{msg.status_text}</span>
    </div>
@@ -338,10 +338,10 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
      >
      <img src={att.preview} alt={att.name} className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all" />
      <div className="absolute inset-0 bg-black/0 group-hover:bg-exo-accent/10 transition-colors flex items-center justify-center">
-      <ZoomIn size={18} strokeWidth={1} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+      <ZoomIn size={18} strokeWidth={1} className="tx-message-normal opacity-0 group-hover:opacity-100 transition-opacity" />
      </div>
      </button>
-    : <div key={i} className="flex items-center gap-1.5 text-[0.625rem] tracking-tighter bg-exo-pure/40 backdrop-blur-sm border border-white/[0.06] rounded-[4px] px-2 py-1.5 text-exo-muted">
+    : <div key={i} className="flex items-center gap-1.5 text-[0.625rem] tracking-tighter bg-exo-pure/40 backdrop-blur-sm border border-white/[0.06] rounded-[4px] px-2 py-1.5 tx-message-mute">
      <FileText size={11} strokeWidth={1} className="text-blue-400 shrink-0" />
      <span className="truncate max-w-[160px]">{att.name}</span>
      </div>
@@ -356,7 +356,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    onClick={() => setLightboxSrc(null)}
    >
    <button
-    className="absolute top-4 right-4 p-2 text-white/50 hover:text-white transition-colors"
+    className="absolute top-4 right-4 p-2 tx-message-normal opacity-50 hover:tx-message-normal transition-colors"
     onClick={() => setLightboxSrc(null)}
    >
     <X size={18} strokeWidth={1} />
@@ -370,7 +370,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    </div>
   )}
   {isUser ? (
-   <div className="max-w-[92%] bg-exo-pure/40 backdrop-blur-md border border-white/[0.06] rounded-[4px] rounded-tr-none p-4 text-sm transition-all hover:border-exo-mist-20 prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none text-white/90" style={{ fontFamily: 'var(--font-message)' }}>
+   <div className="max-w-[92%] bg-exo-pure/40 backdrop-blur-md border border-white/[0.06] rounded-[4px] rounded-tr-none p-4 text-sm transition-all hover:border-exo-mist-20 prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none tx-message-normal opacity-90" style={{ fontFamily: 'var(--font-message)' }}>
    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
    </div>
   ) : (
@@ -384,7 +384,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
   <div className={`flex items-center gap-0.5 mt-2 ${isUser ? 'flex-row-reverse mr-2' : 'ml-1'}`} style={{ opacity: 0.5 }}>
   <button
    onClick={handleCopy}
-   className="p-1 text-cinder-text-dim hover:text-cinder-text transition-colors"
+   className="p-1 tx-message-normal-dim hover:tx-message-normal transition-colors"
    title="复制"
   >
    {copied ? <Check size={12} strokeWidth={1} className="text-green-400" /> : <Copy size={12} strokeWidth={1} />}
@@ -395,7 +395,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    <button
     onClick={() => onEdit && onEdit(msg)}
     disabled={isGenerating}
-    className="p-1 text-cinder-text-dim hover:text-cinder-text transition-colors disabled:opacity-20"
+    className="p-1 tx-message-normal-dim hover:tx-message-normal transition-colors disabled:opacity-20"
     title="编辑并重发"
    >
     <Edit2 size={12} strokeWidth={1} />
@@ -403,7 +403,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    <button
     onClick={() => onRegenerate && onRegenerate(msg)}
     disabled={isGenerating}
-    className="p-1 text-cinder-text-dim hover:text-cinder-text transition-colors disabled:opacity-20"
+    className="p-1 tx-message-normal-dim hover:tx-message-normal transition-colors disabled:opacity-20"
     title="重新生成"
    >
     <RotateCw size={12} strokeWidth={1} />
@@ -414,14 +414,14 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    <button
     onClick={() => onBranch && onBranch(msg.id)}
     disabled={isGenerating}
-    className="p-1 text-cinder-text-dim hover:text-blue-400 transition-colors disabled:opacity-20"
+    className="p-1 tx-message-normal-dim hover:text-blue-400 transition-colors disabled:opacity-20"
     title="从此分叉"
    >
     <GitFork size={12} strokeWidth={1} />
    </button>
    <button
     onClick={openBookmark}
-    className={`p-1 transition-colors ${showBookmark ? 'text-cinder-flame' : 'text-cinder-text-dim hover:text-cinder-text'}`}
+    className={`p-1 transition-colors ${showBookmark ? 'tx-message-accent' : 'tx-message-normal-dim hover:tx-message-normal'}`}
     title="标记到长期记忆"
    >
     <Bookmark size={12} strokeWidth={1} />
@@ -434,8 +434,8 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
   {showBookmark && (
   <div className="w-full mt-3 border border-white/[0.06] rounded-[4px] bg-exo-pure/40 backdrop-blur-md overflow-hidden animate-fade-in">
    <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.04] bg-white/[0.02]">
-   <span className="label-caps text-exo-accent/70">ARCHIVE_TO_LONGTERM_MEMORY</span>
-   <button onClick={() => setShowBookmark(false)} className="text-exo-muted/50 hover:text-white transition-colors p-0.5">
+   <span className="label-caps tx-message-accent opacity-70">ARCHIVE_TO_LONGTERM_MEMORY</span>
+   <button onClick={() => setShowBookmark(false)} className="tx-message-mute opacity-50 hover:tx-message-normal transition-colors p-0.5">
     <X size={12} strokeWidth={1} />
    </button>
    </div>
@@ -444,20 +444,20 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
     value={bookmarkText}
     onChange={e => setBookmarkText(e.target.value)}
     rows={4}
-    className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-3 py-2 text-xs text-white outline-none focus:border-exo-accent/50 resize-y leading-relaxed"
+    className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-3 py-2 text-xs tx-message-normal outline-none focus:border-exo-accent/50 resize-y leading-relaxed"
     placeholder="选取要标记的内容..."
    />
    <div className="flex justify-end gap-3">
     <button
     onClick={() => setShowBookmark(false)}
-    className="px-3 py-1 text-[0.625rem] tracking-widest text-exo-muted hover:text-white transition-colors"
+    className="px-3 py-1 text-[0.625rem] tracking-widest tx-message-mute hover:tx-message-normal transition-colors"
     >
     CANCEL
     </button>
     <button
     onClick={handleBookmarkSubmit}
     disabled={bookmarkStatus === 'saving' || bookmarkStatus === 'done'}
-    className="px-4 py-1.5 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[0.625rem] tracking-widest hover:bg-exo-accent hover:text-black transition-colors disabled:opacity-50"
+    className="px-4 py-1.5 bg-exo-accent/10 tx-message-accent border border-exo-accent/20 rounded-[2px] text-[0.625rem] tracking-widest hover:bg-exo-accent hover:text-black transition-colors disabled:opacity-50"
     >
     {bookmarkStatus === 'saving' ? 'UPLOADING...'
      : bookmarkStatus === 'done' ? '✓ ARCHIVED'

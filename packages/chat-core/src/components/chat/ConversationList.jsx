@@ -100,10 +100,10 @@ const ConversationList = ({
   data-session-id={conv.id}
   className={`group relative flex items-center justify-between p-3 rounded-[4px] cursor-pointer transition-all border ${
   activeSessionId === conv.id
-   ? 'bg-exo-accent/10 text-exo-accent border-exo-accent/40 shadow-glow-gold'
+   ? 'bg-exo-accent/10 tx-system-accent border-exo-accent/40 shadow-glow-gold'
    : inactive
-   ? 'text-exo-muted/40 hover:bg-exo-accent/[0.01] border-dashed border-exo-mist-6'
-   : 'text-exo-muted hover:bg-exo-accent/[0.02] border-transparent hover:border-exo-mist-10'
+   ? 'tx-system-mute opacity-40 hover:bg-exo-accent/[0.01] border-dashed border-exo-mist-6'
+   : 'tx-system-mute hover:bg-exo-accent/[0.02] border-transparent hover:border-exo-mist-10'
   }`}
  >
   <div className="flex items-center gap-3 overflow-hidden min-w-0">
@@ -112,7 +112,7 @@ const ConversationList = ({
    inactive ? 'bg-white/[0.02] border-transparent opacity-30' :
    'bg-white/5 border-transparent group-hover:border-exo-mist-10'
   }`}>
-   <Icon size={14} className={activeSessionId === conv.id ? 'text-exo-accent' : inactive ? 'opacity-20 group-hover:opacity-40' : 'opacity-40 group-hover:opacity-100'} />
+   <Icon size={14} className={activeSessionId === conv.id ? 'tx-system-accent' : inactive ? 'opacity-20 group-hover:opacity-40' : 'opacity-40 group-hover:opacity-100'} />
   </div>
   <div className="flex flex-col min-w-0">
    <span className={`text-sm truncate tracking-wide font-light ${inactive && activeSessionId !== conv.id ? 'opacity-50' : ''}`}>{conv.name || `Session #${conv.id}`}</span>
@@ -120,7 +120,7 @@ const ConversationList = ({
   </div>
   </div>
   {inactive && activeSessionId !== conv.id && (
-  <span className="text-[0.5rem] font-mono tracking-[0.15em] text-exo-muted/20 border border-exo-mist-6 rounded-[2px] px-1.5 py-0.5 flex-shrink-0">休眠</span>
+  <span className="text-[0.5rem] font-mono tracking-[0.15em] tx-system-mute opacity-20 border border-exo-mist-6 rounded-[2px] px-1.5 py-0.5 flex-shrink-0">休眠</span>
   )}
  </div>
  );
@@ -135,7 +135,7 @@ const ConversationList = ({
   {/* Search & Header */}
   <div className={`p-8 space-y-6 shrink-0 ${isMainView ? 'max-w-4xl mx-auto w-full' : ''}`}>
   <div className="flex items-center justify-between">
-   <h2 className="text-[0.625rem] font-bold tracking-[0.4em] text-exo-accent">
+   <h2 className="text-[0.625rem] font-bold tracking-[0.4em] tx-system-accent">
    {mode === 'chat' && 'Nodes Hub'}
    {mode === 'council' && 'Council Hub'}
    {mode === 'project' && 'Project Repos'}
@@ -143,22 +143,22 @@ const ConversationList = ({
    <div className="flex items-center gap-3">
    <button
     onClick={() => mode === 'council' ? onCreateCouncil() : mode === 'project' ? openCreateProject() : openNewSession()}
-    className="p-2 rounded-[4px] bg-exo-accent/10 text-exo-accent border border-exo-accent/20 hover:bg-exo-accent hover:text-black transition-colors"
+    className="p-2 rounded-[4px] bg-exo-accent/10 tx-system-accent border border-exo-accent/20 hover:bg-exo-accent hover:text-black transition-colors"
    >
     <Plus size={18} />
    </button>
-   {!isMainView && <button onClick={onClose} className="md:hidden p-2 rounded-[4px] text-exo-muted hover:bg-exo-accent/[0.04]"><X size={18} /></button>}
+   {!isMainView && <button onClick={onClose} className="md:hidden p-2 rounded-[4px] tx-system-mute hover:bg-exo-accent/[0.04]"><X size={18} /></button>}
    </div>
   </div>
   
   <div className="relative group">
-   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-exo-muted/40 group-focus-within:text-exo-accent transition-colors" />
+   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 tx-system-mute opacity-40 group-focus-within:tx-system-accent transition-colors" />
    <input 
    type="text" 
    placeholder="Search active nodes..."
    value={searchQuery}
    onChange={(e) => setSearchQuery(e.target.value)}
-   className="w-full bg-exo-pure border border-exo-mist-10 rounded-[4px] py-2.5 pl-10 pr-4 text-[0.6875rem] font-mono tracking-widest focus:border-exo-accent/40 focus:bg-exo-accent/5 outline-none transition-all placeholder:text-exo-muted/20"
+   className="w-full bg-exo-pure border border-exo-mist-10 rounded-[4px] py-2.5 pl-10 pr-4 text-[0.6875rem] font-mono tracking-widest focus:border-exo-accent/40 focus:bg-exo-accent/5 outline-none transition-all placeholder:tx-system-mute opacity-20"
    />
   </div>
   </div>
@@ -170,7 +170,7 @@ const ConversationList = ({
     {/* G045 cognitively superior */}
     {g045Sessions.length > 0 && (
     <div className="flex flex-col shrink-0">
-     <div className="text-[0.5625rem] font-mono font-bold text-exo-accent/60 flex items-center gap-2 tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
+     <div className="text-[0.5625rem] font-mono font-bold tx-system-accent opacity-60 flex items-center gap-2 tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
      <Sparkles size={12} /> Superior Cognitive
      </div>
      <div className="grid gap-1 pb-4">
@@ -187,7 +187,7 @@ const ConversationList = ({
     {/* Projects Zone */}
     {sortedProjects.length > 0 && (
     <div className="flex flex-col shrink-0">
-     <div className="text-[0.5625rem] font-mono font-bold text-exo-muted/40 flex items-center gap-2 tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
+     <div className="text-[0.5625rem] font-mono font-bold tx-system-mute opacity-40 flex items-center gap-2 tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
      <Box size={12} /> Project Repositories
      </div>
      <div className="flex-1 pb-4">
@@ -201,7 +201,7 @@ const ConversationList = ({
         onClick={() => toggleProject(proj.id)}
         className={`group flex items-center gap-4 p-3 rounded-[4px] cursor-pointer transition-colors border ${isExpanded ? 'bg-exo-pure border-exo-mist-12' : 'border-transparent hover:bg-exo-accent/[0.02] hover:border-exo-mist-10'}`}
        >
-        <div className={`p-2 rounded-[2px] transition-all border ${isExpanded ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-white/5 text-exo-muted border-transparent'}`}>
+        <div className={`p-2 rounded-[2px] transition-all border ${isExpanded ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-white/5 tx-system-mute border-transparent'}`}>
         {isExpanded ? <FolderOpen size={16}/> : <Folder size={16}/>}
         </div>
         <div className="flex-1 min-w-0">
@@ -210,7 +210,7 @@ const ConversationList = ({
         </div>
         <button
         onClick={(e) => { e.stopPropagation(); handleRenameProject(proj); }}
-        className="p-1 text-exo-muted/40 hover:text-exo-accent transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+        className="p-1 tx-system-mute opacity-40 hover:tx-system-accent transition-colors opacity-0 group-hover:opacity-100 shrink-0"
         title="Rename project"
         >
         <Edit2 size={12} />
@@ -239,7 +239,7 @@ const ConversationList = ({
      {sortedProjects.length > 2 && (
       <button
       onClick={() => setShowAllProjects(p => !p)}
-      className="text-[0.5625rem] font-mono tracking-[0.2em] text-exo-muted/40 hover:text-exo-accent transition-colors px-2 pt-3"
+      className="text-[0.5625rem] font-mono tracking-[0.2em] tx-system-mute opacity-40 hover:tx-system-accent transition-colors px-2 pt-3"
       >
       {showAllProjects ? '<< Collapse' : '>> Reveal more'}
       </button>
@@ -256,7 +256,7 @@ const ConversationList = ({
     {/* Standard Sessions */}
     {standardSessions.length > 0 && (
     <div className="flex flex-col">
-     <div className="text-[0.5625rem] font-mono font-bold text-exo-muted/40 flex items-center gap-2 tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
+     <div className="text-[0.5625rem] font-mono font-bold tx-system-mute opacity-40 flex items-center gap-2 tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
      <MessageSquare size={12} /> Recent Links
      </div>
      <div className="grid gap-1 pb-8">
@@ -280,8 +280,8 @@ const ConversationList = ({
      onClick={() => { setActiveCouncilId(cs.id); setActiveSessionId(null); onClose && onClose(); }}
      className={`flex items-center gap-5 p-5 rounded-[4px] cursor-pointer transition-all border ${
      activeCouncilId === cs.id 
-      ? 'bg-exo-accent/10 border-exo-accent/40 text-exo-accent shadow-glow-gold' 
-      : 'border-transparent hover:bg-exo-accent/[0.02] hover:border-exo-mist-10 text-exo-muted hover:text-white'
+      ? 'bg-exo-accent/10 border-exo-accent/40 tx-system-accent shadow-glow-gold' 
+      : 'border-transparent hover:bg-exo-accent/[0.02] hover:border-exo-mist-10 tx-system-mute hover:tx-system-normal'
      }`}
     >
      <div className={`p-3 rounded-[2px] transition-all border ${activeCouncilId === cs.id ? 'bg-exo-accent/20 border-exo-accent/40' : 'bg-white/5 border-transparent'}`}>
@@ -290,7 +290,7 @@ const ConversationList = ({
      <div className="flex-1 min-w-0">
      <div className="text-base font-light truncate mb-1">{cs.topic || cs.arbitrator_preset_name || `Council #${cs.id}`}</div>
      <div className="flex items-center gap-3">
-      <span className="text-[0.5625rem] font-mono font-bold tracking-[0.2em] px-2 py-0.5 rounded-[2px] bg-exo-accent/10 border border-exo-accent/30 text-exo-accent">{cs.status}</span>
+      <span className="text-[0.5625rem] font-mono font-bold tracking-[0.2em] px-2 py-0.5 rounded-[2px] bg-exo-accent/10 border border-exo-accent/30 tx-system-accent">{cs.status}</span>
       <span className="text-[0.5625rem] font-mono opacity-30 tracking-tighter">{new Date(cs.created_at).toLocaleDateString()}</span>
      </div>
      </div>
@@ -301,7 +301,7 @@ const ConversationList = ({
 
    {mode === 'project' && (
     <div className="space-y-6">
-    <div className="text-[0.5625rem] font-mono font-bold text-exo-muted/40 flex items-center gap-2 tracking-[0.3em] px-2">
+    <div className="text-[0.5625rem] font-mono font-bold tx-system-mute opacity-40 flex items-center gap-2 tracking-[0.3em] px-2">
      <Box size={12} /> Project Repositories
     </div>
     <div className="grid gap-3">
@@ -314,7 +314,7 @@ const ConversationList = ({
        onClick={() => toggleProject(proj.id)}
        className={`group flex items-center gap-4 p-4 rounded-[4px] cursor-pointer transition-colors border ${isExpanded ? 'bg-exo-pure border-exo-mist-12 shadow-brutalist' : 'border-transparent hover:bg-exo-accent/[0.02] hover:border-exo-mist-10'}`}
       >
-       <div className={`p-2 rounded-[2px] transition-all border ${isExpanded ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-white/5 text-exo-muted border-transparent'}`}>
+       <div className={`p-2 rounded-[2px] transition-all border ${isExpanded ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-white/5 tx-system-mute border-transparent'}`}>
        {isExpanded ? <FolderOpen size={18}/> : <Folder size={18}/>}
        </div>
        <div className="flex-1 min-w-0">
@@ -323,7 +323,7 @@ const ConversationList = ({
        </div>
        <button
        onClick={(e) => { e.stopPropagation(); handleRenameProject(proj); }}
-       className="p-1 text-exo-muted/40 hover:text-exo-accent transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+       className="p-1 tx-system-mute opacity-40 hover:tx-system-accent transition-colors opacity-0 group-hover:opacity-100 shrink-0"
        title="Rename project"
        >
        <Edit2 size={12} />

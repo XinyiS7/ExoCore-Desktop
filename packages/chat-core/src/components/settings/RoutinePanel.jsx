@@ -33,11 +33,11 @@ function AgentCheckList({ presets, checkedIds, onToggle, expanded }) {
  <div className="mt-2 p-3 bg-chat-bg border border-white/[0.06] rounded">
   {g045List.length > 0 && (
   <>
-   <div className="text-[0.6rem] font-mono tracking-[0.12em] text-chat-muted/40 mb-1.5">G045</div>
+   <div className="text-[0.6rem] font-mono tracking-[0.12em] tx-system-mute opacity-40 mb-1.5">G045</div>
    {g045List.map(p => (
    <label
     key={p.id}
-    className="flex items-center gap-2 py-1 px-1 cursor-pointer text-[0.725rem] font-mono text-chat-text/70 hover:text-chat-text transition-colors"
+    className="flex items-center gap-2 py-1 px-1 cursor-pointer text-[0.725rem] font-mono tx-system-normal opacity-70 hover:tx-system-normal transition-colors"
    >
     <span
     onClick={() => onToggle(p.id)}
@@ -58,11 +58,11 @@ function AgentCheckList({ presets, checkedIds, onToggle, expanded }) {
   )}
   {superiorList.length > 0 && (
   <>
-   <div className="text-[0.6rem] font-mono tracking-[0.12em] text-chat-muted/40 mt-2 mb-1.5">Superior</div>
+   <div className="text-[0.6rem] font-mono tracking-[0.12em] tx-system-mute opacity-40 mt-2 mb-1.5">Superior</div>
    {superiorList.map(p => (
    <label
     key={p.id}
-    className="flex items-center gap-2 py-1 px-1 cursor-pointer text-[0.725rem] font-mono text-chat-text/70 hover:text-chat-text transition-colors"
+    className="flex items-center gap-2 py-1 px-1 cursor-pointer text-[0.725rem] font-mono tx-system-normal opacity-70 hover:tx-system-normal transition-colors"
    >
     <span
     onClick={() => onToggle(p.id)}
@@ -82,7 +82,7 @@ function AgentCheckList({ presets, checkedIds, onToggle, expanded }) {
   </>
   )}
   {sorted.length === 0 && (
-  <p className="text-[0.6625rem] text-chat-muted/30 font-mono text-center py-2">No agents available</p>
+  <p className="text-[0.6625rem] tx-system-mute opacity-30 font-mono text-center py-2">No agents available</p>
   )}
  </div>
  );
@@ -174,7 +174,7 @@ export default function RoutinePanel() {
  return (
  <div className="flex-1 h-full overflow-y-auto">
   <div className="max-w-2xl px-8 py-8">
-  <h2 className="text-sm font-semibold text-chat-text/90 tracking-tight mb-6">
+  <h2 className="text-sm font-semibold tx-system-normal opacity-90 tracking-tight mb-6">
    ⚡ Routine · 后台任务
   </h2>
 
@@ -184,20 +184,20 @@ export default function RoutinePanel() {
    <div className="flex items-center gap-2.5 min-w-0">
     <span className="text-sm">🔍🧹</span>
     <div className="min-w-0">
-    <span className="text-xs text-chat-text/80 font-medium">Self Check & Deep Organize</span>
-    <span className="text-[0.6625rem] text-chat-muted/50 ml-2 hidden sm:inline">自检 + 深度整理 · 共用 Agent 列表</span>
+    <span className="text-xs tx-system-normal opacity-80 font-medium">Self Check & Deep Organize</span>
+    <span className="text-[0.6625rem] tx-system-mute opacity-50 ml-2 hidden sm:inline">自检 + 深度整理 · 共用 Agent 列表</span>
     </div>
    </div>
    <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-    <button className="flex items-center gap-1 text-[0.6625rem] font-mono tracking-wider text-chat-muted/40 hover:text-chat-muted/70 border border-white/[0.06] rounded px-2 py-1 transition-colors">
+    <button className="flex items-center gap-1 text-[0.6625rem] font-mono tracking-wider tx-system-mute opacity-40 hover:tx-system-mute opacity-70 border border-white/[0.06] rounded px-2 py-1 transition-colors">
     <Clock size={10} /> 时间设置
     </button>
     <button
     onClick={() => toggleExpand('scdo')}
     className={`flex items-center gap-1 text-[0.6625rem] font-mono tracking-wider transition-colors border rounded px-2 py-1 ${
      expandedAgents.scdo
-     ? 'text-chat-accent/70 border-chat-accent/15 bg-chat-accent/[0.04]'
-     : 'text-chat-muted/40 border-white/[0.06] hover:text-chat-muted/70'
+     ? 'tx-system-accent opacity-70 border-chat-accent/15 bg-chat-accent/[0.04]'
+     : 'tx-system-mute opacity-40 border-white/[0.06] hover:tx-system-mute opacity-70'
     }`}
     >
     <Users size={10} /> Agent 管理
@@ -219,20 +219,20 @@ export default function RoutinePanel() {
    <div className="flex items-center gap-2.5 min-w-0">
     <span className="text-sm">💓</span>
     <div className="min-w-0">
-    <span className="text-xs text-chat-text/80 font-medium">Heartbeat</span>
-    <span className="text-[0.6625rem] text-chat-muted/50 ml-2 hidden sm:inline">主动互动 · 活跃窗口内定时发起对话</span>
+    <span className="text-xs tx-system-normal opacity-80 font-medium">Heartbeat</span>
+    <span className="text-[0.6625rem] tx-system-mute opacity-50 ml-2 hidden sm:inline">主动互动 · 活跃窗口内定时发起对话</span>
     </div>
    </div>
    <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-    <button className="flex items-center gap-1 text-[0.6625rem] font-mono tracking-wider text-chat-muted/40 hover:text-chat-muted/70 border border-white/[0.06] rounded px-2 py-1 transition-colors">
+    <button className="flex items-center gap-1 text-[0.6625rem] font-mono tracking-wider tx-system-mute opacity-40 hover:tx-system-mute opacity-70 border border-white/[0.06] rounded px-2 py-1 transition-colors">
     <Clock size={10} /> 时间设置
     </button>
     <button
     onClick={() => toggleExpand('hb')}
     className={`flex items-center gap-1 text-[0.6625rem] font-mono tracking-wider transition-colors border rounded px-2 py-1 ${
      expandedAgents.hb
-     ? 'text-chat-accent/70 border-chat-accent/15 bg-chat-accent/[0.04]'
-     : 'text-chat-muted/40 border-white/[0.06] hover:text-chat-muted/70'
+     ? 'tx-system-accent opacity-70 border-chat-accent/15 bg-chat-accent/[0.04]'
+     : 'tx-system-mute opacity-40 border-white/[0.06] hover:tx-system-mute opacity-70'
     }`}
     >
     <Users size={10} /> Agent 管理
@@ -252,17 +252,17 @@ export default function RoutinePanel() {
   <div className="p-3 bg-chat-bg border border-white/[0.06] rounded mb-6">
    <div className="flex items-center gap-2 mb-1.5">
    <span className="text-sm">⏱️</span>
-   <span className="text-[0.625rem] font-mono tracking-[0.1em] text-chat-muted/50">Schedule Preview</span>
-   <span className="text-[0.5rem] font-mono text-chat-muted/30 ml-1">(时间设置接口待上线)</span>
+   <span className="text-[0.625rem] font-mono tracking-[0.1em] tx-system-mute opacity-50">Schedule Preview</span>
+   <span className="text-[0.5rem] font-mono tx-system-mute opacity-30 ml-1">(时间设置接口待上线)</span>
    </div>
-   <p className="text-[0.625rem] font-mono text-chat-muted/60 leading-relaxed">{schedulePreview()}</p>
+   <p className="text-[0.625rem] font-mono tx-system-mute opacity-60 leading-relaxed">{schedulePreview()}</p>
   </div>
 
   <div className="flex justify-end">
    <button
    onClick={handleSave}
    disabled={saving}
-   className="px-4 py-1.5 bg-chat-accent text-white text-[0.625rem] font-bold tracking-[0.12em] rounded hover:brightness-110 disabled:opacity-20 disabled:grayscale transition-all flex items-center gap-1.5"
+   className="px-4 py-1.5 bg-chat-accent tx-system-normal text-[0.625rem] font-bold tracking-[0.12em] rounded hover:brightness-110 disabled:opacity-20 disabled:grayscale transition-all flex items-center gap-1.5"
    >
    {saving ? (
     <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />

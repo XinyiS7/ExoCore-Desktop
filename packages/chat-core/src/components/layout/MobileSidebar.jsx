@@ -10,8 +10,8 @@ const MobileNavIcon = ({ icon: Icon, isActive, onClick }) => (
     onClick={onClick}
     className={`w-9 h-9 flex items-center justify-center rounded-[4px] transition-all ${
       isActive
-        ? 'bg-exo-accent/10 border border-exo-accent/30 text-exo-accent'
-        : 'text-exo-muted hover:text-exo-text hover:bg-exo-accent/[0.04]'
+        ? 'bg-exo-accent/10 border border-exo-accent/30 tx-nav-accent'
+        : 'tx-nav-mute hover:tx-nav-normal hover:bg-exo-accent/[0.04]'
     }`}
   >
     <Icon size={18} />
@@ -118,7 +118,7 @@ const MobileSidebar = ({
         {/* Close X */}
         <button
           onClick={onClose}
-          className="w-7 h-7 flex items-center justify-center rounded-[4px] text-exo-muted hover:text-exo-text hover:bg-exo-accent/[0.04] transition-colors border border-exo-mist-8"
+          className="w-7 h-7 flex items-center justify-center rounded-[4px] tx-nav-mute hover:tx-nav-normal hover:bg-exo-accent/[0.04] transition-colors border border-exo-mist-8"
         >
           <X size={14} />
         </button>

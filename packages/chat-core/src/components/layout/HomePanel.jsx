@@ -11,14 +11,14 @@ const QUICK_ACTIONS = [
     icon: MessageSquare,
     label: '即时会话',
     desc: '与 AI 节点建立即时链路',
-    color: 'text-exo-accent'
+    color: 'tx-nav-accent'
   },
   {
     tab: 'agent_hub',
     icon: BrainCircuit,
     label: '代理中心',
     desc: '调整代理预设与认知模型',
-    color: 'text-exo-accent'
+    color: 'tx-nav-accent'
   },
   {
     tab: 'timeline',
@@ -50,18 +50,18 @@ export default function HomePanel({ setCurrentTab }) {
         <div className="space-y-8 animate-fade-in">
           <div className="flex items-center gap-3">
             <div className="h-px w-8 bg-exo-accent/40" />
-            <div className="text-[0.625rem] tracking-[0.5em] text-exo-accent/60">ExoCore Neural Link // System.Init()</div>
+            <div className="text-[0.625rem] tracking-[0.5em] tx-nav-accent opacity-60">ExoCore Neural Link // System.Init()</div>
           </div>
           
           <div className="space-y-4">
-            <h1 className="text-5xl md:text-7xl font-light leading-ultra-tight tracking-tight text-white">
-              Welcome back, <span className="text-exo-accent font-medium">{userNick}</span>
+            <h1 className="text-5xl md:text-7xl font-light leading-ultra-tight tracking-tight tx-nav-normal">
+              Welcome back, <span className="tx-nav-accent font-medium">{userNick}</span>
             </h1>
-            <p className="text-lg text-exo-muted max-w-2xl font-light leading-tight-12">
-              您的个人 AI 协作中枢已就绪。所有子系统运行正常，<span className="text-exo-accent/60 font-mono">链路延迟 2ms</span>。
+            <p className="text-lg tx-nav-mute max-w-2xl font-light leading-tight-12">
+              您的个人 AI 协作中枢已就绪。所有子系统运行正常，<span className="tx-nav-accent opacity-60 font-mono">链路延迟 2ms</span>。
             </p>
             <div className="pt-4 flex items-center gap-2">
-              <span className="text-[0.625rem] tracking-[0.3em] text-exo-muted">Layout</span>
+              <span className="text-[0.625rem] tracking-[0.3em] tx-nav-mute">Layout</span>
               <button
                 onClick={() => {
                   const next = localStorage.getItem('exo_layout_version') === 'v2' ? 'v1' : 'v2';
@@ -75,7 +75,7 @@ export default function HomePanel({ setCurrentTab }) {
                   style={{ left: localStorage.getItem('exo_layout_version') === 'v2' ? '1.25rem' : '0.125rem' }}
                 />
               </button>
-              <span className="text-[0.625rem] font-mono text-exo-muted">
+              <span className="text-[0.625rem] font-mono tx-nav-mute">
                 {localStorage.getItem('exo_layout_version') === 'v2' ? 'v2 (new)' : 'v1'}
               </span>
             </div>
@@ -99,11 +99,11 @@ export default function HomePanel({ setCurrentTab }) {
               </div>
 
               <div className="flex-1 space-y-2 relative z-10">
-                <div className="text-2xl font-light tracking-wide text-white group-hover:text-exo-accent transition-colors leading-tight">{label}</div>
-                <div className="text-[0.6875rem] tracking-widest text-exo-muted group-hover:text-exo-muted/80 transition-colors">{desc}</div>
+                <div className="text-2xl font-light tracking-wide tx-nav-normal group-hover:tx-nav-accent transition-colors leading-tight">{label}</div>
+                <div className="text-[0.6875rem] tracking-widest tx-nav-mute group-hover:tx-nav-mute opacity-80 transition-colors">{desc}</div>
               </div>
 
-              <ArrowRight className="text-exo-mist-20 group-hover:text-exo-accent transition-colors translate-x-0 group-hover:translate-x-1" size={24} />
+              <ArrowRight className="text-exo-mist-20 group-hover:tx-nav-accent transition-colors translate-x-0 group-hover:translate-x-1" size={24} />
             </button>
           ))}
         </div>
@@ -112,7 +112,7 @@ export default function HomePanel({ setCurrentTab }) {
         <div id="home-calendar-section" className="space-y-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center gap-3">
             <div className="h-px w-8 bg-exo-accent/40" />
-            <div className="text-[0.625rem] tracking-[0.5em] text-exo-accent/60">Chronos System // Task.Scheduler</div>
+            <div className="text-[0.625rem] tracking-[0.5em] tx-nav-accent opacity-60">Chronos System // Task.Scheduler</div>
           </div>
           <div className="bg-exo-pure border border-exo-mist-10 rounded-[4px] p-1">
             <CalendarWidget />
@@ -122,20 +122,20 @@ export default function HomePanel({ setCurrentTab }) {
         {/* System Stats / Bottom Section */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-10 border-t border-exo-mist-10 animate-fade-in" style={{ animationDelay: '0.3s' }}>
           <div className="space-y-2">
-            <div className="text-[0.625rem] tracking-[0.3em] text-exo-muted">Active Nodes</div>
-            <div className="text-3xl font-light font-mono text-exo-accent">12</div>
+            <div className="text-[0.625rem] tracking-[0.3em] tx-nav-mute">Active Nodes</div>
+            <div className="text-3xl font-light font-mono tx-nav-accent">12</div>
           </div>
           <div className="space-y-2">
-            <div className="text-[0.625rem] tracking-[0.3em] text-exo-muted">Memory Link</div>
-            <div className="text-3xl font-light font-mono text-white tracking-widest">Stable</div>
+            <div className="text-[0.625rem] tracking-[0.3em] tx-nav-mute">Memory Link</div>
+            <div className="text-3xl font-light font-mono tx-nav-normal tracking-widest">Stable</div>
           </div>
           <div className="space-y-2">
-            <div className="text-[0.625rem] tracking-[0.3em] text-exo-muted">Core Version</div>
-            <div className="text-3xl font-light font-mono text-white">2.1.92</div>
+            <div className="text-[0.625rem] tracking-[0.3em] tx-nav-mute">Core Version</div>
+            <div className="text-3xl font-light font-mono tx-nav-normal">2.1.92</div>
           </div>
           <div className="space-y-2">
-            <div className="text-[0.625rem] tracking-[0.3em] text-exo-muted">Uptime</div>
-            <div className="text-3xl font-light font-mono text-exo-accent">99.9%</div>
+            <div className="text-[0.625rem] tracking-[0.3em] tx-nav-mute">Uptime</div>
+            <div className="text-3xl font-light font-mono tx-nav-accent">99.9%</div>
           </div>
         </div>
 

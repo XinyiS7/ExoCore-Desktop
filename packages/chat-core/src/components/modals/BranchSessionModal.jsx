@@ -24,17 +24,17 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
   {/* Header */}
   <div className="px-6 py-4 border-b border-exo-mist-10 flex items-center justify-between bg-exo-pure/50">
    <div className="flex flex-col">
-   <h3 className="font-bold tracking-[0.2em] text-white flex items-center gap-2 text-sm">
-    <GitFork size={18} className="text-exo-accent" /> Branch Context
+   <h3 className="font-bold tracking-[0.2em] tx-system-normal flex items-center gap-2 text-sm">
+    <GitFork size={18} className="tx-system-accent" /> Branch Context
    </h3>
-   <span className="text-[0.6625rem] text-exo-muted tracking-widest opacity-40 mt-1">Forking Active Neural Stream</span>
+   <span className="text-[0.6625rem] tx-system-mute tracking-widest opacity-40 mt-1">Forking Active Neural Stream</span>
    </div>
-   <button onClick={onClose} className="p-2 text-exo-muted hover:text-white transition-colors"><X size={18}/></button>
+   <button onClick={onClose} className="p-2 tx-system-mute hover:tx-system-normal transition-colors"><X size={18}/></button>
   </div>
   
   {/* Content */}
   <div className="p-6 space-y-6">
-   <p className="text-[12px] text-exo-muted leading-relaxed italic opacity-70">
+   <p className="text-[12px] tx-system-mute leading-relaxed italic opacity-70">
    Determine target entry point. New session branch will inherit previous context weights without affecting the primary stream.
    </p>
    
@@ -45,7 +45,7 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
     value={name}
     onChange={e => setName(e.target.value)}
     placeholder="USE DEFAULT IF NULL..."
-    className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
+    className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
     autoFocus
     onKeyDown={e => { if (e.key === 'Enter') onConfirm({ name, sessionType }); }}
    />
@@ -63,8 +63,8 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
      onClick={() => setSessionType(value)}
      className={`px-4 py-2.5 rounded-[2px] border text-[0.725rem] tracking-wider transition-all
      ${sessionType === value
-      ? 'bg-exo-accent/10 border-exo-accent/60 text-white'
-      : 'bg-black/30 border-exo-mist-10 text-exo-muted/60 hover:border-exo-mist-20'}`}
+      ? 'bg-exo-accent/10 border-exo-accent/60 tx-system-normal'
+      : 'bg-black/30 border-exo-mist-10 tx-system-mute opacity-60 hover:border-exo-mist-20'}`}
     >
      <span className="block text-[0.7875rem] font-bold">{label}</span>
      <span className="block text-[0.6rem] opacity-50 mt-0.5">{desc}</span>
@@ -78,7 +78,7 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
   <div className="p-4 border-t border-exo-mist-10 flex justify-end gap-3 bg-exo-pure/80 backdrop-blur-md">
    <button 
    onClick={onClose} 
-   className="px-6 py-2 rounded-[2px] text-[0.7875rem] font-bold tracking-widest text-exo-muted hover:text-white transition-colors"
+   className="px-6 py-2 rounded-[2px] text-[0.7875rem] font-bold tracking-widest tx-system-mute hover:tx-system-normal transition-colors"
    >
    Abort
    </button>

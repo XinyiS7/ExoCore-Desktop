@@ -239,7 +239,7 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
   const tooltipEl = hovered && tooltipPos
     ? createPortal(
         <div
-          className="fixed px-3 py-1.5 bg-exo-panel border border-exo-border rounded-[3px] text-[0.725rem] font-mono text-white whitespace-nowrap shadow-xl pointer-events-none"
+          className="fixed px-3 py-1.5 bg-exo-panel border border-exo-border rounded-[3px] text-[0.725rem] font-mono tx-system-normal whitespace-nowrap shadow-xl pointer-events-none"
           style={{
             left: tooltipPos.left,
             top: tooltipPos.above ? tooltipPos.anchorTop - 6 : tooltipPos.anchorBottom + 6,
@@ -284,7 +284,7 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
             disabled={loading}
             className="absolute left-0 inset-y-0 w-[18px] flex items-center justify-center
                        z-10 active:scale-90 transition-colors
-                       text-exo-muted/50 hover:text-red-400"
+                       tx-system-mute opacity-50 hover:text-red-400"
             title={
               loading ? '释放中...'
               : isActive && hasSnapshot ? '释放缓存与快照'
@@ -299,7 +299,7 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
           {/* Remaining time (centered, clicks pass through) */}
           {isActive && (
             <span className="absolute inset-0 flex items-center justify-center
-                             text-[7px] font-mono text-exo-text/60 leading-none
+                             text-[7px] font-mono tx-system-normal opacity-60 leading-none
                              select-none pointer-events-none z-[5]">
               {remainingMinutes}m
             </span>
@@ -319,7 +319,7 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
           <span className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors ${
             cacheEnabled ? 'bg-exo-accent/60' : 'bg-exo-mist-10'
           }`}>
-            <span className="text-[5.5px] font-mono leading-none text-white/90 select-none">
+            <span className="text-[5.5px] font-mono leading-none tx-system-normal opacity-90 select-none">
               {cacheEnabled ? 'on' : 'off'}
             </span>
           </span>

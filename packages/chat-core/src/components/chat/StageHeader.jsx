@@ -50,7 +50,7 @@ export default function StageHeader({
         {showFilesButton && (
           <button
             onClick={onToggleFilesDrawer}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[0.6875rem] text-cinder-text-faint hover:text-cinder-flame border border-white/[0.06] hover:border-cinder-flame/30 rounded transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[0.6875rem] tx-system-normal-faint hover:tx-system-accent border border-white/[0.06] hover:border-cinder-flame/30 rounded transition-all"
             title="Project Files"
           >
             <FolderKanban size={13} strokeWidth={1} />

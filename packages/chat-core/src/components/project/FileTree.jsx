@@ -22,7 +22,7 @@ export default function FileTree({
 }) {
   if (!entries || entries.length === 0) {
     return (
-      <div className="text-xs text-chat-muted/30 italic py-1" style={{ paddingLeft: indent * 12 + 8 }}>
+      <div className="text-xs tx-body-mute opacity-30 italic py-1" style={{ paddingLeft: indent * 12 + 8 }}>
         (empty)
       </div>
     );
@@ -78,7 +78,7 @@ function TreeNode({ entry, indent, onFileClick, onExpand, expandedDirs, onToggle
         {isDir ? (
           <ChevronRight
             size={10}
-            className={`shrink-0 text-chat-muted/30 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+            className={`shrink-0 tx-body-mute opacity-30 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
           />
         ) : (
           <span className="w-[10px] shrink-0" />
@@ -87,22 +87,22 @@ function TreeNode({ entry, indent, onFileClick, onExpand, expandedDirs, onToggle
         {/* Icon */}
         {isDir ? (
           isExpanded ? (
-            <FolderOpen size={13} className="text-chat-accent/60 shrink-0" />
+            <FolderOpen size={13} className="tx-body-accent opacity-60 shrink-0" />
           ) : (
-            <Folder size={13} className="text-chat-accent/50 shrink-0" />
+            <Folder size={13} className="tx-body-accent opacity-50 shrink-0" />
           )
         ) : (
-          <FileText size={13} className="text-chat-muted/40 shrink-0" />
+          <FileText size={13} className="tx-body-mute opacity-40 shrink-0" />
         )}
 
         {/* Name */}
-        <span className={`text-[0.6875rem] truncate ${isDir ? 'text-chat-text/70' : 'text-chat-text/60'}`}>
+        <span className={`text-[0.6875rem] truncate ${isDir ? 'tx-body-normal opacity-70' : 'tx-body-normal opacity-60'}`}>
           {entry.name}
         </span>
 
         {/* Size for files */}
         {!isDir && entry.size != null && (
-          <span className="text-[0.5625rem] text-chat-muted/20 ml-auto shrink-0 hidden group-hover:inline">
+          <span className="text-[0.5625rem] tx-body-mute opacity-20 ml-auto shrink-0 hidden group-hover:inline">
             {formatSize(entry.size)}
           </span>
         )}

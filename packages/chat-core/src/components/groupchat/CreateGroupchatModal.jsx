@@ -94,12 +94,12 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
       <div className="bg-exo-pure border border-exo-mist-12 rounded-[4px] shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-exo-mist-10">
-          <h2 className="text-sm font-semibold text-chat-text tracking-tight">
+          <h2 className="text-sm font-semibold tx-system-normal tracking-tight">
             {isEdit ? 'Manage Groupchat' : 'New Groupchat'}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 text-exo-muted hover:text-white transition-colors rounded"
+            className="p-1 tx-system-mute hover:tx-system-normal transition-colors rounded"
           >
             <X size={16} />
           </button>
@@ -109,38 +109,38 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
         <div className="p-5 space-y-5">
           {/* Name */}
           <div className="space-y-1.5">
-            <label className="text-[0.625rem] tracking-[0.2em] text-exo-muted">Name</label>
+            <label className="text-[0.625rem] tracking-[0.2em] tx-system-mute">Name</label>
             <input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="Groupchat name..."
               autoFocus
-              className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-3 py-2 text-sm text-white outline-none focus:border-exo-accent/50 transition-colors font-sans placeholder:text-exo-muted/40"
+              className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-3 py-2 text-sm tx-system-normal outline-none focus:border-exo-accent/50 transition-colors font-sans placeholder:tx-system-mute opacity-40"
             />
           </div>
 
           {/* Prompt */}
           <div className="space-y-1.5">
-            <label className="text-[0.625rem] tracking-[0.2em] text-exo-muted">
-              Prompt <span className="text-exo-muted/40">(optional)</span>
+            <label className="text-[0.625rem] tracking-[0.2em] tx-system-mute">
+              Prompt <span className="tx-system-mute opacity-40">(optional)</span>
             </label>
             <textarea
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
               placeholder="Background prompt for Superior agents..."
               rows={3}
-              className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-3 py-2 text-sm text-white outline-none focus:border-exo-accent/50 transition-colors font-sans resize-y placeholder:text-exo-muted/40"
+              className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-3 py-2 text-sm tx-system-normal outline-none focus:border-exo-accent/50 transition-colors font-sans resize-y placeholder:tx-system-mute opacity-40"
             />
           </div>
 
           {/* Participants */}
           <div className="space-y-1.5">
-            <label className="text-[0.625rem] tracking-[0.2em] text-exo-muted">
-              Participants <span className="text-exo-muted/40">({participantIds.length} agent{participantIds.length !== 1 ? 's' : ''} selected)</span>
+            <label className="text-[0.625rem] tracking-[0.2em] tx-system-mute">
+              Participants <span className="tx-system-mute opacity-40">({participantIds.length} agent{participantIds.length !== 1 ? 's' : ''} selected)</span>
             </label>
             {agentPresets.length === 0 ? (
-              <p className="text-xs text-exo-muted/40 italic">No agent presets available.</p>
+              <p className="text-xs tx-system-mute opacity-40 italic">No agent presets available.</p>
             ) : (
               <div className="max-h-48 overflow-y-auto space-y-0.5 bg-exo-bg border border-exo-mist-10 rounded-[2px] p-2">
                 {agentPresets.map(preset => {
@@ -168,8 +168,8 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white truncate">{preset.name}</p>
-                        <p className="text-[0.5625rem] text-exo-muted/50 font-mono">{preset.agent_type || 'standard'}</p>
+                        <p className="text-sm tx-system-normal truncate">{preset.name}</p>
+                        <p className="text-[0.5625rem] tx-system-mute opacity-50 font-mono">{preset.agent_type || 'standard'}</p>
                       </div>
                     </label>
                   );
@@ -203,14 +203,14 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-1.5 text-[0.625rem] tracking-widest text-exo-muted hover:text-white transition-colors"
+              className="px-4 py-1.5 text-[0.625rem] tracking-widest tx-system-mute hover:tx-system-normal transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving || !name.trim()}
-              className="px-4 py-1.5 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[0.625rem] tracking-widest hover:bg-exo-accent hover:text-black transition-colors flex items-center gap-1.5 disabled:opacity-30"
+              className="px-4 py-1.5 bg-exo-accent/10 tx-system-accent border border-exo-accent/20 rounded-[2px] text-[0.625rem] tracking-widest hover:bg-exo-accent hover:text-black transition-colors flex items-center gap-1.5 disabled:opacity-30"
             >
               <Plus size={12} />
               {saving ? 'Saving...' : isEdit ? 'Save' : 'Create'}

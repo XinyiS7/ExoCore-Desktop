@@ -219,8 +219,8 @@ const UserProfile = ({ presets }) => {
       )}
       <div className="h-14 border-b border-exo-mist-10 flex items-center px-8 bg-exo-pure/40 backdrop-blur-md shrink-0">
         <div className="flex flex-col">
-          <span className="font-bold text-[13px] text-white tracking-[0.2em]">Neural Timeline</span>
-          <span className="text-[0.5625rem] text-exo-muted tracking-widest opacity-40">System-wide Event Log</span>
+          <span className="font-bold text-[13px] tx-body-normal tracking-[0.2em]">Neural Timeline</span>
+          <span className="text-[0.5625rem] tx-body-mute tracking-widest opacity-40">System-wide Event Log</span>
         </div>
       </div>
 
@@ -252,10 +252,10 @@ const UserProfile = ({ presets }) => {
                   onChange={e => setNewPostContent(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handlePost(); } }}
                   placeholder="Inscribe thought to timeline..."
-                  className="w-full bg-transparent text-[14px] text-white outline-none resize-none placeholder:opacity-20 leading-relaxed"
+                  className="w-full bg-transparent text-[14px] tx-body-normal outline-none resize-none placeholder:opacity-20 leading-relaxed"
                 />
                 <div className="flex justify-between items-center pt-4 border-t border-exo-mist-6">
-                  <span className="text-[0.5625rem] text-exo-muted tracking-tight opacity-40">Markdown & Links Supported</span>
+                  <span className="text-[0.5625rem] tx-body-mute tracking-tight opacity-40">Markdown & Links Supported</span>
                   <button
                     onClick={handlePost}
                     disabled={!newPostContent.trim() || isPosting}
@@ -271,11 +271,11 @@ const UserProfile = ({ presets }) => {
 
           {/* Timeline */}
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-exo-muted text-[0.6875rem] tracking-[0.3em] gap-4">
-              <Activity size={24} className="animate-spin text-exo-accent" /> Initializing Stream...
+            <div className="flex flex-col items-center justify-center py-20 tx-body-mute text-[0.6875rem] tracking-[0.3em] gap-4">
+              <Activity size={24} className="animate-spin tx-body-accent" /> Initializing Stream...
             </div>
           ) : tweets.length === 0 ? (
-            <div className="text-center py-20 text-exo-muted/20 text-[0.6875rem] tracking-widest italic">No log entries found in current epoch</div>
+            <div className="text-center py-20 tx-body-mute opacity-20 text-[0.6875rem] tracking-widest italic">No log entries found in current epoch</div>
           ) : (
             <div className="space-y-0 divide-y divide-exo-mist-4">
               {tweets.map(tweet => (
@@ -298,7 +298,7 @@ const UserProfile = ({ presets }) => {
           <div ref={bottomRef} className="h-1" />
 
           {isLoadingMore && (
-            <div className="flex items-center justify-center py-8 text-exo-muted text-[0.625rem] tracking-widest gap-2">
+            <div className="flex items-center justify-center py-8 tx-body-mute text-[0.625rem] tracking-widest gap-2">
               <Activity size={12} className="animate-spin" /> Fetching Archive...
             </div>
           )}
@@ -357,13 +357,13 @@ const TweetCard = ({
         </div>
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-baseline gap-3">
-            <span className={`text-[13px] font-bold tracking-tight ${isUser ? 'text-white' : 'text-exo-accent'}`}>{name}</span>
-            <span className="text-[0.5625rem] text-exo-muted tracking-tighter opacity-40">[{formatTime(tweet.created_at)}]</span>
+            <span className={`text-[13px] font-bold tracking-tight ${isUser ? 'tx-body-normal' : 'tx-body-accent'}`}>{name}</span>
+            <span className="text-[0.5625rem] tx-body-mute tracking-tighter opacity-40">[{formatTime(tweet.created_at)}]</span>
           </div>
-          <p className="text-[14px] text-white/80 leading-relaxed tracking-tight break-words">{tweet.content}</p>
+          <p className="text-[14px] tx-body-normal opacity-80 leading-relaxed tracking-tight break-words">{tweet.content}</p>
           <button
             onClick={() => { setReplyingToId(isReplyingHere ? null : tweet.id); setReplyContent(''); }}
-            className="mt-3 text-[0.625rem] font-bold tracking-widest text-exo-muted/50 hover:text-exo-accent transition-colors flex items-center gap-1.5"
+            className="mt-3 text-[0.625rem] font-bold tracking-widest tx-body-mute opacity-50 hover:tx-body-accent transition-colors flex items-center gap-1.5"
           >
             <CornerDownLeft size={12} /> Respond
           </button>
@@ -377,7 +377,7 @@ const TweetCard = ({
                 onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleReply(tweet.id); } }}
                 placeholder={`Reply to ${name}...`}
                 autoFocus
-                className="flex-1 bg-black/40 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white outline-none focus:border-exo-accent/40 resize-none transition-all placeholder:opacity-20"
+                className="flex-1 bg-black/40 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-body-normal outline-none focus:border-exo-accent/40 resize-none transition-all placeholder:opacity-20"
               />
               <button
                 onClick={() => handleReply(tweet.id)}
@@ -401,19 +401,19 @@ const TweetCard = ({
             return (
               <div key={reply.id} className="relative">
                 <div className="text-[14px] leading-relaxed tracking-tight break-words">
-                  <span className={`text-[13px] font-bold tracking-tight mr-2 ${replyAuthor.isUser ? 'text-white' : 'text-exo-accent'}`}>
+                  <span className={`text-[13px] font-bold tracking-tight mr-2 ${replyAuthor.isUser ? 'tx-body-normal' : 'tx-body-accent'}`}>
                     {prefix}
                   </span>
-                  <span className="text-white/80">{reply.content}</span>
+                  <span className="tx-body-normal opacity-80">{reply.content}</span>
                 </div>
                 
                 <div className="flex items-center gap-3 mt-1.5">
-                  <span className="text-[0.5625rem] text-exo-muted tracking-tighter opacity-40">
+                  <span className="text-[0.5625rem] tx-body-mute tracking-tighter opacity-40">
                     [{formatTime(reply.created_at)}]
                   </span>
                   <button
                     onClick={() => { setReplyingToId(isReplyReplyingHere ? null : reply.id); setReplyContent(''); }}
-                    className="text-[0.625rem] font-bold tracking-widest text-exo-muted/50 hover:text-exo-accent transition-colors flex items-center gap-1.5"
+                    className="text-[0.625rem] font-bold tracking-widest tx-body-mute opacity-50 hover:tx-body-accent transition-colors flex items-center gap-1.5"
                   >
                     <CornerDownLeft size={10} /> Respond
                   </button>
@@ -428,7 +428,7 @@ const TweetCard = ({
                       onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleReply(reply.id); } }}
                       placeholder={`Reply to ${replyAuthor.name}...`}
                       autoFocus
-                      className="flex-1 bg-black/40 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white outline-none focus:border-exo-accent/40 resize-none transition-all placeholder:opacity-20"
+                      className="flex-1 bg-black/40 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-body-normal outline-none focus:border-exo-accent/40 resize-none transition-all placeholder:opacity-20"
                     />
                     <button
                       onClick={() => handleReply(reply.id)}

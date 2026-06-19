@@ -5,11 +5,11 @@ function FontSelector({ label, description, value, onChange }) {
   return (
     <div className="space-y-2.5">
       <div>
-        <span className="text-[0.625rem] tracking-[0.12em] text-chat-text/70">
+        <span className="text-[0.625rem] tracking-[0.12em] tx-system-normal opacity-70">
           {label}
         </span>
         {description && (
-          <p className="text-[0.5625rem] text-chat-muted/40 mt-0.5 leading-relaxed">{description}</p>
+          <p className="text-[0.5625rem] tx-system-mute opacity-40 mt-0.5 leading-relaxed">{description}</p>
         )}
       </div>
 
@@ -20,8 +20,8 @@ function FontSelector({ label, description, value, onChange }) {
             onClick={() => onChange(font.value)}
             className={`w-full text-left px-3 py-2 rounded-md border transition-all ${
               value === font.value
-                ? 'border-chat-accent/30 bg-chat-accent/5 text-chat-text'
-                : 'border-transparent bg-white/[0.02] text-chat-muted hover:border-exo-mist-10 hover:bg-exo-accent/[0.03]'
+                ? 'border-chat-accent/30 bg-chat-accent/5 tx-system-normal'
+                : 'border-transparent bg-white/[0.02] tx-system-mute hover:border-exo-mist-10 hover:bg-exo-accent/[0.03]'
             }`}
           >
             <div className="flex items-center gap-2.5">
@@ -36,11 +36,11 @@ function FontSelector({ label, description, value, onChange }) {
                 <p className="text-xs font-medium truncate">
                   {font.label}
                   {font.value === 'sarasa' && (
-                    <span className="ml-1.5 text-[0.5625rem] text-chat-muted font-normal">默认</span>
+                    <span className="ml-1.5 text-[0.5625rem] tx-system-mute font-normal">默认</span>
                   )}
                 </p>
                 <p
-                  className="text-[0.625rem] text-chat-muted/50 mt-0.5 truncate"
+                  className="text-[0.625rem] tx-system-mute opacity-50 mt-0.5 truncate"
                   style={{ fontFamily: getFontStack(font.value) }}
                 >
                   {font.preview}
@@ -65,10 +65,10 @@ function ScaleSlider({ value, onChange, config }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[0.625rem] tracking-[0.12em] text-chat-text/70">
+        <span className="text-[0.625rem] tracking-[0.12em] tx-system-normal opacity-70">
           🔤 Font Scale · 全局缩放
         </span>
-        <span className="text-sm font-medium text-chat-accent tabular-nums">
+        <span className="text-sm font-medium tx-system-accent tabular-nums">
           {pct}%
         </span>
       </div>
@@ -106,8 +106,8 @@ function ScaleSlider({ value, onChange, config }) {
               onClick={() => onChange(p)}
               className={`text-[0.5625rem] transition-colors ${
                 Math.abs(value - p) < config.step
-                  ? 'text-chat-accent font-medium'
-                  : 'text-chat-muted/40 hover:text-chat-muted/70'
+                  ? 'tx-system-accent font-medium'
+                  : 'tx-system-mute opacity-40 hover:tx-system-mute opacity-70'
               }`}
             >
               {p}
@@ -116,7 +116,7 @@ function ScaleSlider({ value, onChange, config }) {
         </div>
       </div>
 
-      <p className="text-[0.5625rem] text-chat-muted/40 leading-relaxed">
+      <p className="text-[0.5625rem] tx-system-mute opacity-40 leading-relaxed">
         基准字号 16px。拖动滑块调整全局文本缩放，所有 rem 单位同步响应。
       </p>
     </div>
@@ -133,7 +133,7 @@ export default function AppearancePanel() {
   return (
     <div className="flex-1 h-full overflow-y-auto">
       <div className="max-w-xl px-8 py-8">
-        <h2 className="text-sm font-semibold text-chat-text/90 tracking-tight mb-6">
+        <h2 className="text-sm font-semibold tx-system-normal opacity-90 tracking-tight mb-6">
           🎨 Appearance
         </h2>
 
@@ -180,14 +180,14 @@ export default function AppearancePanel() {
         <div className="mt-8 space-y-4">
           {/* System font preview */}
           <div className="p-4 rounded-lg border border-white/5 bg-chat-panel">
-            <p className="text-[0.625rem] tracking-[0.2em] text-chat-muted/40 mb-3">
+            <p className="text-[0.625rem] tracking-[0.2em] tx-system-mute opacity-40 mb-3">
               System Font Preview · 系统字体
             </p>
             <div style={{ fontFamily: 'var(--font-system)' }}>
-              <p className="text-sm text-chat-text leading-relaxed mb-1">
+              <p className="text-sm tx-system-normal leading-relaxed mb-1">
                 Settings · 设置面板 · Navigation · 导航
               </p>
-              <p className="text-xs text-chat-muted">
+              <p className="text-xs tx-system-mute">
                 The quick brown fox jumps over the lazy dog. 0123456789
               </p>
             </div>
@@ -195,14 +195,14 @@ export default function AppearancePanel() {
 
           {/* Message font preview */}
           <div className="p-4 rounded-lg border border-white/5 bg-chat-panel">
-            <p className="text-[0.625rem] tracking-[0.2em] text-chat-muted/40 mb-3">
+            <p className="text-[0.625rem] tracking-[0.2em] tx-system-mute opacity-40 mb-3">
               Message Font Preview · 消息字体
             </p>
             <div style={{ fontFamily: 'var(--font-message)' }}>
-              <p className="text-sm text-chat-text leading-relaxed mb-1">
+              <p className="text-sm tx-system-normal leading-relaxed mb-1">
                 こんにちは！今天想聊什么？春江潮水连海平。
               </p>
-              <p className="text-xs text-chat-muted">
+              <p className="text-xs tx-system-mute">
                 Hello! How can I help you today? 0123456789
               </p>
             </div>
@@ -210,16 +210,16 @@ export default function AppearancePanel() {
 
           {/* Code font preview */}
           <div className="p-4 rounded-lg border border-white/5 bg-chat-panel">
-            <p className="text-[0.625rem] tracking-[0.2em] text-chat-muted/40 mb-3">
+            <p className="text-[0.625rem] tracking-[0.2em] tx-system-mute opacity-40 mb-3">
               Code Font Preview · 代码字体
             </p>
             <div style={{ fontFamily: 'var(--font-code)' }}>
-              <p className="text-sm text-chat-text leading-relaxed mb-1">
+              <p className="text-sm tx-system-normal leading-relaxed mb-1">
                 <code className="bg-white/[0.04] px-1 py-0.5 rounded text-xs">
                   const hello = () =&gt; "Hello World";
                 </code>
               </p>
-              <p className="text-xs text-chat-muted">
+              <p className="text-xs tx-system-mute">
                 function fib(n) &#123; return n &lt;= 1 ? n : fib(n-1) + fib(n-2); &#125;
               </p>
             </div>

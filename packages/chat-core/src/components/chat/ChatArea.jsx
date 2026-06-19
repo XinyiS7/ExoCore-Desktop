@@ -940,9 +940,9 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   {/* v1 standalone header: back + session name + ID */}
   {!onBack && (
    <div className="border-b border-white/[0.04] bg-exo-pure/20 backdrop-blur-md z-20 px-4 md:px-6 py-2 flex items-center gap-2 min-w-0">
-   <button onClick={() => setShowConvList(true)} className="md:hidden p-0.5 -ml-0.5 text-exo-muted hover:text-exo-text transition-colors flex-shrink-0"><ArrowLeft size={15} strokeWidth={1} /></button>
-   <span className="text-sm font-sans font-medium text-white/90 truncate">{headerTitleOverride || sessionInfo?.name || `Session`}</span>
-   <span className="text-[0.725rem] font-sans text-exo-muted/30 flex-shrink-0">#{activeSessionId}</span>
+   <button onClick={() => setShowConvList(true)} className="md:hidden p-0.5 -ml-0.5 tx-message-mute hover:tx-message-normal transition-colors flex-shrink-0"><ArrowLeft size={15} strokeWidth={1} /></button>
+   <span className="text-sm font-sans font-medium tx-message-normal opacity-90 truncate">{headerTitleOverride || sessionInfo?.name || `Session`}</span>
+   <span className="text-[0.725rem] font-sans tx-message-mute opacity-30 flex-shrink-0">#{activeSessionId}</span>
    </div>
   )}
 
@@ -953,7 +953,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     {/* Mobile back handled by MobileHeader (unified shell) */}
     <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors duration-500 ${isGenerating ? 'breathing-status' : 'bg-[#00509d]/30'}`} />
     {sessionInfo?.name && (
-    <span className="text-[0.7875rem] font-light text-exo-muted/60 truncate">
+    <span className="text-[0.7875rem] font-light tx-message-mute opacity-60 truncate">
      {sessionInfo.name}
     </span>
     )}
@@ -969,7 +969,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     <ContextCacheIndicator ref={cacheRef} activeSessionId={activeSessionId} />
     <button
     onClick={() => setShowAttachPanel(p => !p)}
-    className={`p-1 transition-colors relative ${showAttachPanel ? 'text-exo-accent/70' : 'text-exo-muted/20 hover:text-exo-muted/50'}`}
+    className={`p-1 transition-colors relative ${showAttachPanel ? 'tx-message-accent opacity-70' : 'tx-message-mute opacity-20 hover:tx-message-mute opacity-50'}`}
     title="Session Docs"
     >
     <Files size={14} strokeWidth={1} />
@@ -985,29 +985,29 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   {showAttachPanel && (
    <div className="absolute top-full right-4 md:right-6 mt-1 w-80 max-h-[70vh] bg-exo-pure border border-exo-mist-12 rounded-[4px] shadow-2xl z-50 overflow-hidden flex flex-col animate-fade-in" style={{ maxWidth: 'calc(100vw - 2rem)', width: 'min(20rem, calc(100vw - 2rem))' }}>
    <div className="px-4 py-3 border-b border-exo-mist-10 bg-white/5 flex items-center justify-between">
-    <span className="label-caps text-exo-muted">挂载文档 ({filteredSessionAttachments.length + filteredPendingAttachments.length})</span>
-    <button onClick={() => setShowAttachPanel(false)} className="text-exo-muted hover:text-white transition-colors"><X size={13} strokeWidth={1} /></button>
+    <span className="label-caps tx-message-mute">挂载文档 ({filteredSessionAttachments.length + filteredPendingAttachments.length})</span>
+    <button onClick={() => setShowAttachPanel(false)} className="tx-message-mute hover:tx-message-normal transition-colors"><X size={13} strokeWidth={1} /></button>
    </div>
    <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-hide">
     {filteredSessionAttachments.map(att => (
     <div key={att.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-exo-accent/[0.04] rounded-[2px] group transition-colors border border-transparent hover:border-exo-mist-10">
      <FileText size={13} strokeWidth={1} className="text-blue-400 shrink-0" />
-     <span className="flex-1 text-xs text-exo-muted group-hover:text-white break-all leading-tight">{att.display_name || att.original_filename}</span>
+     <span className="flex-1 text-xs tx-message-mute group-hover:tx-message-normal break-all leading-tight">{att.display_name || att.original_filename}</span>
      <button onClick={() => handleRemoveAttachment(att)} className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-all"><X size={11} strokeWidth={1} /></button>
     </div>
     ))}
     {filteredPendingAttachments.map((att, i) => (
     <div key={i} className="flex items-center gap-2 px-2 py-1.5 bg-exo-accent/5 rounded-[2px] border border-exo-accent/20 group">
-     <FileText size={13} strokeWidth={1} className="text-exo-accent/50 shrink-0" />
+     <FileText size={13} strokeWidth={1} className="tx-message-accent opacity-50 shrink-0" />
      <div className="flex-1 min-w-0">
-     <div className="text-xs text-exo-accent/80 break-all leading-tight">{att.display_name || att.original_filename}</div>
-     <div className="text-[0.5625rem] text-exo-accent/40 tracking-widest">PENDING</div>
+     <div className="text-xs tx-message-accent opacity-80 break-all leading-tight">{att.display_name || att.original_filename}</div>
+     <div className="text-[0.5625rem] tx-message-accent opacity-40 tracking-widest">PENDING</div>
      </div>
      <button onClick={() => setPendingAttachments(p => p.filter((_, j) => j !== i))} className="p-1 hover:text-red-400 transition-colors"><X size={11} strokeWidth={1} /></button>
     </div>
     ))}
     {filteredSessionAttachments.length === 0 && filteredPendingAttachments.length === 0 && !isAddingAttach && (
-    <div className="py-8 text-center text-[0.725rem] text-exo-muted/30 tracking-widest">
+    <div className="py-8 text-center text-[0.725rem] tx-message-mute opacity-30 tracking-widest">
      [ 无挂载文档 ]
     </div>
     )}
@@ -1018,24 +1018,24 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
      onChange={e => setNewAttachPath(e.target.value)}
      placeholder="文件绝对路径..."
      autoFocus
-     className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-2 py-1.5 text-xs text-white outline-none focus:border-exo-accent/50 transition-colors "
+     className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-2 py-1.5 text-xs tx-message-normal outline-none focus:border-exo-accent/50 transition-colors "
      />
      <input
      value={newAttachName}
      onChange={e => setNewAttachName(e.target.value)}
      placeholder="显示名（可选）"
-     className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-2 py-1.5 text-xs text-white outline-none focus:border-exo-accent/50 transition-colors"
+     className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-2 py-1.5 text-xs tx-message-normal outline-none focus:border-exo-accent/50 transition-colors"
      />
      <div className="flex justify-end gap-2">
-     <button onClick={() => { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); }} className="px-3 py-1 text-exo-muted hover:text-white text-[0.7875rem] tracking-widest">取消</button>
-     <button onClick={handleAddAttachment} className="px-3 py-1 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[0.7875rem] tracking-widest hover:bg-exo-accent hover:text-black transition-colors">确认</button>
+     <button onClick={() => { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); }} className="px-3 py-1 tx-message-mute hover:tx-message-normal text-[0.7875rem] tracking-widest">取消</button>
+     <button onClick={handleAddAttachment} className="px-3 py-1 bg-exo-accent/10 tx-message-accent border border-exo-accent/20 rounded-[2px] text-[0.7875rem] tracking-widest hover:bg-exo-accent hover:text-black transition-colors">确认</button>
      </div>
     </div>
     )}
    </div>
    {!isAddingAttach && (
     <div className="p-2 border-t border-exo-mist-10 bg-white/5">
-    <button onClick={() => setIsAddingAttach(true)} className="w-full py-2 text-[0.7875rem] tracking-widest text-exo-muted hover:text-white hover:bg-exo-accent/[0.04] flex items-center justify-center gap-2 rounded-[2px] border border-dashed border-exo-mist-10 hover:border-exo-mist-20 transition-colors">
+    <button onClick={() => setIsAddingAttach(true)} className="w-full py-2 text-[0.7875rem] tracking-widest tx-message-mute hover:tx-message-normal hover:bg-exo-accent/[0.04] flex items-center justify-center gap-2 rounded-[2px] border border-dashed border-exo-mist-10 hover:border-exo-mist-20 transition-colors">
      <Plus size={13} strokeWidth={1} /> 挂载外部路径
     </button>
     </div>
@@ -1048,7 +1048,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   <div ref={topSentinelRef} className="h-px" />
   {isLoadingMore && (
    <div className="flex justify-center py-3">
-   <span className="text-[0.725rem] tracking-[0.2em] text-exo-muted flex items-center gap-2 animate-pulse"><RefreshCw size={12} strokeWidth={1} className="animate-spin" /> 正在加载历史协议记录...</span>
+   <span className="text-[0.725rem] tracking-[0.2em] tx-message-mute flex items-center gap-2 animate-pulse"><RefreshCw size={12} strokeWidth={1} className="animate-spin" /> 正在加载历史协议记录...</span>
    </div>
   )}
   {messages.map((msg, idx) => {
@@ -1060,7 +1060,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    <React.Fragment key={msg.id || idx}>
     {showDateSep && (
     <div className="flex items-center justify-center py-2">
-     <span className="text-[0.725rem] text-exo-muted/30 tracking-wider">
+     <span className="text-[0.725rem] tx-message-mute opacity-30 tracking-wider">
      {formatDateSeparator(msg.created_at)}
      </span>
     </div>
@@ -1102,11 +1102,11 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   <div className="flex-shrink-0 p-4 border-t border-white/[0.04] bg-exo-pure/40 backdrop-blur-xl flex flex-col gap-2 relative z-10">
   {editingMessageId && (
    <div className="flex items-center justify-between px-3 py-1.5 bg-exo-accent/10 border border-exo-accent/20 rounded-[2px] animate-fade-in">
-   <div className="flex items-center gap-2 text-exo-accent text-[0.725rem] tracking-widest">
+   <div className="flex items-center gap-2 tx-message-accent text-[0.725rem] tracking-widest">
     <Edit2 size={11} strokeWidth={1} />
     <span>正在修正通讯协议数据区块 #{editingMessageId}</span>
    </div>
-   <button onClick={() => { setEditingMessageId(null); setInputValue(''); }} className="text-exo-accent/50 hover:text-exo-accent transition-colors"><X size={13} strokeWidth={1} /></button>
+   <button onClick={() => { setEditingMessageId(null); setInputValue(''); }} className="tx-message-accent opacity-50 hover:tx-message-accent transition-colors"><X size={13} strokeWidth={1} /></button>
    </div>
   )}
 
@@ -1139,7 +1139,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     {fileRefs.map((ref, i) => (
     <span
      key={`${ref.path}-${i}`}
-     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] bg-chat-accent/10 border border-chat-accent/20 text-[0.725rem] text-chat-accent "
+     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] bg-chat-accent/10 border border-chat-accent/20 text-[0.725rem] tx-message-accent "
     >
      {ref.path.includes('/') && !ref.path.endsWith('/') ? (
      <FileText size={9} strokeWidth={1} className="shrink-0" />
@@ -1152,7 +1152,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
       const newVal = inputValue.slice(0, ref.start) + inputValue.slice(ref.end);
       setInputValue(newVal);
      }}
-     className="ml-0.5 text-chat-muted/40 hover:text-red-400 transition-colors"
+     className="ml-0.5 tx-message-mute opacity-40 hover:text-red-400 transition-colors"
      >
      <X size={10} strokeWidth={1} />
      </button>
@@ -1192,8 +1192,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
      ) : (
      <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[0.725rem] ${
       e.error ? 'border-red-500/30 text-red-400 bg-red-500/5' :
-      e.uploading ? 'border-exo-mist-10 text-exo-muted bg-exo-pure' :
-      'border-exo-accent/20 text-exo-accent bg-exo-accent/5'
+      e.uploading ? 'border-exo-mist-10 tx-message-mute bg-exo-pure' :
+      'border-exo-accent/20 tx-message-accent bg-exo-accent/5'
      }`}>
       <FileText size={10} strokeWidth={1} />
       <span className="max-w-[120px] truncate">{e.name}</span>
@@ -1202,7 +1202,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
      )}
      <button
      onClick={() => handleRemoveComposeAttachment(e.clientId)}
-     className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-exo-pure border border-white/[0.06] text-exo-muted hover:text-red-400 hover:border-red-400/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+     className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-exo-pure border border-white/[0.06] tx-message-mute hover:text-red-400 hover:border-red-400/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
      >
      <X size={10} strokeWidth={1} />
      </button>
@@ -1269,7 +1269,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     }
    }}
    placeholder="Chat to ExoCore..."
-   className="w-full bg-transparent text-sm text-white/90 outline-none resize-none px-4 pt-2.5 pb-1 disabled:opacity-50 overflow-y-auto max-h-[40vh] font-sans font-normal placeholder:text-exo-muted/40"
+   className="w-full bg-transparent text-sm tx-message-normal opacity-90 outline-none resize-none px-4 pt-2.5 pb-1 disabled:opacity-50 overflow-y-auto max-h-[40vh] font-sans font-normal placeholder:tx-message-mute opacity-40"
    style={{ minHeight: (inputFocused || inputValue) ? '4.5rem' : '2.5rem' }}
    disabled={isGenerating}
    />
@@ -1277,13 +1277,13 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    <div className="flex items-center gap-0.5">
     <button
     onClick={() => setControlsExpanded(v => !v)}
-    className={`p-1 transition-colors ${controlsExpanded ? 'text-exo-accent/70' : 'text-exo-muted/20 hover:text-exo-muted/50'}`}
+    className={`p-1 transition-colors ${controlsExpanded ? 'tx-message-accent opacity-70' : 'tx-message-mute opacity-20 hover:tx-message-mute opacity-50'}`}
     title="会话控制"
     >
     <SlidersHorizontal size={14} strokeWidth={1} />
     </button>
-    <button onClick={() => imageInputRef.current?.click()} title="上传视讯数据" className="p-1 text-exo-muted/20 hover:text-exo-muted/50 transition-colors"><ImageIcon size={14} strokeWidth={1} /></button>
-    <button onClick={() => fileInputRef.current?.click()} title="挂载文档区块" className="p-1 text-exo-muted/20 hover:text-exo-muted/50 transition-colors"><Paperclip size={14} strokeWidth={1} /></button>
+    <button onClick={() => imageInputRef.current?.click()} title="上传视讯数据" className="p-1 tx-message-mute opacity-20 hover:tx-message-mute opacity-50 transition-colors"><ImageIcon size={14} strokeWidth={1} /></button>
+    <button onClick={() => fileInputRef.current?.click()} title="挂载文档区块" className="p-1 tx-message-mute opacity-20 hover:tx-message-mute opacity-50 transition-colors"><Paperclip size={14} strokeWidth={1} /></button>
     <input type="file" ref={imageInputRef} className="hidden" multiple accept="image/*" onChange={(e) => { handleFilesSelected(e.target.files); e.target.value = ''; }} />
     <input type="file" ref={fileInputRef} className="hidden" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.json,.zip,.py,.js,.ts,.jsx,.tsx,.html,.css,.xml,.yaml,.yml,.toml,.sh,.log" onChange={(e) => { handleFilesSelected(e.target.files); e.target.value = ''; }} />
    </div>
@@ -1292,7 +1292,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     {isGenerating ? (
     <button
      onClick={handleStop}
-     className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-[2px] hover:bg-red-500 hover:text-white transition-colors flex items-center gap-1.5 text-[0.725rem] tracking-[0.2em]"
+     className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-[2px] hover:bg-red-500 hover:tx-message-normal transition-colors flex items-center gap-1.5 text-[0.725rem] tracking-[0.2em]"
      title="中止上行链路"
     >
      <X size={12} strokeWidth={1} />
@@ -1338,7 +1338,7 @@ const SessionTypeToggle = ({ value, onChange }) => {
    }`}
   />
   </span>
-  <span className="text-[0.725rem] text-exo-muted/50">
+  <span className="text-[0.725rem] tx-message-mute opacity-50">
   {isFull ? 'Full' : 'Lite'}
   </span>
  </label>

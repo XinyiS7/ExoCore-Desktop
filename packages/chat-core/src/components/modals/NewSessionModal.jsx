@@ -98,12 +98,12 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
   {/* Header */}
   <div className="px-6 py-4 border-b border-exo-mist-10 flex items-center justify-between bg-exo-pure/50">
    <div className="flex flex-col">
-   <h3 className="font-bold tracking-[0.2em] text-white flex items-center gap-2 text-sm">
-    <Activity size={16} className="text-exo-accent" /> Node Initialization
+   <h3 className="font-bold tracking-[0.2em] tx-system-normal flex items-center gap-2 text-sm">
+    <Activity size={16} className="tx-system-accent" /> Node Initialization
    </h3>
-   <span className="text-[0.5625rem] text-exo-muted tracking-widest opacity-40 mt-1">Establishing Secure Neural Link</span>
+   <span className="text-[0.5625rem] tx-system-mute tracking-widest opacity-40 mt-1">Establishing Secure Neural Link</span>
    </div>
-   <button onClick={onClose} className="p-2 text-exo-muted hover:text-white transition-colors"><X size={18}/></button>
+   <button onClick={onClose} className="p-2 tx-system-mute hover:tx-system-normal transition-colors"><X size={18}/></button>
   </div>
 
   {/* Content */}
@@ -116,7 +116,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
     value={name} 
     onChange={e => setName(e.target.value)} 
     placeholder="AUTO-GENERATED IF NULL..." 
-    className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20" 
+    className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20" 
    />
    </div>
 
@@ -139,11 +139,11 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
       group p-4 rounded-[2px] border cursor-pointer flex justify-between items-center transition-all
       ${isSelected
       ? (isSuperiorType(preset.agent_type) ? 'bg-exo-accent/10 border-exo-accent/60' : 'bg-white/5 border-white/40 shadow-brutalist')
-      : 'bg-black/30 border-exo-mist-10 text-exo-muted hover:border-exo-mist-20'}
+      : 'bg-black/30 border-exo-mist-10 tx-system-mute hover:border-exo-mist-20'}
      `}
      >
      <div className="flex flex-col gap-1">
-      <span className={`text-[13px] font-bold tracking-tight ${isSelected ? (isSuperiorType(preset.agent_type) ? 'text-exo-accent' : 'text-white') : ''}`}>{preset.name}</span>
+      <span className={`text-[13px] font-bold tracking-tight ${isSelected ? (isSuperiorType(preset.agent_type) ? 'tx-system-accent' : 'tx-system-normal') : ''}`}>{preset.name}</span>
       <span className="text-[0.625rem] opacity-40 font-mono tracking-widest">{preset.default_model}</span>
      </div>
      {isSelected ? (
@@ -174,11 +174,11 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
      className={`
       p-4 rounded-[2px] border cursor-pointer flex items-center gap-3 transition-all
       ${sessionType === value
-      ? 'bg-exo-accent/10 border-exo-accent/60 text-white shadow-brutalist-gold'
-      : 'bg-black/30 border-exo-mist-10 text-exo-muted hover:border-exo-mist-20'}
+      ? 'bg-exo-accent/10 border-exo-accent/60 tx-system-normal shadow-brutalist-gold'
+      : 'bg-black/30 border-exo-mist-10 tx-system-mute hover:border-exo-mist-20'}
      `}
      >
-     <Icon size={16} className={sessionType === value ? 'text-exo-accent' : ''} />
+     <Icon size={16} className={sessionType === value ? 'tx-system-accent' : ''} />
      <div className="flex flex-col">
       <span className="text-[0.6875rem] font-bold tracking-widest">{label}</span>
       <span className="text-[0.5625rem] opacity-40 font-mono">{desc}</span>
@@ -193,13 +193,13 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
    <div className="space-y-3">
    <label className="label-caps flex justify-between items-center">
     <span>所属 Project / 归属项目</span>
-    <span className="text-[0.5625rem] text-exo-muted font-mono tracking-tighter opacity-60">
+    <span className="text-[0.5625rem] tx-system-mute font-mono tracking-tighter opacity-60">
     [Optional · Single]
     </span>
    </label>
    <div className="max-h-40 overflow-y-auto border border-exo-mist-10 rounded-[2px] bg-black/40 p-2 space-y-1 scrollbar-hide">
     {projects.length === 0 && (
-    <div className="text-center py-4 text-[0.625rem] font-mono text-exo-muted/30 italic">No project clusters found</div>
+    <div className="text-center py-4 text-[0.625rem] font-mono tx-system-mute opacity-30 italic">No project clusters found</div>
     )}
     {projects.map(proj => {
     const isSelected = selectedProjectId === String(proj.id);
@@ -210,12 +210,12 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
      className={`
       px-4 py-2.5 rounded-[2px] text-[0.6875rem] font-mono cursor-pointer flex justify-between items-center transition-all
       ${isSelected
-      ? 'bg-exo-accent/10 text-white border border-exo-accent/20'
-      : 'text-exo-muted/60 hover:text-white hover:bg-exo-accent/[0.04] border border-transparent'}
+      ? 'bg-exo-accent/10 tx-system-normal border border-exo-accent/20'
+      : 'tx-system-mute opacity-60 hover:tx-system-normal hover:bg-exo-accent/[0.04] border border-transparent'}
      `}
      >
-     <div className="flex items-center gap-3"><Folder size={12} className={isSelected ? 'text-exo-accent' : 'opacity-40'}/> {proj.name}</div>
-     {isSelected && <Check size={12} className="text-exo-accent" />}
+     <div className="flex items-center gap-3"><Folder size={12} className={isSelected ? 'tx-system-accent' : 'opacity-40'}/> {proj.name}</div>
+     {isSelected && <Check size={12} className="tx-system-accent" />}
      </div>
     );
     })}
@@ -227,7 +227,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
    <label className="label-caps flex justify-between items-center">
     <span>权限 Project / 权限项目</span>
     <span className={`text-[0.5625rem] font-mono tracking-tighter ${
-    isG045 ? 'text-exo-accent opacity-60' : 'text-exo-muted/30'
+    isG045 ? 'tx-system-accent opacity-60' : 'tx-system-mute opacity-30'
     }`}>
     {isG045 ? '[Multi-Select Enabled]' : '[Superior/G045 Only]'}
     </span>
@@ -239,7 +239,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
     }`}
    >
     {projects.length === 0 && (
-    <div className="text-center py-4 text-[0.625rem] font-mono text-exo-muted/30 italic">No project clusters found</div>
+    <div className="text-center py-4 text-[0.625rem] font-mono tx-system-mute opacity-30 italic">No project clusters found</div>
     )}
     {projects.map(proj => {
     const isSelected = permissionProjectIds.includes(proj.id);
@@ -251,7 +251,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
       px-4 py-2.5 rounded-[2px] text-[0.6875rem] font-mono cursor-pointer flex justify-between items-center transition-all
       ${isSelected
       ? 'bg-purple-500/10 text-purple-300 border border-purple-500/20'
-      : 'text-exo-muted/60 hover:text-white hover:bg-exo-accent/[0.04] border border-transparent'}
+      : 'tx-system-mute opacity-60 hover:tx-system-normal hover:bg-exo-accent/[0.04] border border-transparent'}
      `}
      >
      <div className="flex items-center gap-3"><Folder size={12} className={isSelected ? 'text-purple-400' : 'opacity-40'}/> {proj.name}</div>
@@ -267,7 +267,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
   <div className="p-4 border-t border-exo-mist-10 flex justify-end gap-3 bg-exo-pure/80 backdrop-blur-md">
    <button 
    onClick={onClose} 
-   className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest text-exo-muted hover:text-white transition-colors"
+   className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest tx-system-mute hover:tx-system-normal transition-colors"
    >
    Abort
    </button>

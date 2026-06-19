@@ -48,12 +48,12 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
   {/* Header */}
   <div className="flex items-center justify-between p-5 border-b border-exo-mist-10 bg-exo-pure/50">
    <div className="flex flex-col">
-   <h2 className="text-sm font-bold text-white flex items-center gap-2 font-mono tracking-[0.2em]">
-    <Edit3 size={16} className="text-exo-accent" /> {isSystemPromptOnly ? 'System Prompt / 系统提示词' : 'Core Config / 内核配置'}
+   <h2 className="text-sm font-bold tx-system-normal flex items-center gap-2 font-mono tracking-[0.2em]">
+    <Edit3 size={16} className="tx-system-accent" /> {isSystemPromptOnly ? 'System Prompt / 系统提示词' : 'Core Config / 内核配置'}
    </h2>
-   <span className="text-[0.5625rem] text-exo-muted font-mono tracking-widest opacity-40 mt-1">Preset Mapping: {preset?.name}</span>
+   <span className="text-[0.5625rem] tx-system-mute font-mono tracking-widest opacity-40 mt-1">Preset Mapping: {preset?.name}</span>
    </div>
-   <button onClick={onClose} className="p-2 text-exo-muted hover:text-white transition-colors">
+   <button onClick={onClose} className="p-2 tx-system-mute hover:tx-system-normal transition-colors">
    <X size={18} />
    </button>
   </div>
@@ -65,7 +65,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
     <div className="space-y-2">
     <label className="label-caps opacity-50">Alias / 名称</label>
     <input
-     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all"
+     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all"
      value={form.name}
      onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
     />
@@ -74,7 +74,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
     <label className="label-caps opacity-50">Operational Context / 描述</label>
     <textarea
      rows={2}
-     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all resize-none"
+     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all resize-none"
      value={form.description}
      onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
     />
@@ -82,7 +82,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
     <div className="space-y-2">
     <label className="label-caps opacity-50">Default Neural Model / 默认模型</label>
     <select
-     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all cursor-pointer"
+     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all cursor-pointer"
      value={form.default_model}
      onChange={e => setForm(p => ({ ...p, default_model: e.target.value }))}
     >
@@ -94,11 +94,11 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
    <div className={`space-y-2 ${isSystemPromptOnly ? 'h-full' : ''}`}>
    <div className="flex justify-between items-center">
     <label className="label-caps opacity-50">System Directives / 系统提示词</label>
-    <span className="text-[0.5625rem] font-mono text-exo-accent opacity-40 tracking-tighter">L3 Access Required</span>
+    <span className="text-[0.5625rem] font-mono tx-system-accent opacity-40 tracking-tighter">L3 Access Required</span>
    </div>
    <textarea
     rows={isSystemPromptOnly ? 20 : 10}
-    className={`w-full bg-black/80 border border-exo-mist-10 rounded-[2px] px-4 py-3 text-[13px] text-white focus:border-exo-accent/40 outline-none transition-all resize-y font-mono leading-relaxed ${isSystemPromptOnly ? 'flex-1 min-h-[50vh]' : ''}`}
+    className={`w-full bg-black/80 border border-exo-mist-10 rounded-[2px] px-4 py-3 text-[13px] tx-system-normal focus:border-exo-accent/40 outline-none transition-all resize-y font-mono leading-relaxed ${isSystemPromptOnly ? 'flex-1 min-h-[50vh]' : ''}`}
     value={form.system_prompt}
     onChange={e => setForm(p => ({ ...p, system_prompt: e.target.value }))}
    />
@@ -107,7 +107,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
 
   {/* Footer */}
   <div className="flex items-center justify-end gap-3 p-5 border-t border-exo-mist-10 bg-exo-pure/80 backdrop-blur-md">
-   <button onClick={onClose} className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest text-exo-muted hover:text-white transition-colors">
+   <button onClick={onClose} className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest tx-system-mute hover:tx-system-normal transition-colors">
    Abort
    </button>
    <button

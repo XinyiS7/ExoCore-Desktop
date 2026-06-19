@@ -165,17 +165,17 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
   {/* Header */}
   <div className="flex items-center justify-between">
   <div className="flex items-center gap-2">
-   <Key size={13} className="text-chat-muted/50" />
-   <span className="text-[0.725rem] font-mono tracking-[0.12em] text-chat-text/70">
+   <Key size={13} className="tx-system-mute opacity-50" />
+   <span className="text-[0.725rem] font-mono tracking-[0.12em] tx-system-normal opacity-70">
    Key Pool
    </span>
-   <span className="text-[0.6625rem] font-mono text-chat-muted/40">· {keys.length} keys</span>
+   <span className="text-[0.6625rem] font-mono tx-system-mute opacity-40">· {keys.length} keys</span>
   </div>
   {!showAddForm && (
    <button
    onClick={() => setShowAddForm(true)}
    disabled={saving}
-   className="flex items-center gap-1 px-2.5 py-1 text-[0.6625rem] font-mono tracking-wider text-chat-accent/60 hover:text-chat-accent border border-chat-accent/15 hover:border-chat-accent/30 rounded transition-all disabled:opacity-30"
+   className="flex items-center gap-1 px-2.5 py-1 text-[0.6625rem] font-mono tracking-wider tx-system-accent opacity-60 hover:tx-system-accent border border-chat-accent/15 hover:border-chat-accent/30 rounded transition-all disabled:opacity-30"
    >
    <Plus size={11} /> Add
    </button>
@@ -192,7 +192,7 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
    placeholder="Alias"
    maxLength={50}
    disabled={saving}
-   className="flex-1 min-w-0 px-2.5 py-1.5 bg-chat-panel border border-white/8 rounded text-xs text-chat-text outline-none focus:border-chat-accent/30 transition-colors placeholder:text-chat-muted/30 font-mono"
+   className="flex-1 min-w-0 px-2.5 py-1.5 bg-chat-panel border border-white/8 rounded text-xs tx-system-normal outline-none focus:border-chat-accent/30 transition-colors placeholder:tx-system-mute opacity-30 font-mono"
    />
    <input
    type="text"
@@ -202,12 +202,12 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
    placeholder="Paste API Key..."
    autoComplete="off"
    disabled={saving}
-   className="flex-1 min-w-0 px-2.5 py-1.5 bg-chat-panel border border-white/8 rounded text-xs text-chat-text outline-none focus:border-chat-accent/30 transition-colors placeholder:text-chat-muted/30 font-mono"
+   className="flex-1 min-w-0 px-2.5 py-1.5 bg-chat-panel border border-white/8 rounded text-xs tx-system-normal outline-none focus:border-chat-accent/30 transition-colors placeholder:tx-system-mute opacity-30 font-mono"
    />
    <button
    onClick={handleAddKey}
    disabled={!canAdd}
-   className="px-3 py-1.5 bg-chat-accent text-white text-[0.6625rem] font-bold tracking-[0.12em] rounded hover:brightness-110 disabled:opacity-20 disabled:grayscale transition-all flex items-center gap-1 flex-shrink-0"
+   className="px-3 py-1.5 bg-chat-accent tx-system-normal text-[0.6625rem] font-bold tracking-[0.12em] rounded hover:brightness-110 disabled:opacity-20 disabled:grayscale transition-all flex items-center gap-1 flex-shrink-0"
    >
    {saving ? (
     <span className="inline-block w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -219,7 +219,7 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
    <button
    onClick={resetAddForm}
    disabled={saving}
-   className="p-1 text-chat-muted/40 hover:text-white transition-colors flex-shrink-0"
+   className="p-1 tx-system-mute opacity-40 hover:tx-system-normal transition-colors flex-shrink-0"
    >
    <X size={13} />
    </button>
@@ -228,7 +228,7 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
 
   {/* Key list — compact rows */}
   {keys.length === 0 ? (
-  <div className="text-center py-4 text-[0.725rem] text-chat-muted/40 font-mono">
+  <div className="text-center py-4 text-[0.725rem] tx-system-mute opacity-40 font-mono">
    No keys configured for {platform}
   </div>
   ) : (
@@ -250,10 +250,10 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
      onChange={e => { setEditAlias(e.target.value); clearFeedback(); }}
      maxLength={50}
      disabled={saving}
-     className="w-32 px-2 py-0.5 bg-chat-panel border border-white/10 rounded text-xs text-chat-text outline-none focus:border-chat-accent/40 font-mono"
+     className="w-32 px-2 py-0.5 bg-chat-panel border border-white/10 rounded text-xs tx-system-normal outline-none focus:border-chat-accent/40 font-mono"
     />
     ) : (
-    <span className="text-xs text-chat-text font-mono truncate min-w-0 flex-1">{k.alias}</span>
+    <span className="text-xs tx-system-normal font-mono truncate min-w-0 flex-1">{k.alias}</span>
     )}
 
     {/* Meta: last four + date */}
@@ -266,14 +266,14 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
      placeholder="Paste new key..."
      autoComplete="off"
      disabled={saving}
-     className="w-40 px-2 py-0.5 bg-chat-panel border border-white/10 rounded text-xs text-chat-text outline-none focus:border-chat-accent/40 font-mono"
+     className="w-40 px-2 py-0.5 bg-chat-panel border border-white/10 rounded text-xs tx-system-normal outline-none focus:border-chat-accent/40 font-mono"
     />
     ) : (
     <div className="flex items-center gap-4 mr-2 flex-shrink-0">
-     <code className="text-[0.725rem] text-chat-muted/50 font-mono tabular-nums">
+     <code className="text-[0.725rem] tx-system-mute opacity-50 font-mono tabular-nums">
      {k.last_four ? `****${k.last_four}` : '—'}
      </code>
-     <span className="text-[0.6625rem] text-chat-muted/30 font-mono tabular-nums w-10 text-right">
+     <span className="text-[0.6625rem] tx-system-mute opacity-30 font-mono tabular-nums w-10 text-right">
      {shortDate(k.created_at)}
      </span>
     </div>
@@ -294,14 +294,14 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
       <Save size={12} strokeWidth={1.5} />
       )}
      </button>
-     <button onClick={cancelEdit} disabled={saving} className="p-1 text-chat-muted/30 hover:text-white transition-colors">
+     <button onClick={cancelEdit} disabled={saving} className="p-1 tx-system-mute opacity-30 hover:tx-system-normal transition-colors">
       <X size={12} strokeWidth={1.5} />
      </button>
      {editMode === 'alias' && (
       <button
       onClick={() => setEditMode('overwrite')}
       disabled={saving}
-      className="text-[0.6rem] font-mono tracking-wider text-chat-accent/40 hover:text-chat-accent transition-colors px-1"
+      className="text-[0.6rem] font-mono tracking-wider tx-system-accent opacity-40 hover:tx-system-accent transition-colors px-1"
       >
       Key
       </button>
@@ -309,14 +309,14 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
      </>
     ) : (
      <>
-     <button onClick={() => startEdit(k)} disabled={saving} className="p-1 text-chat-muted/30 hover:text-chat-accent/50 transition-colors">
+     <button onClick={() => startEdit(k)} disabled={saving} className="p-1 tx-system-mute opacity-30 hover:tx-system-accent opacity-50 transition-colors">
       <Edit3 size={11} strokeWidth={1.5} />
      </button>
      <button
       onClick={() => deleting === k.alias ? handleDelete(k.alias) : setDeleting(k.alias)}
       disabled={saving}
       className={`p-1 transition-colors disabled:opacity-30 ${
-      deleting === k.alias ? 'text-red-400 hover:text-red-300' : 'text-chat-muted/30 hover:text-red-400'
+      deleting === k.alias ? 'text-red-400 hover:text-red-300' : 'tx-system-mute opacity-30 hover:text-red-400'
       }`}
      >
       <Trash2 size={11} strokeWidth={1.5} />

@@ -78,18 +78,18 @@ export default function ModelAssignPanel() {
  <div className="flex-1 h-full overflow-y-auto">
   <div className="max-w-2xl px-8 py-8">
   <div className="flex items-center gap-3 mb-2">
-   <Cpu size={16} className="text-chat-muted/50" />
-   <h2 className="text-sm font-semibold text-chat-text/90 tracking-tight">
+   <Cpu size={16} className="tx-system-mute opacity-50" />
+   <h2 className="text-sm font-semibold tx-system-normal opacity-90 tracking-tight">
    🤖 Model Assign · 模型分配
    </h2>
   </div>
-  <p className="text-[0.625rem] text-chat-muted/40 font-mono mb-8 ml-9">
+  <p className="text-[0.625rem] tx-system-mute opacity-40 font-mono mb-8 ml-9">
    Agent 主模型走 AgentPreset.default_model，不在此处配置
   </p>
 
   {/* Role rows */}
   <div className="space-y-1">
-   <div className="flex items-center px-3 py-1.5 text-[0.5625rem] font-mono tracking-[0.1em] text-chat-muted/40 border-b border-white/[0.04]">
+   <div className="flex items-center px-3 py-1.5 text-[0.5625rem] font-mono tracking-[0.1em] tx-system-mute opacity-40 border-b border-white/[0.04]">
    <span className="w-[110px] flex-shrink-0">Role</span>
    <span className="w-[200px] flex-shrink-0">Description</span>
    <span className="flex-1">Model</span>
@@ -105,17 +105,17 @@ export default function ModelAssignPanel() {
     key={key}
     className="flex items-center px-3 py-2 border-b border-white/[0.02] hover:bg-exo-accent/[0.02] transition-colors"
     >
-    <span className="w-[110px] flex-shrink-0 font-mono text-[0.625rem] text-chat-text/70">
+    <span className="w-[110px] flex-shrink-0 font-mono text-[0.625rem] tx-system-normal opacity-70">
      {label}
     </span>
-    <span className="w-[200px] flex-shrink-0 text-[0.625rem] text-chat-muted/50">
+    <span className="w-[200px] flex-shrink-0 text-[0.625rem] tx-system-mute opacity-50">
      {desc}
     </span>
     <div className="flex-1 relative">
      <select
      value={currentModelId}
      onChange={e => handleRoleChange(key, e.target.value)}
-     className="w-full max-w-[260px] appearance-none bg-chat-bg border border-white/10 rounded px-2.5 py-1.5 text-[0.625rem] font-mono text-chat-text outline-none focus:border-chat-accent/30 transition-colors cursor-pointer"
+     className="w-full max-w-[260px] appearance-none bg-chat-bg border border-white/10 rounded px-2.5 py-1.5 text-[0.625rem] font-mono tx-system-normal outline-none focus:border-chat-accent/30 transition-colors cursor-pointer"
      >
      <option value="">— 使用默认 —</option>
      {models.map(m => (
@@ -135,7 +135,7 @@ export default function ModelAssignPanel() {
   </div>
 
   {modelRegistry.length === 0 && (
-   <div className="text-center py-6 text-[0.625rem] text-chat-muted/40 font-mono">
+   <div className="text-center py-6 text-[0.625rem] tx-system-mute opacity-40 font-mono">
    Model registry 未加载，请检查后端 /api/core/models/
    </div>
   )}
@@ -144,7 +144,7 @@ export default function ModelAssignPanel() {
    <button
    onClick={handleSave}
    disabled={!canSave}
-   className="px-4 py-1.5 bg-chat-accent text-white text-[0.625rem] font-bold tracking-[0.12em] rounded hover:brightness-110 disabled:opacity-20 disabled:grayscale transition-all flex items-center gap-1.5"
+   className="px-4 py-1.5 bg-chat-accent tx-system-normal text-[0.625rem] font-bold tracking-[0.12em] rounded hover:brightness-110 disabled:opacity-20 disabled:grayscale transition-all flex items-center gap-1.5"
    >
    {saving ? (
     <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />

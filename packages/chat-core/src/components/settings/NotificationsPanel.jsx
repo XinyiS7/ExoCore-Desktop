@@ -13,8 +13,8 @@ export default function NotificationsPanel() {
       <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h2 className="text-lg font-semibold text-chat-text/90">Push Notifications</h2>
-          <p className="text-sm text-chat-muted/60">
+          <h2 className="text-lg font-semibold tx-system-normal opacity-90">Push Notifications</h2>
+          <p className="text-sm tx-system-mute opacity-60">
             接收来自 ExoCore 的实时推送通知
           </p>
         </div>
@@ -23,7 +23,7 @@ export default function NotificationsPanel() {
         <div className="bg-chat-panel border border-white/5 rounded-xl p-6 space-y-4">
           {/* Permission status */}
           <div className="flex items-center gap-3">
-            <span className="text-xs font-mono tracking-wider text-chat-muted/50 w-20">
+            <span className="text-xs font-mono tracking-wider tx-system-mute opacity-50 w-20">
               权限
             </span>
             {permission === 'granted' ? (
@@ -46,11 +46,11 @@ export default function NotificationsPanel() {
 
           {/* Subscription status */}
           <div className="flex items-center gap-3">
-            <span className="text-xs font-mono tracking-wider text-chat-muted/50 w-20">
+            <span className="text-xs font-mono tracking-wider tx-system-mute opacity-50 w-20">
               订阅
             </span>
             {isLoading ? (
-              <span className="flex items-center gap-1.5 text-sm text-chat-muted/60">
+              <span className="flex items-center gap-1.5 text-sm tx-system-mute opacity-60">
                 <Loader2 size={14} className="animate-spin" />
                 检查中...
               </span>
@@ -60,7 +60,7 @@ export default function NotificationsPanel() {
                 已订阅 — 可接收推送
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 text-sm text-chat-muted/40">
+              <span className="flex items-center gap-1.5 text-sm tx-system-mute opacity-40">
                 <BellOff size={14} />
                 未订阅
               </span>
@@ -73,18 +73,18 @@ export default function NotificationsPanel() {
           isSubscribed ? (
             deviceName ? (
               <div className="flex items-center gap-3 bg-chat-panel border border-white/5 rounded-xl px-6 py-4">
-                <span className="text-xs font-mono tracking-wider text-chat-muted/50 w-20">
+                <span className="text-xs font-mono tracking-wider tx-system-mute opacity-50 w-20">
                   设备名称
                 </span>
-                <span className="flex items-center gap-1.5 text-sm text-chat-text/70">
-                  <Monitor size={14} className="text-chat-accent/50" />
+                <span className="flex items-center gap-1.5 text-sm tx-system-normal opacity-70">
+                  <Monitor size={14} className="tx-system-accent opacity-50" />
                   {deviceName}
                 </span>
               </div>
             ) : null
           ) : (
             <div className="space-y-1.5">
-              <label className="text-xs font-mono tracking-wider text-chat-muted/50">
+              <label className="text-xs font-mono tracking-wider tx-system-mute opacity-50">
                 设备名称
               </label>
               <input
@@ -93,7 +93,7 @@ export default function NotificationsPanel() {
                 onChange={(e) => setLocalName(e.target.value)}
                 placeholder="例如：我的台式机"
                 maxLength={200}
-                className="w-full bg-chat-panel border border-white/5 rounded-lg px-3 py-2 text-sm text-chat-text placeholder:text-chat-muted/30 focus:outline-none focus:border-chat-accent/30 transition-colors"
+                className="w-full bg-chat-panel border border-white/5 rounded-lg px-3 py-2 text-sm tx-system-normal placeholder:tx-system-mute opacity-30 focus:outline-none focus:border-chat-accent/30 transition-colors"
               />
             </div>
           )
@@ -105,12 +105,12 @@ export default function NotificationsPanel() {
           disabled={isLoading || permission === 'denied'}
           className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
             isLoading
-              ? 'bg-chat-panel text-chat-muted/40 cursor-wait'
+              ? 'bg-chat-panel tx-system-mute opacity-40 cursor-wait'
               : permission === 'denied'
                 ? 'bg-red-500/5 border border-red-500/15 text-red-400/50 cursor-not-allowed'
                 : isSubscribed
                   ? 'bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20'
-                  : 'bg-chat-accent/10 border border-chat-accent/20 text-chat-accent hover:bg-chat-accent/20'
+                  : 'bg-chat-accent/10 border border-chat-accent/20 tx-system-accent hover:bg-chat-accent/20'
           }`}
         >
           {isLoading ? (
@@ -138,14 +138,14 @@ export default function NotificationsPanel() {
 
         {/* Hint for denied */}
         {permission === 'denied' && (
-          <p className="text-[0.6875rem] text-chat-muted/30 text-center leading-relaxed">
+          <p className="text-[0.6875rem] tx-system-mute opacity-30 text-center leading-relaxed">
             请在浏览器「网站设置」中允许通知权限后刷新页面
           </p>
         )}
 
         {/* Info for unsubscribed */}
         {!isSubscribed && permission !== 'denied' && !isLoading && (
-          <p className="text-[0.6875rem] text-chat-muted/30 text-center leading-relaxed">
+          <p className="text-[0.6875rem] tx-system-mute opacity-30 text-center leading-relaxed">
             点击后浏览器会弹出权限请求，允许后即可在 PC 和 Android 上接收推送通知
           </p>
         )}

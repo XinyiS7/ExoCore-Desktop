@@ -30,12 +30,12 @@ const CustomTooltip = ({ active, payload, label }) => {
  if (!active || !payload?.length) return null;
  return (
  <div className="bg-exo-panel border border-exo-border rounded-[3px] px-3 py-2 text-[0.6875rem] shadow-xl">
-  <p className="text-exo-muted mb-1.5 tracking-widest text-[0.5625rem]">{label}</p>
+  <p className="tx-body-mute mb-1.5 tracking-widest text-[0.5625rem]">{label}</p>
   {payload.map(p => (
   <div key={p.dataKey} className="flex items-center gap-2 mb-0.5">
    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.color }} />
-   <span className="text-exo-text/70">{p.name}:</span>
-   <span className="text-white font-bold">{p.value?.toLocaleString()}</span>
+   <span className="tx-body-normal opacity-70">{p.name}:</span>
+   <span className="tx-body-normal font-bold">{p.value?.toLocaleString()}</span>
   </div>
   ))}
  </div>
@@ -54,12 +54,12 @@ const ChartSummary = ({ data, models, valueKey }) => {
   return (
    <div key={model} className="flex items-center gap-2 text-[0.625rem] ">
    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: modelColor(model) }} />
-   <span className="text-exo-muted truncate max-w-[100px]" title={model}>{model}</span>
-   <span className="text-white">{total.toLocaleString()}</span>
-   <span className="text-exo-muted">·</span>
-   <span className="text-exo-muted">{convTotal} 会话</span>
-   <span className="text-exo-muted">·</span>
-   <span className="text-exo-muted">均 {avg.toLocaleString()}</span>
+   <span className="tx-body-mute truncate max-w-[100px]" title={model}>{model}</span>
+   <span className="tx-body-normal">{total.toLocaleString()}</span>
+   <span className="tx-body-mute">·</span>
+   <span className="tx-body-mute">{convTotal} 会话</span>
+   <span className="tx-body-mute">·</span>
+   <span className="tx-body-mute">均 {avg.toLocaleString()}</span>
    </div>
   );
   })}
@@ -70,7 +70,7 @@ const ChartSummary = ({ data, models, valueKey }) => {
 const ChartBlock = ({ title, data, models, valueKey }) => {
  return (
  <div className="shrink-0">
-  <p className="text-[0.625rem] font-bold tracking-[0.25em] text-exo-muted mb-3">{title}</p>
+  <p className="text-[0.625rem] font-bold tracking-[0.25em] tx-body-mute mb-3">{title}</p>
   <ResponsiveContainer width="100%" height={160}>
   <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
@@ -304,7 +304,7 @@ export default function UserProfile({ appState, setView, goBack }) {
 
  if (!user) {
  return (
-  <div className="flex-1 flex items-center justify-center text-exo-muted">
+  <div className="flex-1 flex items-center justify-center tx-body-mute">
   <p className=" text-sm">Loading user profile...</p>
   </div>
  );
@@ -342,7 +342,7 @@ export default function UserProfile({ appState, setView, goBack }) {
      className="w-16 h-16 md:w-[72px] md:h-[72px] rounded-md border border-exo-border object-cover bg-exo-bg"
     />
     <div className="absolute inset-0 rounded-md bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-     <Pencil size={16} className="text-white" />
+     <Pencil size={16} className="tx-body-normal" />
     </div>
     </button>
    </div>
@@ -361,12 +361,12 @@ export default function UserProfile({ appState, setView, goBack }) {
       if (e.key === 'Enter') saveName();
       if (e.key === 'Escape') setEditingName(false);
      }}
-     className="bg-transparent border-b-2 border-exo-accent text-lg font-medium text-white outline-none py-0.5 min-w-[120px]"
+     className="bg-transparent border-b-2 border-exo-accent text-lg font-medium tx-body-normal outline-none py-0.5 min-w-[120px]"
      />
     ) : (
      <h2
      onClick={startEditName}
-     className="text-lg font-medium text-white cursor-pointer hover:border-b-2 hover:border-exo-accent/30 transition-all"
+     className="text-lg font-medium tx-body-normal cursor-pointer hover:border-b-2 hover:border-exo-accent/30 transition-all"
      >
      {user.name}
      </h2>
@@ -375,7 +375,7 @@ export default function UserProfile({ appState, setView, goBack }) {
      user
     </span>
     {fieldSaving === 'name' && (
-     <span className="text-[0.625rem] text-exo-accent animate-pulse">saving...</span>
+     <span className="text-[0.625rem] tx-body-accent animate-pulse">saving...</span>
     )}
     </div>
 
@@ -390,24 +390,24 @@ export default function UserProfile({ appState, setView, goBack }) {
      if (e.key === 'Enter') saveDesc();
      if (e.key === 'Escape') setEditingDesc(false);
      }}
-     className="bg-transparent border-b-2 border-exo-accent text-sm text-exo-muted italic outline-none py-0.5 w-full"
+     className="bg-transparent border-b-2 border-exo-accent text-sm tx-body-mute italic outline-none py-0.5 w-full"
      placeholder="Personal signature..."
     />
     ) : (
     <p
      onClick={startEditDesc}
-     className="text-sm text-exo-muted italic cursor-pointer hover:border-b-2 hover:border-exo-accent/30 transition-all inline-block"
+     className="text-sm tx-body-mute italic cursor-pointer hover:border-b-2 hover:border-exo-accent/30 transition-all inline-block"
     >
      {user.description || 'Click to add a personal signature...'}
     </p>
     )}
     {fieldSaving === 'description' && (
-    <span className="text-[0.625rem] text-exo-accent animate-pulse">saving...</span>
+    <span className="text-[0.625rem] tx-body-accent animate-pulse">saving...</span>
     )}
 
     {/* Model — editable text string */}
     <div className="flex items-center gap-2">
-    <span className="text-[0.625rem] tracking-wider text-exo-muted">Model:</span>
+    <span className="text-[0.625rem] tracking-wider tx-body-mute">Model:</span>
     {editingModel ? (
      <input
      ref={modelInputRef}
@@ -418,19 +418,19 @@ export default function UserProfile({ appState, setView, goBack }) {
       if (e.key === 'Enter') saveModel();
       if (e.key === 'Escape') { setModelDraft(user.default_model || 'Human'); setEditingModel(false); }
      }}
-     className="bg-transparent border-b-2 border-exo-accent text-xs text-exo-text outline-none py-0.5 min-w-[80px]"
+     className="bg-transparent border-b-2 border-exo-accent text-xs tx-body-normal outline-none py-0.5 min-w-[80px]"
      placeholder="Human"
      />
     ) : (
      <span
      onClick={startEditModel}
-     className="text-xs text-exo-text cursor-pointer hover:border-b-2 hover:border-exo-accent/30 transition-all"
+     className="text-xs tx-body-normal cursor-pointer hover:border-b-2 hover:border-exo-accent/30 transition-all"
      >
      {user.default_model || 'Human'}
      </span>
     )}
     {fieldSaving === 'default_model' && (
-     <span className="text-[0.625rem] text-exo-accent animate-pulse">saving...</span>
+     <span className="text-[0.625rem] tx-body-accent animate-pulse">saving...</span>
     )}
     </div>
    </div>
@@ -453,7 +453,7 @@ export default function UserProfile({ appState, setView, goBack }) {
 
   {/* Stats Area */}
   <div className="px-4 md:px-12 py-6 flex flex-col gap-5">
-   <h3 className="text-[0.625rem] tracking-[0.3em] text-exo-muted mb-1">Usage Statistics</h3>
+   <h3 className="text-[0.625rem] tracking-[0.3em] tx-body-mute mb-1">Usage Statistics</h3>
 
    {/* Controls row */}
    <div className="flex items-center gap-3 shrink-0">
@@ -464,8 +464,8 @@ export default function UserProfile({ appState, setView, goBack }) {
      onClick={() => setPlatform(p.key)}
      className={`px-3 py-1.5 text-[0.625rem] font-bold tracking-widest transition-colors ${
      platform === p.key
-      ? 'bg-exo-accent/15 text-exo-accent'
-      : 'text-exo-muted hover:text-exo-text'
+      ? 'bg-exo-accent/15 tx-body-accent'
+      : 'tx-body-mute hover:tx-body-normal'
      }`}
     >
      {p.label}
@@ -474,10 +474,10 @@ export default function UserProfile({ appState, setView, goBack }) {
    </div>
 
    <div className="flex items-center border border-exo-border rounded-[3px] overflow-hidden ml-auto">
-    <button onClick={prevPeriod} className="px-2 py-1.5 text-exo-muted hover:text-white transition-colors border-r border-exo-border">
+    <button onClick={prevPeriod} className="px-2 py-1.5 tx-body-mute hover:tx-body-normal transition-colors border-r border-exo-border">
     <ChevronLeft size={14} />
     </button>
-    <button onClick={toggleMode} className="px-3 py-1.5 text-[0.625rem] font-bold tracking-widest text-exo-text hover:text-exo-accent transition-colors min-w-[80px] text-center">
+    <button onClick={toggleMode} className="px-3 py-1.5 text-[0.625rem] font-bold tracking-widest tx-body-normal hover:tx-body-accent transition-colors min-w-[80px] text-center">
     {rawData?.is_current
      ? (mode === 'week' ? '本周' : '本月')
      : (mode === 'week'
@@ -487,28 +487,28 @@ export default function UserProfile({ appState, setView, goBack }) {
      : rawData?.from?.slice(0, 7) ?? '')
     }
     </button>
-    <button onClick={nextPeriod} className="px-2 py-1.5 text-exo-muted hover:text-white transition-colors border-l border-exo-border">
+    <button onClick={nextPeriod} className="px-2 py-1.5 tx-body-mute hover:tx-body-normal transition-colors border-l border-exo-border">
     <ChevronRight size={14} />
     </button>
    </div>
    </div>
 
    {isLoadingStats && (
-   <div className="flex-1 flex items-center justify-center text-exo-muted text-[0.6875rem] tracking-widest gap-2 py-24">
-    <Activity size={14} className="animate-spin text-exo-accent" /> Loading...
+   <div className="flex-1 flex items-center justify-center tx-body-mute text-[0.6875rem] tracking-widest gap-2 py-24">
+    <Activity size={14} className="animate-spin tx-body-accent" /> Loading...
    </div>
    )}
 
    {!isLoadingStats && statsError && (
    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-24">
-    <p className="text-[0.6875rem] text-exo-muted tracking-widest opacity-60">
+    <p className="text-[0.6875rem] tx-body-mute tracking-widest opacity-60">
     Statistics API unavailable
     </p>
    </div>
    )}
 
    {!isLoadingStats && !statsError && !hasData && rawData && (
-   <div className="flex-1 flex items-center justify-center text-exo-muted text-[0.6875rem] tracking-widest opacity-40 py-24">
+   <div className="flex-1 flex items-center justify-center tx-body-mute text-[0.6875rem] tracking-widest opacity-40 py-24">
     No data for current period
    </div>
    )}

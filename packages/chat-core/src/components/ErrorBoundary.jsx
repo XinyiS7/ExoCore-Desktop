@@ -35,23 +35,23 @@ export default class ErrorBoundary extends React.Component {
       return (
         <div className="flex items-center justify-center h-full bg-chat-bg">
           <div className="text-center space-y-4 px-6 max-w-md">
-            <AlertTriangle size={40} className="text-chat-accent/60 mx-auto" />
-            <h2 className="text-sm font-semibold text-chat-text/80">
+            <AlertTriangle size={40} className="tx-body-accent opacity-60 mx-auto" />
+            <h2 className="text-sm font-semibold tx-body-normal opacity-80">
               Something went wrong
             </h2>
-            <p className="text-xs text-chat-muted/60 font-mono leading-relaxed break-all">
+            <p className="text-xs tx-body-mute opacity-60 font-mono leading-relaxed break-all">
               {this.state.error?.message || 'Unknown error'}
             </p>
             <div className="flex gap-3 justify-center">
               <button
                 onClick={this.handleReset}
-                className="px-4 py-2 text-xs font-medium rounded border border-chat-accent/30 text-chat-accent hover:bg-chat-accent/10 transition-colors"
+                className="px-4 py-2 text-xs font-medium rounded border border-chat-accent/30 tx-body-accent hover:bg-chat-accent/10 transition-colors"
               >
                 Try Again
               </button>
               <button
                 onClick={this.handleGoHome}
-                className="px-4 py-2 text-xs font-medium rounded border border-white/10 text-chat-muted hover:bg-exo-accent/[0.04] transition-colors flex items-center gap-1.5"
+                className="px-4 py-2 text-xs font-medium rounded border border-white/10 tx-body-mute hover:bg-exo-accent/[0.04] transition-colors flex items-center gap-1.5"
               >
                 <Home size={13} /> Go Home
               </button>

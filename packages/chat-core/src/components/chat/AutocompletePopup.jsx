@@ -171,20 +171,20 @@ export default function AutocompletePopup({
  >
   {/* Header */}
   <div className="px-3 py-1.5 border-b border-white/5 flex items-center gap-2">
-  <span className="text-[0.5625rem] font-mono tracking-[0.2em] text-chat-muted/40">
+  <span className="text-[0.5625rem] font-mono tracking-[0.2em] tx-system-mute opacity-40">
    {dirDisplay ? `@${dirDisplay}/` : '@'}
   </span>
   {nameFilter && (
-   <span className="text-[0.625rem] font-mono text-chat-text/60">{nameFilter}</span>
+   <span className="text-[0.625rem] font-mono tx-system-normal opacity-60">{nameFilter}</span>
   )}
   {!nameFilter && !dirDisplay && (
-   <span className="text-[0.5625rem] text-chat-muted/30">Files in root</span>
+   <span className="text-[0.5625rem] tx-system-mute opacity-30">Files in root</span>
   )}
   </div>
 
   {/* Results */}
   {sorted.length === 0 ? (
-  <div className="px-3 py-3 text-xs text-chat-muted/30 italic text-center">
+  <div className="px-3 py-3 text-xs tx-system-mute opacity-30 italic text-center">
    {query ? `无匹配 "${query}"` : '无文件'}
   </div>
   ) : (
@@ -204,31 +204,31 @@ export default function AutocompletePopup({
    >
     {entry.type === 'dir' ? (
     <>
-     <Folder size={12} className="text-chat-accent/60 shrink-0" />
-     <span className="text-xs text-chat-text/80 truncate">
+     <Folder size={12} className="tx-system-accent opacity-60 shrink-0" />
+     <span className="text-xs tx-system-normal opacity-80 truncate">
      {highlightMatch(entry.name, query || '')}
      </span>
      {entry._parentPath && (
-     <span className="text-[0.5625rem] text-chat-muted/20 truncate ml-1">
+     <span className="text-[0.5625rem] tx-system-mute opacity-20 truncate ml-1">
       {entry._parentPath}/
      </span>
      )}
-     <span className="text-[0.5625rem] text-chat-muted/20 ml-auto shrink-0">/</span>
+     <span className="text-[0.5625rem] tx-system-mute opacity-20 ml-auto shrink-0">/</span>
     </>
     ) : (
     <>
-     <FileText size={12} className="text-chat-muted/40 shrink-0" />
-     <span className="text-xs text-chat-text/70 truncate">
+     <FileText size={12} className="tx-system-mute opacity-40 shrink-0" />
+     <span className="text-xs tx-system-normal opacity-70 truncate">
      {highlightMatch(entry.name, query || '')}
      </span>
      {/* Show parent directory for global search results */}
      {entry._parentPath && (
-     <span className="text-[0.5625rem] text-chat-muted/30 truncate ml-auto shrink-0">
+     <span className="text-[0.5625rem] tx-system-mute opacity-30 truncate ml-auto shrink-0">
       {entry._parentPath}/
      </span>
      )}
      {entry.size != null && !entry._parentPath && (
-     <span className="text-[0.5625rem] text-chat-muted/20 ml-auto shrink-0">
+     <span className="text-[0.5625rem] tx-system-mute opacity-20 ml-auto shrink-0">
       {formatSize(entry.size)}
      </span>
      )}
@@ -237,7 +237,7 @@ export default function AutocompletePopup({
    </button>
    ))}
    {sorted.length > 50 && (
-   <div className="px-3 py-1.5 text-[0.5625rem] text-chat-muted/30 text-center">
+   <div className="px-3 py-1.5 text-[0.5625rem] tx-system-mute opacity-30 text-center">
     ... 还有 {sorted.length - 50} 个结果，输入更多字符缩小范围
    </div>
    )}
@@ -286,7 +286,7 @@ function highlightMatch(name, query) {
  return (
  <>
   {name.slice(0, idx)}
-  <span className="text-chat-accent">{name.slice(idx, idx + query.length)}</span>
+  <span className="tx-system-accent">{name.slice(idx, idx + query.length)}</span>
   {name.slice(idx + query.length)}
  </>
  );

@@ -41,7 +41,7 @@ export default function KeyManagePanel() {
  if (isLoading) {
  return (
   <div className="flex items-center justify-center h-64">
-  <RefreshCw size={20} className="animate-spin text-chat-muted/40" />
+  <RefreshCw size={20} className="animate-spin tx-system-mute opacity-40" />
   </div>
  );
  }
@@ -58,8 +58,8 @@ export default function KeyManagePanel() {
    onClick={() => setActivePlatform(p)}
    className={`px-4 py-2 text-[0.625rem] font-mono tracking-[0.12em] transition-all border-b-2 -mb-[1px] ${
     activePlatform === p
-    ? 'text-chat-accent border-chat-accent bg-chat-accent/5'
-    : 'text-chat-muted/40 border-transparent hover:text-chat-muted/60 hover:border-chat-muted/15'
+    ? 'tx-system-accent border-chat-accent bg-chat-accent/5'
+    : 'tx-system-mute opacity-40 border-transparent hover:tx-system-mute opacity-60 hover:border-chat-muted/15'
    }`}
    >
    {p}

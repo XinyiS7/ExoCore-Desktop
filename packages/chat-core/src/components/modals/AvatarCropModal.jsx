@@ -153,10 +153,10 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
       >
         <div className="w-full flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <Camera size={16} className="text-exo-accent" />
-            <h3 className="text-[0.6875rem] font-bold text-white tracking-[0.2em]">Avatar Calibration</h3>
+            <Camera size={16} className="tx-system-accent" />
+            <h3 className="text-[0.6875rem] font-bold tx-system-normal tracking-[0.2em]">Avatar Calibration</h3>
           </div>
-          <button onClick={onCancel} className="text-exo-muted hover:text-white transition-colors">
+          <button onClick={onCancel} className="tx-system-mute hover:tx-system-normal transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -192,14 +192,14 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
         </div>
 
         <div className="text-center space-y-1">
-          <p className="text-[0.625rem] text-exo-muted tracking-widest opacity-60">Visual Normalization</p>
-          <p className="text-[0.5625rem] text-exo-muted/40 font-mono italic">DRAG TO PAN · SCROLL / PINCH TO SCALE</p>
+          <p className="text-[0.625rem] tx-system-mute tracking-widest opacity-60">Visual Normalization</p>
+          <p className="text-[0.5625rem] tx-system-mute opacity-40 font-mono italic">DRAG TO PAN · SCROLL / PINCH TO SCALE</p>
         </div>
 
         <div className="flex gap-3 w-full pt-2">
           <button
             onClick={onCancel}
-            className="flex-1 py-2 text-[0.6875rem] font-bold tracking-widest text-exo-muted border border-exo-mist-10 rounded-[2px] hover:text-white hover:bg-exo-accent/[0.04] transition-colors"
+            className="flex-1 py-2 text-[0.6875rem] font-bold tracking-widest tx-system-mute border border-exo-mist-10 rounded-[2px] hover:tx-system-normal hover:bg-exo-accent/[0.04] transition-colors"
           >
             Abort
           </button>

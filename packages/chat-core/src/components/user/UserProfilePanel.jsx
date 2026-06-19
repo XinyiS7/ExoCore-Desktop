@@ -32,12 +32,12 @@ const CustomTooltip = ({ active, payload, label }) => {
  if (!active || !payload?.length) return null;
  return (
  <div className="bg-exo-panel border border-exo-border rounded-[3px] px-3 py-2 text-[0.6875rem] shadow-xl">
-  <p className="text-exo-muted mb-1.5 tracking-widest text-[0.5625rem]">{label}</p>
+  <p className="tx-body-mute mb-1.5 tracking-widest text-[0.5625rem]">{label}</p>
   {payload.map(p => (
   <div key={p.dataKey} className="flex items-center gap-2 mb-0.5">
    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.color }} />
-   <span className="text-exo-text/70">{p.name}:</span>
-   <span className="text-white font-bold">{p.value?.toLocaleString()}</span>
+   <span className="tx-body-normal opacity-70">{p.name}:</span>
+   <span className="tx-body-normal font-bold">{p.value?.toLocaleString()}</span>
   </div>
   ))}
  </div>
@@ -58,12 +58,12 @@ const ChartSummary = ({ data, models, valueKey, label, modelColor }) => {
   return (
    <div key={model} className="flex items-center gap-2 text-[0.625rem] ">
    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: modelColor(model) }} />
-   <span className="text-exo-muted truncate max-w-[100px]" title={model}>{model}</span>
-   <span className="text-white">{total.toLocaleString()}</span>
-   <span className="text-exo-muted">·</span>
-   <span className="text-exo-muted">{convTotal} 会话</span>
-   <span className="text-exo-muted">·</span>
-   <span className="text-exo-muted">均 {avg.toLocaleString()}</span>
+   <span className="tx-body-mute truncate max-w-[100px]" title={model}>{model}</span>
+   <span className="tx-body-normal">{total.toLocaleString()}</span>
+   <span className="tx-body-mute">·</span>
+   <span className="tx-body-mute">{convTotal} 会话</span>
+   <span className="tx-body-mute">·</span>
+   <span className="tx-body-mute">均 {avg.toLocaleString()}</span>
    </div>
   );
   })}
@@ -253,8 +253,8 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
   >
    {/* Header */}
    <div className="h-14 border-b border-exo-border flex items-center justify-between px-5 shrink-0">
-   <span className="text-[0.6875rem] font-bold tracking-[0.25em] text-exo-muted">User Profile</span>
-   <button onClick={onClose} className="p-1.5 text-exo-muted hover:text-white transition-colors rounded">
+   <span className="text-[0.6875rem] font-bold tracking-[0.25em] tx-body-mute">User Profile</span>
+   <button onClick={onClose} className="p-1.5 tx-body-mute hover:tx-body-normal transition-colors rounded">
     <X size={16} />
    </button>
    </div>
@@ -273,7 +273,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
      alt={userNick}
     />
     <div className="absolute inset-0 rounded-[4px] bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-     <Camera size={16} className="text-white" />
+     <Camera size={16} className="tx-body-normal" />
     </div>
     <input type="file" ref={avatarInputRef} accept="image/*" className="hidden" onChange={handleAvatarChange} />
     </div>
@@ -287,9 +287,9 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
       value={nickDraft}
       onChange={e => setNickDraft(e.target.value)}
       onKeyDown={e => { if (e.key === 'Enter') saveNick(); if (e.key === 'Escape') setEditingNick(false); }}
-      className="flex-1 bg-exo-bg border border-exo-border rounded-[3px] px-3 py-1.5 text-[13px] text-white font-bold outline-none focus:border-exo-accent/50 min-w-0"
+      className="flex-1 bg-exo-bg border border-exo-border rounded-[3px] px-3 py-1.5 text-[13px] tx-body-normal font-bold outline-none focus:border-exo-accent/50 min-w-0"
      />
-     <button onClick={saveNick} className="p-1.5 text-exo-accent hover:text-white transition-colors">
+     <button onClick={saveNick} className="p-1.5 tx-body-accent hover:tx-body-normal transition-colors">
       <Check size={14} />
      </button>
      </div>
@@ -299,8 +299,8 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
      className="text-left group/nick"
      title="点击修改名称"
      >
-     <p className="text-[15px] font-bold text-white group-hover/nick:text-exo-accent transition-colors truncate">{userNick}</p>
-     <p className="text-[0.625rem] text-exo-muted tracking-widest mt-0.5 opacity-60">EXO-CORE AUTH · 点击修改</p>
+     <p className="text-[15px] font-bold tx-body-normal group-hover/nick:tx-body-accent transition-colors truncate">{userNick}</p>
+     <p className="text-[0.625rem] tx-body-mute tracking-widest mt-0.5 opacity-60">EXO-CORE AUTH · 点击修改</p>
      </button>
     )}
     </div>
@@ -320,8 +320,8 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
      onClick={() => setPlatform(p.key)}
      className={`px-3 py-1.5 text-[0.625rem] font-bold tracking-widest transition-colors ${
       platform === p.key
-      ? 'bg-exo-accent/15 text-exo-accent'
-      : 'text-exo-muted hover:text-exo-text'
+      ? 'bg-exo-accent/15 tx-body-accent'
+      : 'tx-body-mute hover:tx-body-normal'
      }`}
      >
      {p.label}
@@ -333,13 +333,13 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
     <div className="flex items-center border border-exo-border rounded-[3px] overflow-hidden ml-auto">
     <button
      onClick={prevPeriod}
-     className="px-2 py-1.5 text-exo-muted hover:text-white transition-colors border-r border-exo-border"
+     className="px-2 py-1.5 tx-body-mute hover:tx-body-normal transition-colors border-r border-exo-border"
     >
      <ChevronLeft size={14} />
     </button>
     <button
      onClick={toggleMode}
-     className="px-3 py-1.5 text-[0.625rem] font-bold tracking-widest text-exo-text hover:text-exo-accent transition-colors min-w-[80px] text-center"
+     className="px-3 py-1.5 text-[0.625rem] font-bold tracking-widest tx-body-normal hover:tx-body-accent transition-colors min-w-[80px] text-center"
      title={mode === 'week' ? '切换为按月显示' : '切换为按周显示'}
     >
      {rawData?.is_current
@@ -353,7 +353,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
     </button>
     <button
      onClick={nextPeriod}
-     className="px-2 py-1.5 text-exo-muted hover:text-white transition-colors border-l border-exo-border"
+     className="px-2 py-1.5 tx-body-mute hover:tx-body-normal transition-colors border-l border-exo-border"
     >
      <ChevronRight size={14} />
     </button>
@@ -362,24 +362,24 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
 
    {/* Loading / Error / No data */}
    {isLoadingStats && (
-    <div className="flex-1 flex items-center justify-center text-exo-muted text-[0.6875rem] tracking-widest gap-2">
-    <Activity size={14} className="animate-spin text-exo-accent" /> Loading...
+    <div className="flex-1 flex items-center justify-center tx-body-mute text-[0.6875rem] tracking-widest gap-2">
+    <Activity size={14} className="animate-spin tx-body-accent" /> Loading...
     </div>
    )}
 
    {!isLoadingStats && statsError && (
     <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
-    <p className="text-[0.6875rem] text-exo-muted tracking-widest opacity-60">
+    <p className="text-[0.6875rem] tx-body-mute tracking-widest opacity-60">
      统计接口暂未接入
     </p>
-    <p className="text-[0.625rem] text-exo-muted/40 ">
+    <p className="text-[0.625rem] tx-body-mute opacity-40 ">
      需要后端实现 GET /api/core/stats/usage/
     </p>
     </div>
    )}
 
    {!isLoadingStats && !statsError && !hasData && rawData && (
-    <div className="flex-1 flex items-center justify-center text-exo-muted text-[0.6875rem] tracking-widest opacity-40">
+    <div className="flex-1 flex items-center justify-center tx-body-mute text-[0.6875rem] tracking-widest opacity-40">
     当前周期暂无数据
     </div>
    )}
@@ -431,7 +431,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
 const ChartBlock = ({ title, data, models, valueKey, onActivate, activePoint, modelColor }) => {
  return (
  <div className="shrink-0">
-  <p className="text-[0.625rem] font-bold tracking-[0.25em] text-exo-muted mb-3">{title}</p>
+  <p className="text-[0.625rem] font-bold tracking-[0.25em] tx-body-mute mb-3">{title}</p>
   <ResponsiveContainer width="100%" height={160}>
   <LineChart
    data={data}
