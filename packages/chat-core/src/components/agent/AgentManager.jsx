@@ -7,7 +7,7 @@ import { baseUrl } from 'exo-shared';
 import { getAgentAvatarUrl } from '../../utils/avatar';
 import EditPresetModal from '../modals/EditPresetModal';
 import AvatarCropModal from '../modals/AvatarCropModal';
-import MemoryAnchorTicker from './MemoryAnchorTicker';
+import TriggeredNote from './TriggeredNote';
 import { getAgentHubOrder, isSuperiorType } from '../../utils/presets';
 
 const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, refreshPresets }) => {
@@ -25,7 +25,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
     });
 
   const g045Presets = applyOrder(presets.filter(p => isSuperiorType(p.agent_type)));
-  const standardPresets = applyOrder(presets.filter(p => !isSuperiorType(p.agent_type)));
+  const standardPresets = applyOrder(presets.filter(p => !isSuperiorType(p.agent_type) && p.agent_type !== 'user'));
 
   const handleDrop = (srcId, dstId, list) => {
     if (srcId === dstId) return;
@@ -165,7 +165,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
               </div>
               <span className="text-[0.5625rem] tx-system-accent opacity-40 tracking-tighter">[L3_SYNC_ACTIVE]</span>
             </div>
-            <MemoryAnchorTicker anchors={anchorCache[preset.id] || []} />
+            <TriggeredNote anchors={anchorCache[preset.id] || []} />
           </div>
         )}
       </div>

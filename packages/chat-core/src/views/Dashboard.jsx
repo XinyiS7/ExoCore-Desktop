@@ -146,7 +146,7 @@ export default function Dashboard({ appState, setView }) {
 
             {/* Heading */}
             <h1 className="tx-hero-normal font-light leading-tight">
-              欢迎回来，<em className="not-italic font-normal tx-hero-accent">{userNick}</em>
+              欢迎回来，<em className="not-italic font-normal tx-hero-accent cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/user')}>{userNick}</em>
             </h1>
 
             {/* Subtitle */}

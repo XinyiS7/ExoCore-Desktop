@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { baseUrl, getCsrfToken, MAIN_MODEL_IDS, useProfile } from 'exo-shared';
+import { baseUrl, getCsrfToken, MAIN_MODEL_IDS, configApi, useProfile } from 'exo-shared';
 import { setAgentAvatar } from 'exo-shared/profile';
 import EditPresetModal from '../components/modals/EditPresetModal';
 import AvatarCropModal from '../components/modals/AvatarCropModal';
@@ -110,6 +110,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
   const [showEditModal, setShowEditModal] = useState(false);
   const [cropFile, setCropFile] = useState(null);
   const [modelDraft, setModelDraft] = useState(preset?.default_model || '');
+  const [mainModels, setMainModels] = useState(null); // null = loading, use MAIN_MODEL_IDS as fallback
 
   const nameInputRef = useRef(null);
   const descInputRef = useRef(null);
@@ -119,6 +120,21 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
   useEffect(() => {
     if (preset) refresh();
   }, [preset?.id]);
+
+  /* ── Fetch main-role models from backend ── */
+  useEffect(() => {
+    let ignore = false;
+    configApi.listModels().then(models => {
+      if (ignore) return;
+      const main = (Array.isArray(models) ? models : [])
+        .filter(m => m.roles?.includes('main'))
+        .map(m => m.id);
+      setMainModels(main.length > 0 ? main : MAIN_MODEL_IDS);
+    }).catch(() => {
+      if (!ignore) setMainModels(MAIN_MODEL_IDS);
+    });
+    return () => { ignore = true; };
+  }, []);
 
   /* ── Sync modelDraft ── */
   useEffect(() => {
@@ -464,7 +480,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 }}
               >
                 {!preset.default_model && <option value="">Select a model...</option>}
-                {MAIN_MODEL_IDS.map(m => (
+                {(mainModels ?? MAIN_MODEL_IDS).map(m => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>

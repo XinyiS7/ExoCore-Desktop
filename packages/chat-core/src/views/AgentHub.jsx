@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { getAgentAvatarUrl } from '../utils/avatar';
 import { baseUrl } from 'exo-shared';
 import { getAgentHubOrder, isSuperiorType } from '../utils/presets';
-import MemoryAnchorTicker from '../components/agent/MemoryAnchorTicker';
+import TriggeredNote from '../components/agent/TriggeredNote';
 import BackToUpper from '../components/layout/BackButton';
 
 /* ── Motion helper ── */
@@ -11,13 +11,20 @@ const fadeUp = (delay) => ({
 });
 
 /* ── Section header atom ── */
-const SectionHead = ({ label, children }) => (
+const SectionHead = ({ label }) => (
   <div className="flex items-center gap-2.5">
     <div className="w-[18px] h-px" style={{ background: 'var(--cinder-line-glow)' }} />
-    <span
-      className="font-light"
-      style={{ fontSize: '10px', letterSpacing: '0.3em', color: 'var(--cinder-text-dim)' }}
-    >
+    <span className="tx-section-normal font-light">
+      {label}
+    </span>
+  </div>
+);
+
+/* ── Nav header atom ── */
+const NavHead = ({ label, children }) => (
+  <div className="flex items-center gap-2.5">
+    <div className="w-[12px] h-px" style={{ background: 'var(--cinder-line-glow)' }} />
+    <span className="tx-nav-mute font-medium uppercase tracking-wider">
       {label}
     </span>
     {children && <span style={{ marginLeft: 'auto' }}>{children}</span>}
@@ -148,7 +155,7 @@ export default function AgentHub({ appState, setView, goBack }) {
   const g045Presets = applyOrder(presets.filter((p) => p.agent_type === 'g045'));
   const superiorPresets = applyOrder(presets.filter((p) => p.agent_type === 'superior'));
   const standardPresets = applyOrder(
-    presets.filter((p) => p.agent_type !== 'g045' && p.agent_type !== 'superior'),
+    presets.filter((p) => p.agent_type !== 'g045' && p.agent_type !== 'superior' && p.agent_type !== 'user'),
   );
 
   /* ── Drag handlers ── */
@@ -229,11 +236,8 @@ export default function AgentHub({ appState, setView, goBack }) {
 
           {/* ═══ Header ═══ */}
           <section style={fadeUp(0)}>
-            <SectionHead label="AGENTS" />
-            <p
-              className="font-light mt-1.5 ml-[28px]"
-              style={{ fontSize: '9px', letterSpacing: '0.04em', color: 'var(--cinder-text-faint)' }}
-            >
+            <SectionHead label="Agent Hub" />
+            <p className="tx-decoration-mute mt-1.5 ml-[28px]">
               Digital entities...
             </p>
           </section>
@@ -241,7 +245,7 @@ export default function AgentHub({ appState, setView, goBack }) {
           {/* ═══ G045 The Prime ═══ */}
           {g045Presets.length > 0 && (
             <section style={fadeUp(0.06)}>
-              <SectionHead label="THE PRIME" />
+              <NavHead label="THE PRIME" />
               <div className="mt-3 flex flex-col gap-3">
                 {g045Presets.map((p) => {
                   const anchors = anchorMap[p.id];
@@ -259,7 +263,7 @@ export default function AgentHub({ appState, setView, goBack }) {
                       onDragOver={(e) => { e.preventDefault(); handleDragOver(p.id); }}
                       onDrop={() => handleDrop(p.id, g045Presets)}
                       onClick={() => handleAgentClick(p)}
-                      className="relative cursor-pointer transition-all duration-400 select-none"
+                      className="relative cursor-pointer transition-all duration-400 select-none tx-card-sm"
                       style={{
                         ...(isDragging
                           ? { opacity: 0.3 }
@@ -316,10 +320,7 @@ export default function AgentHub({ appState, setView, goBack }) {
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span
-                                className="font-light truncate"
-                                style={{ fontSize: '15px', letterSpacing: '0.05em', color: 'var(--cinder-text)' }}
-                              >
+                              <span className="tx-section-normal font-light truncate">
                                 {p.name}
                               </span>
                               <span
@@ -342,15 +343,7 @@ export default function AgentHub({ appState, setView, goBack }) {
 
                         {/* Description */}
                         {p.description && (
-                          <p
-                            className="italic line-clamp-2 mb-2"
-                            style={{
-                              fontSize: '12px',
-                              lineHeight: 1.6,
-                              color: 'var(--cinder-text-dim)',
-                              opacity: 0.7,
-                            }}
-                          >
+                          <p className="tx-subtitle-mute italic line-clamp-2 mb-2">
                             {p.description}
                           </p>
                         )}
@@ -362,7 +355,7 @@ export default function AgentHub({ appState, setView, goBack }) {
                               className="my-3"
                               style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
                             />
-                            <MemoryAnchorTicker anchors={anchors || []} />
+                            <TriggeredNote anchors={anchors || []} />
                           </>
                         )}
                       </div>
@@ -376,7 +369,7 @@ export default function AgentHub({ appState, setView, goBack }) {
           {/* ═══ Superior Agents ═══ */}
           {superiorPresets.length > 0 && (
             <section style={fadeUp(0.12)}>
-              <SectionHead label="SUPERIOR" />
+              <NavHead label="SUPERIOR" />
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {superiorPresets.map((p, i) => {
                   const anchors = anchorMap[p.id];
@@ -394,7 +387,7 @@ export default function AgentHub({ appState, setView, goBack }) {
                       onDragOver={(e) => { e.preventDefault(); handleDragOver(p.id); }}
                       onDrop={() => handleDrop(p.id, superiorPresets)}
                       onClick={() => handleAgentClick(p)}
-                      className="relative cursor-pointer transition-all duration-400 select-none"
+                      className="relative cursor-pointer transition-all duration-400 select-none tx-card-sm"
                       style={{
                         ...(isDragging
                           ? { opacity: 0.3 }
@@ -447,10 +440,7 @@ export default function AgentHub({ appState, setView, goBack }) {
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span
-                                className="font-light truncate"
-                                style={{ fontSize: '14px', letterSpacing: '0.04em', color: 'var(--cinder-text)' }}
-                              >
+                              <span className="tx-section-normal font-light truncate">
                                 {p.name}
                               </span>
                               <span
@@ -470,15 +460,7 @@ export default function AgentHub({ appState, setView, goBack }) {
 
                         {/* Description */}
                         {p.description && (
-                          <p
-                            className="italic line-clamp-2 mb-2"
-                            style={{
-                              fontSize: '11px',
-                              lineHeight: 1.5,
-                              color: 'var(--cinder-text-dim)',
-                              opacity: 0.65,
-                            }}
-                          >
+                          <p className="tx-subtitle-mute italic line-clamp-2 mb-2">
                             {p.description}
                           </p>
                         )}
@@ -488,7 +470,7 @@ export default function AgentHub({ appState, setView, goBack }) {
                           className="mt-2"
                           style={{ borderTop: '1px solid rgba(255,255,255,0.03)' }}
                         >
-                          <MemoryAnchorTicker anchors={anchors || []} />
+                          <TriggeredNote anchors={anchors || []} />
                         </div>
                       </div>
                     </div>
@@ -501,7 +483,7 @@ export default function AgentHub({ appState, setView, goBack }) {
           {/* ═══ Standard Agents ═══ */}
           {standardPresets.length > 0 && (
             <section style={fadeUp(0.18)}>
-              <SectionHead label="STANDARD" />
+              <NavHead label="STANDARD" />
               <div className="mt-3 flex flex-wrap gap-2">
                 {standardPresets.map((p) => {
                   const avatarUrl = getAgentAvatarUrl(p.id, p.name);
@@ -541,10 +523,7 @@ export default function AgentHub({ appState, setView, goBack }) {
                           background: 'var(--cinder-base)',
                         }}
                       />
-                      <span
-                        className="font-light truncate"
-                        style={{ fontSize: '12px', letterSpacing: '0.03em', color: 'var(--cinder-text)' }}
-                      >
+                      <span className="tx-body-normal font-light truncate">
                         {p.name}
                       </span>
                       <span
@@ -568,16 +547,10 @@ export default function AgentHub({ appState, setView, goBack }) {
           {/* ═══ Empty state ═══ */}
           {presets.length === 0 && (
             <section style={fadeUp(0.1)} className="text-center py-20">
-              <p
-                className="font-light"
-                style={{ fontSize: '13px', letterSpacing: '0.06em', color: 'var(--cinder-text-faint)' }}
-              >
+              <p className="tx-body-mute font-light">
                 No agents configured
               </p>
-              <p
-                className="font-light mt-2"
-                style={{ fontSize: '11px', color: 'var(--cinder-text-faint)', opacity: 0.5 }}
-              >
+              <p className="tx-body-mute opacity-50 font-light mt-2">
                 Run init_g045 to create the prime agent
               </p>
             </section>

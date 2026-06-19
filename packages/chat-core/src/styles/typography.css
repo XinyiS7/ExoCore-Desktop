@@ -189,3 +189,34 @@
 .tx-code-normal  { /* 由 markdown 渲染器接管 */ }
 .tx-code-mute    { /* 由 markdown 渲染器接管 */ }
 .tx-code-accent  { /* 由 markdown 渲染器接管 */ }
+
+
+/* ═══════════════════════════════════════════
+   三、卡片缩放工具类
+   在 Agent Hub 卡片容器上使用，0.8x 缩放
+   只在卡片实际用到的语义类上覆写 font-size
+   ═══════════════════════════════════════════ */
+
+.tx-card-sm .tx-section-normal,
+.tx-card-sm .tx-section-mute,
+.tx-card-sm .tx-section-accent {
+  font-size: 1rem;          /* 原 1.25rem × 0.8 */
+}
+
+.tx-card-sm .tx-subtitle-normal,
+.tx-card-sm .tx-subtitle-mute,
+.tx-card-sm .tx-subtitle-accent {
+  font-size: 0.7rem;        /* 原 0.875rem × 0.8 */
+}
+
+.tx-card-sm .tx-system-normal,
+.tx-card-sm .tx-system-mute,
+.tx-card-sm .tx-system-accent {
+  font-size: 0.7rem;        /* 原 0.875rem × 0.8 */
+}
+
+.tx-card-sm .tx-decoration-normal,
+.tx-card-sm .tx-decoration-mute,
+.tx-card-sm .tx-decoration-accent {
+  font-size: 0.55rem;       /* 原 0.6875rem × 0.8 */
+}

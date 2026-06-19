@@ -18,7 +18,7 @@ const IconPersist = ({ size = 10 }) => (
   </svg>
 );
 
-const MemoryAnchorTicker = ({ anchors = [] }) => {
+const TriggeredNote = ({ anchors = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFading, setIsFading] = useState(true);
 
@@ -38,14 +38,11 @@ const MemoryAnchorTicker = ({ anchors = [] }) => {
   if (anchors.length === 0) {
     return (
       <div
-        className="h-16 flex items-center justify-center"
+        className="h-16 flex items-center justify-center tx-decoration-mute"
         style={{
           background: 'rgba(0,0,0,0.2)',
           border: '1px dashed rgba(255,255,255,0.04)',
           borderRadius: '2px',
-          fontSize: '10px',
-          letterSpacing: '0.15em',
-          color: 'var(--cinder-text-faint)',
           opacity: 0.4,
         }}
       >
@@ -87,7 +84,7 @@ const MemoryAnchorTicker = ({ anchors = [] }) => {
               {keywords.map((kw, i) => (
                 <span
                   key={i}
-                  className="font-bold tracking-widest whitespace-nowrap flex-shrink-0"
+                  className="tx-decoration-mute tracking-widest whitespace-nowrap flex-shrink-0"
                   style={{
                     fontSize: '9px',
                     padding: '2px 8px',
@@ -130,10 +127,9 @@ const MemoryAnchorTicker = ({ anchors = [] }) => {
               </span>
             )}
             <span
-              className="font-mono font-bold text-center"
+              className="tx-decoration-mute text-center"
               style={{
                 fontSize: '9px',
-                color: 'var(--cinder-text-dim)',
                 background: 'rgba(0,0,0,0.4)',
                 padding: '2px 6px',
                 borderRadius: '2px',
@@ -146,17 +142,13 @@ const MemoryAnchorTicker = ({ anchors = [] }) => {
           </div>
         </div>
 
-        {/* Essential note with scroll animation */}
+        {/* Essential note — tx-system-mute for readability */}
         <div className="h-10 overflow-hidden">
           <div className="h-full overflow-hidden">
             <p
               key={currentIndex}
-              className="font-mono tracking-tight italic whitespace-pre-wrap"
+              className="tracking-tight italic whitespace-pre-wrap tx-system-mute"
               style={{
-                fontSize: '11px',
-                lineHeight: 1.6,
-                color: 'var(--cinder-text)',
-                opacity: 0.5,
                 ...(needsScroll
                   ? { animation: 'ticker-scroll 8s linear infinite' }
                   : {}),
@@ -178,4 +170,4 @@ const MemoryAnchorTicker = ({ anchors = [] }) => {
   );
 };
 
-export default MemoryAnchorTicker;
+export default TriggeredNote;
