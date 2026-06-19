@@ -1269,8 +1269,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     }
    }}
    placeholder="Chat to ExoCore..."
-   className="w-full bg-transparent text-sm tx-message-normal opacity-90 outline-none resize-none px-4 pt-2.5 pb-1 disabled:opacity-50 overflow-y-auto max-h-[40vh] font-sans font-normal placeholder:tx-message-mute opacity-40"
-   style={{ minHeight: (inputFocused || inputValue) ? '4.5rem' : '2.5rem' }}
+   className="w-full bg-transparent text-sm tx-message-normal opacity-90 outline-none resize-none px-4 pt-2.5 pb-1 disabled:opacity-50 overflow-y-auto max-h-[40vh] font-normal placeholder:tx-message-mute opacity-40"
+   style={{ minHeight: (inputFocused || inputValue) ? '4.5rem' : '2.5rem', fontFamily: 'var(--font-message)' }}
    disabled={isGenerating}
    />
    <div className="flex items-center justify-between px-3 pb-2.5">

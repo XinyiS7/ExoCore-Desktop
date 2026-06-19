@@ -235,7 +235,7 @@ export default function ControlsDrawer({
     )}
    </button>
    {telemetryExpanded && (
-    <div className="absolute bottom-full right-0 mb-2 px-4 py-3 bg-exo-panel border border-exo-border rounded-[4px] font-mono text-[0.625rem] tx-system-mute shadow-xl z-50 min-w-[260px] animate-fade-in">
+    <div className="absolute bottom-full right-0 mb-2 px-4 py-3 bg-exo-panel border border-exo-border rounded-[4px] text-[0.625rem] tx-system-mute shadow-xl z-50 min-w-[260px] animate-fade-in" style={{ fontFamily: 'var(--font-code)' }}>
     <div className="tx-system-accent opacity-60 text-[0.5625rem] tracking-[0.2em] mb-2 font-bold">Session Totals</div>
     <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
      <span className="opacity-50">Requests</span>
@@ -351,7 +351,7 @@ export default function ControlsDrawer({
    </button>
    )}
    {isDirty && !isCustomSelected && (
-   <span className="text-[0.5625rem] tx-system-accent opacity-50 font-mono animate-fade-in">modified</span>
+   <span className="text-[0.5625rem] tx-system-accent opacity-50 animate-fade-in" style={{ fontFamily: 'var(--font-code)' }}>modified</span>
    )}
   </div>
 
@@ -367,7 +367,7 @@ export default function ControlsDrawer({
     className="w-6 h-6 rounded-[2px] border border-exo-mist-10 bg-transparent cursor-pointer p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch]:rounded-[2px]"
     title="Shadow — deepest tone"
     />
-    <span className="text-[7px] font-mono tx-system-mute opacity-25 tracking-tighter">SHD</span>
+    <span className="text-[7px] tx-system-mute opacity-25 tracking-tighter" style={{ fontFamily: 'var(--font-code)' }}>SHD</span>
    </label>
    <label className="flex flex-col items-center gap-0.5">
     <input
@@ -377,7 +377,7 @@ export default function ControlsDrawer({
     className="w-6 h-6 rounded-[2px] border border-exo-mist-10 bg-transparent cursor-pointer p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch]:rounded-[2px]"
     title="Mid-glow — middle tone"
     />
-    <span className="text-[7px] font-mono tx-system-mute opacity-25 tracking-tighter">MID</span>
+    <span className="text-[7px] tx-system-mute opacity-25 tracking-tighter" style={{ fontFamily: 'var(--font-code)' }}>MID</span>
    </label>
    <label className="flex flex-col items-center gap-0.5">
     <input
@@ -387,7 +387,7 @@ export default function ControlsDrawer({
     className="w-6 h-6 rounded-[2px] border border-exo-mist-10 bg-transparent cursor-pointer p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch]:rounded-[2px]"
     title="Highlight — brightest tone"
     />
-    <span className="text-[7px] font-mono tx-system-mute opacity-25 tracking-tighter">HI</span>
+    <span className="text-[7px] tx-system-mute opacity-25 tracking-tighter" style={{ fontFamily: 'var(--font-code)' }}>HI</span>
    </label>
    </div>
 
@@ -415,7 +415,8 @@ export default function ControlsDrawer({
      placeholder="name..."
      autoFocus
      maxLength={24}
-     className="w-20 bg-exo-bg border border-exo-mist-10 rounded-[2px] px-1.5 py-0.5 text-[0.625rem] tx-system-normal outline-none focus:border-exo-accent/50 font-mono"
+     className="w-20 bg-exo-bg border border-exo-mist-10 rounded-[2px] px-1.5 py-0.5 text-[0.625rem] tx-system-normal outline-none focus:border-exo-accent/50"
+     style={{ fontFamily: 'var(--font-code)' }}
      />
      <button
      onClick={handleSaveCustom}

@@ -117,10 +117,11 @@
 
 /* ──── 5. Decoration · 装饰句 ──── */
 /* "ExoCore · System ready"、快捷导航描述、trigger 展示 */
+/* NOTE: decoration 字体固定，不跟随 Appearance 字体设置变化 */
 .tx-decoration-normal,
 .tx-decoration-mute,
 .tx-decoration-accent {
-  font-family: var(--font-system);
+  font-family: 'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
   font-size: 0.6875rem;
   font-weight: 400;
   line-height: 1.4;

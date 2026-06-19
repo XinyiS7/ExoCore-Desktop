@@ -229,7 +229,7 @@ const MD_COMPONENTS = {
  // so we can't use !className. Only block code has 'language-*' class.
  const isInline = !className?.includes('language-');
  if (isInline) {
-  return <code className="bg-white/10 tx-message-accent px-1 py-0.5 rounded-[2px] font-mono text-[0.9em]" {...props}>{children}</code>;
+  return <code className="bg-white/10 tx-message-accent px-1 py-0.5 rounded-[2px] text-[0.9em]" style={{ fontFamily: 'var(--font-code)' }} {...props}>{children}</code>;
  }
  return <code className={className} {...props}>{children}</code>;
  }
@@ -312,9 +312,9 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
   {!isUser && msg.reasoning_content && (
    <details className="lcd-screen rounded-[4px] text-xs tx-message-mute cursor-pointer w-full group/think transition-all hover:border-exo-mist-20 bg-exo-pure/30 backdrop-blur-md">
    <summary className="p-2 flex items-center gap-2 label-caps tx-message-accent opacity-60 group-hover/think:tx-message-accent transition-colors">Thinking Process</summary>
-   <div className="p-4 border-t border-exo-mist-10 bg-exo-pure/30 whitespace-pre-wrap font-mono leading-relaxed text-[0.6875rem]">
+   <div className="p-4 border-t border-exo-mist-10 bg-exo-pure/30 whitespace-pre-wrap leading-relaxed text-[0.6875rem]" style={{ fontFamily: 'var(--font-code)' }}>
     {msg.reasoning_steps && msg.reasoning_steps.map((step, sIdx) => (
-    <div key={sIdx} className="inline-block text-[0.625rem] font-mono tracking-widest tx-message-accent opacity-70 bg-exo-accent/5 px-2 py-0.5 rounded-[2px] border border-exo-accent/10 mb-2 mr-2">{step}</div>
+    <div key={sIdx} className="inline-block text-[0.625rem] tracking-widest tx-message-accent opacity-70 bg-exo-accent/5 px-2 py-0.5 rounded-[2px] border border-exo-accent/10 mb-2 mr-2" style={{ fontFamily: 'var(--font-code)' }}>{step}</div>
     ))}
     {msg.reasoning_content}
    </div>
