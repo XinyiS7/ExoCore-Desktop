@@ -12,13 +12,12 @@ const fadeUp = (delay) => ({
 });
 
 /* ── Section head atom ── */
-const SectionHead = ({ label, children }) => (
+const SectionHead = ({ label, className = "tx-section-normal" }) => (
   <div className="flex items-center gap-2.5">
     <div className="w-[18px] h-px" style={{ background: 'var(--cinder-line-glow)' }} />
-    <span className="tx-section-normal font-light">
+    <span className={className}>
       {label}
     </span>
-    {children && <span style={{ marginLeft: 'auto' }}>{children}</span>}
   </div>
 );
 
@@ -60,34 +59,6 @@ const IconLock = ({ size = 10 }) => (
   </svg>
 );
 
-/* ── Icon button atom ── */
-const IconBtn = ({ children, title, onClick, size: btnSize, style: baseStyle }) => (
-  <button
-    onClick={onClick}
-    title={title}
-    className="flex items-center justify-center cursor-pointer transition-colors duration-400"
-    style={{
-      background: 'none',
-      border: 'none',
-      padding: btnSize === 'sm' ? '2px' : '4px',
-      color: 'var(--cinder-text-dim)',
-      opacity: 0.6,
-      ...(baseStyle || {}),
-    }}
-    onMouseEnter={e => {
-      e.currentTarget.style.opacity = '1';
-      e.currentTarget.style.color = baseStyle?.color || 'var(--cinder-flame)';
-    }}
-    onMouseLeave={e => {
-      e.currentTarget.style.opacity = baseStyle?.opacity != null ? String(baseStyle.opacity) : '0.6';
-      e.currentTarget.style.color = baseStyle?.color || 'var(--cinder-text-dim)';
-      e.currentTarget.style.filter = 'none';
-    }}
-  >
-    {children}
-  </button>
-);
-
 /* ═══════════════════════════════════════════
    AgentProfile
    ═══════════════════════════════════════════ */
@@ -110,18 +81,16 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
   const [showEditModal, setShowEditModal] = useState(false);
   const [cropFile, setCropFile] = useState(null);
   const [modelDraft, setModelDraft] = useState(preset?.default_model || '');
-  const [mainModels, setMainModels] = useState(null); // null = loading, use MAIN_MODEL_IDS as fallback
+  const [mainModels, setMainModels] = useState(null);
 
   const nameInputRef = useRef(null);
   const descInputRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  /* ── Avatar updates ── */
   useEffect(() => {
     if (preset) refresh();
   }, [preset?.id]);
 
-  /* ── Fetch main-role models from backend ── */
   useEffect(() => {
     let ignore = false;
     configApi.listModels().then(models => {
@@ -136,12 +105,10 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
     return () => { ignore = true; };
   }, []);
 
-  /* ── Sync modelDraft ── */
   useEffect(() => {
     if (preset) setModelDraft(preset.default_model || '');
   }, [preset?.id]);
 
-  /* ── Fetch sessions ── */
   useEffect(() => {
     if (!preset) return;
     const controller = new AbortController();
@@ -168,7 +135,6 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
     return () => { ignore = true; controller.abort(); };
   }, [preset?.id, refreshKey]);
 
-  /* ── Focus inputs ── */
   useEffect(() => {
     if (editingName && nameInputRef.current) nameInputRef.current.focus();
   }, [editingName]);
@@ -176,7 +142,6 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
     if (editingDesc && descInputRef.current) descInputRef.current.focus();
   }, [editingDesc]);
 
-  /* ── Not found ── */
   if (!preset) {
     return (
       <div className="flex-1 h-full flex flex-col overflow-hidden" style={{ background: 'var(--cinder-base)' }}>
@@ -187,7 +152,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
           <BackToUpper label="Agent Hub" onClick={() => goBack()} />
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <p className="tx-body-mute font-light">
+          <p className="tx-body-mute">
             Agent not found
           </p>
         </div>
@@ -199,7 +164,6 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
   const isSuperior = preset.agent_type === 'superior';
   const showMemoryBtn = isG045 || isSuperior;
 
-  /* ── PATCH helper ── */
   const patchPreset = async (fields) => {
     setSavingField(Object.keys(fields)[0]);
     const res = await fetch(`${baseUrl}/api/agents/presets/${preset.id}/`, {
@@ -222,7 +186,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
     if (!trimmed || trimmed === preset.name) { setEditingName(false); return; }
     setSavingField('name');
     try { await patchPreset({ name: trimmed }); setEditingName(false); }
-    catch { /* editor stays open */ }
+    catch { }
     finally { setSavingField(null); }
   };
 
@@ -231,7 +195,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
     if (trimmed === (preset.description || '')) { setEditingDesc(false); return; }
     setSavingField('description');
     try { await patchPreset({ description: trimmed }); setEditingDesc(false); }
-    catch { /* editor stays open */ }
+    catch { }
     finally { setSavingField(null); }
   };
 
@@ -281,7 +245,6 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
     return new Date(dateStr).toLocaleDateString();
   };
 
-  /* ── Model tint for banner ── */
   const bannerTint = (() => {
     const m = (preset.default_model || '').toLowerCase();
     if (m.includes('claude')) return 'rgba(100,50,150,0.03)';
@@ -289,7 +252,6 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
     return 'rgba(196,77,0,0.03)';
   })();
 
-  /* ── Type badge style ── */
   const typeBadgeStyle = isG045
     ? { background: 'rgba(255,74,8,0.12)', color: 'var(--cinder-flame)', border: '1px solid rgba(255,74,8,0.25)' }
     : isSuperior
@@ -299,10 +261,8 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
   return (
     <div className="flex-1 h-full flex flex-col overflow-hidden" style={{ background: 'var(--cinder-base)' }}>
 
-      {/* Hidden file input for avatar */}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
-      {/* ═══ Fixed back bar — desktop only; mobile uses MobileHeader ═══ */}
       <div
         className="hidden md:flex items-center flex-shrink-0 px-4 md:px-12 py-3"
         style={{ borderBottom: '1px solid var(--cinder-line)' }}
@@ -310,11 +270,10 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
         <BackToUpper label="Agent Hub" onClick={() => goBack()} />
       </div>
 
-      {/* ═══ Scrollable content ═══ */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-[780px] mx-auto px-6 md:px-10 py-[32px] pb-[120px] flex flex-col gap-8">
 
-          {/* ═══ Header Banner ═══ */}
+          {/* Banner */}
           <section style={fadeUp(0)}>
             <div
               className="relative"
@@ -326,8 +285,6 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 borderRadius: '4px 4px 0 0',
               }}
             />
-
-            {/* Avatar riding the banner bottom edge */}
             <div className="flex justify-center" style={{ marginTop: '-36px' }}>
               <button
                 onClick={handleAvatarClick}
@@ -352,19 +309,16 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                     background: 'var(--cinder-base)',
                   }}
                 />
-                {/* Edit overlay */}
-                <div
-                  className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                >
+                <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <IconRename size={16} />
                 </div>
               </button>
             </div>
           </section>
 
-          {/* ═══ Identity — name + description + model ═══ */}
+          {/* ═══ Identity ═══ */}
           <section style={fadeUp(0.06)} className="flex flex-col items-center gap-2 -mt-2">
-            {/* Name */}
+            {/* Agent Name -> tx-section-normal */}
             <div className="flex items-center gap-2 flex-wrap justify-center">
               {editingName ? (
                 <input
@@ -376,7 +330,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                     if (e.key === 'Enter') handleNameSave();
                     if (e.key === 'Escape') setEditingName(false);
                   }}
-                  className="tx-section-normal font-light text-center outline-none"
+                  className="tx-section-normal text-center outline-none"
                   style={{
                     background: 'none',
                     border: 'none',
@@ -388,13 +342,9 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
               ) : (
                 <h2
                   onClick={() => { setNameDraft(preset.name); setEditingName(true); }}
-                  className="tx-section-normal font-light cursor-pointer transition-colors duration-300"
-                  onMouseEnter={e => {
-                    e.currentTarget.style.color = 'var(--cinder-flame)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.color = '';
-                  }}
+                  className="tx-section-normal cursor-pointer transition-colors duration-300"
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--cinder-flame)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = ''; }}
                 >
                   {preset.name}
                 </h2>
@@ -411,13 +361,13 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 {preset.agent_type === 'g045' ? 'G045' : preset.agent_type}
               </span>
               {savingField === 'name' && (
-                <span className="tx-decoration-accent font-light" style={{ animation: 'breathe 1s ease-in-out infinite' }}>
+                <span className="tx-decoration-accent" style={{ animation: 'breathe 1s ease-in-out infinite' }}>
                   saving...
                 </span>
               )}
             </div>
 
-            {/* Description */}
+            {/* Bios -> tx-subtitle-normal */}
             <div className="flex items-center gap-2 flex-wrap justify-center">
               {editingDesc ? (
                 <input
@@ -430,7 +380,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                     if (e.key === 'Escape') setEditingDesc(false);
                   }}
                   placeholder="Add a description..."
-                  className="tx-body-mute font-light italic text-center outline-none w-full min-w-[200px]"
+                  className="tx-subtitle-normal italic text-center outline-none w-full min-w-[200px]"
                   style={{
                     background: 'none',
                     border: 'none',
@@ -441,35 +391,31 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
               ) : (
                 <p
                   onClick={() => { setDescDraft(preset.description || ''); setEditingDesc(true); }}
-                  className="tx-body-mute font-light italic cursor-pointer transition-colors duration-300"
+                  className="tx-subtitle-normal italic cursor-pointer transition-colors duration-300"
                   style={{ opacity: preset.description ? 1 : 0.5 }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.color = 'var(--cinder-flame-dim)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.color = '';
-                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--cinder-flame-dim)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = ''; }}
                 >
                   {preset.description || 'Click to add a description...'}
                 </p>
               )}
               {savingField === 'description' && (
-                <span className="tx-decoration-accent font-light" style={{ animation: 'breathe 1s ease-in-out infinite' }}>
+                <span className="tx-decoration-accent" style={{ animation: 'breathe 1s ease-in-out infinite' }}>
                   saving...
                 </span>
               )}
             </div>
 
-            {/* Model selector pill */}
+            {/* Model & ModelName Selector -> tx-decoration-normal */}
             <div className="flex items-center gap-2 mt-1">
-              <span className="tx-decoration-mute font-light">
+              <span className="tx-decoration-normal">
                 Model:
               </span>
               <select
                 value={modelDraft}
                 onChange={handleModelChange}
                 onBlur={handleModelBlur}
-                className="tx-system-normal font-light outline-none cursor-pointer transition-all duration-300"
+                className="tx-decoration-normal outline-none cursor-pointer transition-all duration-300"
                 style={{
                   background: 'rgba(255,255,255,0.02)',
                   border: '1px solid rgba(166,61,0,0.15)',
@@ -485,7 +431,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 ))}
               </select>
               {savingField === 'default_model' && (
-                <span className="tx-decoration-accent font-light" style={{ animation: 'breathe 1s ease-in-out infinite' }}>
+                <span className="tx-decoration-accent" style={{ animation: 'breathe 1s ease-in-out infinite' }}>
                   saving...
                 </span>
               )}
@@ -496,26 +442,20 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
             )}
           </section>
 
-          {/* ═══ Action buttons ═══ */}
+          {/* ═══ Action buttons -> tx-decoration-normal ═══ */}
           <section style={fadeUp(0.1)} className="flex items-center gap-4 justify-center">
             <button
               onClick={() => openNewSession({ presetId: preset.id })}
-              className="flex items-center gap-2 font-light cursor-pointer transition-colors duration-300"
+              className="tx-decoration-normal flex items-center gap-2 cursor-pointer transition-colors duration-300"
               style={{
                 background: 'none',
                 border: '1px solid rgba(166,61,0,0.15)',
                 borderRadius: '6px',
                 padding: '8px 20px',
-                fontSize: '12px',
-                letterSpacing: '0.05em',
                 color: 'var(--cinder-flame-dim)',
               }}
-              onMouseEnter={e => {
-                e.currentTarget.style.color = 'var(--cinder-flame)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.color = 'var(--cinder-flame-dim)';
-              }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--cinder-flame)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--cinder-flame-dim)'; }}
             >
               <IconCreate size={14} />
               New Session
@@ -523,22 +463,16 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
             {showMemoryBtn && (
               <button
                 onClick={() => setView('agent_memory', { agentId: preset.id, agentName: preset.name })}
-                className="flex items-center gap-2 font-light cursor-pointer transition-colors duration-300"
+                className="tx-decoration-normal flex items-center gap-2 cursor-pointer transition-colors duration-300"
                 style={{
                   background: 'none',
                   border: '1px solid rgba(168,122,255,0.15)',
                   borderRadius: '6px',
                   padding: '8px 20px',
-                  fontSize: '12px',
-                  letterSpacing: '0.05em',
                   color: 'rgb(168,148,220)',
                 }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.color = 'rgb(188,168,240)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.color = 'rgb(168,148,220)';
-                }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'rgb(188,168,240)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgb(168,148,220)'; }}
               >
                 <IconMemory size={14} />
                 Manage Memory
@@ -546,12 +480,12 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
             )}
           </section>
 
-          {/* ═══ System Prompt Crystal ═══ */}
+          {/* ═══ [SYSTEM PROMPT] Box ═══ */}
           <section style={fadeUp(0.14)}>
             <div style={{ background: 'none', border: 'none', padding: 0 }}>
               <div className="flex items-center gap-2 mb-3">
                 <span className="tx-system-mute" style={{ opacity: 0.5 }}>[</span>
-                <span className="tx-system-mute font-light">
+                <span className="tx-system-mute">
                   SYSTEM PROMPT
                 </span>
                 <span className="tx-system-mute" style={{ opacity: 0.5 }}>]</span>
@@ -572,25 +506,20 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                   onMouseLeave={e => {
                     e.currentTarget.style.opacity = '0.6';
                     e.currentTarget.style.color = 'var(--cinder-text-dim)';
-                    e.currentTarget.style.filter = 'none';
                   }}
                 >
                   <IconRename size={14} />
                 </button>
               </div>
 
-              {/* Prompt preview */}
+              {/* Prompt itself -> tx-system-normal */}
               <button
                 onClick={() => setShowEditModal(true)}
                 className="w-full text-left font-[inherit] cursor-pointer transition-all duration-300"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                }}
+                style={{ background: 'none', border: 'none', padding: 0 }}
               >
                 <p
-                  className={preset?.system_prompt ? 'tx-body-normal font-light' : 'tx-body-mute font-light'}
+                  className={preset?.system_prompt ? 'tx-system-normal' : 'tx-system-mute'}
                   style={{ opacity: preset?.system_prompt ? 1 : 0.5 }}
                 >
                   {preset?.system_prompt
@@ -601,108 +530,24 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
             </div>
           </section>
 
-          {/* ═══ Danger Zone (non-G045 only) ═══ */}
-          {!isG045 && (
-            <section style={fadeUp(0.2)}>
-              <SectionHead label="DANGER ZONE" />
-              <div className="mt-3 flex flex-col gap-3">
-                {/* Tier switcher */}
-                <div className="flex items-center gap-3">
-                  <span className="tx-decoration-mute font-light">
-                    Tier:
-                  </span>
-                  <select
-                    value={preset.agent_type}
-                    onChange={(e) => {
-                      const newType = e.target.value;
-                      if (newType !== preset.agent_type) {
-                        patchPreset({ agent_type: newType }).catch(() => {});
-                      }
-                    }}
-                    className="tx-system-normal font-light outline-none cursor-pointer transition-all duration-300"
-                    style={{
-                      background: 'rgba(255,255,255,0.02)',
-                      border: '1px solid rgba(166,61,0,0.15)',
-                      borderRadius: '4px',
-                      padding: '4px 10px',
-                      appearance: 'none',
-                      WebkitAppearance: 'none',
-                    }}
-                  >
-                    <option value="superior">Superior</option>
-                    <option value="standard">Standard</option>
-                  </select>
-                  {savingField === 'agent_type' && (
-                    <span className="tx-decoration-accent font-light" style={{ animation: 'breathe 1s ease-in-out infinite' }}>
-                      saving...
-                    </span>
-                  )}
-                </div>
-
-                {/* Erase button */}
-                <button
-                  onClick={() => {
-                    appState.openDestructor?.({
-                      title: preset.name,
-                      onDelete: async () => {
-                        try {
-                          await fetch(`${baseUrl}/api/agents/presets/${preset.id}/`, {
-                            method: 'DELETE',
-                            headers: { 'X-CSRFToken': getCsrfToken() },
-                            credentials: 'include',
-                          });
-                          refreshPresets();
-                          goBack();
-                        } catch (err) {
-                          console.error('Failed to delete preset', err);
-                        }
-                      },
-                    });
-                  }}
-                  className="font-light cursor-pointer transition-colors duration-300"
-                  style={{
-                    background: 'none',
-                    border: '1px solid rgba(255,51,51,0.25)',
-                    borderRadius: '4px',
-                    padding: '8px 16px',
-                    fontSize: '11px',
-                    letterSpacing: '0.08em',
-                    color: 'var(--cinder-flame)',
-                    opacity: 0.7,
-                    maxWidth: '240px',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = 'rgba(255,51,51,0.04)';
-                    e.currentTarget.style.opacity = '1';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'none';
-                    e.currentTarget.style.opacity = '0.7';
-                  }}
-                >
-                  抹除该实体 Erase Entity
-                </button>
-              </div>
-            </section>
-          )}
-
           {/* ═══ Threads (Sessions) ═══ */}
           <section style={fadeUp(0.24)}>
             <div className="flex items-center justify-between mb-1">
-              <SectionHead label="THREADS" />
+              {/* THREADS -> tx-nav-accent */}
+              <SectionHead label="THREADS" className="tx-nav-accent" />
               {sessions.length > 0 && (
-                <span className="tx-decoration-mute font-light">
+                <span className="tx-decoration-mute">
                   {sessions.length} sessions
                 </span>
               )}
             </div>
 
             {sessionsLoading ? (
-              <p className="tx-body-mute font-light py-4">
+              <p className="tx-system-normal py-4">
                 Loading sessions...
               </p>
             ) : sessions.length === 0 ? (
-              <p className="tx-body-mute font-light py-4">
+              <p className="tx-system-normal py-4">
                 No sessions yet.
               </p>
             ) : (
@@ -731,21 +576,18 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                       borderImageSlice: 1,
                     }}
                   >
-                    {/* Dot */}
                     <span
                       className="w-1 h-1 rounded-full shrink-0"
                       style={{ background: 'var(--cinder-ember-dim)' }}
                     />
-                    {/* Name */}
-                    <span className="tx-body-normal flex-1 font-light truncate">
+                    {/* 会话列表名称 -> tx-system-normal */}
+                    <span className="tx-system-normal flex-1 truncate">
                       {s.name || `Session #${s.id}`}
                     </span>
-                    {/* Meta */}
-                    <span className="tx-decoration-mute shrink-0 font-light">
+                    <span className="tx-decoration-mute shrink-0">
                       {formatLastActive(s.last_message_at)}
                       {s.message_count != null && ` · ${s.message_count} msgs`}
                     </span>
-                    {/* Actions menu */}
                     <div className="shrink-0" onClick={e => e.stopPropagation()}>
                       <SessionActionsMenu
                         session={s}
@@ -760,10 +602,78 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
             )}
           </section>
 
-        </div>
-      </div>
+      {/* ════════════ 隔离线 ════════════ */}
+      <div className="h-px opacity-20 my-2" style={{ background: 'linear-gradient(90deg, transparent, var(--tx-neutral-40) 50%, transparent)' }} />
 
-      {/* EditPresetModal for system prompt */}
+      {/* 6. Danger Zone (沉底，压小层级) */}
+      {!isG045 && (
+        <section style={fadeUp(0.22)} className="pt-2">
+          <div className="flex items-center justify-between opacity-45 hover:opacity-100 transition-opacity duration-300">
+
+            {/* 左侧：Tier 切换器，缩成小配置文件样式 */}
+            <div className="flex items-center gap-2">
+              <span className="w-1 h-1 rotate-45" style={{ background: 'var(--tx-warm-ember)' }} />
+              <span className="tx-decoration-normal uppercase tracking-wider text-[10px]">
+                Tier Configuration:
+              </span>
+              <select
+                value={preset.agent_type}
+                onChange={(e) => {
+                  const newType = e.target.value;
+                  if (newType !== preset.agent_type) {
+                    patchPreset({ agent_type: newType }).catch(() => {});
+                  }
+                }}
+                className="tx-decoration-normal outline-none cursor-pointer bg-transparent border-none p-0 text-[11px] text-orange-600/70 hover:text-orange-500"
+              >
+                <option value="superior" className="bg-[#2b1810]">Superior</option>
+                <option value="standard" className="bg-[#2b1810]">Standard</option>
+              </select>
+            </div>
+
+            {/* 右侧：极致纤细的抹除按钮，剥离边框，只有微弱下划线 */}
+            <button
+              onClick={() => {
+                appState.openDestructor?.({
+                  title: preset.name,
+                  onDelete: async () => {
+                    try {
+                      await fetch(`${baseUrl}/api/agents/presets/${preset.id}/`, {
+                        method: 'DELETE',
+                        headers: { 'X-CSRFToken': getCsrfToken() },
+                        credentials: 'include',
+                      });
+                      refreshPresets();
+                      goBack();
+                    } catch (err) {
+                      console.error('Failed to delete preset', err);
+                    }
+                  },
+                });
+              }}
+              className="tx-decoration-normal cursor-pointer bg-transparent border-none p-0 text-[10px] tracking-widest uppercase transition-all duration-300"
+              style={{
+                color: 'var(--tx-warm-flame)',
+                borderBottom: '1px dashed rgba(231, 77, 2, 0.25)'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.color = 'var(--tx-warm-gold)';
+                e.currentTarget.style.borderBottomColor = 'var(--tx-warm-gold)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.color = 'var(--tx-warm-flame)';
+                e.currentTarget.style.borderBottomColor = 'rgba(231, 77, 2, 0.25)';
+              }}
+            >
+          [ ERASE ENTITY // 抹除 ]
+        </button>
+      </div>
+    </section>
+  )}
+</div>
+
+        </div>
+
       <EditPresetModal
         isOpen={showEditModal}
         preset={preset}
@@ -772,7 +682,6 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
         onSaved={() => { refreshPresets(); setShowEditModal(false); }}
       />
 
-      {/* AvatarCropModal */}
       {cropFile && (
         <AvatarCropModal
           file={cropFile}

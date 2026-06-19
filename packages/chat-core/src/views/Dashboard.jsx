@@ -138,7 +138,7 @@ export default function Dashboard({ appState, setView }) {
           <div className="flex flex-col gap-6">
             {/* Status line */}
             <div className="flex items-center gap-2.5">
-              <div className="w-6 h-px" style={{ background: 'var(--cinder-ember-dim)' }} />
+              <div className="w-6 h-px" style={{ background: 'var(--tx-warm-ember)' }} />
               <span className="tx-decoration-mute font-light">
                 ExoCore · System ready
               </span>
@@ -150,7 +150,7 @@ export default function Dashboard({ appState, setView }) {
             </h1>
 
             {/* Subtitle */}
-            <p className="tx-body-normal font-light max-w-[420px] leading-relaxed">
+            <p className="tx-subtitle-accent font-light max-w-[420px] leading-relaxed">
               神经链路已建立，所有核心待命中。
             </p>
 
@@ -160,10 +160,10 @@ export default function Dashboard({ appState, setView }) {
                 className="flex items-center gap-2.5 py-2 transition-all duration-300"
                 style={{
                   borderBottom: showResults
-                    ? '1px solid rgba(255,74,8,0.5)'
+                    ? '1px solid rgba(231,77,2,0.5)'
                     : '1px solid transparent',
                   borderImage: showResults
-                    ? 'linear-gradient(90deg, transparent, rgba(255,74,8,0.5) 20%, rgba(255,74,8,0.5) 80%, transparent) 1'
+                    ? 'linear-gradient(90deg, transparent, var(--tx-warm-flame) 20%, var(--tx-warm-flame) 80%, transparent) 1'
                     : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 20%, rgba(255,255,255,0.06) 80%, transparent) 1',
                   borderImageSlice: 1,
                 }}
@@ -174,9 +174,9 @@ export default function Dashboard({ appState, setView }) {
                     width: '14px',
                     height: '14px',
                     color: showResults && searchTerm
-                      ? 'var(--cinder-flame)'
-                      : 'var(--cinder-text-faint)',
-                    filter: showResults && searchTerm ? 'drop-shadow(0 0 4px rgba(255,74,8,0.4))' : 'none',
+                      ? 'var(--tx-warm-flame)'
+                      : 'var(--tx-neutral-40)',
+                    filter: showResults && searchTerm ? 'drop-shadow(0 0 4px rgba(231,77,2,0.4))' : 'none',
                   }}
                 >
                   <SearchSvg />
@@ -191,7 +191,7 @@ export default function Dashboard({ appState, setView }) {
                   style={{
                     fontSize: '13px',
                     letterSpacing: '0.04em',
-                    color: 'var(--cinder-text)',
+                    color: 'var(--tx-neutral-20)',
                   }}
                 />
               </div>
@@ -221,13 +221,13 @@ export default function Dashboard({ appState, setView }) {
                     >
                       <span
                         className="w-4 h-4 rounded-full shrink-0"
-                        style={{ background: 'var(--cinder-ember-dim)' }}
+                        style={{ background: 'var(--tx-warm-ember)' }}
                       />
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm block truncate" style={{ color: 'var(--cinder-text)' }}>
+                        <span className="text-sm block truncate" style={{ color: 'var(--tx-neutral-20)' }}>
                           {convo.name || `Session #${convo.id}`}
                         </span>
-                        <span className="text-[0.5625rem]" style={{ color: 'var(--cinder-text-faint)' }}>
+                        <span className="text-[0.5625rem]" style={{ color: 'var(--tx-neutral-40)' }}>
                           {getAgentName(convo.agent_preset_id)} · {convo.agent_type}
                         </span>
                       </div>
@@ -245,7 +245,7 @@ export default function Dashboard({ appState, setView }) {
                     borderRadius: '8px',
                   }}
                 >
-                  <p className="text-xs" style={{ color: 'var(--cinder-text-faint)' }}>未找到匹配的会话</p>
+                  <p className="text-xs" style={{ color: 'var(--tx-neutral-40)' }}>未找到匹配的会话</p>
                 </div>
               )}
             </div>
@@ -257,7 +257,7 @@ export default function Dashboard({ appState, setView }) {
           <section style={fadeUp(0.08)}>
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-2.5">
-                <div className="w-[18px] h-px" style={{ background: 'var(--cinder-line-glow)' }} />
+                <div className="w-[18px] h-px" style={{ background: 'var(--tx-warm-flare)' }} />
                 <span className="tx-section-normal font-light">
                   活跃会话
                 </span>
@@ -279,7 +279,7 @@ export default function Dashboard({ appState, setView }) {
                       cursor: 'pointer',
                     }}
                     onMouseEnter={e => {
-                      e.currentTarget.style.borderImage = 'linear-gradient(90deg, transparent, rgba(255,74,8,0.35) 20%, rgba(255,74,8,0.35) 80%, transparent) 1';
+                      e.currentTarget.style.borderImage = 'linear-gradient(90deg, transparent, rgba(231,77,2,0.35) 20%, rgba(231,77,2,0.35) 80%, transparent) 1';
                       e.currentTarget.style.background = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.01) 50%, transparent)';
                     }}
                     onMouseLeave={e => {
@@ -290,7 +290,7 @@ export default function Dashboard({ appState, setView }) {
                     {/* Dot indicator */}
                     <span
                       className="w-1 h-1 rounded-full shrink-0 transition-all duration-300"
-                      style={{ background: 'var(--cinder-ember-dim)' }}
+                      style={{ background: 'var(--tx-warm-ember)' }}
                     />
                     {/* Name */}
                     <span className="flex-1 tx-system-normal font-light truncate">
@@ -311,11 +311,11 @@ export default function Dashboard({ appState, setView }) {
           </section>
         )}
 
-        {/* ═══ 导航矩阵 ═══ */}
+        {/* ═══ 导航矩阵 (三个快捷导航版) ═══ */}
         <section style={fadeUp(0.14)}>
           <div className="flex flex-col gap-5">
             <div className="flex items-center gap-2.5">
-              <div className="w-[18px] h-px" style={{ background: 'var(--cinder-line-glow)' }} />
+              <div className="w-[18px] h-px" style={{ background: 'var(--tx-warm-flare)' }} />
               <span className="tx-section-normal font-light">
                 导航矩阵
               </span>
@@ -337,7 +337,7 @@ export default function Dashboard({ appState, setView }) {
                   "
                   style={{
                     background: isHovered ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.01)',
-                    border: isHovered ? '1px solid rgba(196, 77, 0, 0.25)' : '1px solid rgba(255, 255, 255, 0.02)',
+                    border: isHovered ? '1px solid rgba(231, 77, 2, 0.25)' : '1px solid rgba(255, 255, 255, 0.02)',
                     borderRadius: '12px',
                     boxShadow: isHovered ? '0 10px 30px rgba(0, 0, 0, 0.5)' : 'none',
                     transform: isHovered ? 'translateY(-2px)' : 'none',
@@ -350,19 +350,20 @@ export default function Dashboard({ appState, setView }) {
                     className="absolute inset-0 pointer-events-none transition-opacity duration-500"
                     style={{
                       opacity: isHovered ? 1 : 0,
-                      background: 'radial-gradient(circle at center, rgba(196,77,0,0.1) 0%, transparent 70%)',
+                      background: 'radial-gradient(circle at center, rgba(231,77,2,0.1) 0%, transparent 70%)',
                     }}
                   />
 
-                  {/* Glyph */}
+                  {/* Glyph ── 图标层级精准重构 */}
                   <span
                     className="relative z-[1] flex items-center justify-center transition-all duration-500"
                     style={{
                       width: '44px',
                       height: '44px',
-                      opacity: isHovered ? 0.55 : 0.25,
-                      color: isHovered ? 'var(--cinder-flame)' : 'var(--cinder-text-faint)',
-                      filter: isHovered ? 'drop-shadow(0 0 6px rgba(255,74,8,0.5))' : 'none',
+                      /* 无论静默还是激活，图标始终通过高纯度或发光特效维持比文字更鲜艳的状态 */
+                      opacity: isHovered ? 1.0 : 0.85,
+                      color: isHovered ? 'var(--tx-warm-gold)' : 'var(--tx-warm-ember)',
+                      filter: isHovered ? 'drop-shadow(0 0 8px rgba(248,191,116,0.6))' : 'none',
                       transform: isHovered ? 'scale(1.05) translateY(-2px)' : 'none',
                     }}
                   >

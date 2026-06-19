@@ -1,184 +1,161 @@
 /* ═════════════════════════════════════════════════
-   Typography · 语义化字体色板
+   Typography · ExoCore "Cinder & Cryo" 语义化字体色板
    ═════════════════════════════════════════════════
-
-   架构：色板变量（可调）→ 语义工具类（直接调用）
-
-   用法示例：
-     <h1 class="tx-hero tx-hero-normal">欢迎回来</h1>
-     <span class="tx-system tx-system-mute">3 个活跃会话</span>
-
-   调色指南：
-     - 调某个色值 → 改下面「色板」区的对应变量
-     - 调某个语义类的某个变体 → 改「语义类」区对应类的 color
-     - 甚至可以直接给子类填裸色值，绕过色板变量
+   核心逻辑：
+     1. 中性轴：纯净骨白到死寂炭灰，提供极细字体下的绝对可读性。
+     2. 暖色轴：提亮层级，加入白炽金（Incandescent）。
+     3. 极冷轴：引入星核爆裂的白炽蓝，用于先锋科技感对撞。
    ═════════════════════════════════════════════════ */
 
-/* ═══════════════════════════════════════════
-   一、基础色板（颜色标尺）
-   暖色轴 6 档 + 中性轴 8 档
-   ═══════════════════════════════════════════ */
-
 :root {
-  /* ── 暖色轴 Warm Axis (Amber → Red) ── */
+  /* ── 暖色轴 Warm Axis (白炽金 → 闷烧) ── */
+  --tx-warm-incandescent: #fff3db; /* 白炽金：火焰最核心的白热化，极端高亮 */
+  --tx-warm-gold:         #f8bf74; /* 亮琥珀金：核心交互高光（原 Highlight） */
+  --tx-warm-flare:        #f06a14; /* 橙焰：次级高亮 */
+  --tx-warm-flame:        #e74d02; /* 烈橙：主强调色（原 Accent） */
+  --tx-warm-ember:        #a63d00; /* 深赤橙：低频热量线 */
 
-  --tx-warm-gold:      #FCB42C;   /* 亮琥珀金，最醒目 */
-  --tx-warm-flare:     #F06A14;   /* 橙焰，介于 gold 和 flame 之间 */
-  --tx-warm-flame:     #E74D02;   /* 烈橙，主强调色 */
-  --tx-warm-ember:     #B62602;   /* 深赤橙，次级暖色 */
-  --tx-warm-crimson:   #9A0000;   /* 暗血红，重音 */
-  --tx-warm-emberdark: #611511;   /* 最深栗褐，暖色底线 */
+  /* ── 极冷轴 Cryo Axis (爆裂冷蓝) ── */
+  --tx-cryo-plasma:       #a3bfff; /* 白炽等离子蓝：高温爆裂中心的电光冷蓝（极亮强调） */
+  --tx-cryo-void:         #556985; /* 虚空冷蓝灰：用于未激活状态或极致冷酷的系统级文字 */
 
-  /* ── 中性轴 Neutral Axis (White → Dim) ── */
-
-  --tx-neutral-00: #f5f3f7;   /* 近白，最高对比度 */
-  --tx-neutral-10: #e4e1e9;   /* 亮灰 */
-  --tx-neutral-20: #cecdd6;   /* 基准正文灰（= 旧 --cinder-text） */
-  --tx-neutral-30: #b3b1bc;   /* 中灰 */
-  --tx-neutral-40: #9c9caa;   /* 次级灰（= 旧 --cinder-text-dim） */
-  --tx-neutral-50: #807e8a;   /* 弱灰 */
-  --tx-neutral-60: #717078;   /* 微灰（= 旧 --cinder-text-faint） */
-  --tx-neutral-70: #58565e;   /* 极弱，placeholder */
+  /* ── 中性轴 Neutral Axis (骨白 → 烟烬) ── */
+  --tx-neutral-00:        #fcfaf2; /* 骨白 (Bone White)：最高对比度正文 */
+  --tx-neutral-10:        #ebf0f5; /* 霜白 (Frost White)：带一点微冷的高光白 */
+  --tx-neutral-20:        #dcd6cd; /* 浅绢灰 (Silk Gray)：基准正文 */
+  --tx-neutral-30:        #b2a99f; /* 烟烬灰 (Ashen Gray)：中灰说明文字 */
+  --tx-neutral-40:        #7c736a; /* 焦炭灰 (Charred Gray)：次级灰 */
+  --tx-neutral-70:        #403730; /* 极弱灰 (Void Veil)：Placeholder */
 }
 
-
 /* ═══════════════════════════════════════════
-   二、语义类（可直接调用）
-   每类 3 个子类: -normal / -mute / -accent
-
-   改色两种方式：
-     A) 改变量值 → 全局生效
-     B) 改下面具体类的 color → 单独生效（甚至可以写裸 hex）
+   二、语义类（重构：压细粗细，拉开字距，注入冷蓝）
    ═══════════════════════════════════════════ */
 
 /* ──── 1. Hero · 主标题 ──── */
-/* 欢迎页上那个大的。high contrast，抓眼球 */
-/* ──── 1. Hero · 主标题 ──── */
-/* 欢迎页上那个大的。high contrast，抓眼球 */
+/* 欢迎页超大标题：骨架拉长，极限修长 */
 .tx-hero-normal,
 .tx-hero-mute,
 .tx-hero-accent {
-  font-family: var(--font-system);
-  font-size: 2rem;
-  font-weight: 300;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
+  font-family: 'Cinzel', 'Source Han Serif SC', serif;
+  font-size: 2.25rem;
+  font-weight: 200; /* 极细化 */
+  line-height: 1.2;
+  letter-spacing: 0.08em; /* 撑开神秘感 */
 }
-.tx-hero-normal  { color: var(--tx-neutral-00); }   /* 近白 */
-.tx-hero-mute    { color: var(--tx-neutral-30); }   /* 中灰，弱化时 */
-.tx-hero-accent  { color: var(--tx-warm-flame); }   /* 烈橙强调 */
+.tx-hero-normal  { color: var(--tx-neutral-00); }   /* 骨白 */
+.tx-hero-mute    { color: var(--tx-neutral-30); }   /* 烟烬灰 */
+.tx-hero-accent  { color: var(--tx-warm-incandescent); text-shadow: 0 0 12px rgba(248,191,116,0.3); } /* 白炽发光态 */
 
 
 /* ──── 2. Section · 板块标题 ──── */
-/* 每个主板块进去后看到的顶部标题 */
+/* 碑铭感，无重力悬浮芯片顶部标题 */
 .tx-section-normal,
 .tx-section-mute,
 .tx-section-accent {
-  font-family: var(--font-system);
-  font-size: 1.25rem;
-  font-weight: 400;
+  font-family: 'Cinzel', 'Source Han Serif SC', serif;
+  font-size: 1.5rem;
+  font-weight: 300;
   line-height: 1.35;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.12em; /* 强烈推荐拉大板块字距 */
 }
-.tx-section-normal  { color: var(--tx-neutral-10); }   /* 亮灰 */
-.tx-section-mute    { color: var(--tx-neutral-40); }   /* 次级灰 */
-.tx-section-accent  { color: var(--tx-warm-flare); }   /* 橙焰 */
+.tx-section-normal  { color: var(--tx-neutral-10); }   /* 霜白 */
+.tx-section-mute    { color: var(--tx-neutral-40); }   /* 焦炭灰 */
+.tx-section-accent  { color: var(--tx-warm-gold); }     /* 亮琥珀金 */
 
 
 /* ──── 3. Nav · 导航标题 ──── */
-/* Sidebar 和底部导航栏文字 */
+/* 彻底打碎笨重感，Sidebar竖排导航 */
 .tx-nav-normal,
 .tx-nav-mute,
 .tx-nav-accent {
   font-family: var(--font-system);
   font-size: 0.875rem;
-  font-weight: 400;
+  font-weight: 300; /* 压细 */
   line-height: 1.5;
+  letter-spacing: 0.05em;
 }
 .tx-nav-normal  { color: var(--tx-neutral-20); }   /* 基准正文灰 */
-.tx-nav-mute    { color: var(--tx-neutral-50); }   /* 弱灰，非活跃项 */
-.tx-nav-accent  { color: var(--tx-warm-flame); }   /* 烈橙，活跃/选中 */
+.tx-nav-mute    { color: var(--tx-cryo-void); }    /* ✨ 巧妙融入：未激活项用虚空冷蓝灰，与焦炭背景冷热对撞 */
+.tx-nav-accent  { color: var(--tx-warm-incandescent); } /* 激活时白炽化 */
 
 
 /* ──── 4. Subtitle · 副标题 ──── */
-/* 主标题下的补充语句、"活跃会话" 这种分类标题 */
 .tx-subtitle-normal,
 .tx-subtitle-mute,
 .tx-subtitle-accent {
   font-family: var(--font-system);
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 400; /* 从 600 下调到 400，消除笨重感 */
   line-height: 1.4;
+  letter-spacing: 0.04em;
 }
-.tx-subtitle-normal  { color: var(--tx-neutral-30); }   /* 中灰 */
-.tx-subtitle-mute    { color: var(--tx-neutral-50); }   /* 弱灰 */
-.tx-subtitle-accent  { color: var(--tx-warm-ember); }   /* 深赤橙 */
+.tx-subtitle-normal  { color: var(--tx-neutral-20); }
+.tx-subtitle-mute    { color: var(--tx-neutral-40); }
+.tx-subtitle-accent  { color: var(--tx-warm-flare); }    /* 橙焰 */
 
 
 /* ──── 5. Decoration · 装饰句 ──── */
-/* "ExoCore · System ready"、快捷导航描述、trigger 展示 */
-/* NOTE: decoration 字体固定，不跟随 Appearance 字体设置变化 */
+/* "ExoCore · System ready"、机器码、状态回执等 */
 .tx-decoration-normal,
 .tx-decoration-mute,
 .tx-decoration-accent {
-  font-family: 'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
+  font-family: 'Sarasa Gothic Mono', 'Maple Mono', monospace;
   font-size: 0.6875rem;
   font-weight: 400;
   line-height: 1.4;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.15em; /* 装饰代码行极限拉开，极具赛博遗迹感 */
 }
-.tx-decoration-normal  { color: var(--tx-neutral-50); }   /* 弱灰，不抢视线 */
-.tx-decoration-mute    { color: var(--tx-neutral-60); }   /* 微灰 */
-.tx-decoration-accent  { color: var(--tx-warm-gold); }   /* 亮琥珀金，点缀 */
+.tx-decoration-normal  { color: var(--tx-neutral-40); }
+.tx-decoration-mute    { color: var(--tx-neutral-70); }   /* 隐蔽占位 */
+.tx-decoration-accent  { color: var(--tx-cryo-plasma); text-shadow: 0 0 6px rgba(163,191,255,0.4); } /* ✨ 高亮：冷蓝爆裂光芒，比如显示 [READY] */
 
 
 /* ──── 6. System · 系统文字 ──── */
-/* Session 列表、Project 列表、设置项标签等 */
+/* Session 列表、Project 列表等 */
 .tx-system-normal,
 .tx-system-mute,
 .tx-system-accent {
   font-family: var(--font-system);
   font-size: 0.875rem;
-  font-weight: 400;
+  font-weight: 300;
   line-height: 1.5;
 }
-.tx-system-normal  { color: var(--tx-neutral-20); }   /* 基准正文灰 */
-.tx-system-mute    { color: var(--tx-neutral-40); }   /* 次级灰 */
-.tx-system-accent  { color: var(--tx-warm-flare); }   /* 橙焰，hover/选中 */
+.tx-system-normal  { color: var(--tx-neutral-20); }
+.tx-system-mute    { color: var(--tx-neutral-40); }
+.tx-system-accent  { color: var(--tx-warm-gold); }    /* 激活态泛起琥珀金 */
 
 
 /* ──── 7. Body · 正文 ──── */
-/* Prompt 展示、bios、file name、文件目录等 */
 .tx-body-normal,
 .tx-body-mute,
 .tx-body-accent {
   font-family: var(--font-system);
   font-size: 0.875rem;
   font-weight: 300;
-  line-height: 1.6;
+  line-height: 1.65;
 }
-.tx-body-normal  { color: var(--tx-neutral-20); }   /* 基准正文灰 */
-.tx-body-mute    { color: var(--tx-neutral-40); }   /* 次级灰 */
-.tx-body-accent  { color: var(--tx-warm-flame); }   /* 烈橙，链接/高亮 */
+.tx-body-normal  { color: var(--tx-neutral-20); }   /* 骨白洗干净后的正文，极其易读 */
+.tx-body-mute    { color: var(--tx-neutral-40); }
+.tx-body-accent  { color: var(--tx-warm-flame); }
 
 
 /* ──── 8. Message · 消息体 ──── */
-/* 聊天消息的文字 */
+/* AI 吐出的会话文字 */
 .tx-message-normal,
 .tx-message-mute,
 .tx-message-accent {
   font-family: var(--font-message);
   font-size: 0.9375rem;
   font-weight: 300;
-  line-height: 1.625;
+  line-height: 1.7; /* 稍微拉宽行高，给细字体留出呼吸空间 */
 }
-.tx-message-normal  { color: var(--tx-neutral-10); }   /* 亮灰，保证可读性 */
-.tx-message-mute    { color: var(--tx-neutral-40); }   /* 次级灰 */
-.tx-message-accent  { color: var(--tx-warm-flame); }   /* 烈橙强调 */
+.tx-message-normal  { color: var(--tx-neutral-10); }   /* 霜白，极其通透清澈 */
+.tx-message-mute    { color: var(--tx-neutral-40); }
+.tx-message-accent  { color: var(--tx-warm-gold); }
 
 
 /* ──── 9. Code · 代码 ──── */
-/* 代码块 —— 颜色由 markdown 渲染器（highlight.js）负责 */
 .tx-code-normal,
 .tx-code-mute,
 .tx-code-accent {
@@ -186,37 +163,23 @@
   font-size: 0.85em;
   line-height: 1.5;
 }
-.tx-code-normal  { /* 由 markdown 渲染器接管 */ }
-.tx-code-mute    { /* 由 markdown 渲染器接管 */ }
-.tx-code-accent  { /* 由 markdown 渲染器接管 */ }
 
 
 /* ═══════════════════════════════════════════
-   三、卡片缩放工具类
-   在 Agent Hub 卡片容器上使用，0.8x 缩放
-   只在卡片实际用到的语义类上覆写 font-size
+   三、卡片缩放工具类 (保持不变)
    ═══════════════════════════════════════════ */
-
 .tx-card-sm .tx-section-normal,
 .tx-card-sm .tx-section-mute,
-.tx-card-sm .tx-section-accent {
-  font-size: 1rem;          /* 原 1.25rem × 0.8 */
-}
+.tx-card-sm .tx-section-accent { font-size: 1rem; }
 
 .tx-card-sm .tx-subtitle-normal,
 .tx-card-sm .tx-subtitle-mute,
-.tx-card-sm .tx-subtitle-accent {
-  font-size: 0.7rem;        /* 原 0.875rem × 0.8 */
-}
+.tx-card-sm .tx-subtitle-accent { font-size: 0.7rem; }
 
 .tx-card-sm .tx-system-normal,
 .tx-card-sm .tx-system-mute,
-.tx-card-sm .tx-system-accent {
-  font-size: 0.7rem;        /* 原 0.875rem × 0.8 */
-}
+.tx-card-sm .tx-system-accent { font-size: 0.7rem; }
 
 .tx-card-sm .tx-decoration-normal,
 .tx-card-sm .tx-decoration-mute,
-.tx-card-sm .tx-decoration-accent {
-  font-size: 0.55rem;       /* 原 0.6875rem × 0.8 */
-}
+.tx-card-sm .tx-decoration-accent { font-size: 0.55rem; }
