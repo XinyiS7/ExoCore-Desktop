@@ -15,23 +15,14 @@ export default function BackToUpper({ label, onClick, className = '' }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 font-[inherit] font-light cursor-pointer transition-colors duration-200 whitespace-nowrap ${className}`}
+      className={`flex items-center gap-1.5 cursor-pointer transition-colors duration-200 whitespace-nowrap tx-nav-mute hover:tx-nav-accent ${className}`}
       style={{
-        fontSize: '12px',
-        letterSpacing: '0.08em',
-        color: 'var(--cinder-text-faint)',
         background: 'none',
         border: 'none',
         padding: '6px 12px 6px 0',
       }}
-      onMouseEnter={e => {
-        e.currentTarget.style.color = 'var(--cinder-flame)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.color = 'var(--cinder-text-faint)';
-      }}
     >
-      <span style={{ fontSize: '14px', transition: 'transform 0.3s' }}>‹</span>
+      <span className="text-[1.125rem] transition-transform duration-200">‹</span>
       <span>{label}</span>
     </button>
   );

@@ -43,14 +43,7 @@ const fadeUp = (delay) => ({
 const SectionHead = ({ label, children }) => (
   <div className="flex items-center gap-2.5">
     <div className="w-[18px] h-px" style={{ background: 'var(--cinder-line-glow)' }} />
-    <span
-      className="font-light"
-      style={{
-        fontSize: '10px',
-        letterSpacing: '0.3em',
-        color: 'var(--cinder-text-dim)',
-      }}
-    >
+    <span className="tx-section-normal font-light">
       {label}
     </span>
     {children && <span style={{ marginLeft: 'auto' }}>{children}</span>}
@@ -155,26 +148,12 @@ const ThreadRow = ({ session, agentName, onClick, onRename, onDelete, openDestru
         className="flex-1 text-left font-[inherit] bg-transparent border-none cursor-pointer min-w-0"
         style={{ color: 'inherit', padding: 0 }}
       >
-        <span
-          className="font-light truncate block"
-          style={{
-            fontSize: '13px',
-            letterSpacing: '0.03em',
-            color: 'var(--cinder-text)',
-          }}
-        >
+        <span className="tx-system-normal font-light truncate block">
           {session.name || `Session #${session.id}`}
         </span>
       </button>
       {/* Meta */}
-      <span
-        className="shrink-0 font-light"
-        style={{
-          fontSize: '9px',
-          letterSpacing: '0.04em',
-          color: 'var(--cinder-text-faint)',
-        }}
-      >
+      <span className="shrink-0 tx-decoration-mute font-light">
         {agentName} · {new Date(session.created_at).toLocaleDateString()}
       </span>
       {/* Actions — icon-rename triggers dropdown (rename + delete), portal to body */}
@@ -261,34 +240,13 @@ const FileChip = ({ file, onDelete }) => {
   return (
     <div className="group flex items-center gap-2 shrink-0 cursor-pointer transition-all duration-300"
       style={{ padding: '4px 0', background: 'none', border: 'none' }}>
-      <span
-        className="font-light shrink-0 transition-colors duration-300"
-        style={{
-          fontSize: '8px',
-          letterSpacing: '0.05em',
-          color: 'var(--cinder-text-faint)',
-        }}
-      >
+      <span className="tx-decoration-mute shrink-0 transition-colors duration-300 font-light">
         {ext.substring(0, 3)}
       </span>
-      <span
-        className="font-light whitespace-nowrap transition-colors duration-300"
-        style={{
-          fontSize: '12px',
-          letterSpacing: '0.03em',
-          color: 'var(--cinder-text)',
-        }}
-      >
+      <span className="tx-body-normal whitespace-nowrap transition-colors duration-300 font-light">
         {file.name || file.file_name || `File #${file.id}`}
       </span>
-      <span
-        className="font-light"
-        style={{
-          fontSize: '8px',
-          letterSpacing: '0.04em',
-          color: 'var(--cinder-text-faint)',
-        }}
-      >
+      <span className="tx-decoration-mute transition-colors duration-300 font-light">
         {file.size ? `${(file.size / 1024).toFixed(1)} KB` : ''}
       </span>
     </div>
@@ -410,11 +368,8 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
           <div className="flex items-center gap-4">
             {/* Project name — centered */}
             <span
-              className="flex-1 font-light text-center whitespace-nowrap"
+              className="flex-1 font-light text-center whitespace-nowrap tx-section-accent"
               style={{
-                fontSize: '14px',
-                letterSpacing: '0.1em',
-                color: 'var(--cinder-flame-dim)',
                 animation: 'breatheSlow 4s ease-in-out infinite',
               }}
             >
@@ -449,18 +404,11 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
         >
           <div style={{ background: 'none', border: 'none', padding: 0 }}>
             <div className="flex items-center gap-2 mb-3.5">
-              <span style={{ color: 'var(--cinder-text-faint)', fontSize: '11px', opacity: 0.5 }}>[</span>
-              <span
-                className="font-light"
-                style={{
-                  fontSize: '9px',
-                  letterSpacing: '0.25em',
-                  color: 'var(--cinder-text-faint)',
-                }}
-              >
+              <span className="tx-decoration-mute opacity-50">[</span>
+              <span className="tx-decoration-mute font-light">
                 SYSTEM PROMPT
               </span>
-              <span style={{ color: 'var(--cinder-text-faint)', fontSize: '11px', opacity: 0.5 }}>]</span>
+              <span className="tx-decoration-mute opacity-50">]</span>
               {!editingPrompt ? (
                 <button
                   onClick={() => { setPromptDraft(project?.prompt || ''); setEditingPrompt(true); }}
@@ -552,13 +500,9 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
               />
             ) : (
               <p
-                className="font-light"
+                className={`font-light tx-body-normal ${project?.prompt ? 'text-[rgba(205,180,150,0.75)]' : 'tx-body-mute opacity-50'}`}
                 style={{
-                  fontSize: '13px',
                   lineHeight: '1.7',
-                  letterSpacing: '0.03em',
-                  color: project?.prompt ? 'rgba(205, 180, 150, 0.75)' : 'var(--cinder-text-faint)',
-                  opacity: project?.prompt ? 1 : 0.5,
                 }}
               >
                 {project?.prompt || 'No project prompt configured. Click the diamond icon to add one.'}
@@ -614,15 +558,7 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
             >
               <IconPolygon size={15} />
             </IconBtn>
-            <span
-              className="font-light"
-              style={{
-                fontSize: '11px',
-                letterSpacing: '0.04em',
-                color: project?.work_dir ? 'var(--cinder-text)' : 'var(--cinder-text-faint)',
-                fontFamily: 'var(--font-code)',
-              }}
-            >
+            <span className={`font-light ${project?.work_dir ? 'tx-code-normal' : 'tx-code-mute'}`}>
               {project?.work_dir || '~ / (no working directory)'}
             </span>
           </div>

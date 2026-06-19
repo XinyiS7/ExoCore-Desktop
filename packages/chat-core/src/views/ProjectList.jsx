@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { conversationsApi, getConvProjectId, projectsApi } from 'exo-shared';
+import BackToUpper from '../components/layout/BackButton';
 
 /* ── Corner glyph — engraved calibration marks ── */
 const CornerGlyph = ({ hovered }) => (
@@ -47,14 +48,7 @@ const fadeUp = (delay) => ({
 const SectionHead = ({ label }) => (
   <div className="flex items-center gap-2.5">
     <div className="w-[18px] h-px" style={{ background: 'var(--cinder-line-glow)' }} />
-    <span
-      className="font-light"
-      style={{
-        fontSize: '10px',
-        letterSpacing: '0.3em',
-        color: 'var(--cinder-text-dim)',
-      }}
-    >
+    <span className="tx-section-normal font-light">
       {label}
     </span>
   </div>
@@ -149,22 +143,24 @@ export default function ProjectList({ appState, setView, goBack }) {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-[780px] mx-auto px-6 md:px-10 py-[60px] pb-[100px] md:pb-[120px] flex flex-col gap-16">
+    <div className="flex-1 h-full flex flex-col overflow-hidden" style={{ background: 'var(--cinder-base)' }}>
+      {/* ═══ Fixed back bar — desktop only ═══ */}
+      <div
+        className="hidden md:flex items-center flex-shrink-0 px-6 md:px-10 py-3"
+        style={{ borderBottom: '1px solid var(--cinder-line)' }}
+      >
+        <BackToUpper label="Home" onClick={() => goBack()} />
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-[780px] mx-auto px-6 md:px-10 py-[32px] pb-[100px] md:pb-[120px] flex flex-col gap-16">
 
         {/* ═══ Header ═══ */}
         <section style={fadeUp(0)}>
           <div className="flex items-start justify-between">
             <div>
-              <SectionHead label="PROJECTS" />
-              <p
-                className="font-light mt-1.5 ml-[28px]"
-                style={{
-                  fontSize: '9px',
-                  letterSpacing: '0.04em',
-                  color: 'var(--cinder-text-faint)',
-                }}
-              >
+              <SectionHead label="Project Hall" />
+              <p className="tx-decoration-mute mt-1.5 ml-[28px]">
                 Synchronizing artifacts...
               </p>
             </div>
@@ -246,36 +242,16 @@ export default function ProjectList({ appState, setView, goBack }) {
                   <CornerGlyph hovered={hoveredCard === proj.id} />
 
                   {/* Project name */}
-                  <span
-                    className="relative z-[1] font-light"
-                    style={{
-                      fontSize: '15px',
-                      letterSpacing: '0.05em',
-                      color: 'var(--cinder-text)',
-                    }}
-                  >
+                  <span className="relative z-[1] tx-system-normal font-light">
                     {proj.name}
                   </span>
 
                   {/* Meta: thread count + arrow */}
                   <span className="flex items-center gap-2 relative z-[1]">
-                    <span
-                      className="font-light"
-                      style={{
-                        fontSize: '12px',
-                        letterSpacing: '0.04em',
-                        color: 'var(--cinder-flame-dim)',
-                      }}
-                    >
+                    <span className="tx-subtitle-accent font-light">
                       {count} Threads
                     </span>
-                    <span
-                      className="transition-all duration-300"
-                      style={{
-                        fontSize: '13px',
-                        color: 'var(--cinder-text-faint)',
-                      }}
-                    >
+                    <span className="tx-decoration-mute">
                       →
                     </span>
                   </span>
@@ -320,31 +296,16 @@ export default function ProjectList({ appState, setView, goBack }) {
         {/* ═══ Empty state ═══ */}
         {sortedProjects.length === 0 && (
           <section style={fadeUp(0.08)} className="text-center py-16">
-            <p
-              className="font-light"
-              style={{
-                fontSize: '13px',
-                letterSpacing: '0.08em',
-                color: 'var(--cinder-text-faint)',
-              }}
-            >
+            <p className="tx-body-mute">
               尚未创建项目
             </p>
             <button
               onClick={() => openCreateProject()}
-              className="mt-4 font-light text-sm cursor-pointer transition-colors duration-300"
+              className="mt-4 tx-body-mute cursor-pointer hover:tx-body-accent transition-colors duration-300"
               style={{
                 background: 'none',
                 border: 'none',
                 padding: '8px 0',
-                color: 'var(--cinder-text-faint)',
-                letterSpacing: '0.08em',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.color = 'var(--cinder-flame)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.color = 'var(--cinder-text-faint)';
               }}
             >
               + 创建第一个项目
@@ -363,15 +324,7 @@ export default function ProjectList({ appState, setView, goBack }) {
                   background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 20%, rgba(255,255,255,0.06) 80%, transparent)',
                 }}
               />
-              <span
-                className="absolute left-0 bg-[#050505] pr-2"
-                style={{
-                  top: '-7px',
-                  fontSize: '8px',
-                  letterSpacing: '0.25em',
-                  color: 'var(--cinder-text-faint)',
-                }}
-              >
+              <span className="absolute left-0 bg-[#050505] pr-2 tx-decoration-mute">
                 UNASSIGNED
               </span>
             </div>
@@ -408,25 +361,11 @@ export default function ProjectList({ appState, setView, goBack }) {
                     style={{ background: 'var(--cinder-ember-dim)' }}
                   />
                   {/* Name */}
-                  <span
-                    className="flex-1 font-light truncate"
-                    style={{
-                      fontSize: '13px',
-                      letterSpacing: '0.03em',
-                      color: 'var(--cinder-text)',
-                    }}
-                  >
+                  <span className="flex-1 tx-system-normal font-light truncate">
                     {s.name || `Session #${s.id}`}
                   </span>
                   {/* Meta */}
-                  <span
-                    className="shrink-0 font-light"
-                    style={{
-                      fontSize: '9px',
-                      letterSpacing: '0.04em',
-                      color: 'var(--cinder-text-faint)',
-                    }}
-                  >
+                  <span className="shrink-0 tx-decoration-mute">
                     {getAgentName(s)} · {timeAgo(s.last_message_at || s.created_at)}
                   </span>
                 </button>
@@ -435,6 +374,7 @@ export default function ProjectList({ appState, setView, goBack }) {
           </section>
         )}
       </div>
+    </div>
     </div>
   );
 }

@@ -139,42 +139,18 @@ export default function Dashboard({ appState, setView }) {
             {/* Status line */}
             <div className="flex items-center gap-2.5">
               <div className="w-6 h-px" style={{ background: 'var(--cinder-ember-dim)' }} />
-              <span
-                className="font-light"
-                style={{
-                  fontSize: '10px',
-                  letterSpacing: '0.35em',
-                  color: 'var(--cinder-text-faint)',
-                }}
-              >
+              <span className="tx-decoration-mute font-light">
                 ExoCore · System ready
               </span>
             </div>
 
             {/* Heading */}
-            <h1
-              className="font-light leading-tight"
-              style={{
-                fontSize: 'clamp(26px, 5vw, 44px)',
-                letterSpacing: '0.04em',
-                color: '#e8ddd0',
-              }}
-            >
-              欢迎回来，<em
-                className="not-italic font-normal"
-                style={{ color: 'var(--cinder-flame)' }}
-              >{userNick}</em>
+            <h1 className="tx-hero-normal font-light leading-tight">
+              欢迎回来，<em className="not-italic font-normal tx-hero-accent">{userNick}</em>
             </h1>
 
             {/* Subtitle */}
-            <p
-              className="font-light max-w-[420px] leading-relaxed"
-              style={{
-                fontSize: '14px',
-                color: 'var(--cinder-text-dim)',
-                letterSpacing: '0.04em',
-              }}
-            >
+            <p className="tx-body-normal font-light max-w-[420px] leading-relaxed">
               神经链路已建立，所有核心待命中。
             </p>
 
@@ -282,14 +258,7 @@ export default function Dashboard({ appState, setView }) {
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-2.5">
                 <div className="w-[18px] h-px" style={{ background: 'var(--cinder-line-glow)' }} />
-                <span
-                  className="font-light"
-                  style={{
-                    fontSize: '10px',
-                    letterSpacing: '0.3em',
-                    color: 'var(--cinder-text-dim)',
-                  }}
-                >
+                <span className="tx-section-normal font-light">
                   活跃会话
                 </span>
               </div>
@@ -324,35 +293,15 @@ export default function Dashboard({ appState, setView }) {
                       style={{ background: 'var(--cinder-ember-dim)' }}
                     />
                     {/* Name */}
-                    <span
-                      className="flex-1 font-light truncate"
-                      style={{
-                        fontSize: '14px',
-                        letterSpacing: '0.03em',
-                        color: 'var(--cinder-text)',
-                      }}
-                    >
+                    <span className="flex-1 tx-system-normal font-light truncate">
                       {convo.name || `Session #${convo.id}`}
                     </span>
                     {/* Meta */}
-                    <span
-                      className="shrink-0 font-light"
-                      style={{
-                        fontSize: '10px',
-                        letterSpacing: '0.04em',
-                        color: 'var(--cinder-text-faint)',
-                      }}
-                    >
+                    <span className="shrink-0 tx-decoration-mute font-light">
                       {getAgentName(convo.agent_preset_id)} · {timeAgo(convo.last_message_at || convo.created_at)}
                     </span>
                     {/* Arrow */}
-                    <span
-                      className="shrink-0 transition-all duration-300"
-                      style={{
-                        fontSize: '13px',
-                        color: 'var(--cinder-text-faint)',
-                      }}
-                    >
+                    <span className="shrink-0 transition-all duration-300 tx-decoration-mute">
                       →
                     </span>
                   </button>
@@ -367,14 +316,7 @@ export default function Dashboard({ appState, setView }) {
           <div className="flex flex-col gap-5">
             <div className="flex items-center gap-2.5">
               <div className="w-[18px] h-px" style={{ background: 'var(--cinder-line-glow)' }} />
-              <span
-                className="font-light"
-                style={{
-                  fontSize: '10px',
-                  letterSpacing: '0.3em',
-                  color: 'var(--cinder-text-dim)',
-                }}
-              >
+              <span className="tx-section-normal font-light">
                 导航矩阵
               </span>
             </div>
@@ -428,26 +370,12 @@ export default function Dashboard({ appState, setView }) {
                   </span>
 
                   {/* Label */}
-                  <span
-                    className="relative z-[1] font-light transition-all duration-300"
-                    style={{
-                      fontSize: '13px',
-                      letterSpacing: isHovered ? '0.1em' : '0.08em',
-                      color: isHovered ? 'var(--cinder-flame-dim)' : 'var(--cinder-text-dim)',
-                    }}
-                  >
+                  <span className={`relative z-[1] font-light transition-all duration-300 ${isHovered ? 'tx-nav-accent' : 'tx-nav-mute'}`}>
                     {label}
                   </span>
 
                   {/* Sub */}
-                  <span
-                    className="relative z-[1] font-light transition-all duration-300 hidden md:block"
-                    style={{
-                      fontSize: '9px',
-                      letterSpacing: '0.05em',
-                      color: isHovered ? 'var(--cinder-text-dim)' : 'var(--cinder-text-faint)',
-                    }}
-                  >
+                  <span className={`relative z-[1] font-light transition-all duration-300 hidden md:block ${isHovered ? 'tx-decoration-normal' : 'tx-decoration-mute'}`}>
                     {sub}
                   </span>
                 </button>
