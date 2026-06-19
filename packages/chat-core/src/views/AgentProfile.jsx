@@ -15,10 +15,7 @@ const fadeUp = (delay) => ({
 const SectionHead = ({ label, children }) => (
   <div className="flex items-center gap-2.5">
     <div className="w-[18px] h-px" style={{ background: 'var(--cinder-line-glow)' }} />
-    <span
-      className="font-light"
-      style={{ fontSize: '10px', letterSpacing: '0.3em', color: 'var(--cinder-text-dim)' }}
-    >
+    <span className="tx-section-normal font-light">
       {label}
     </span>
     {children && <span style={{ marginLeft: 'auto' }}>{children}</span>}
@@ -174,7 +171,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
           <BackToUpper label="Agent Hub" onClick={() => goBack()} />
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <p className="font-light" style={{ fontSize: '13px', color: 'var(--cinder-text-faint)', letterSpacing: '0.06em' }}>
+          <p className="tx-body-mute font-light">
             Agent not found
           </p>
         </div>
@@ -363,11 +360,8 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                     if (e.key === 'Enter') handleNameSave();
                     if (e.key === 'Escape') setEditingName(false);
                   }}
-                  className="font-light text-center outline-none"
+                  className="tx-section-normal font-light text-center outline-none"
                   style={{
-                    fontSize: '20px',
-                    letterSpacing: '0.05em',
-                    color: 'var(--cinder-text)',
                     background: 'none',
                     border: 'none',
                     borderBottom: '1px solid var(--cinder-flame)',
@@ -378,17 +372,12 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
               ) : (
                 <h2
                   onClick={() => { setNameDraft(preset.name); setEditingName(true); }}
-                  className="font-light cursor-pointer transition-colors duration-300"
-                  style={{
-                    fontSize: '20px',
-                    letterSpacing: '0.05em',
-                    color: 'var(--cinder-text)',
-                  }}
+                  className="tx-section-normal font-light cursor-pointer transition-colors duration-300"
                   onMouseEnter={e => {
                     e.currentTarget.style.color = 'var(--cinder-flame)';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.color = 'var(--cinder-text)';
+                    e.currentTarget.style.color = '';
                   }}
                 >
                   {preset.name}
@@ -400,13 +389,13 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 </span>
               )}
               <span
-                className="tracking-wider whitespace-nowrap"
-                style={{ fontSize: '9px', padding: '2px 8px', borderRadius: '2px', ...typeBadgeStyle }}
+                className="tx-decoration-mute tracking-wider whitespace-nowrap"
+                style={{ padding: '2px 8px', borderRadius: '2px', ...typeBadgeStyle }}
               >
                 {preset.agent_type === 'g045' ? 'G045' : preset.agent_type}
               </span>
               {savingField === 'name' && (
-                <span className="font-light" style={{ fontSize: '9px', color: 'var(--cinder-flame)', animation: 'breathe 1s ease-in-out infinite' }}>
+                <span className="tx-decoration-accent font-light" style={{ animation: 'breathe 1s ease-in-out infinite' }}>
                   saving...
                 </span>
               )}
@@ -425,10 +414,8 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                     if (e.key === 'Escape') setEditingDesc(false);
                   }}
                   placeholder="Add a description..."
-                  className="font-light italic text-center outline-none w-full min-w-[200px]"
+                  className="tx-body-mute font-light italic text-center outline-none w-full min-w-[200px]"
                   style={{
-                    fontSize: '13px',
-                    color: 'var(--cinder-text-dim)',
                     background: 'none',
                     border: 'none',
                     borderBottom: '1px solid var(--cinder-flame)',
@@ -438,24 +425,20 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
               ) : (
                 <p
                   onClick={() => { setDescDraft(preset.description || ''); setEditingDesc(true); }}
-                  className="font-light italic cursor-pointer transition-colors duration-300"
-                  style={{
-                    fontSize: '13px',
-                    color: preset.description ? 'var(--cinder-text-dim)' : 'var(--cinder-text-faint)',
-                    opacity: preset.description ? 1 : 0.5,
-                  }}
+                  className="tx-body-mute font-light italic cursor-pointer transition-colors duration-300"
+                  style={{ opacity: preset.description ? 1 : 0.5 }}
                   onMouseEnter={e => {
                     e.currentTarget.style.color = 'var(--cinder-flame-dim)';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.color = preset.description ? 'var(--cinder-text-dim)' : 'var(--cinder-text-faint)';
+                    e.currentTarget.style.color = '';
                   }}
                 >
                   {preset.description || 'Click to add a description...'}
                 </p>
               )}
               {savingField === 'description' && (
-                <span className="font-light" style={{ fontSize: '9px', color: 'var(--cinder-flame)', animation: 'breathe 1s ease-in-out infinite' }}>
+                <span className="tx-decoration-accent font-light" style={{ animation: 'breathe 1s ease-in-out infinite' }}>
                   saving...
                 </span>
               )}
@@ -463,21 +446,15 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
 
             {/* Model selector pill */}
             <div className="flex items-center gap-2 mt-1">
-              <span
-                className="font-light"
-                style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'var(--cinder-text-faint)' }}
-              >
+              <span className="tx-decoration-mute font-light">
                 Model:
               </span>
               <select
                 value={modelDraft}
                 onChange={handleModelChange}
                 onBlur={handleModelBlur}
-                className="font-light outline-none cursor-pointer transition-all duration-300"
+                className="tx-system-normal font-light outline-none cursor-pointer transition-all duration-300"
                 style={{
-                  fontSize: '11px',
-                  letterSpacing: '0.04em',
-                  color: 'var(--cinder-text)',
                   background: 'rgba(255,255,255,0.02)',
                   border: '1px solid rgba(166,61,0,0.15)',
                   borderRadius: '12px',
@@ -485,7 +462,6 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                   appearance: 'none',
                   WebkitAppearance: 'none',
                 }}
-
               >
                 {!preset.default_model && <option value="">Select a model...</option>}
                 {MAIN_MODEL_IDS.map(m => (
@@ -493,14 +469,14 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 ))}
               </select>
               {savingField === 'default_model' && (
-                <span className="font-light" style={{ fontSize: '9px', color: 'var(--cinder-flame)', animation: 'breathe 1s ease-in-out infinite' }}>
+                <span className="tx-decoration-accent font-light" style={{ animation: 'breathe 1s ease-in-out infinite' }}>
                   saving...
                 </span>
               )}
             </div>
 
             {saveError && (
-              <p style={{ fontSize: '10px', color: 'var(--cinder-flame)', opacity: 0.7, marginTop: '4px' }}>{saveError}</p>
+              <p className="tx-decoration-accent" style={{ opacity: 0.7, marginTop: '4px' }}>{saveError}</p>
             )}
           </section>
 
@@ -558,14 +534,11 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
           <section style={fadeUp(0.14)}>
             <div style={{ background: 'none', border: 'none', padding: 0 }}>
               <div className="flex items-center gap-2 mb-3">
-                <span style={{ color: 'var(--cinder-text-faint)', fontSize: '11px', opacity: 0.5 }}>[</span>
-                <span
-                  className="font-light"
-                  style={{ fontSize: '9px', letterSpacing: '0.25em', color: 'var(--cinder-text-faint)' }}
-                >
+                <span className="tx-system-mute" style={{ opacity: 0.5 }}>[</span>
+                <span className="tx-system-mute font-light">
                   SYSTEM PROMPT
                 </span>
-                <span style={{ color: 'var(--cinder-text-faint)', fontSize: '11px', opacity: 0.5 }}>]</span>
+                <span className="tx-system-mute" style={{ opacity: 0.5 }}>]</span>
                 <button
                   onClick={() => setShowEditModal(true)}
                   className="ml-auto flex items-center cursor-pointer transition-colors duration-400"
@@ -601,14 +574,8 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 }}
               >
                 <p
-                  className="font-light"
-                  style={{
-                    fontSize: '13px',
-                    lineHeight: 1.7,
-                    letterSpacing: '0.03em',
-                    color: preset?.system_prompt ? 'rgba(205,180,150,0.75)' : 'var(--cinder-text-faint)',
-                    opacity: preset?.system_prompt ? 1 : 0.5,
-                  }}
+                  className={preset?.system_prompt ? 'tx-body-normal font-light' : 'tx-body-mute font-light'}
+                  style={{ opacity: preset?.system_prompt ? 1 : 0.5 }}
                 >
                   {preset?.system_prompt
                     ? preset.system_prompt.slice(0, 200) + (preset.system_prompt.length > 200 ? '...' : '')
@@ -625,10 +592,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
               <div className="mt-3 flex flex-col gap-3">
                 {/* Tier switcher */}
                 <div className="flex items-center gap-3">
-                  <span
-                    className="font-light"
-                    style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'var(--cinder-text-faint)' }}
-                  >
+                  <span className="tx-decoration-mute font-light">
                     Tier:
                   </span>
                   <select
@@ -639,11 +603,8 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                         patchPreset({ agent_type: newType }).catch(() => {});
                       }
                     }}
-                    className="font-light outline-none cursor-pointer transition-all duration-300"
+                    className="tx-system-normal font-light outline-none cursor-pointer transition-all duration-300"
                     style={{
-                      fontSize: '11px',
-                      letterSpacing: '0.04em',
-                      color: 'var(--cinder-text)',
                       background: 'rgba(255,255,255,0.02)',
                       border: '1px solid rgba(166,61,0,0.15)',
                       borderRadius: '4px',
@@ -651,13 +612,12 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                       appearance: 'none',
                       WebkitAppearance: 'none',
                     }}
-
                   >
                     <option value="superior">Superior</option>
                     <option value="standard">Standard</option>
                   </select>
                   {savingField === 'agent_type' && (
-                    <span className="font-light" style={{ fontSize: '9px', color: 'var(--cinder-flame)', animation: 'breathe 1s ease-in-out infinite' }}>
+                    <span className="tx-decoration-accent font-light" style={{ animation: 'breathe 1s ease-in-out infinite' }}>
                       saving...
                     </span>
                   )}
@@ -715,18 +675,18 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
             <div className="flex items-center justify-between mb-1">
               <SectionHead label="THREADS" />
               {sessions.length > 0 && (
-                <span className="font-light" style={{ fontSize: '9px', letterSpacing: '0.04em', color: 'var(--cinder-text-faint)' }}>
+                <span className="tx-decoration-mute font-light">
                   {sessions.length} sessions
                 </span>
               )}
             </div>
 
             {sessionsLoading ? (
-              <p className="font-light py-4" style={{ fontSize: '12px', color: 'var(--cinder-text-faint)' }}>
+              <p className="tx-body-mute font-light py-4">
                 Loading sessions...
               </p>
             ) : sessions.length === 0 ? (
-              <p className="font-light py-4" style={{ fontSize: '12px', color: 'var(--cinder-text-faint)' }}>
+              <p className="tx-body-mute font-light py-4">
                 No sessions yet.
               </p>
             ) : (
@@ -734,7 +694,6 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 {sessions.map((s, i) => (
                   <div
                     key={s.id}
-                    style={fadeUp(0.26 + i * 0.03)}
                     className="group flex items-center gap-3 w-full transition-colors duration-300"
                     onClick={() => handleSessionClick(s)}
                     onMouseEnter={e => {
@@ -746,6 +705,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                       e.currentTarget.style.background = 'none';
                     }}
                     style={{
+                      ...fadeUp(0.26 + i * 0.03),
                       cursor: 'pointer',
                       padding: '12px 0',
                       background: 'none',
@@ -761,17 +721,11 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                       style={{ background: 'var(--cinder-ember-dim)' }}
                     />
                     {/* Name */}
-                    <span
-                      className="flex-1 font-light truncate"
-                      style={{ fontSize: '13px', letterSpacing: '0.03em', color: 'var(--cinder-text)' }}
-                    >
+                    <span className="tx-body-normal flex-1 font-light truncate">
                       {s.name || `Session #${s.id}`}
                     </span>
                     {/* Meta */}
-                    <span
-                      className="shrink-0 font-light"
-                      style={{ fontSize: '9px', letterSpacing: '0.04em', color: 'var(--cinder-text-faint)' }}
-                    >
+                    <span className="tx-decoration-mute shrink-0 font-light">
                       {formatLastActive(s.last_message_at)}
                       {s.message_count != null && ` · ${s.message_count} msgs`}
                     </span>
