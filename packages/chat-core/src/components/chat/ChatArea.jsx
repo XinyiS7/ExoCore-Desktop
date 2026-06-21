@@ -68,6 +68,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  );
  const [chatMode, setChatMode] = useState(() => localStorage.getItem('exo_chat_mode') || 'sse');
  const [composeAttachments, setComposeAttachments] = useState([]);
+ const [cacheSkippedToast, setCacheSkippedToast] = useState(null);
  // Each entry: { clientId, file, preview, name, type, attachmentId, uploading, error }
  const nextClientIdRef = useRef(0);
  const [hasMore, setHasMore] = useState(false);
@@ -257,6 +258,13 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  useEffect(() => {
  composeAttachmentsRef.current = composeAttachments;
  }, [composeAttachments]);
+
+ // Auto-dismiss cache_skipped toast after 3 seconds
+ useEffect(() => {
+  if (!cacheSkippedToast) return;
+  const timer = setTimeout(() => setCacheSkippedToast(null), 3000);
+  return () => clearTimeout(timer);
+ }, [cacheSkippedToast]);
 
  // Cleanup blob URLs on unmount
  useEffect(() => {
@@ -565,6 +573,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  const handleSend = async (options = {}) => {
  // editMessageId: explicit (redo from regenerate button) or from editing state (edit flow)
  const editMessageId = options.editMessageId ?? editingMessageId;
+ const forceCacheRebuild = options.forceCacheRebuild || false;
 
  if ((!inputValue.trim() && editMessageId == null && composeAttachments.length === 0) || isGenerating) return;
 
@@ -641,6 +650,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   content: currentInput,
   model: currentModel,
   session_type: sessionType,
+  force_cache_rebuild: forceCacheRebuild,
   thinking_level: thinkingLevel,
   temperature: temperature,
   cache_enabled: activeSessionId && localStorage.getItem(`exo_cache_enabled_${activeSessionId}`) !== 'false',
@@ -713,6 +723,16 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     acc.totalCached += t.cached_input_chars ?? 0;
     acc.totalTools += t.tool_calls ?? 0;
     acc.requests += 1;
+    } catch(e) {}
+    continue;
+   }
+
+   if (eventType === 'cache_skipped') {
+    try {
+     const cs = JSON.parse(dataStr);
+     console.log('[cache_skipped]', cs.reason);
+     // Show toast
+     setCacheSkippedToast(cs.reason);
     } catch(e) {}
     continue;
    }
@@ -1051,6 +1071,16 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    <span className="text-[0.725rem] tracking-[0.2em] tx-message-mute flex items-center gap-2 animate-pulse"><RefreshCw size={12} strokeWidth={1} className="animate-spin" /> 正在加载历史协议记录...</span>
    </div>
   )}
+  {/* cache_skipped toast */}
+  {cacheSkippedToast && (
+   <div className="mx-4 mt-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-[2px] text-amber-400 text-xs flex items-center gap-2">
+    <Cpu size={12} strokeWidth={1} />
+    <span>当前模型不支持远端缓存（仅 Gemini 可用），已切换为普通发送。</span>
+    <button onClick={() => setCacheSkippedToast(null)} className="ml-auto tx-message-mute opacity-40 hover:opacity-80">
+     <X size={12} strokeWidth={1} />
+    </button>
+   </div>
+  )}
   {messages.map((msg, idx) => {
    const agentPreset = presets.find(x => x.id === sessionInfo?.agent_preset_id);
    const agentName = agentPreset?.name || 'Core';
@@ -1234,6 +1264,15 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    onFocus={() => setInputFocused(true)}
    onBlur={() => { if (!inputValue) setInputFocused(false); }}
    onKeyDown={e => {
+    // Ctrl+Shift+Enter: cache send
+    if (e.key === 'Enter' && e.ctrlKey && e.shiftKey && !e.isComposing) {
+    e.preventDefault();
+    if (!autocompleteOpen && !isGenerating && (composeAttachments.length > 0 || pendingAttachments.length > 0)) {
+     handleSend(editingMessageId ? { editMessageId: editingMessageId } : { forceCacheRebuild: true });
+    }
+    return;
+    }
+
     // Ctrl+Enter to send
     if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) {
     e.preventDefault();
@@ -1289,6 +1328,16 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    </div>
    <div className="flex items-center gap-2">
     {rightExtraButton}
+    {/* 🧊 Cache Send button — visible when attachments exist */}
+    {!isGenerating && (composeAttachments.length > 0 || pendingAttachments.length > 0) && (
+     <button
+      onClick={() => handleSend(editingMessageId ? { editMessageId: editingMessageId } : { forceCacheRebuild: true })}
+      className="p-1.5 bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 rounded-[2px] hover:bg-cyan-500/25 hover:text-cyan-300 disabled:opacity-20 disabled:grayscale transition-colors"
+      title="生成Cache并发送 (Ctrl+Shift+Enter)"
+     >
+      <Cpu size={15} strokeWidth={1} />
+     </button>
+    )}
     {isGenerating ? (
     <button
      onClick={handleStop}
