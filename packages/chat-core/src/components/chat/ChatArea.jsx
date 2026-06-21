@@ -884,12 +884,18 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
 
  const handleRemoveAttachment = async (att) => {
  try {
-  await fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/attachments/delete/`, {
+  const res = await fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/attachments/delete/`, {
   method: 'DELETE',
   headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
   credentials: 'include',
   body: JSON.stringify({ source: att.source, id: att.id }),
   });
+  if (res.status === 409) {
+   const data = await res.json();
+   setCacheSkippedToast(data.detail || data.error);
+   return;
+  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   setSessionAttachments(prev => prev.filter(a => a.id !== att.id));
  } catch (err) {
   console.error('移除附件失败:', err);
