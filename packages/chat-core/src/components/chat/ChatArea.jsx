@@ -1264,11 +1264,15 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    onFocus={() => setInputFocused(true)}
    onBlur={() => { if (!inputValue) setInputFocused(false); }}
    onKeyDown={e => {
-    // Ctrl+Shift+Enter: cache send
+    // Ctrl+Shift+Enter: cache send (fallback to normal send if no attachments)
     if (e.key === 'Enter' && e.ctrlKey && e.shiftKey && !e.isComposing) {
     e.preventDefault();
-    if (!autocompleteOpen && !isGenerating && (composeAttachments.length > 0 || pendingAttachments.length > 0)) {
-     handleSend(editingMessageId ? { editMessageId: editingMessageId } : { forceCacheRebuild: true });
+    if (!autocompleteOpen && !isGenerating) {
+     if (composeAttachments.length > 0 || pendingAttachments.length > 0) {
+      handleSend(editingMessageId ? { editMessageId: editingMessageId } : { forceCacheRebuild: true });
+     } else {
+      handleSend(editingMessageId ? { editMessageId: editingMessageId } : {});
+     }
     }
     return;
     }
