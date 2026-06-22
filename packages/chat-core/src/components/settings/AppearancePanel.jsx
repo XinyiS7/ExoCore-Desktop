@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFont, AVAILABLE_FONTS, FONT_SCALE_CONFIG, getFontStack } from 'exo-shared';
+import { useFont, useTheme, AVAILABLE_FONTS, FONT_SCALE_CONFIG, getFontStack } from 'exo-shared';
 
 function FontSelector({ label, description, value, onChange }) {
   return (
@@ -130,6 +130,8 @@ export default function AppearancePanel() {
     scaleConfig,
   } = useFont();
 
+  const { theme, setTheme } = useTheme();
+
   return (
     <div className="flex-1 h-full overflow-y-auto">
       <div className="max-w-xl px-8 py-8">
@@ -174,6 +176,46 @@ export default function AppearancePanel() {
             onChange={setFontScale}
             config={scaleConfig}
           />
+
+          <div className="border-t border-white/5" />
+
+          {/* Theme Toggle */}
+          <div className="space-y-3">
+            <div>
+              <span className="text-[0.625rem] tracking-[0.12em] tx-system-normal opacity-70">
+                🎨 Theme · 主题
+              </span>
+              <p className="text-[0.5625rem] tx-system-mute opacity-40 mt-0.5 leading-relaxed">
+                切换深色 / 浅色全局配色方案
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setTheme('dark')}
+                className={`flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-all ${
+                  theme === 'dark'
+                    ? 'border-chat-accent/40 bg-chat-accent/10 tx-system-accent shadow-glow-gold'
+                    : 'border-white/5 bg-white/[0.02] tx-system-mute hover:border-white/10'
+                }`}
+              >
+                <span className="block text-lg mb-1">🌙</span>
+                Dark · 深色
+              </button>
+
+              <button
+                onClick={() => setTheme('light')}
+                className={`flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-all ${
+                  theme === 'light'
+                    ? 'border-chat-accent/40 bg-chat-accent/10 tx-system-accent shadow-glow-gold'
+                    : 'border-white/5 bg-white/[0.02] tx-system-mute hover:border-white/10'
+                }`}
+              >
+                <span className="block text-lg mb-1">☀️</span>
+                Light · 浅色
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Preview cards */}
