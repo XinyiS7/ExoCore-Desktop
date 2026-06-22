@@ -4,7 +4,7 @@ import {
  Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2, SlidersHorizontal, Folder, ChevronDown
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { baseUrl, getCsrfToken, MAIN_MODEL_IDS } from 'exo-shared';
+import { baseUrl, getCsrfToken, MAIN_MODEL_IDS, useTheme } from 'exo-shared';
 import { getAgentAvatarUrl, getUserAvatarUrl } from '../../utils/avatar';
 import { filesToAttachmentData, saveAttachments, enrichMessages, uploadFilesToAttachments } from '../../utils/attachmentStorage';
 import { formatDateSeparator, isDifferentDay } from '../../utils/time';
@@ -14,7 +14,7 @@ import ContextCacheIndicator from './ContextCacheIndicator';
 import { usePollingChat } from '../../hooks/usePollingChat';
 import AuroraBackground from './AuroraBackground';
 import ControlsDrawer from './ControlsDrawer';
-import { DEFAULT_PALETTE_ID, getPalette } from './palettes';
+import { DEFAULT_PALETTE_ID, getPalette, ALL_PRESETS } from './palettes';
 import AutocompletePopup from './AutocompletePopup';
 
 const MSGS_PER_PAGE = 50;
@@ -77,9 +77,27 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  const sessionTelemetryRef = useRef({ totalInput: 0, totalOutput: 0, totalCached: 0, totalTools: 0, requests: 0 });
  const [telemetryExpanded, setTelemetryExpanded] = useState(false);
  const [controlsExpanded, setControlsExpanded] = useState(false);
- const [paletteId, setPaletteId] = useState(() =>
- activeSessionId ? localStorage.getItem(`exo_session_theme_${activeSessionId}`) || DEFAULT_PALETTE_ID : DEFAULT_PALETTE_ID
- );
+ const { theme } = useTheme();
+
+ const getThemeDefaultId = (t) => {
+  return t === 'light' ? 'morning-mist' : 'burning-sunset';
+ };
+
+ const [paletteId, setPaletteId] = useState(() => {
+  const stored = activeSessionId
+    ? localStorage.getItem(`exo_session_theme_${activeSessionId}`)
+    : null;
+  if (stored) {
+    const preset = getPalette(stored);
+    // Validate stored palette is compatible with current theme.
+    // Custom palettes have no theme tag → always compatible.
+    // Built-in presets must match the current theme.
+    if (preset && (!preset.theme || preset.theme === theme)) {
+    return stored;
+    }
+  }
+  return getThemeDefaultId(theme);
+ });
  const [livePalette, setLivePalette] = useState(null); // { colors: {...} } from live preview
  const [inputFocused, setInputFocused] = useState(false);
  const userPreset = useMemo(() => presets?.find(p => p.agent_type === 'user') || null, [presets]);
@@ -372,9 +390,18 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  setNewAttachPath('');
  setNewAttachName('');
 
- // Restore per-session color palette
+ // Restore per-session color palette (with theme validation)
  const savedPalette = localStorage.getItem(`exo_session_theme_${activeSessionId}`);
- setPaletteId(savedPalette || DEFAULT_PALETTE_ID);
+ if (savedPalette) {
+  const preset = getPalette(savedPalette);
+  if (preset && (!preset.theme || preset.theme === theme)) {
+    setPaletteId(savedPalette);
+  } else {
+    setPaletteId(getThemeDefaultId(theme));
+  }
+ } else {
+  setPaletteId(getThemeDefaultId(theme));
+ }
 
  // Restore per-session session_type
  setSessionType(localStorage.getItem(`exo_session_type_${activeSessionId}`) || 'lite');
@@ -557,6 +584,19 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   .catch(() => {});
  return () => { ++loadGenRef.current; };
  }, [activeSessionId, presets]);
+
+ // When theme changes, verify current paletteId is still compatible
+ useEffect(() => {
+  const preset = getPalette(paletteId);
+  if (preset?.theme && preset.theme !== theme) {
+   // Current palette is incompatible with new theme → revert to default
+   const newDefault = getThemeDefaultId(theme);
+   setPaletteId(newDefault);
+   if (activeSessionId) {
+    localStorage.setItem(`exo_session_theme_${activeSessionId}`, newDefault);
+   }
+  }
+ }, [theme]);
 
  const handleStop = () => {
  if (abortControllerRef.current) {
