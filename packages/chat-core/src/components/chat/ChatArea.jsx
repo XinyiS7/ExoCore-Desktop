@@ -965,7 +965,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   <div className="relative z-20 flex-shrink-0">
   {/* v1 standalone header: back + session name + ID */}
   {!onBack && (
-   <div className="border-b border-white/[0.04] bg-exo-pure/20 backdrop-blur-md z-20 px-4 md:px-6 py-2 flex items-center gap-2 min-w-0">
+   <div className="border-b border-cinder-line bg-exo-pure/20 backdrop-blur-md z-20 px-4 md:px-6 py-2 flex items-center gap-2 min-w-0">
    <button onClick={() => setShowConvList(true)} className="md:hidden p-0.5 -ml-0.5 tx-message-mute hover:tx-message-normal transition-colors flex-shrink-0"><ArrowLeft size={15} strokeWidth={1} /></button>
    <span className="text-sm font-sans font-medium tx-message-normal opacity-90 truncate">{headerTitleOverride || sessionInfo?.name || `Session`}</span>
    <span className="text-[0.725rem] font-sans tx-message-mute opacity-30 flex-shrink-0">#{activeSessionId}</span>
@@ -1010,7 +1010,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   {/* Attachment panel — positioned below header */}
   {showAttachPanel && (
    <div className="absolute top-full right-4 md:right-6 mt-1 w-80 max-h-[70vh] bg-exo-pure border border-exo-mist-12 rounded-[4px] shadow-2xl z-50 overflow-hidden flex flex-col animate-fade-in" style={{ maxWidth: 'calc(100vw - 2rem)', width: 'min(20rem, calc(100vw - 2rem))' }}>
-   <div className="px-4 py-3 border-b border-exo-mist-10 bg-white/5 flex items-center justify-between">
+   <div className="px-4 py-3 border-b border-exo-mist-10 bg-cinder-glass flex items-center justify-between">
     <span className="label-caps tx-message-mute">挂载文档 ({filteredSessionAttachments.length + filteredPendingAttachments.length})</span>
     <button onClick={() => setShowAttachPanel(false)} className="tx-message-mute hover:tx-message-normal transition-colors"><X size={13} strokeWidth={1} /></button>
    </div>
@@ -1060,7 +1060,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     )}
    </div>
    {!isAddingAttach && (
-    <div className="p-2 border-t border-exo-mist-10 bg-white/5">
+    <div className="p-2 border-t border-exo-mist-10 bg-cinder-glass">
     <button onClick={() => setIsAddingAttach(true)} className="w-full py-2 text-[0.7875rem] tracking-widest tx-message-mute hover:tx-message-normal hover:bg-exo-accent/[0.04] flex items-center justify-center gap-2 rounded-[2px] border border-dashed border-exo-mist-10 hover:border-exo-mist-20 transition-colors">
      <Plus size={13} strokeWidth={1} /> 挂载外部路径
     </button>
@@ -1135,7 +1135,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   isSubmitting={isBranching}
   />
 
-  <div className="flex-shrink-0 p-4 border-t border-white/[0.04] bg-exo-pure/40 backdrop-blur-xl flex flex-col gap-2 relative z-10">
+  <div className="flex-shrink-0 p-4 border-t border-cinder-line bg-exo-pure/40 backdrop-blur-xl flex flex-col gap-2 relative z-10">
   {editingMessageId && (
    <div className="flex items-center justify-between px-3 py-1.5 bg-exo-accent/10 border border-exo-accent/20 rounded-[2px] animate-fade-in">
    <div className="flex items-center gap-2 tx-message-accent text-[0.725rem] tracking-widest">
@@ -1168,10 +1168,10 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    />
   )}
 
-  <div className={`relative flex flex-col bg-exo-pure/40 backdrop-blur-md border rounded-[4px] transition-all overflow-visible ${inputFocused || inputValue ? 'border-white/[0.10] shadow-glow-gold' : 'border-white/[0.04]'}`}>
+  <div className={`relative flex flex-col bg-exo-pure/40 backdrop-blur-md border rounded-[4px] transition-all overflow-visible ${inputFocused || inputValue ? 'border-cinder-line-glow shadow-glow-gold' : 'border-cinder-line'}`}>
    {/* @ file-reference chip bar */}
    {fileRefs.length > 0 && (
-   <div className="flex flex-wrap gap-1.5 px-3 pt-2.5 pb-1 border-b border-exo-mist-10 bg-white/[0.02]">
+   <div className="flex flex-wrap gap-1.5 px-3 pt-2.5 pb-1 border-b border-exo-mist-10 bg-cinder-glass">
     {fileRefs.map((ref, i) => (
     <span
      key={`${ref.path}-${i}`}
@@ -1208,7 +1208,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    />
 
    {composeAttachments.length > 0 && (
-   <div className="flex flex-wrap gap-2 px-3 pt-3 pb-2 border-b border-exo-mist-10 bg-white/[0.02]">
+   <div className="flex flex-wrap gap-2 px-3 pt-3 pb-2 border-b border-exo-mist-10 bg-cinder-glass">
     {composeAttachments.map(e => (
     <div key={e.clientId} className="relative group">
      {e.preview ? (
@@ -1238,7 +1238,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
      )}
      <button
      onClick={() => handleRemoveComposeAttachment(e.clientId)}
-     className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-exo-pure border border-white/[0.06] tx-message-mute hover:text-red-400 hover:border-red-400/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+     className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-exo-pure border border-cinder-line tx-message-mute hover:text-red-400 hover:border-red-400/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
      >
      <X size={10} strokeWidth={1} />
      </button>

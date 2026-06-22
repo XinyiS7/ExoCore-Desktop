@@ -109,8 +109,8 @@ const ConversationList = ({
   <div className="flex items-center gap-3 overflow-hidden min-w-0">
   <div className={`p-1.5 rounded-[2px] border transition-all ${
    activeSessionId === conv.id ? 'bg-exo-accent/20 border-exo-accent/40' :
-   inactive ? 'bg-white/[0.02] border-transparent opacity-30' :
-   'bg-white/5 border-transparent group-hover:border-exo-mist-10'
+   inactive ? 'bg-cinder-glass border-transparent opacity-30' :
+   'bg-cinder-glass border-transparent group-hover:border-exo-mist-10'
   }`}>
    <Icon size={14} className={activeSessionId === conv.id ? 'tx-system-accent' : inactive ? 'opacity-20 group-hover:opacity-40' : 'opacity-40 group-hover:opacity-100'} />
   </div>
@@ -201,7 +201,7 @@ const ConversationList = ({
         onClick={() => toggleProject(proj.id)}
         className={`group flex items-center gap-4 p-3 rounded-[4px] cursor-pointer transition-colors border ${isExpanded ? 'bg-exo-pure border-exo-mist-12' : 'border-transparent hover:bg-exo-accent/[0.02] hover:border-exo-mist-10'}`}
        >
-        <div className={`p-2 rounded-[2px] transition-all border ${isExpanded ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-white/5 tx-system-mute border-transparent'}`}>
+        <div className={`p-2 rounded-[2px] transition-all border ${isExpanded ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-cinder-glass tx-system-mute border-transparent'}`}>
         {isExpanded ? <FolderOpen size={16}/> : <Folder size={16}/>}
         </div>
         <div className="flex-1 min-w-0">
@@ -284,7 +284,7 @@ const ConversationList = ({
       : 'border-transparent hover:bg-exo-accent/[0.02] hover:border-exo-mist-10 tx-system-mute hover:tx-system-normal'
      }`}
     >
-     <div className={`p-3 rounded-[2px] transition-all border ${activeCouncilId === cs.id ? 'bg-exo-accent/20 border-exo-accent/40' : 'bg-white/5 border-transparent'}`}>
+     <div className={`p-3 rounded-[2px] transition-all border ${activeCouncilId === cs.id ? 'bg-exo-accent/20 border-exo-accent/40' : 'bg-cinder-glass border-transparent'}`}>
      <Users size={20} />
      </div>
      <div className="flex-1 min-w-0">
@@ -314,7 +314,7 @@ const ConversationList = ({
        onClick={() => toggleProject(proj.id)}
        className={`group flex items-center gap-4 p-4 rounded-[4px] cursor-pointer transition-colors border ${isExpanded ? 'bg-exo-pure border-exo-mist-12 shadow-brutalist' : 'border-transparent hover:bg-exo-accent/[0.02] hover:border-exo-mist-10'}`}
       >
-       <div className={`p-2 rounded-[2px] transition-all border ${isExpanded ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-white/5 tx-system-mute border-transparent'}`}>
+       <div className={`p-2 rounded-[2px] transition-all border ${isExpanded ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-cinder-glass tx-system-mute border-transparent'}`}>
        {isExpanded ? <FolderOpen size={18}/> : <Folder size={18}/>}
        </div>
        <div className="flex-1 min-w-0">

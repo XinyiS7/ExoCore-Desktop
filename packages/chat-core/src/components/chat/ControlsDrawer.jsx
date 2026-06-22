@@ -396,7 +396,7 @@ export default function ControlsDrawer({
    {Object.values(liveStops).map((hex, i) => (
     <span
     key={i}
-    className="w-2.5 h-2.5 rounded-[1px] border border-white/10 flex-shrink-0"
+    className="w-2.5 h-2.5 rounded-[1px] border border-cinder-line flex-shrink-0"
     style={{ backgroundColor: hex }}
     title={STOP_NAMES[i]}
     />

@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeKatex from 'rehype-katex';
-import { baseUrl, getCsrfToken } from 'exo-shared';
+import { baseUrl, getCsrfToken, useTheme } from 'exo-shared';
 import { formatMessageTime } from '../../utils/time';
 
 function extractText(node) {
@@ -97,7 +97,7 @@ function SvgPreview({ text }) {
  // Quick pre-check: if it doesn't look like SVG at all, bail early
  if (!/<svg\b/i.test(text)) {
  return (
-  <div className="p-6 text-center text-[0.6875rem] tx-message-mute opacity-50 bg-white/[0.02] border border-exo-mist-8 rounded-b-[4px]">
+  <div className="p-6 text-center text-[0.6875rem] tx-message-mute opacity-50 bg-cinder-glass border border-exo-mist-8 rounded-b-[4px]">
   No SVG content detected — switch to Code tab to view source
   </div>
  );
@@ -141,7 +141,7 @@ function MermaidPreview({ text }) {
  }
  if (!svg) {
  return (
-  <div className="flex items-center justify-center p-8 bg-white/[0.03] rounded-b-[4px]">
+  <div className="flex items-center justify-center p-8 bg-cinder-glass rounded-b-[4px]">
   <div className="w-4 h-4 border-2 border-exo-accent/40 border-t-exo-accent rounded-full animate-spin" />
   </div>
  );
@@ -181,7 +181,7 @@ function CodeBlock({ children, className }) {
  );
 
  return (
- <div className="relative group/code my-4 rounded-[4px] overflow-hidden bg-exo-pure/8">
+ <div className="relative group/code my-4 rounded-[4px] overflow-hidden bg-cinder-glass-heavy">
   <div className="flex items-center justify-between px-4 py-1.5">
   <div className="flex items-center gap-3 min-w-0">
    <span className="text-[0.6875rem] tx-message-mute opacity-35 select-none" style={undefined}>{lang}</span>
@@ -229,7 +229,7 @@ const MD_COMPONENTS = {
  // so we can't use !className. Only block code has 'language-*' class.
  const isInline = !className?.includes('language-');
  if (isInline) {
-  return <code className="bg-white/10 tx-message-accent px-1 py-0.5 rounded-[2px] text-[0.9em]" style={{ fontFamily: 'var(--font-code)' }} {...props}>{children}</code>;
+  return <code className="bg-cinder-glass-heavy tx-message-accent px-1 py-0.5 rounded-[2px] text-[0.9em]" style={{ fontFamily: 'var(--font-code)' }} {...props}>{children}</code>;
  }
  return <code className={className} {...props}>{children}</code>;
  }
@@ -237,6 +237,7 @@ const MD_COMPONENTS = {
 
 const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, userAvatarUrl, onEdit, onRegenerate, onBranch, isGenerating }) => {
  const isUser = msg.role === 'user';
+ const { theme } = useTheme();
  const [copied, setCopied] = useState(false);
  const [showBookmark, setShowBookmark] = useState(false);
  const [bookmarkText, setBookmarkText] = useState('');
@@ -333,7 +334,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
     ? <button
      key={i}
      onClick={() => setLightboxSrc(att.preview)}
-     className="relative group block h-32 max-w-[200px] rounded-[4px] overflow-hidden border border-white/[0.06] hover:border-exo-accent/40 transition-all cursor-zoom-in"
+     className="relative group block h-32 max-w-[200px] rounded-[4px] overflow-hidden border border-cinder-line hover:border-exo-accent/40 transition-all cursor-zoom-in"
      title={att.name}
      >
      <img src={att.preview} alt={att.name} className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all" />
@@ -341,7 +342,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
       <ZoomIn size={18} strokeWidth={1} className="tx-message-normal opacity-0 group-hover:opacity-100 transition-opacity" />
      </div>
      </button>
-    : <div key={i} className="flex items-center gap-1.5 text-[0.625rem] tracking-tighter bg-exo-pure/40 backdrop-blur-sm border border-white/[0.06] rounded-[4px] px-2 py-1.5 tx-message-mute">
+    : <div key={i} className="flex items-center gap-1.5 text-[0.625rem] tracking-tighter bg-exo-pure/40 backdrop-blur-sm border border-cinder-line rounded-[4px] px-2 py-1.5 tx-message-mute">
      <FileText size={11} strokeWidth={1} className="text-blue-400 shrink-0" />
      <span className="truncate max-w-[160px]">{att.name}</span>
      </div>
@@ -370,11 +371,11 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    </div>
   )}
   {isUser ? (
-   <div className="max-w-[92%] bg-exo-pure/40 backdrop-blur-md border border-white/[0.06] rounded-[4px] rounded-tr-none p-4 text-sm transition-all hover:border-exo-mist-20 prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none tx-message-normal opacity-90" style={{ fontFamily: 'var(--font-message)' }}>
+   <div className={`max-w-[92%] bg-exo-pure/40 backdrop-blur-md border border-cinder-line rounded-[4px] rounded-tr-none p-4 text-sm transition-all hover:border-exo-mist-20 prose ${theme !== 'light' ? 'prose-invert' : ''} prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none tx-message-normal opacity-90`} style={{ fontFamily: 'var(--font-message)' }}>
    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
    </div>
   ) : (
-   <div className="w-full prose prose-invert prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none" style={{ fontFamily: 'var(--font-message)' }}>
+   <div className={`w-full prose ${theme !== 'light' ? 'prose-invert' : ''} prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none`} style={{ fontFamily: 'var(--font-message)' }}>
    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
    </div>
   )}
@@ -432,8 +433,8 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
 
   {/* Bookmark panel */}
   {showBookmark && (
-  <div className="w-full mt-3 border border-white/[0.06] rounded-[4px] bg-exo-pure/40 backdrop-blur-md overflow-hidden animate-fade-in">
-   <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.04] bg-white/[0.02]">
+  <div className="w-full mt-3 border border-cinder-line rounded-[4px] bg-exo-pure/40 backdrop-blur-md overflow-hidden animate-fade-in">
+   <div className="flex items-center justify-between px-3 py-2 border-b border-cinder-line bg-cinder-glass">
    <span className="label-caps tx-message-accent opacity-70">ARCHIVE_TO_LONGTERM_MEMORY</span>
    <button onClick={() => setShowBookmark(false)} className="tx-message-mute opacity-50 hover:tx-message-normal transition-colors p-0.5">
     <X size={12} strokeWidth={1} />
