@@ -269,10 +269,10 @@ export default function AgentHub({ appState, setView, goBack }) {
                           ? { opacity: 0.3 }
                           : { opacity: 1 }),
                         padding: '20px 24px',
-                        background: isHovered ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.01)',
-                        border: `1px solid ${isDragOver ? 'rgba(255,74,8,0.35)' : isHovered ? 'rgba(196,77,0,0.3)' : 'rgba(166,61,0,0.12)'}`,
+                        background: isHovered ? 'var(--cinder-panel)' : 'var(--cinder-surface)',
+                        border: `1px solid ${isDragOver ? 'rgba(255,74,8,0.35)' : isHovered ? 'var(--cinder-line-glow)' : 'var(--cinder-line)'}`,
                         borderRadius: '6px',
-                        boxShadow: isHovered ? '0 0 40px rgba(255,74,8,0.08), 0 8px 32px rgba(0,0,0,0.5)' : 'none',
+                        boxShadow: isHovered ? '0 8px 32px rgba(0,0,0,0.08), 0 0 40px rgba(255,74,8,0.12)' : 'none',
                         transform: isHovered ? 'translateY(-1px)' : 'none',
                       }}
                       onMouseEnter={() => setHoveredCard(`g045-${p.id}`)}
@@ -353,7 +353,7 @@ export default function AgentHub({ appState, setView, goBack }) {
                           <>
                             <div
                               className="my-3"
-                              style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
+                              style={{ borderTop: '1px solid var(--cinder-line)' }}
                             />
                             <TriggeredNote anchors={anchors || []} />
                           </>
@@ -393,10 +393,10 @@ export default function AgentHub({ appState, setView, goBack }) {
                           ? { opacity: 0.3 }
                           : { opacity: 1 }),
                         padding: '16px 20px',
-                        background: isHovered ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.01)',
-                        border: `1px solid ${isDragOver ? 'rgba(255,74,8,0.35)' : isHovered ? 'rgba(196,77,0,0.3)' : 'rgba(166,61,0,0.12)'}`,
+                        background: isHovered ? 'var(--cinder-panel)' : 'var(--cinder-surface)',
+                        border: `1px solid ${isDragOver ? 'rgba(255,74,8,0.35)' : isHovered ? 'var(--cinder-line-glow)' : 'var(--cinder-line)'}`,
                         borderRadius: '6px',
-                        boxShadow: isHovered ? '0 8px 32px rgba(0,0,0,0.5)' : 'none',
+                        boxShadow: isHovered ? '0 8px 32px rgba(0,0,0,0.06)' : 'none',
                         transform: isHovered ? 'translateY(-1px)' : 'none',
                         marginLeft: i % 2 === 1 ? '16px' : '0',
                       }}
@@ -468,7 +468,7 @@ export default function AgentHub({ appState, setView, goBack }) {
                         {/* Memory anchor ticker */}
                         <div
                           className="mt-2"
-                          style={{ borderTop: '1px solid rgba(255,255,255,0.03)' }}
+                          style={{ borderTop: '1px solid var(--cinder-line)' }}
                         >
                           <TriggeredNote anchors={anchors || []} />
                         </div>
@@ -504,10 +504,10 @@ export default function AgentHub({ appState, setView, goBack }) {
                       style={{
                         ...(isDragging ? { opacity: 0.3 } : { opacity: 1 }),
                         padding: '8px 14px',
-                        background: isHovered ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.01)',
-                        border: `1px solid ${isDragOver ? 'rgba(255,74,8,0.35)' : isHovered ? 'rgba(196,77,0,0.25)' : 'rgba(166,61,0,0.08)'}`,
+                        background: isHovered ? 'var(--cinder-glass)' : 'var(--cinder-surface)',
+                        border: `1px solid ${isDragOver ? 'rgba(255,74,8,0.35)' : isHovered ? 'var(--cinder-line-glow)' : 'var(--cinder-line)'}`,
                         borderRadius: '4px',
-                        boxShadow: isHovered ? '0 4px 16px rgba(0,0,0,0.4)' : 'none',
+                        boxShadow: isHovered ? '0 4px 16px rgba(0,0,0,0.05)' : 'none',
                         transform: isHovered ? 'translateY(-1px)' : 'none',
                       }}
                       onMouseEnter={() => setHoveredCard(`std-${p.id}`)}

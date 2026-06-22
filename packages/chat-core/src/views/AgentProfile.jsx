@@ -281,7 +281,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 minHeight: '100px',
                 background: bannerTint,
                 backdropFilter: 'blur(12px)',
-                borderBottom: '1px solid rgba(255,255,255,0.03)',
+                borderBottom: '1px solid var(--cinder-line)',
                 borderRadius: '4px 4px 0 0',
               }}
             />
@@ -417,8 +417,8 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 onBlur={handleModelBlur}
                 className="tx-decoration-normal outline-none cursor-pointer transition-all duration-300"
                 style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(166,61,0,0.15)',
+                  background: 'var(--cinder-glass)',
+                  border: '1px solid var(--cinder-line)',
                   borderRadius: '12px',
                   padding: '4px 12px',
                   appearance: 'none',
@@ -626,8 +626,8 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 }}
                 className="tx-decoration-normal outline-none cursor-pointer bg-transparent border-none p-0 text-[11px] text-orange-600/70 hover:text-orange-500"
               >
-                <option value="superior" className="bg-[#2b1810]">Superior</option>
-                <option value="standard" className="bg-[#2b1810]">Standard</option>
+                <option value="superior">Superior</option>
+                <option value="standard">Standard</option>
               </select>
             </div>
 

@@ -136,7 +136,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
             <div className="space-y-2">
               <label className="label-caps opacity-50">Topic Label / 话题标签</label>
               <input
-                className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
+                className="w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
                 value={topicLabel}
                 onChange={e => setTopicLabel(e.target.value)}
                 placeholder="TOPIC LABEL..."
@@ -147,7 +147,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
             <div className="space-y-2">
               <label className="label-caps opacity-50">Content / 内容摘要</label>
               <textarea
-                className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-3 text-sm tx-system-normal focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20 resize-y min-h-[120px]"
+                className="w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-3 text-sm tx-system-normal focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20 resize-y min-h-[120px]"
                 value={summary}
                 onChange={e => setSummary(e.target.value)}
                 placeholder="DETAILED SUMMARY..."
@@ -158,7 +158,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
             <div className="space-y-2">
               <label className="label-caps opacity-50">Keywords / 关键词 (COMMA SEPARATED)</label>
               <input
-                className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2 text-sm tx-system-normal focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
+                className="w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2 text-sm tx-system-normal focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
                 value={keywords}
                 onChange={e => setKeywords(e.target.value)}
                 placeholder="KEYWORD_A, KEYWORD_B..."
@@ -234,7 +234,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
               <div className="space-y-2">
                 {/* time_ref */}
                 {readonlyMeta.time_ref && (
-                  <div className="flex items-start gap-3 px-3 py-2.5 bg-black/30 border border-exo-mist-6 rounded-[2px]">
+                  <div className="flex items-start gap-3 px-3 py-2.5 bg-cinder-glass-heavy border border-exo-mist-6 rounded-[2px]">
                     <Clock size={11} className="tx-system-mute shrink-0 mt-0.5" />
                     <div>
                       <div className="text-[0.6rem] font-bold tracking-widest tx-system-mute mb-0.5">Time Ref</div>
@@ -245,7 +245,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
 
                 {/* emotion */}
                 {readonlyMeta.emotion && (
-                  <div className="flex items-start gap-3 px-3 py-2.5 bg-black/30 border border-exo-mist-6 rounded-[2px]">
+                  <div className="flex items-start gap-3 px-3 py-2.5 bg-cinder-glass-heavy border border-exo-mist-6 rounded-[2px]">
                     <span className="text-[0.7875rem] shrink-0 mt-0.5">◈</span>
                     <div>
                       <div className="text-[0.6rem] font-bold tracking-widest tx-system-mute mb-0.5">Emotion</div>
@@ -256,7 +256,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
 
                 {/* entities */}
                 {readonlyMeta.entities.length > 0 && (
-                  <div className="px-3 py-2.5 bg-black/30 border border-exo-mist-6 rounded-[2px]">
+                  <div className="px-3 py-2.5 bg-cinder-glass-heavy border border-exo-mist-6 rounded-[2px]">
                     <div className="text-[0.6rem] font-bold tracking-widest tx-system-mute mb-1.5">Entities</div>
                     <div className="flex flex-wrap gap-1.5">
                       {readonlyMeta.entities.map((e, i) => (
@@ -270,7 +270,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
 
                 {/* importance */}
                 {importancePct !== null && (
-                  <div className="px-3 py-2.5 bg-black/30 border border-exo-mist-6 rounded-[2px]">
+                  <div className="px-3 py-2.5 bg-cinder-glass-heavy border border-exo-mist-6 rounded-[2px]">
                     <div className="flex items-center justify-between mb-1.5">
                       <div className="text-[0.6rem] font-bold tracking-widest tx-system-mute">Importance</div>
                       <span className="text-[0.725rem] font-bold tx-system-accent">{importancePct}%</span>
@@ -295,7 +295,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
         </div>
 
         {/* ── RIGHT column: chat trace (mobile: bottom) ── */}
-        <div className="flex-1 min-w-0 overflow-y-auto p-5 bg-black/20 scrollbar-hide">
+        <div className="flex-1 min-w-0 overflow-y-auto p-5 bg-cinder-glass-heavy scrollbar-hide">
           <div className="flex items-center gap-2 mb-5 opacity-40">
             <History size={13} />
             <h3 className="text-[0.725rem] font-bold tx-system-normal tracking-[0.2em]">

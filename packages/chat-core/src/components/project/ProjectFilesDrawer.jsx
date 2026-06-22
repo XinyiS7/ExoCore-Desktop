@@ -48,7 +48,7 @@ export default function ProjectFilesDrawer({
  return (
  <>
   {/* Backdrop */}
-  <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+  <div className="fixed inset-0 z-40 bg-cinder-glass-heavy" onClick={onClose} />
 
   {/* Drawer */}
   <div className="fixed top-0 right-0 h-full w-[350px] max-w-[90vw] bg-chat-panel border-l border-white/5 shadow-2xl z-50 flex flex-col animate-fade-in overflow-hidden">

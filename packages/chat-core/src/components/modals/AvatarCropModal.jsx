@@ -143,11 +143,11 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-cinder-glass-heavy backdrop-blur-md animate-in fade-in duration-200"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
       <div
-        className="bg-exo-pure border border-exo-mist-10 rounded-[2px] p-6 flex flex-col items-center gap-6 shadow-[0_0_60px_rgba(0,0,0,0.5)]"
+        className="bg-exo-pure border border-exo-mist-10 rounded-[2px] p-6 flex flex-col items-center gap-6 shadow-[0_0_60px_rgba(0,0,0,0.08)]"
         style={{ width: CROP_SIZE + 80 }}
         onClick={e => e.stopPropagation()}
       >
@@ -188,7 +188,7 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
             </div>
           </div>
           {/* Static Overlay Circle */}
-          <div className="absolute inset-0 rounded-full border border-exo-accent/40 pointer-events-none shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]" />
+          <div className="absolute inset-0 rounded-full border border-exo-accent/40 pointer-events-none shadow-[inset_0_0_20px_rgba(0,0,0,0.08)]" />
         </div>
 
         <div className="text-center space-y-1">

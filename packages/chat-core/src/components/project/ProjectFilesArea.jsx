@@ -129,7 +129,7 @@ const ProjectFilesArea = ({ projectId, projects, setProjects, openDestructor }) 
     const isPdf = mime === 'application/pdf';
     const FileIcon = isImage ? FileImage : isPdf ? FileType2 : FileText;
     return (
-     <div key={file.id} className="bg-[#121318] border border-exo-border rounded-lg p-4 flex flex-col justify-between group hover:border-exo-accent/30 transition-all">
+     <div key={file.id} className="bg-cinder-glass-heavy border border-exo-border rounded-lg p-4 flex flex-col justify-between group hover:border-exo-accent/30 transition-all">
      <div className="flex items-start gap-3 mb-4">
       <div className={`p-2 rounded bg-opacity-10 mt-1 ${file.source === 'obsidian_sync' ? 'bg-purple-500 text-purple-400' : isImage ? 'bg-emerald-500 text-emerald-400' : isPdf ? 'bg-red-500 text-red-400' : 'bg-blue-500 text-blue-400'}`}>
       <FileIcon size={18} />
@@ -137,7 +137,7 @@ const ProjectFilesArea = ({ projectId, projects, setProjects, openDestructor }) 
       <div className="flex-1 overflow-hidden">
       <p className="text-sm font-bold tx-body-normal truncate" title={file.name}>{file.name}</p>
       <div className="flex items-center gap-2 mt-1">
-       <span className="text-[0.625rem] tx-body-mute bg-black px-1.5 py-0.5 rounded border border-exo-border">
+       <span className="text-[0.625rem] tx-body-mute bg-cinder-glass-heavy px-1.5 py-0.5 rounded border border-exo-border">
        {file.source === 'obsidian_sync' ? 'OBSIDIAN' : 'MANUAL'}
        </span>
        <span className="text-[0.625rem] tx-body-mute ">{formatBytes(file.size)}</span>

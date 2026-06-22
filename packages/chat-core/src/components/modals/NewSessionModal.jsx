@@ -93,8 +93,8 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
  };
 
  return (
- <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-  <div className="bg-exo-pure border border-exo-mist-10 rounded-[2px] w-full max-w-lg shadow-[0_0_60px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
+ <div className="fixed inset-0 z-[100] flex items-center justify-center bg-cinder-glass-heavy backdrop-blur-md animate-in fade-in duration-200">
+  <div className="bg-exo-pure border border-exo-mist-10 rounded-[2px] w-full max-w-lg shadow-[0_0_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col">
   {/* Header */}
   <div className="px-6 py-4 border-b border-exo-mist-10 flex items-center justify-between bg-exo-pure/50">
    <div className="flex flex-col">
@@ -116,7 +116,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
     value={name} 
     onChange={e => setName(e.target.value)} 
     placeholder="AUTO-GENERATED IF NULL..." 
-    className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20" 
+    className="w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20" 
    />
    </div>
 
@@ -139,7 +139,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
       group p-4 rounded-[2px] border cursor-pointer flex justify-between items-center transition-all
       ${isSelected
       ? (isSuperiorType(preset.agent_type) ? 'bg-exo-accent/10 border-exo-accent/60' : 'bg-white/5 border-white/40 shadow-brutalist')
-      : 'bg-black/30 border-exo-mist-10 tx-system-mute hover:border-exo-mist-20'}
+      : 'bg-cinder-glass-heavy border-exo-mist-10 tx-system-mute hover:border-exo-mist-20'}
      `}
      >
      <div className="flex flex-col gap-1">
@@ -175,7 +175,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
       p-4 rounded-[2px] border cursor-pointer flex items-center gap-3 transition-all
       ${sessionType === value
       ? 'bg-exo-accent/10 border-exo-accent/60 tx-system-normal shadow-brutalist-gold'
-      : 'bg-black/30 border-exo-mist-10 tx-system-mute hover:border-exo-mist-20'}
+      : 'bg-cinder-glass-heavy border-exo-mist-10 tx-system-mute hover:border-exo-mist-20'}
      `}
      >
      <Icon size={16} className={sessionType === value ? 'tx-system-accent' : ''} />
@@ -197,7 +197,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
     [Optional · Single]
     </span>
    </label>
-   <div className="max-h-40 overflow-y-auto border border-exo-mist-10 rounded-[2px] bg-black/40 p-2 space-y-1 scrollbar-hide">
+   <div className="max-h-40 overflow-y-auto border border-exo-mist-10 rounded-[2px] bg-cinder-glass-heavy p-2 space-y-1 scrollbar-hide">
     {projects.length === 0 && (
     <div className="text-center py-4 text-[0.625rem] font-mono tx-system-mute opacity-30 italic">No project clusters found</div>
     )}
@@ -234,7 +234,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
    </label>
    <div
     aria-disabled={!isG045}
-    className={`max-h-40 overflow-y-auto border border-exo-mist-10 rounded-[2px] bg-black/40 p-2 space-y-1 scrollbar-hide ${
+    className={`max-h-40 overflow-y-auto border border-exo-mist-10 rounded-[2px] bg-cinder-glass-heavy p-2 space-y-1 scrollbar-hide ${
     !isG045 ? 'opacity-40 pointer-events-none' : ''
     }`}
    >

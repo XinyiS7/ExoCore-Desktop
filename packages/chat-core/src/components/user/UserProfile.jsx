@@ -377,7 +377,7 @@ const TweetCard = ({
                 onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleReply(tweet.id); } }}
                 placeholder={`Reply to ${name}...`}
                 autoFocus
-                className="flex-1 bg-black/40 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-body-normal outline-none focus:border-exo-accent/40 resize-none transition-all placeholder:opacity-20"
+                className="flex-1 bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-body-normal outline-none focus:border-exo-accent/40 resize-none transition-all placeholder:opacity-20"
               />
               <button
                 onClick={() => handleReply(tweet.id)}
@@ -428,7 +428,7 @@ const TweetCard = ({
                       onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleReply(reply.id); } }}
                       placeholder={`Reply to ${replyAuthor.name}...`}
                       autoFocus
-                      className="flex-1 bg-black/40 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-body-normal outline-none focus:border-exo-accent/40 resize-none transition-all placeholder:opacity-20"
+                      className="flex-1 bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-body-normal outline-none focus:border-exo-accent/40 resize-none transition-all placeholder:opacity-20"
                     />
                     <button
                       onClick={() => handleReply(reply.id)}

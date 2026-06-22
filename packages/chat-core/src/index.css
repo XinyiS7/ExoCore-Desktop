@@ -28,6 +28,26 @@
   --cinder-text-faint: rgb(113 112 120);
   --cinder-panel:      rgba(255, 255, 255, 0.02);
   --cinder-surface:    rgba(255, 255, 255, 0.015);
+
+  /* ── exo-* legacy bridge (for Tailwind opacity modifiers) ── */
+  --exo-pure-rgb:       8 8 8;
+  --exo-accent-rgb:     255 74 8;
+  --exo-muted-rgb:      156 156 170;
+  --exo-text-rgb:       206 205 214;
+  --exo-bg-rgb:         5 5 5;
+  --exo-metal-rgb:      18 20 24;
+  --exo-accentGlow-rgb: 255 106 40;
+  --exo-panel-rgb:      255 255 255;  --exo-panel-alpha: 0.02;
+  --exo-surface-rgb:    255 255 255;  --exo-surface-alpha: 0.015;
+  --exo-border-rgb:     139 0 0;      --exo-border-alpha: 0.25;
+  --exo-mist-rgb:       139 0 0;
+
+  /* ── chat-* legacy bridge ── */
+  --chat-accent-rgb: 255 74 8;
+  --chat-muted-rgb:  156 156 170;
+  --chat-text-rgb:   206 205 214;
+  --chat-bg-rgb:     5 5 5;
+  --chat-panel-rgb:  255 255 255;  --chat-panel-alpha: 0.02;
 }
 
 /* ── Cinder · Light Theme ── */
@@ -46,6 +66,26 @@
   --cinder-text-faint: rgb(150 140 128);
   --cinder-panel:      rgba(0, 0, 0, 0.015);
   --cinder-surface:    rgba(0, 0, 0, 0.008);
+
+  /* ── exo-* legacy bridge: light ── */
+  --exo-pure-rgb:       250 248 245;
+  --exo-accent-rgb:     224 68 0;
+  --exo-muted-rgb:      110 100 90;
+  --exo-text-rgb:       58 54 50;
+  --exo-bg-rgb:         250 248 245;
+  --exo-metal-rgb:      235 232 228;
+  --exo-accentGlow-rgb: 224 68 0;
+  --exo-panel-rgb:      0 0 0;        --exo-panel-alpha: 0.015;
+  --exo-surface-rgb:    0 0 0;        --exo-surface-alpha: 0.008;
+  --exo-border-rgb:     180 80 0;     --exo-border-alpha: 0.15;
+  --exo-mist-rgb:       180 80 0;
+
+  /* ── chat-* legacy bridge: light ── */
+  --chat-accent-rgb: 224 68 0;
+  --chat-muted-rgb:  110 100 90;
+  --chat-text-rgb:   58 54 50;
+  --chat-bg-rgb:     250 248 245;
+  --chat-panel-rgb:  0 0 0;        --chat-panel-alpha: 0.015;
 }
 
 /* ── Structural reset (kept from original, Tailwind preflight covers most) ── */
@@ -106,16 +146,16 @@ button {
 
   /* ── LCD / terminal surface ── */
   .lcd-screen {
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--cinder-glass-heavy);
     border: 1px solid var(--cinder-line);
   }
 
   /* ── Shadows ── */
   .shadow-brutalist {
-    box-shadow: 0 0 0 1px rgba(255, 74, 8, 0.3), 0 4px 12px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 0 1px rgba(255, 74, 8, 0.3), 0 4px 12px rgba(0, 0, 0, 0.12);
   }
   .shadow-brutalist-gold {
-    box-shadow: 0 0 0 1px rgba(253, 192, 122, 0.35), 0 4px 12px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 0 1px rgba(253, 192, 122, 0.35), 0 4px 12px rgba(0, 0, 0, 0.12);
   }
   .shadow-glow-gold {
     box-shadow: 0 0 12px rgba(255, 74, 8, 0.3), 0 0 2px rgba(253, 192, 122, 0.4);
@@ -135,9 +175,9 @@ button {
     --tw-prose-captions: var(--cinder-text-dim);
     --tw-prose-code: var(--cinder-flame-dim);
     --tw-prose-pre-code: var(--cinder-text-dim);
-    --tw-prose-pre-bg: rgba(0, 0, 0, 0.3);
+    --tw-prose-pre-bg: var(--cinder-glass-heavy);
     --tw-prose-th-borders: var(--cinder-line);
-    --tw-prose-td-borders: rgba(139, 0, 0, 0.12);
+    --tw-prose-td-borders: var(--cinder-line);
   }
   .prose-invert :where(code):not(:where([class~="not-prose"] *)) {
     background: rgba(255, 74, 8, 0.08);
@@ -148,7 +188,7 @@ button {
     font-size: 0.875em;
   }
   .prose-invert :where(pre):not(:where([class~="not-prose"] *)) {
-    background: rgba(0, 0, 0, 0.35);
+    background: var(--cinder-glass-heavy);
     border: 1px solid var(--cinder-line);
     border-radius: 4px;
   }

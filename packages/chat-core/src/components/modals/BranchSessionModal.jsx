@@ -19,8 +19,8 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
  if (!isOpen) return null;
 
  return (
- <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-  <div className="bg-exo-pure border border-exo-mist-10 rounded-[2px] w-full max-w-md shadow-[0_0_60px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
+ <div className="fixed inset-0 z-[100] flex items-center justify-center bg-cinder-glass-heavy backdrop-blur-md animate-in fade-in duration-200">
+  <div className="bg-exo-pure border border-exo-mist-10 rounded-[2px] w-full max-w-md shadow-[0_0_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col">
   {/* Header */}
   <div className="px-6 py-4 border-b border-exo-mist-10 flex items-center justify-between bg-exo-pure/50">
    <div className="flex flex-col">
@@ -45,7 +45,7 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
     value={name}
     onChange={e => setName(e.target.value)}
     placeholder="USE DEFAULT IF NULL..."
-    className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
+    className="w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
     autoFocus
     onKeyDown={e => { if (e.key === 'Enter') onConfirm({ name, sessionType }); }}
    />
@@ -64,7 +64,7 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
      className={`px-4 py-2.5 rounded-[2px] border text-[0.725rem] tracking-wider transition-all
      ${sessionType === value
       ? 'bg-exo-accent/10 border-exo-accent/60 tx-system-normal'
-      : 'bg-black/30 border-exo-mist-10 tx-system-mute opacity-60 hover:border-exo-mist-20'}`}
+      : 'bg-cinder-glass-heavy border-exo-mist-10 tx-system-mute opacity-60 hover:border-exo-mist-20'}`}
     >
      <span className="block text-[0.7875rem] font-bold">{label}</span>
      <span className="block text-[0.6rem] opacity-50 mt-0.5">{desc}</span>

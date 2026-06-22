@@ -336,10 +336,10 @@ export default function Dashboard({ appState, setView }) {
                     transition-all duration-500
                   "
                   style={{
-                    background: isHovered ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.01)',
-                    border: isHovered ? '1px solid rgba(231, 77, 2, 0.25)' : '1px solid rgba(255, 255, 255, 0.02)',
+                    background: isHovered ? 'var(--cinder-panel)' : 'var(--cinder-surface)',
+                    border: isHovered ? '1px solid rgba(231, 77, 2, 0.25)' : '1px solid var(--cinder-line)',
                     borderRadius: '12px',
-                    boxShadow: isHovered ? '0 10px 30px rgba(0, 0, 0, 0.5)' : 'none',
+                    boxShadow: isHovered ? '0 10px 30px rgba(0, 0, 0, 0.06)' : 'none',
                     transform: isHovered ? 'translateY(-2px)' : 'none',
                   }}
                   onMouseEnter={() => setHoveredNav(route)}

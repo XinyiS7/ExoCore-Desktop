@@ -258,7 +258,7 @@ export default function ProjectList({ appState, setView, goBack }) {
                         {menuProjectId === proj.id && (
                           <div
                             ref={menuRef}
-                            className="absolute right-4 top-full mt-1 w-32 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/[0.06] rounded-[2px] shadow-2xl py-1 z-50"
+                            className="absolute right-4 top-full mt-1 w-32 bg-cinder-glass-heavy backdrop-blur-xl border border-white/[0.06] rounded-[2px] shadow-2xl py-1 z-50"
                           >
                             <button
                               onClick={() => handleDeleteProject(proj)}
@@ -306,7 +306,7 @@ export default function ProjectList({ appState, setView, goBack }) {
                     background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04) 20%, rgba(255,255,255,0.04) 80%, transparent)',
                   }}
                 />
-                <span className="absolute left-0 bg-[#050505] pr-2 tx-decoration-mute">
+                <span className="absolute left-0 bg-cinder-base pr-2 tx-decoration-mute">
                   UNASSIGNED
                 </span>
               </div>

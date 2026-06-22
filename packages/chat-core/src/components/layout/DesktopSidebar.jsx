@@ -74,7 +74,7 @@ export default function DesktopSidebar() {
         glass-panel
       "
       style={{
-        boxShadow: '2px 0 24px rgba(0,0,0,0.4)',
+        boxShadow: '2px 0 24px rgba(0,0,0,0.06)',
       }}
     >
       {/* Right edge hairline */}

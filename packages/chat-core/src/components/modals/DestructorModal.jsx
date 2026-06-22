@@ -4,7 +4,7 @@ import { AlertTriangle, Archive, Trash2 } from 'lucide-react';
 const DestructorModal = ({ isOpen, onClose, title, description, onArchive, onDelete }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-cinder-glass-heavy backdrop-blur-md animate-in fade-in duration-200">
       <div className="bg-exo-pure border border-red-500/40 rounded-[2px] w-full max-w-md shadow-[0_0_50px_rgba(239,68,68,0.15)] overflow-hidden">
         <div className="bg-red-500/10 p-4 border-b border-red-500/20 flex items-center gap-3 text-red-500">
           <AlertTriangle size={18} className="animate-pulse" />

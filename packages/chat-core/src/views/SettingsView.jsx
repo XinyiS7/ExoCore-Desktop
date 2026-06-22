@@ -74,7 +74,7 @@ export default function SettingsView() {
 		{/* Mobile backdrop */}
 		{navVisible && (
 			<div
-				className="md:hidden fixed inset-0 z-40 bg-black/70 backdrop-blur-sm"
+				className="md:hidden fixed inset-0 z-40 bg-cinder-glass-heavy backdrop-blur-sm"
 				onClick={() => setNavVisible(false)}
 			/>
 		)}

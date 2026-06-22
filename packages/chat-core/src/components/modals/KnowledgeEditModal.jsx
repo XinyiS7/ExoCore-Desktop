@@ -51,8 +51,8 @@ const KnowledgeEditModal = ({ isOpen, onClose, knowledgeId }) => {
  };
 
  return (
- <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-  <div className="bg-exo-pure border border-exo-mist-10 rounded-[2px] w-full max-w-xl flex flex-col max-h-[85vh] shadow-[0_0_60px_rgba(0,0,0,0.5)]">
+ <div className="fixed inset-0 z-[110] flex items-center justify-center bg-cinder-glass-heavy backdrop-blur-md p-4 animate-in fade-in duration-200">
+  <div className="bg-exo-pure border border-exo-mist-10 rounded-[2px] w-full max-w-xl flex flex-col max-h-[85vh] shadow-[0_0_60px_rgba(0,0,0,0.08)]">
   {/* Header */}
   <div className="flex items-center justify-between p-5 border-b border-exo-mist-10 bg-exo-pure/50">
    <div className="flex flex-col">
@@ -74,7 +74,7 @@ const KnowledgeEditModal = ({ isOpen, onClose, knowledgeId }) => {
    <>
     <div className="space-y-2">
     <label className="label-caps opacity-50">Cluster Origin / 标题 (READ-ONLY)</label>
-    <div className="px-4 py-2.5 bg-black/30 border border-exo-mist-10 rounded-[2px] text-sm tx-system-mute font-mono opacity-60 italic">{data.title}</div>
+    <div className="px-4 py-2.5 bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] text-sm tx-system-mute font-mono opacity-60 italic">{data.title}</div>
     </div>
 
     <div className="space-y-2">
@@ -84,7 +84,7 @@ const KnowledgeEditModal = ({ isOpen, onClose, knowledgeId }) => {
     </div>
     <textarea
      rows={6}
-     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-3 text-[13px] tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all resize-none leading-relaxed"
+     className="w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-3 text-[13px] tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all resize-none leading-relaxed"
      value={abstract}
      onChange={e => setAbstract(e.target.value)}
      placeholder="INPUT SEMANTIC OVERVIEW..."
@@ -94,7 +94,7 @@ const KnowledgeEditModal = ({ isOpen, onClose, knowledgeId }) => {
     <div className="space-y-3">
     <label className="label-caps opacity-50">Taxonomy Tags / 关键词 (COMMA SEPARATED)</label>
     <input
-     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
+     className="w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
      value={keywords}
      onChange={e => setKeywords(e.target.value)}
      placeholder="EG: QUANTUM, ENTANGLEMENT, WAVE..."

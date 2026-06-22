@@ -190,7 +190,7 @@ const ThreadRow = ({ session, agentName, onClick, onRename, onDelete, openDestru
               backdropFilter: 'blur(12px)',
               border: '1px solid rgba(255,255,255,0.06)',
               borderRadius: '2px',
-              boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
+              boxShadow: '0 12px 32px rgba(0,0,0,0.08)',
               padding: '4px 0',
               minWidth: '130px',
               zIndex: 9999,

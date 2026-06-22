@@ -43,8 +43,8 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
  };
 
  return (
- <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-  <div className="bg-exo-pure border border-exo-mist-10 rounded-[2px] w-full max-w-2xl flex flex-col max-h-[90vh] shadow-[0_0_60px_rgba(0,0,0,0.5)]">
+ <div className="fixed inset-0 z-[100] flex items-center justify-center bg-cinder-glass-heavy backdrop-blur-md p-4 animate-in fade-in duration-200">
+  <div className="bg-exo-pure border border-exo-mist-10 rounded-[2px] w-full max-w-2xl flex flex-col max-h-[90vh] shadow-[0_0_60px_rgba(0,0,0,0.08)]">
   {/* Header */}
   <div className="flex items-center justify-between p-5 border-b border-exo-mist-10 bg-exo-pure/50">
    <div className="flex flex-col">
@@ -65,7 +65,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
     <div className="space-y-2">
     <label className="label-caps opacity-50">Alias / 名称</label>
     <input
-     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all"
+     className="w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all"
      value={form.name}
      onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
     />
@@ -74,7 +74,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
     <label className="label-caps opacity-50">Operational Context / 描述</label>
     <textarea
      rows={2}
-     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all resize-none"
+     className="w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all resize-none"
      value={form.description}
      onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
     />
@@ -82,7 +82,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
     <div className="space-y-2">
     <label className="label-caps opacity-50">Default Neural Model / 默认模型</label>
     <select
-     className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all cursor-pointer"
+     className="w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all cursor-pointer"
      value={form.default_model}
      onChange={e => setForm(p => ({ ...p, default_model: e.target.value }))}
     >
@@ -98,7 +98,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
    </div>
    <textarea
     rows={isSystemPromptOnly ? 20 : 10}
-    className={`w-full bg-black/80 border border-exo-mist-10 rounded-[2px] px-4 py-3 text-[13px] tx-system-normal focus:border-exo-accent/40 outline-none transition-all resize-y font-mono leading-relaxed ${isSystemPromptOnly ? 'flex-1 min-h-[50vh]' : ''}`}
+    className={`w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-3 text-[13px] tx-system-normal focus:border-exo-accent/40 outline-none transition-all resize-y font-mono leading-relaxed ${isSystemPromptOnly ? 'flex-1 min-h-[50vh]' : ''}`}
     value={form.system_prompt}
     onChange={e => setForm(p => ({ ...p, system_prompt: e.target.value }))}
    />

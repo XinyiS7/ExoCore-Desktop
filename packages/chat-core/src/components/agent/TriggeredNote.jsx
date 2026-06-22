@@ -40,10 +40,10 @@ const TriggeredNote = ({ anchors = [] }) => {
       <div
         className="h-16 flex items-center justify-center tx-decoration-mute"
         style={{
-          background: 'rgba(0,0,0,0.2)',
-          border: '1px dashed rgba(255,255,255,0.04)',
+          background: 'var(--cinder-panel)',
+          border: '1px dashed var(--cinder-line)',
           borderRadius: '2px',
-          opacity: 0.4,
+          opacity: 0.6,
         }}
       >
         <span style={{ marginRight: '8px', display: 'flex', alignItems: 'center', animation: 'breathe 2s ease-in-out infinite' }}>
@@ -61,8 +61,8 @@ const TriggeredNote = ({ anchors = [] }) => {
   return (
     <div
       style={{
-        background: 'rgba(0,0,0,0.4)',
-        border: '1px solid rgba(255,255,255,0.04)',
+        background: 'var(--cinder-glass-heavy)',
+        border: '1px solid var(--cinder-line)',
         borderRadius: '2px',
         padding: '16px',
       }}
@@ -110,7 +110,7 @@ const TriggeredNote = ({ anchors = [] }) => {
             <div
               className="absolute right-0 top-0 bottom-0 w-12 pointer-events-none"
               style={{
-                background: 'linear-gradient(to right, transparent, rgba(0,0,0,0.4))',
+                background: 'linear-gradient(to right, transparent, var(--cinder-glass-heavy))',
               }}
             />
           </div>
@@ -130,10 +130,10 @@ const TriggeredNote = ({ anchors = [] }) => {
               className="tx-decoration-mute text-center"
               style={{
                 fontSize: '9px',
-                background: 'rgba(0,0,0,0.4)',
+                background: 'var(--cinder-glass-heavy)',
                 padding: '2px 6px',
                 borderRadius: '2px',
-                border: '1px solid rgba(255,255,255,0.04)',
+                border: '1px solid var(--cinder-line)',
                 minWidth: '34px',
               }}
             >
