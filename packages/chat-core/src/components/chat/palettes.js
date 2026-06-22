@@ -337,6 +337,8 @@ export function getAllPalettes() {
 }
 
 export const DEFAULT_PALETTE_ID = 'burning-sunset';
+export const THEME_DEFAULT_LIGHT = 'morning-mist';
+export const THEME_DEFAULT_DARK = 'burning-sunset';
 
 export { ALL_PRESETS, DARK_PRESETS, LIGHT_PRESETS };
 export default ALL_PRESETS;

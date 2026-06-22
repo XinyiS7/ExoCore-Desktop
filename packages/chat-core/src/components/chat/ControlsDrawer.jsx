@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { configApi, MODEL_REGISTRY, MAIN_MODEL_IDS, useTheme } from 'exo-shared';
 import { Cpu, Key, Palette, Check, X } from 'lucide-react';
-import { getCustomPalettes, saveCustomPalette, deleteCustomPalette, updateCustomPalette, computeStops, getPalette, DEFAULT_PALETTE_ID, STOP_NAMES, ALL_PRESETS } from './palettes';
+import { getCustomPalettes, saveCustomPalette, deleteCustomPalette, updateCustomPalette, computeStops, getPalette, DEFAULT_PALETTE_ID, THEME_DEFAULT_LIGHT, THEME_DEFAULT_DARK, STOP_NAMES, ALL_PRESETS } from './palettes';
 
 const MAX_CUSTOM = 3;
 
@@ -157,7 +157,7 @@ export default function ControlsDrawer({
  setCustomPalettes(getCustomPalettes());
  if (paletteId === id && onPaletteChange) {
   // Fall back to theme-appropriate default instead of hardcoded DEFAULT_PALETTE_ID
-  const fallback = theme === 'light' ? 'morning-mist' : 'burning-sunset';
+  const fallback = theme === 'light' ? THEME_DEFAULT_LIGHT : THEME_DEFAULT_DARK;
   onPaletteChange(fallback);
  }
  };
