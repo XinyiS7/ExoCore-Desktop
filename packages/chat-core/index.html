@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#050505" />
+  <meta name="theme-color" content="#050505" id="meta-theme-color" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260616" />
   <link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.png?v=20260616" />
   <link rel="apple-touch-icon" sizes="512x512" href="/icon-512x512.png?v=20260616" />
@@ -11,6 +11,26 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai:wght@300;400;700&display=swap" rel="stylesheet" />
   <title>Chat</title>
+  <!--
+    ⚠️ SYNC ALERT ⚠️
+    This script's key / defaults MUST match:
+      packages/shared/src/hooks/useTheme.js
+    Change either side → sync the other, or theme flash returns.
+  -->
+  <script>
+    (function() {
+      var theme = 'dark';
+      try {
+        var stored = localStorage.getItem('exo_theme');
+        if (stored === 'light') theme = 'light';
+      } catch(e) {}
+      document.documentElement.setAttribute('data-theme', theme);
+      var meta = document.getElementById('meta-theme-color');
+      if (meta) {
+        meta.setAttribute('content', theme === 'light' ? '#faf8f5' : '#050505');
+      }
+    })();
+  </script>
   <!--
     ⚠️ SYNC ALERT ⚠️
     This script's STACKS / DEFAULTS / localStorage keys MUST match:
