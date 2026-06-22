@@ -82,7 +82,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
 
  // Stats state
  const [platform, setPlatform] = useState('all');
- const [mode, setMode] = useState('week'); // 'week' | 'month'
+ const [mode, setMode] = useState('day'); // 'day' | 'week' | 'month'
  const [anchor, setAnchor] = useState(() => new Date());
  const [rawData, setRawData] = useState(null);
  const [isLoadingStats, setIsLoadingStats] = useState(false);
@@ -133,7 +133,8 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
  setIsLoadingStats(true);
  setStatsError(false);
  try {
-  const params = new URLSearchParams({ mode, from: toDateStr(anchor) });
+  const apiMode = mode === 'day' ? 'week' : mode; // day mode uses week API for daily granularity
+  const params = new URLSearchParams({ mode: apiMode, from: toDateStr(anchor) });
   const res = await fetch(`${baseUrl}/api/telemetry/usage/?${params}`, { credentials: 'include' });
   if (!res.ok) throw new Error('stats_unavailable');
   const data = await res.json();
@@ -176,16 +177,20 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
  // ── Period nav ──
  const prevPeriod = () => setAnchor(a => {
  const d = new Date(a);
- mode === 'week' ? d.setDate(d.getDate() - 7) : d.setMonth(d.getMonth() - 1);
+ if (mode === 'day') d.setDate(d.getDate() - 1);
+	else if (mode === 'week') d.setDate(d.getDate() - 7);
+	else d.setMonth(d.getMonth() - 1);
  return d;
  });
  const nextPeriod = () => setAnchor(a => {
  const d = new Date(a);
- mode === 'week' ? d.setDate(d.getDate() + 7) : d.setMonth(d.getMonth() + 1);
+ if (mode === 'day') d.setDate(d.getDate() + 1);
+	else if (mode === 'week') d.setDate(d.getDate() + 7);
+	else d.setMonth(d.getMonth() + 1);
  return d;
  });
  const toggleMode = () => {
- setMode(m => m === 'week' ? 'month' : 'week');
+ setMode(m => m === 'day' ? 'week' : m === 'week' ? 'month' : 'day');
  setAnchor(new Date());
  };
 
@@ -340,16 +345,19 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
     <button
      onClick={toggleMode}
      className="px-3 py-1.5 text-[0.625rem] font-bold tracking-widest tx-body-normal hover:tx-body-accent transition-colors min-w-[80px] text-center"
-     title={mode === 'week' ? '切换为按月显示' : '切换为按周显示'}
+     title={mode === 'day' ? '切换为按周显示' : mode === 'week' ? '切换为按月显示' : '切换为按天显示'}
     >
-     {rawData?.is_current
-     ? (mode === 'week' ? '本周' : '本月')
-     : (mode === 'week'
-      ? (rawData?.from === rawData?.to
-      ? rawData?.from?.slice(5) ?? ''
-      : `${rawData?.from?.slice(5) ?? ''} – ${rawData?.to?.slice(5) ?? ''}`)
-      : rawData?.from?.slice(0, 7) ?? '')
-     }
+     {(() => {
+      const isCurrent = mode === 'day' ? toDateStr(new Date()) === toDateStr(anchor) : rawData?.is_current;
+      if (isCurrent) return mode === 'day' ? '今天' : mode === 'week' ? '本周' : '本月';
+      if (mode === 'day') return anchor.toISOString().slice(5, 10); // MM-DD
+      if (mode === 'week') {
+       return (rawData?.from === rawData?.to)
+        ? rawData?.from?.slice(5) ?? ''
+        : `${rawData?.from?.slice(5) ?? ''} – ${rawData?.to?.slice(5) ?? ''}`;
+      }
+      return rawData?.from?.slice(0, 7) ?? '';
+     })()}
     </button>
     <button
      onClick={nextPeriod}
