@@ -17,6 +17,7 @@
     "./profile": "./src/profile.js",
     "./hooks/useProfile": "./src/hooks/useProfile.js",
     "./hooks/useFont": "./src/hooks/useFont.js",
+    "./hooks/useTheme": "./src/hooks/useTheme.js",
     "./utils/avatar": "./src/utils/avatar.js",
     "./styles/fonts.css": "./src/styles/fonts.css"
   },
