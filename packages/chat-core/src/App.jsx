@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Routes, Route, useNavigate, useParams, useLocation, Outlet, Navigate } from 'react-router-dom';
+import { useTheme } from 'exo-shared';
 
 // Layout
 import DesktopSidebar from './components/layout/DesktopSidebar';
@@ -58,6 +59,9 @@ function AppLayout() {
       navigate(target.pathname, { state: target.state });
     }
   }, [navigate]);
+
+  // Apply theme on mount and sync across tabs
+  useTheme();
 
   const appStateForModals = { projects, setProjects, presets, setPresets, activeSessionId, setActiveSessionId };
 
