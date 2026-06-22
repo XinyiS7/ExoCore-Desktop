@@ -7,7 +7,8 @@
      3. 极冷轴：引入星核爆裂的白炽蓝，用于先锋科技感对撞。
    ═════════════════════════════════════════════════ */
 
-:root {
+:root,
+[data-theme="dark"] {
   /* ── 暖色轴 Warm Axis (白炽金 → 闷烧) ── */
   --tx-warm-incandescent: #fff3db; /* 白炽金：火焰最核心的白热化，极端高亮 */
   --tx-warm-gold:         #f8bf74; /* 亮琥珀金：核心交互高光（原 Highlight） */
@@ -26,6 +27,28 @@
   --tx-neutral-30:        #b2a99f; /* 烟烬灰 (Ashen Gray)：中灰说明文字 */
   --tx-neutral-40:        #7c736a; /* 焦炭灰 (Charred Gray)：次级灰 */
   --tx-neutral-70:        #403730; /* 极弱灰 (Void Veil)：Placeholder */
+}
+
+/* ── Light Theme · 暖色/冷色/中性轴映射 ── */
+[data-theme="light"] {
+  /* 暖色轴 — 暗底白炽 → 白底深焰 */
+  --tx-warm-incandescent: #8a3800;
+  --tx-warm-gold:         #b85a00;
+  --tx-warm-flare:        #d05000;
+  --tx-warm-flame:        #c04000;
+  --tx-warm-ember:        #8a3000;
+
+  /* 极冷轴 — 暗底等离子 → 白底深蓝 */
+  --tx-cryo-plasma:       #3a60d0;
+  --tx-cryo-void:         #6a7a90;
+
+  /* 中性轴 — 暗底亮字 → 白底暗字 */
+  --tx-neutral-00:        #1a1816;
+  --tx-neutral-10:        #2a2824;
+  --tx-neutral-20:        #4a4440;
+  --tx-neutral-30:        #6a645e;
+  --tx-neutral-40:        #8a8480;
+  --tx-neutral-70:        #b0aaa5;
 }
 
 /* ═══════════════════════════════════════════

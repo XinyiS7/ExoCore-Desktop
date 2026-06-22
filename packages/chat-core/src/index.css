@@ -12,7 +12,8 @@
 @tailwind utilities;
 
 /* ── Cinder Palette ── */
-:root {
+:root,
+[data-theme="dark"] {
   --cinder-base:       #050505;
   --cinder-ember:      #c44d00;
   --cinder-ember-dim:  #885332;
@@ -27,6 +28,24 @@
   --cinder-text-faint: rgb(113 112 120);
   --cinder-panel:      rgba(255, 255, 255, 0.02);
   --cinder-surface:    rgba(255, 255, 255, 0.015);
+}
+
+/* ── Cinder · Light Theme ── */
+[data-theme="light"] {
+  --cinder-base:       #faf8f5;
+  --cinder-ember:      #c44d00;
+  --cinder-ember-dim:  #a06040;
+  --cinder-flame:      #e04400;
+  --cinder-flame-dim:  rgb(180 70 20 / 0.7);
+  --cinder-glass:      rgba(0, 0, 0, 0.02);
+  --cinder-glass-heavy:rgba(255, 252, 248, 0.88);
+  --cinder-line:       rgba(180, 80, 0, 0.15);
+  --cinder-line-glow:  rgba(200, 60, 0, 0.12);
+  --cinder-text:       #3a3632;
+  --cinder-text-dim:   rgb(110 100 90);
+  --cinder-text-faint: rgb(150 140 128);
+  --cinder-panel:      rgba(0, 0, 0, 0.015);
+  --cinder-surface:    rgba(0, 0, 0, 0.008);
 }
 
 /* ── Structural reset (kept from original, Tailwind preflight covers most) ── */
