@@ -14,7 +14,7 @@ import ContextCacheIndicator from './ContextCacheIndicator';
 import { usePollingChat } from '../../hooks/usePollingChat';
 import AuroraBackground from './AuroraBackground';
 import ControlsDrawer from './ControlsDrawer';
-import { DEFAULT_PALETTE_ID, getPalette } from './palettes';
+import { DEFAULT_PALETTE_ID, THEME_DEFAULT_LIGHT, THEME_DEFAULT_DARK, getPalette } from './palettes';
 import AutocompletePopup from './AutocompletePopup';
 
 const MSGS_PER_PAGE = 50;
@@ -80,7 +80,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  const { theme } = useTheme();
 
  const getThemeDefaultId = (t) => {
-  return t === 'light' ? 'morning-mist' : 'burning-sunset';
+  return t === 'light' ? THEME_DEFAULT_LIGHT : THEME_DEFAULT_DARK;
  };
 
  const [paletteId, setPaletteId] = useState(() => {
@@ -92,7 +92,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     // Validate stored palette is compatible with current theme.
     // Custom palettes have no theme tag → always compatible.
     // Built-in presets must match the current theme.
-    if (preset && (!preset.theme || preset.theme === theme)) {
+    // Also verify preset.id === stored to catch fallback-returned stale IDs.
+    if (preset && preset.id === stored && (!preset.theme || preset.theme === theme)) {
       return stored;
     }
   }
@@ -394,7 +395,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  const savedPalette = localStorage.getItem(`exo_session_theme_${activeSessionId}`);
  if (savedPalette) {
   const preset = getPalette(savedPalette);
-  if (preset && (!preset.theme || preset.theme === theme)) {
+  if (preset && preset.id === savedPalette && (!preset.theme || preset.theme === theme)) {
     setPaletteId(savedPalette);
   } else {
     setPaletteId(getThemeDefaultId(theme));
