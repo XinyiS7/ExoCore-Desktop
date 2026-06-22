@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { configApi, MODEL_REGISTRY, MAIN_MODEL_IDS } from 'exo-shared';
+import { configApi, MODEL_REGISTRY, MAIN_MODEL_IDS, useTheme } from 'exo-shared';
 import { Cpu, Key, Palette, Check, X } from 'lucide-react';
-import { getCustomPalettes, saveCustomPalette, deleteCustomPalette, computeStops, getPalette, DEFAULT_PALETTE_ID, STOP_NAMES } from './palettes';
-import BUILTIN from './palettes';
+import { getCustomPalettes, saveCustomPalette, deleteCustomPalette, updateCustomPalette, computeStops, getPalette, DEFAULT_PALETTE_ID, STOP_NAMES, ALL_PRESETS } from './palettes';
 
 const MAX_CUSTOM = 3;
 
@@ -21,6 +20,13 @@ export default function ControlsDrawer({
  onPreferenceChange,
  onChatModeChange,
 }) {
+ const { theme } = useTheme();
+
+ // Filter built-in presets by current theme
+ const filteredPresets = Object.entries(ALL_PRESETS)
+  .filter(([, p]) => p.theme === theme)
+  .map(([id, p]) => p);
+
  // Key alias state
  const [aliases, setAliases] = useState([]);
  const [selectedAlias, setSelectedAlias] = useState('');
@@ -149,10 +155,26 @@ export default function ControlsDrawer({
  const handleDeleteCustom = (id) => {
  deleteCustomPalette(id);
  setCustomPalettes(getCustomPalettes());
- // If the deleted palette was active, switch to default
  if (paletteId === id && onPaletteChange) {
-  onPaletteChange(DEFAULT_PALETTE_ID);
+  // Fall back to theme-appropriate default instead of hardcoded DEFAULT_PALETTE_ID
+  const fallback = theme === 'light' ? 'morning-mist' : 'burning-sunset';
+  onPaletteChange(fallback);
  }
+ };
+
+ // Update current custom palette in-place
+ const handleUpdateCustom = () => {
+  if (!isCustomSelected) return;
+  const name = customName.trim() || currentPalette.label;
+  const stops = computeStops(keyShadow, keyMid, keyHighlight);
+  const updated = updateCustomPalette(paletteId, { label: name, colors: stops });
+  if (updated) {
+   setCustomPalettes(getCustomPalettes());
+   setShowSaveInput(false);
+   setCustomName('');
+   // Force Aurora to re-render with updated colors
+   onPaletteChange && onPaletteChange(paletteId);
+  }
  };
 
  // Check if current live colors differ from the selected palette
@@ -330,7 +352,7 @@ export default function ControlsDrawer({
    onChange={e => onPaletteChange && onPaletteChange(e.target.value)}
    className="bg-transparent outline-none text-[0.6875rem] font-sans tx-system-normal opacity-40 cursor-pointer hover:tx-system-normal opacity-70 transition-colors max-w-[140px] truncate"
    >
-   {BUILTIN.map(p => (
+   {filteredPresets.map(p => (
     <option key={p.id} value={p.id} className="bg-exo-pure tx-system-normal">{p.label}</option>
    ))}
    {customPalettes.length > 0 && (
@@ -349,9 +371,6 @@ export default function ControlsDrawer({
    >
     <X size={11} />
    </button>
-   )}
-   {isDirty && !isCustomSelected && (
-   <span className="text-[0.5625rem] tx-system-accent opacity-50 animate-fade-in" style={{ fontFamily: 'var(--font-code)' }}>modified</span>
    )}
   </div>
 
@@ -403,7 +422,7 @@ export default function ControlsDrawer({
    ))}
    </div>
 
-   {/* Save controls */}
+   {/* Save / Update controls */}
    {isDirty && (
    <div className="flex items-center gap-1.5 animate-fade-in">
     {showSaveInput ? (
@@ -411,18 +430,35 @@ export default function ControlsDrawer({
      <input
      value={customName}
      onChange={e => setCustomName(e.target.value)}
-     onKeyDown={e => { if (e.key === 'Enter') handleSaveCustom(); if (e.key === 'Escape') { setShowSaveInput(false); setCustomName(''); } }}
-     placeholder="name..."
+     onKeyDown={e => {
+      if (e.key === 'Enter') {
+       if (isCustomSelected) handleUpdateCustom();
+       else handleSaveCustom();
+      }
+      if (e.key === 'Escape') { setShowSaveInput(false); setCustomName(''); }
+     }}
+     placeholder={isCustomSelected ? (currentPalette?.label || 'name...') : 'name...'}
      autoFocus
      maxLength={24}
      className="w-20 bg-exo-bg border border-exo-mist-10 rounded-[2px] px-1.5 py-0.5 text-[0.625rem] tx-system-normal outline-none focus:border-exo-accent/50"
      style={{ fontFamily: 'var(--font-code)' }}
      />
+     {/* Update button — only for custom palettes */}
+     {isCustomSelected && (
+     <button
+      onClick={handleUpdateCustom}
+      className="p-0.5 text-amber-400/60 hover:text-amber-400 transition-colors"
+      title="Update this palette"
+     >
+      <Check size={12} />
+     </button>
+     )}
+     {/* Save-as-new button */}
      <button
      onClick={handleSaveCustom}
      disabled={!customName.trim() || customCount >= MAX_CUSTOM}
      className="p-0.5 text-green-400/60 hover:text-green-400 disabled:opacity-20 transition-colors"
-     title="Save"
+     title="Save as new palette"
      >
      <Check size={12} />
      </button>
@@ -434,14 +470,27 @@ export default function ControlsDrawer({
      </button>
     </>
     ) : (
-    <button
+    <div className="flex items-center gap-1.5">
+     {/* Update button (compact, for custom palettes) */}
+     {isCustomSelected && (
+     <button
+      onClick={() => setShowSaveInput(true)}
+      className="text-[0.5625rem] text-amber-400/60 hover:text-amber-400 transition-colors"
+      title="Update this palette"
+     >
+      Update
+     </button>
+     )}
+     {/* Save-as-new button */}
+     <button
      onClick={() => setShowSaveInput(true)}
      disabled={customCount >= MAX_CUSTOM}
      className="text-[0.5625rem] tx-system-accent opacity-60 hover:tx-system-accent disabled:opacity-20 transition-colors"
      title={customCount >= MAX_CUSTOM ? `Max ${MAX_CUSTOM} custom palettes` : 'Save as custom palette'}
-    >
+     >
      {customCount >= MAX_CUSTOM ? `[${MAX_CUSTOM}/${MAX_CUSTOM}]` : '+ Save'}
-    </button>
+     </button>
+    </div>
     )}
    </div>
    )}
