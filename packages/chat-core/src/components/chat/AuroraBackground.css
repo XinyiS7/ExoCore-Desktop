@@ -21,6 +21,18 @@
   transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Opacity range used by all ribbon/blob keyframes.
+   Overridden per-theme so light mode can run subtler. */
+.aurora-stage {
+  --aurora-opacity-min: 0.10;
+  --aurora-opacity-max: 0.50;
+}
+
+[data-theme="light"] .aurora-stage {
+  --aurora-opacity-min: 0.06;
+  --aurora-opacity-max: 0.32;
+}
+
 .aurora-stage.aurora-active { opacity: 1; }
 
 /* Faint warm glow when idle */
@@ -140,37 +152,37 @@
    ═══════════════════════════════════════════════════ */
 
 @keyframes aurora-drift-right {
-  0%   { transform: translate(-20vw, 0) scale(1);       opacity: 0.12; }
-  25%  { transform: translate(5vw, -8vh) scale(1.12);   opacity: 0.48; }
+  0%   { transform: translate(-20vw, 0) scale(1);       opacity: var(--aurora-opacity-min); }
+  25%  { transform: translate(5vw, -8vh) scale(1.12);   opacity: var(--aurora-opacity-max); }
   50%  { transform: translate(30vw, -3vh) scale(1.04);  opacity: 0.28; }
-  75%  { transform: translate(50vw, -10vh) scale(1.14); opacity: 0.52; }
-  100% { transform: translate(-20vw, 0) scale(1);       opacity: 0.12; }
+  75%  { transform: translate(50vw, -10vh) scale(1.14); opacity: var(--aurora-opacity-max); }
+  100% { transform: translate(-20vw, 0) scale(1);       opacity: var(--aurora-opacity-min); }
 }
 
 @keyframes aurora-drift-left {
-  0%   { transform: translate(15vw, 0) scale(1);        opacity: 0.12; }
-  25%  { transform: translate(-10vw, -6vh) scale(1.10); opacity: 0.46; }
+  0%   { transform: translate(15vw, 0) scale(1);        opacity: var(--aurora-opacity-min); }
+  25%  { transform: translate(-10vw, -6vh) scale(1.10); opacity: var(--aurora-opacity-max); }
   50%  { transform: translate(-35vw, -10vh) scale(1.02); opacity: 0.25; }
-  75%  { transform: translate(-55vw, -3vh) scale(1.13); opacity: 0.50; }
-  100% { transform: translate(15vw, 0) scale(1);        opacity: 0.12; }
+  75%  { transform: translate(-55vw, -3vh) scale(1.13); opacity: var(--aurora-opacity-max); }
+  100% { transform: translate(15vw, 0) scale(1);        opacity: var(--aurora-opacity-min); }
 }
 
 @keyframes aurora-drift-right-wave {
-  0%   { transform: translate(-25vw, 0) scale(1);        opacity: 0.10; }
-  20%  { transform: translate(0vw, -14vh) scale(1.16);   opacity: 0.46; }
+  0%   { transform: translate(-25vw, 0) scale(1);        opacity: var(--aurora-opacity-min); }
+  20%  { transform: translate(0vw, -14vh) scale(1.16);   opacity: var(--aurora-opacity-max); }
   40%  { transform: translate(25vw, 8vh) scale(0.88);    opacity: 0.20; }
-  60%  { transform: translate(45vw, -14vh) scale(1.14);  opacity: 0.50; }
+  60%  { transform: translate(45vw, -14vh) scale(1.14);  opacity: var(--aurora-opacity-max); }
   80%  { transform: translate(60vw, 4vh) scale(0.92);    opacity: 0.26; }
-  100% { transform: translate(-25vw, 0) scale(1);        opacity: 0.10; }
+  100% { transform: translate(-25vw, 0) scale(1);        opacity: var(--aurora-opacity-min); }
 }
 
 @keyframes aurora-drift-left-wave {
-  0%   { transform: translate(20vw, 0) scale(1);         opacity: 0.10; }
-  20%  { transform: translate(-5vw, -12vh) scale(1.14);  opacity: 0.44; }
-  40%  { transform: translate(-30vw, 6vh) scale(0.90);   opacity: 0.18; }
-  60%  { transform: translate(-50vw, -15vh) scale(1.16); opacity: 0.48; }
+  0%   { transform: translate(20vw, 0) scale(1);         opacity: var(--aurora-opacity-min); }
+  20%  { transform: translate(-5vw, -12vh) scale(1.14);  opacity: var(--aurora-opacity-max); }
+  40%  { transform: translate(-30vw, 6vh) scale(0.90);   opacity: var(--aurora-opacity-min); }
+  60%  { transform: translate(-50vw, -15vh) scale(1.16); opacity: var(--aurora-opacity-max); }
   80%  { transform: translate(-65vw, 3vh) scale(0.88);   opacity: 0.24; }
-  100% { transform: translate(20vw, 0) scale(1);         opacity: 0.10; }
+  100% { transform: translate(20vw, 0) scale(1);         opacity: var(--aurora-opacity-min); }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -178,27 +190,27 @@
    ═══════════════════════════════════════════════════ */
 
 @keyframes aurora-deep-breathe {
-  0%   { transform: translate(0, 0) scale(1);          opacity: 0.18; }
-  25%  { transform: translate(12vw, -10vh) scale(1.18); opacity: 0.50; }
+  0%   { transform: translate(0, 0) scale(1);          opacity: var(--aurora-opacity-min); }
+  25%  { transform: translate(12vw, -10vh) scale(1.18); opacity: var(--aurora-opacity-max); }
   50%  { transform: translate(-5vw, -16vh) scale(0.85); opacity: 0.24; }
-  75%  { transform: translate(16vw, -5vh) scale(1.16);  opacity: 0.48; }
-  100% { transform: translate(0, 0) scale(1);           opacity: 0.18; }
+  75%  { transform: translate(16vw, -5vh) scale(1.16);  opacity: var(--aurora-opacity-max); }
+  100% { transform: translate(0, 0) scale(1);           opacity: var(--aurora-opacity-min); }
 }
 
 @keyframes aurora-warm-float {
-  0%   { transform: translate(0, 0) scale(1);           opacity: 0.16; }
+  0%   { transform: translate(0, 0) scale(1);           opacity: var(--aurora-opacity-min); }
   30%  { transform: translate(-16vw, -10vh) scale(1.18); opacity: 0.45; }
   55%  { transform: translate(8vw, -18vh) scale(0.82);   opacity: 0.20; }
   80%  { transform: translate(-12vw, -4vh) scale(1.14);  opacity: 0.42; }
-  100% { transform: translate(0, 0) scale(1);            opacity: 0.16; }
+  100% { transform: translate(0, 0) scale(1);            opacity: var(--aurora-opacity-min); }
 }
 
 @keyframes aurora-gold-rise {
-  0%   { transform: translate(0, 0) scale(1);          opacity: 0.10; }
-  25%  { transform: translate(10vw, -12vh) scale(1.22); opacity: 0.44; }
+  0%   { transform: translate(0, 0) scale(1);          opacity: var(--aurora-opacity-min); }
+  25%  { transform: translate(10vw, -12vh) scale(1.22); opacity: var(--aurora-opacity-max); }
   50%  { transform: translate(-7vw, -8vh) scale(0.84);  opacity: 0.20; }
   75%  { transform: translate(14vw, -16vh) scale(1.18); opacity: 0.42; }
-  100% { transform: translate(0, 0) scale(1);           opacity: 0.10; }
+  100% { transform: translate(0, 0) scale(1);           opacity: var(--aurora-opacity-min); }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -218,4 +230,37 @@
   position: absolute; inset: 0;
   background: radial-gradient(ellipse 62% 52% at 50% 38%, transparent 0%, rgba(10,2,0,0.45) 70%, rgba(10,2,0,0.72) 100%);
   pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════
+   LIGHT-THEME OVERRIDES
+   ═══════════════════════════════════════════════════ */
+
+/* screen blend is near-invisible on light backgrounds → multiply for warm staining */
+[data-theme="light"] .aurora-ribbon {
+  mix-blend-mode: multiply;
+}
+
+/* Grain is too prominent on light backgrounds */
+[data-theme="light"] .aurora-grain {
+  opacity: 0.018;
+}
+
+/* Replace dark vignette with warm center glow */
+[data-theme="light"] .aurora-vignette {
+  background: radial-gradient(
+    ellipse 62% 52% at 50% 38%,
+    rgba(254, 249, 240, 0.25) 0%,
+    rgba(254, 249, 240, 0.08) 50%,
+    transparent 100%
+  );
+}
+
+/* Idle ambient glow — warm peach instead of dark oxblood */
+[data-theme="light"] .aurora-stage::after {
+  background: radial-gradient(
+    ellipse 65% 45% at 50% 42%,
+    rgba(240, 199, 142, 0.06) 0%,
+    transparent 70%
+  );
 }
