@@ -14,7 +14,7 @@ import ContextCacheIndicator from './ContextCacheIndicator';
 import { usePollingChat } from '../../hooks/usePollingChat';
 import AuroraBackground from './AuroraBackground';
 import ControlsDrawer from './ControlsDrawer';
-import { DEFAULT_PALETTE_ID, getPalette, ALL_PRESETS } from './palettes';
+import { DEFAULT_PALETTE_ID, getPalette } from './palettes';
 import AutocompletePopup from './AutocompletePopup';
 
 const MSGS_PER_PAGE = 50;
@@ -93,7 +93,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     // Custom palettes have no theme tag → always compatible.
     // Built-in presets must match the current theme.
     if (preset && (!preset.theme || preset.theme === theme)) {
-    return stored;
+      return stored;
     }
   }
   return getThemeDefaultId(theme);
