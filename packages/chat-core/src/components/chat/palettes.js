@@ -14,10 +14,16 @@
    Built-in presets
    ──────────────────────────────────────────── */
 
-const BUILTIN = [
-  {
+/* ────────────────────────────────────────────
+   Built-in presets — 3 dark + 3 light
+   Each preset has a `theme` tag for filtering.
+   ──────────────────────────────────────────── */
+
+const DARK_PRESETS = {
+  'burning-sunset': {
     id: 'burning-sunset',
     label: 'Burning Sunset',
+    theme: 'dark',
     builtin: true,
     colors: {
       '--obsidian':   '#0a0200',
@@ -30,9 +36,10 @@ const BUILTIN = [
       '--orange-500':  '#f8bf74',
     },
   },
-  {
+  'deep-ocean': {
     id: 'deep-ocean',
     label: 'Deep Ocean',
+    theme: 'dark',
     builtin: true,
     colors: {
       '--obsidian':   '#000a14',
@@ -45,9 +52,10 @@ const BUILTIN = [
       '--orange-500':  '#7cc8f4',
     },
   },
-  {
+  'void-amethyst': {
     id: 'void-amethyst',
     label: 'Void Amethyst',
+    theme: 'dark',
     builtin: true,
     colors: {
       '--obsidian':   '#05000a',
@@ -60,52 +68,60 @@ const BUILTIN = [
       '--orange-500':  '#d4a0f0',
     },
   },
-  {
-    id: 'emerald-haze',
-    label: 'Emerald Haze',
+};
+
+const LIGHT_PRESETS = {
+  'morning-mist': {
+    id: 'morning-mist',
+    label: '晨光金雾',
+    theme: 'light',
     builtin: true,
     colors: {
-      '--obsidian':   '#000a05',
-      '--garnet-600': '#0d4a2a',
-      '--oxblood-400': '#062e18',
-      '--oxblood-500': '#115c35',
-      '--rusty-500':   '#167a45',
-      '--rusty-600':   '#1ea85c',
-      '--orange-400':  '#3cc878',
-      '--orange-500':  '#7de0a8',
+      '--obsidian':   '#fef9f0',
+      '--garnet-600': '#e8b86d',
+      '--oxblood-400': '#f5d4a8',
+      '--oxblood-500': '#f0c78e',
+      '--rusty-500':   '#eeb86b',
+      '--rusty-600':   '#f2a65a',
+      '--orange-400':  '#f7d6a0',
+      '--orange-500':  '#fbe5c0',
     },
   },
-  {
-    id: 'arctic-frost',
-    label: 'Arctic Frost',
+  'spring-dew': {
+    id: 'spring-dew',
+    label: '春露',
+    theme: 'light',
     builtin: true,
     colors: {
-      '--obsidian':   '#00080f',
-      '--garnet-600': '#1a3a5c',
-      '--oxblood-400': '#0f2438',
-      '--oxblood-500': '#1e4870',
-      '--rusty-500':   '#265c8c',
-      '--rusty-600':   '#3a80c0',
-      '--orange-400':  '#5c9cd8',
-      '--orange-500':  '#a0c8f0',
+      '--obsidian':   '#f8faf6',
+      '--garnet-600': '#b8cc9e',
+      '--oxblood-400': '#d4e4c4',
+      '--oxblood-500': '#c5daaa',
+      '--rusty-500':   '#a8c78a',
+      '--rusty-600':   '#9bb878',
+      '--orange-400':  '#dcecc8',
+      '--orange-500':  '#eaf2de',
     },
   },
-  {
-    id: 'neon-noir',
-    label: 'Neon Noir',
+  'peach-cloud': {
+    id: 'peach-cloud',
+    label: '桃云',
+    theme: 'light',
     builtin: true,
     colors: {
-      '--obsidian':   '#020002',
-      '--garnet-600': '#8a0a5c',
-      '--oxblood-400': '#4a0630',
-      '--oxblood-500': '#9e1068',
-      '--rusty-500':   '#c01880',
-      '--rusty-600':   '#e830a0',
-      '--orange-400':  '#f060c0',
-      '--orange-500':  '#f8a0d8',
+      '--obsidian':   '#fef8f5',
+      '--garnet-600': '#f0b8a8',
+      '--oxblood-400': '#f8d4c8',
+      '--oxblood-500': '#f4c4b4',
+      '--rusty-500':   '#eea890',
+      '--rusty-600':   '#e8987c',
+      '--orange-400':  '#fadcd0',
+      '--orange-500':  '#fceae2',
     },
   },
-];
+};
+
+const ALL_PRESETS = { ...DARK_PRESETS, ...LIGHT_PRESETS };
 
 /* ────────────────────────────────────────────
    CSS variable → aurora layer mapping
@@ -292,21 +308,35 @@ export function deleteCustomPalette(id) {
   localStorage.setItem(CUSTOM_KEY, JSON.stringify(list));
 }
 
+/** Update a custom palette in-place. Returns the updated palette or null. */
+export function updateCustomPalette(id, updates) {
+  const list = getCustomPalettes();
+  const idx = list.findIndex(p => p.id === id);
+  if (idx === -1) return null;
+
+  if (updates.label !== undefined) list[idx].label = updates.label;
+  if (updates.colors !== undefined) list[idx].colors = { ...list[idx].colors, ...updates.colors };
+
+  localStorage.setItem(CUSTOM_KEY, JSON.stringify(list));
+  return list[idx];
+}
+
 /* ────────────────────────────────────────────
    Lookup helpers
    ──────────────────────────────────────────── */
 
 /** Get a single palette by id (checks built-in then custom). */
 export function getPalette(id) {
-  if (!id) return BUILTIN[0];
-  return [...BUILTIN, ...getCustomPalettes()].find(p => p.id === id) || BUILTIN[0];
+  if (!id) return ALL_PRESETS[DEFAULT_PALETTE_ID];
+  return ALL_PRESETS[id] || getCustomPalettes().find(p => p.id === id) || ALL_PRESETS[DEFAULT_PALETTE_ID];
 }
 
 /** Get all available palettes (built-in + custom) for the selector UI. */
 export function getAllPalettes() {
-  return [...BUILTIN, ...getCustomPalettes()];
+  return [...Object.values(ALL_PRESETS), ...getCustomPalettes()];
 }
 
-export const DEFAULT_PALETTE_ID = BUILTIN[0].id;
+export const DEFAULT_PALETTE_ID = 'burning-sunset';
 
-export default BUILTIN;
+export { ALL_PRESETS, DARK_PRESETS, LIGHT_PRESETS };
+export default ALL_PRESETS;
