@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, X, Check } from 'lucide-react';
+import { Button } from '../ui';
 
 const CROP_SIZE = 220;
 
@@ -197,18 +198,10 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
         </div>
 
         <div className="flex gap-3 w-full pt-2">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-2 text-[0.6875rem] font-bold tracking-widest tx-system-mute border border-exo-mist-10 rounded-[2px] hover:tx-system-normal hover:bg-exo-accent/[0.04] transition-colors"
-          >
-            Abort
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="flex-1 py-2 text-[0.6875rem] font-bold text-exo-pure bg-white rounded-[2px] hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95 tracking-widest flex items-center justify-center gap-2"
-          >
+          <Button variant="ghost" className="flex-1" onClick={onCancel}>Abort</Button>
+          <Button variant="primary" className="flex-1" onClick={handleConfirm}>
             <Check size={14} /> Commit
-          </button>
+          </Button>
         </div>
       </div>
     </div>

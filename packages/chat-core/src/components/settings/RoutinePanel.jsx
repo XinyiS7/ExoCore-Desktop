@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { configApi, agentsApi } from 'exo-shared';
 import { Save, Clock, Users, ChevronDown, ChevronRight } from 'lucide-react';
 import Toast from './Toast';
+import { Button } from '../ui';
 
 const WEEKDAY_NAMES = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
@@ -30,19 +31,19 @@ function AgentCheckList({ presets, checkedIds, onToggle, expanded }) {
  const superiorList = sorted.filter(p => p.agent_type !== 'g045');
 
  return (
- <div className="mt-2 p-3 bg-chat-bg border border-white/[0.06] rounded">
-  {g045List.length > 0 && (
-  <>
-   <div className="text-[0.6rem] font-mono tracking-[0.12em] tx-system-mute opacity-40 mb-1.5">G045</div>
+  <div className="mt-2 p-3 bg-chat-bg border border-cinder-line rounded">
+   {g045List.length > 0 && (
+   <>
+    <div className="tx-decoration-mute mb-1.5">G045</div>
    {g045List.map(p => (
    <label
     key={p.id}
-    className="flex items-center gap-2 py-1 px-1 cursor-pointer text-[0.725rem] font-mono tx-system-normal opacity-70 hover:tx-system-normal transition-colors"
+     className="flex items-center gap-2 py-1 px-1 cursor-pointer tx-system-normal hover:tx-system-accent transition-colors"
    >
     <span
     onClick={() => onToggle(p.id)}
     className={`w-3 h-3 rounded-[2px] border flex items-center justify-center flex-shrink-0 transition-colors ${
-     checkedIds.includes(p.id) ? 'bg-chat-accent border-chat-accent' : 'border-white/15'
+      checkedIds.includes(p.id) ? 'bg-chat-accent border-chat-accent' : 'border-cinder-line'
     }`}
     >
     {checkedIds.includes(p.id) && (
@@ -58,16 +59,16 @@ function AgentCheckList({ presets, checkedIds, onToggle, expanded }) {
   )}
   {superiorList.length > 0 && (
   <>
-   <div className="text-[0.6rem] font-mono tracking-[0.12em] tx-system-mute opacity-40 mt-2 mb-1.5">Superior</div>
+    <div className="tx-decoration-mute mt-2 mb-1.5">Superior</div>
    {superiorList.map(p => (
    <label
     key={p.id}
-    className="flex items-center gap-2 py-1 px-1 cursor-pointer text-[0.725rem] font-mono tx-system-normal opacity-70 hover:tx-system-normal transition-colors"
+     className="flex items-center gap-2 py-1 px-1 cursor-pointer tx-system-normal hover:tx-system-accent transition-colors"
    >
     <span
     onClick={() => onToggle(p.id)}
     className={`w-3 h-3 rounded-[2px] border flex items-center justify-center flex-shrink-0 transition-colors ${
-     checkedIds.includes(p.id) ? 'bg-chat-accent border-chat-accent' : 'border-white/15'
+      checkedIds.includes(p.id) ? 'bg-chat-accent border-chat-accent' : 'border-cinder-line'
     }`}
     >
     {checkedIds.includes(p.id) && (
@@ -82,7 +83,7 @@ function AgentCheckList({ presets, checkedIds, onToggle, expanded }) {
   </>
   )}
   {sorted.length === 0 && (
-  <p className="text-[0.6625rem] tx-system-mute opacity-30 font-mono text-center py-2">No agents available</p>
+   <p className="tx-decoration-mute text-center py-2">No agents available</p>
   )}
  </div>
  );
@@ -156,9 +157,9 @@ export default function RoutinePanel() {
  const hour = c.deep_org_hour != null ? `${String(c.deep_org_hour).padStart(2, '0')}:00` : '?';
  return (
   <span>
-  Active: <span style={{color:'#aaa'}}>{c.active_start || '?'} – {c.active_end || '?'}</span>
-  {' · '}Heartbeat: <span style={{color:'#aaa'}}>{c.heartbeat_base_hours || '?'}–{(c.heartbeat_base_hours || 0) + (c.heartbeat_random_hours || 0)}h (day) / {c.night_heartbeat_base_hours || '?'}–{(c.night_heartbeat_base_hours || 0) + (c.heartbeat_random_hours || 0)}h (night)</span>
-  {' · '}Deep Org: <span style={{color:'#aaa'}}>{day} {hour}</span>
+  Active: <span style={{color:'var(--tx-neutral-40)'}}>{c.active_start || '?'} – {c.active_end || '?'}</span>
+  {' · '}Heartbeat: <span style={{color:'var(--tx-neutral-40)'}}>{c.heartbeat_base_hours || '?'}–{(c.heartbeat_base_hours || 0) + (c.heartbeat_random_hours || 0)}h (day) / {c.night_heartbeat_base_hours || '?'}–{(c.night_heartbeat_base_hours || 0) + (c.heartbeat_random_hours || 0)}h (night)</span>
+  {' · '}Deep Org: <span style={{color:'var(--tx-neutral-40)'}}>{day} {hour}</span>
   </span>
  );
  };
@@ -174,9 +175,9 @@ export default function RoutinePanel() {
  return (
  <div className="flex-1 h-full overflow-y-auto">
   <div className="max-w-2xl px-8 py-8">
-  <h2 className="text-sm font-semibold tx-system-normal opacity-90 tracking-tight mb-6">
-   ⚡ Routine · 后台任务
-  </h2>
+   <h2 className="tx-subtitle-normal mb-6">
+    ⚡ Routine · 后台任务
+   </h2>
 
   {/* ── Group A: Self Check & Deep Organize ── */}
   <div className="mb-5">
@@ -184,25 +185,21 @@ export default function RoutinePanel() {
    <div className="flex items-center gap-2.5 min-w-0">
     <span className="text-sm">🔍🧹</span>
     <div className="min-w-0">
-    <span className="text-xs tx-system-normal opacity-80 font-medium">Self Check & Deep Organize</span>
-    <span className="text-[0.6625rem] tx-system-mute opacity-50 ml-2 hidden sm:inline">自检 + 深度整理 · 共用 Agent 列表</span>
+         <span className="tx-system-normal font-medium">Self Check & Deep Organize</span>
+         <span className="tx-system-mute ml-2 hidden sm:inline">自检 + 深度整理 · 共用 Agent 列表</span>
     </div>
    </div>
    <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-    <button className="flex items-center gap-1 text-[0.6625rem] font-mono tracking-wider tx-system-mute opacity-40 hover:tx-system-mute opacity-70 border border-white/[0.06] rounded px-2 py-1 transition-colors">
-    <Clock size={10} /> 时间设置
-    </button>
-    <button
-    onClick={() => toggleExpand('scdo')}
-    className={`flex items-center gap-1 text-[0.6625rem] font-mono tracking-wider transition-colors border rounded px-2 py-1 ${
-     expandedAgents.scdo
-     ? 'tx-system-accent opacity-70 border-chat-accent/15 bg-chat-accent/[0.04]'
-     : 'tx-system-mute opacity-40 border-white/[0.06] hover:tx-system-mute opacity-70'
-    }`}
-    >
-    <Users size={10} /> Agent 管理
-    {expandedAgents.scdo ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
-    </button>
+      <Button variant="ghost" size="sm">
+     <Clock size={10} /> 时间设置
+      </Button>
+     <Button variant="ghost" size="sm"
+     onClick={() => toggleExpand('scdo')}
+      className={expandedAgents.scdo ? 'border-exo-accent/15 bg-exo-accent/[0.04]' : ''}
+     >
+     <Users size={10} /> Agent 管理
+     {expandedAgents.scdo ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+     </Button>
    </div>
    </div>
    <AgentCheckList
@@ -219,25 +216,21 @@ export default function RoutinePanel() {
    <div className="flex items-center gap-2.5 min-w-0">
     <span className="text-sm">💓</span>
     <div className="min-w-0">
-    <span className="text-xs tx-system-normal opacity-80 font-medium">Heartbeat</span>
-    <span className="text-[0.6625rem] tx-system-mute opacity-50 ml-2 hidden sm:inline">主动互动 · 活跃窗口内定时发起对话</span>
+         <span className="tx-system-normal font-medium">Heartbeat</span>
+         <span className="tx-system-mute ml-2 hidden sm:inline">主动互动 · 活跃窗口内定时发起对话</span>
     </div>
    </div>
    <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-    <button className="flex items-center gap-1 text-[0.6625rem] font-mono tracking-wider tx-system-mute opacity-40 hover:tx-system-mute opacity-70 border border-white/[0.06] rounded px-2 py-1 transition-colors">
-    <Clock size={10} /> 时间设置
-    </button>
-    <button
-    onClick={() => toggleExpand('hb')}
-    className={`flex items-center gap-1 text-[0.6625rem] font-mono tracking-wider transition-colors border rounded px-2 py-1 ${
-     expandedAgents.hb
-     ? 'tx-system-accent opacity-70 border-chat-accent/15 bg-chat-accent/[0.04]'
-     : 'tx-system-mute opacity-40 border-white/[0.06] hover:tx-system-mute opacity-70'
-    }`}
-    >
-    <Users size={10} /> Agent 管理
-    {expandedAgents.hb ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
-    </button>
+      <Button variant="ghost" size="sm">
+     <Clock size={10} /> 时间设置
+      </Button>
+     <Button variant="ghost" size="sm"
+     onClick={() => toggleExpand('hb')}
+      className={expandedAgents.hb ? 'border-exo-accent/15 bg-exo-accent/[0.04]' : ''}
+     >
+     <Users size={10} /> Agent 管理
+     {expandedAgents.hb ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+     </Button>
    </div>
    </div>
    <AgentCheckList
@@ -249,28 +242,24 @@ export default function RoutinePanel() {
   </div>
 
   {/* ── Schedule Preview ── */}
-  <div className="p-3 bg-chat-bg border border-white/[0.06] rounded mb-6">
-   <div className="flex items-center gap-2 mb-1.5">
-   <span className="text-sm">⏱️</span>
-   <span className="text-[0.625rem] font-mono tracking-[0.1em] tx-system-mute opacity-50">Schedule Preview</span>
-   <span className="text-[0.5rem] font-mono tx-system-mute opacity-30 ml-1">(时间设置接口待上线)</span>
+   <div className="p-3 bg-chat-bg border border-cinder-line rounded mb-6">
+    <div className="flex items-center gap-2 mb-1.5">
+    <span className="text-sm">⏱️</span>
+    <span className="tx-decoration-normal">Schedule Preview</span>
+    <span className="tx-decoration-mute ml-1">(时间设置接口待上线)</span>
+    </div>
+    <p className="tx-decoration-normal leading-relaxed">{schedulePreview()}</p>
    </div>
-   <p className="text-[0.625rem] font-mono tx-system-mute opacity-60 leading-relaxed">{schedulePreview()}</p>
-  </div>
 
   <div className="flex justify-end">
-   <button
-   onClick={handleSave}
-   disabled={saving}
-   className="px-4 py-1.5 bg-chat-accent tx-system-normal text-[0.625rem] font-bold tracking-[0.12em] rounded hover:brightness-110 disabled:opacity-20 disabled:grayscale transition-all flex items-center gap-1.5"
-   >
-   {saving ? (
-    <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-   ) : (
-    <Save size={12} />
-   )}
-   Save
-   </button>
+    <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
+    {saving ? (
+      <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+    ) : (
+      <Save size={12} />
+    )}
+    Save
+    </Button>
   </div>
 
   <Toast type={feedback?.type} message={feedback?.msg} onClose={clearFeedback} />

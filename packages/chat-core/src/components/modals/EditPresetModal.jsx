@@ -1,127 +1,114 @@
 import React, { useState, useEffect } from 'react';
-import { Edit3, X, Activity, Save } from 'lucide-react';
+import { Edit3, Activity, Save } from 'lucide-react';
 import { baseUrl, getCsrfToken, MAIN_MODEL_IDS } from 'exo-shared';
+import { ModalShell, Button, FIELD_INPUT, FIELD_AREA } from '../ui';
 
 const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
- const [form, setForm] = useState({ name: '', description: '', default_model: '', system_prompt: '' });
- const [isSaving, setIsSaving] = useState(false);
- const isSystemPromptOnly = mode === 'system_prompt';
+  const [form, setForm] = useState({ name: '', description: '', default_model: '', system_prompt: '' });
+  const [isSaving, setIsSaving] = useState(false);
+  const isSystemPromptOnly = mode === 'system_prompt';
 
- useEffect(() => {
- if (preset) {
-  setForm({
-  name: preset.name || '',
-  description: preset.description || '',
-  default_model: preset.default_model || '',
-  system_prompt: preset.system_prompt || '',
-  });
- }
- }, [preset]);
+  useEffect(() => {
+    if (preset) {
+      setForm({
+        name: preset.name || '',
+        description: preset.description || '',
+        default_model: preset.default_model || '',
+        system_prompt: preset.system_prompt || '',
+      });
+    }
+  }, [preset]);
 
- if (!isOpen) return null;
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch(`${baseUrl}/api/agents/presets/${preset.id}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        onSaved();
+        onClose();
+      } else {
+        alert('保存失败，请检查后端接口。');
+      }
+    } catch (err) {
+      console.error('Preset 保存失败', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
- const handleSave = async () => {
- setIsSaving(true);
- try {
-  const res = await fetch(`${baseUrl}/api/agents/presets/${preset.id}/`, {
-  method: 'PATCH',
-  headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-  credentials: 'include',
-  body: JSON.stringify(form),
-  });
-  if (res.ok) {
-  onSaved();
-  onClose();
-  } else {
-  alert('保存失败，请检查后端接口。');
-  }
- } catch (err) {
-  console.error('Preset 保存失败', err);
- } finally {
-  setIsSaving(false);
- }
- };
-
- return (
- <div className="fixed inset-0 z-[100] flex items-center justify-center bg-cinder-glass-heavy backdrop-blur-md p-4 animate-in fade-in duration-200">
-  <div className="bg-exo-pure border border-exo-mist-10 rounded-[2px] w-full max-w-2xl flex flex-col max-h-[90vh] shadow-[0_0_60px_rgba(0,0,0,0.08)]">
-  {/* Header */}
-  <div className="flex items-center justify-between p-5 border-b border-exo-mist-10 bg-exo-pure/50">
-   <div className="flex flex-col">
-   <h2 className="text-sm font-bold tx-system-normal flex items-center gap-2 font-mono tracking-[0.2em]">
-    <Edit3 size={16} className="tx-system-accent" /> {isSystemPromptOnly ? 'System Prompt / 系统提示词' : 'Core Config / 内核配置'}
-   </h2>
-   <span className="text-[0.5625rem] tx-system-mute font-mono tracking-widest opacity-40 mt-1">Preset Mapping: {preset?.name}</span>
-   </div>
-   <button onClick={onClose} className="p-2 tx-system-mute hover:tx-system-normal transition-colors">
-   <X size={18} />
-   </button>
-  </div>
-
-  {/* Content */}
-  <div className="overflow-y-auto p-6 space-y-6 flex-1 scrollbar-hide">
-   {!isSystemPromptOnly && (
-   <>
-    <div className="space-y-2">
-    <label className="label-caps opacity-50">Alias / 名称</label>
-    <input
-     className="w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all"
-     value={form.name}
-     onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-    />
-    </div>
-    <div className="space-y-2">
-    <label className="label-caps opacity-50">Operational Context / 描述</label>
-    <textarea
-     rows={2}
-     className="w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all resize-none"
-     value={form.description}
-     onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-    />
-    </div>
-    <div className="space-y-2">
-    <label className="label-caps opacity-50">Default Neural Model / 默认模型</label>
-    <select
-     className="w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all cursor-pointer"
-     value={form.default_model}
-     onChange={e => setForm(p => ({ ...p, default_model: e.target.value }))}
+  return (
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      icon={Edit3}
+      title={isSystemPromptOnly ? 'SYSTEM PROMPT' : 'CORE CONFIG'}
+      subtitle={`Target Entity: ${preset?.name || 'Unknown'}`}
+      maxW="lg"
+      bodyClassName={isSystemPromptOnly ? 'flex flex-col' : ''}
+      footer={
+        <div className="flex items-center justify-end gap-4">
+          <Button variant="ghost" onClick={onClose}>ABORT</Button>
+          <Button variant="primary" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? <Activity size={14} className="animate-spin" /> : <Save size={14} strokeWidth={1.5} />}
+            {isSaving ? 'COMMITTING...' : 'COMMIT CHANGES'}
+          </Button>
+        </div>
+      }
     >
-     {MAIN_MODEL_IDS.map(m => <option key={m} value={m} className="bg-exo-pure">{m}</option>)}
-    </select>
-    </div>
-   </>
-   )}
-   <div className={`space-y-2 ${isSystemPromptOnly ? 'h-full' : ''}`}>
-   <div className="flex justify-between items-center">
-    <label className="label-caps opacity-50">System Directives / 系统提示词</label>
-    <span className="text-[0.5625rem] font-mono tx-system-accent opacity-40 tracking-tighter">L3 Access Required</span>
-   </div>
-   <textarea
-    rows={isSystemPromptOnly ? 20 : 10}
-    className={`w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-3 text-[13px] tx-system-normal focus:border-exo-accent/40 outline-none transition-all resize-y font-mono leading-relaxed ${isSystemPromptOnly ? 'flex-1 min-h-[50vh]' : ''}`}
-    value={form.system_prompt}
-    onChange={e => setForm(p => ({ ...p, system_prompt: e.target.value }))}
-   />
-   </div>
-  </div>
+      {!isSystemPromptOnly && (
+        <div className="grid grid-cols-2 gap-8 mb-8">
+          <div className="space-y-3 col-span-2 sm:col-span-1">
+            <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">Alias / 名称</label>
+            <input
+              className={FIELD_INPUT}
+              placeholder="Entity Name"
+              value={form.name}
+              onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-3 col-span-2 sm:col-span-1">
+            <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">Neural Model / 模型</label>
+            <select
+              className={`${FIELD_INPUT} cursor-pointer appearance-none`}
+              value={form.default_model}
+              onChange={e => setForm(p => ({ ...p, default_model: e.target.value }))}
+            >
+              {MAIN_MODEL_IDS.map(m => <option key={m} value={m} className="bg-exo-pure">{m}</option>)}
+            </select>
+          </div>
+          <div className="space-y-3 col-span-2">
+            <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">Operational Context / 描述</label>
+            <textarea
+              rows={2}
+              className={FIELD_AREA}
+              placeholder="Briefly describe the entity's purpose..."
+              value={form.description}
+              onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+            />
+          </div>
+        </div>
+      )}
 
-  {/* Footer */}
-  <div className="flex items-center justify-end gap-3 p-5 border-t border-exo-mist-10 bg-exo-pure/80 backdrop-blur-md">
-   <button onClick={onClose} className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest tx-system-mute hover:tx-system-normal transition-colors">
-   Abort
-   </button>
-   <button
-   onClick={handleSave}
-   disabled={isSaving}
-   className="px-8 py-2 bg-white text-[#0a0a0a] rounded-[2px] text-[0.6875rem] font-bold tracking-[0.2em] hover:bg-exo-accent hover:text-white transition-colors shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
-   >
-   {isSaving ? <Activity size={14} className="animate-spin" /> : <Save size={14} />}
-   {isSaving ? 'COMMITTING...' : 'COMMIT CHANGES'}
-   </button>
-  </div>
-  </div>
- </div>
- );
+      <div className={`space-y-3 ${isSystemPromptOnly ? 'flex flex-col h-full' : ''}`}>
+        <div className="flex justify-between items-end">
+          <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">System Directives / 核心规则</label>
+          <span className="text-[0.55rem] font-mono tx-system-accent opacity-60 tracking-widest border border-exo-accent/20 px-2 py-0.5 rounded-full">L3 Access</span>
+        </div>
+        <textarea
+          rows={isSystemPromptOnly ? 20 : 10}
+          className={`${FIELD_AREA} ${isSystemPromptOnly ? 'flex-1 min-h-[50vh]' : ''}`}
+          placeholder="Inject core personality and behavioral constraints here..."
+          value={form.system_prompt}
+          onChange={e => setForm(p => ({ ...p, system_prompt: e.target.value }))}
+        />
+      </div>
+    </ModalShell>
+  );
 };
 
 export default EditPresetModal;

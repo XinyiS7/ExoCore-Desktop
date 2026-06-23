@@ -1,287 +1,247 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, X, Activity, Folder, Check, MessageSquare, Code2 } from 'lucide-react';
-import { baseUrl, getCsrfToken, conversationsApi } from 'exo-shared';
+import { Plus, Activity, Folder, Check, MessageSquare } from 'lucide-react';
+import { baseUrl, getCsrfToken } from 'exo-shared';
 import { sortPresets, isSuperiorType } from '../../utils/presets';
+import { ModalShell, Button, FIELD_INPUT } from '../ui';
 
-const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, onSuccess, setActiveSessionId, setView }) => {
- const sortedPresets = useMemo(() => sortPresets(presets), [presets, isOpen]);
- const [name, setName] = useState("");
- const [selectedPresetId, setSelectedPresetId] = useState("");
- const [selectedProjectId, setSelectedProjectId] = useState("");  // 所属 project — single, optional
- const [permissionProjectIds, setPermissionProjectIds] = useState([]); // 权限 project — multi
- const [sessionType, setSessionType] = useState("lite");
- const [isSubmitting, setIsSubmitting] = useState(false);
+const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, onSuccess }) => {
+  const sortedPresets = useMemo(() => sortPresets(presets), [presets, isOpen]);
+  const [name, setName] = useState("");
+  const [selectedPresetId, setSelectedPresetId] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [permissionProjectIds, setPermissionProjectIds] = useState([]);
+  const [sessionType, setSessionType] = useState("lite");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
- useEffect(() => {
- if (!isOpen) return;
- console.log('[DEBUG] NewSessionModal useEffect — initialContext:', JSON.stringify(initialContext), 'projectId:', initialContext?.projectId, 'type:', typeof initialContext?.projectId);
- setName("");
- setSessionType("lite");
- setSelectedProjectId(initialContext?.projectId ? String(initialContext.projectId) : "");
- setPermissionProjectIds([]);
+  useEffect(() => {
+    if (!isOpen) return;
+    setName("");
+    setSessionType("lite");
+    setSelectedProjectId(initialContext?.projectId ? String(initialContext.projectId) : "");
+    setPermissionProjectIds([]);
+    if (initialContext?.presetId && sortedPresets.find(p => p.id === initialContext.presetId)) {
+      setSelectedPresetId(String(initialContext.presetId));
+    } else if (sortedPresets.length > 0) {
+      setSelectedPresetId(String(sortedPresets[0].id));
+    } else {
+      setSelectedPresetId("");
+    }
+  }, [isOpen, initialContext, sortedPresets]);
 
- if (initialContext?.presetId && sortedPresets.find(p => p.id === initialContext.presetId)) {
-  setSelectedPresetId(String(initialContext.presetId));
- } else if (sortedPresets.length > 0) {
-  setSelectedPresetId(String(sortedPresets[0].id));
- } else {
-  setSelectedPresetId("");
- }
- }, [isOpen, initialContext, sortedPresets]);
+  const currentPreset = sortedPresets.find(p => p.id === parseInt(selectedPresetId));
+  const isG045 = isSuperiorType(currentPreset?.agent_type);
 
- if (!isOpen) return null;
+  const handleBelongingProject = (pid) => {
+    setSelectedProjectId(prev => prev === String(pid) ? "" : String(pid));
+  };
 
- const currentPreset = sortedPresets.find(p => p.id === parseInt(selectedPresetId));
- const isG045 = isSuperiorType(currentPreset?.agent_type);
+  const handlePermissionProject = (pid) => {
+    if (!isG045) return;
+    setPermissionProjectIds(prev =>
+      prev.includes(pid) ? prev.filter(id => id !== pid) : [...prev, pid]
+    );
+  };
 
- const handleBelongingProject = (pid) => {
- setSelectedProjectId(prev => prev === String(pid) ? "" : String(pid));
- };
-
- const handlePermissionProject = (pid) => {
- if (!isG045) return; // disabled for Standard
- setPermissionProjectIds(prev =>
-  prev.includes(pid) ? prev.filter(id => id !== pid) : [...prev, pid]
- );
- };
-
- const handleSubmit = async () => {
- if (!selectedPresetId) return alert("System Error: No Agent selected.");
- setIsSubmitting(true);
- const effectiveProjectId = selectedProjectId ||
-  (initialContext?.projectId ? String(initialContext.projectId) : "");
- const projectId = effectiveProjectId ? Number(effectiveProjectId) : 0;
-
- // Build frozen_project_ids (Superior/G045 only)
- const isG045Preset = isSuperiorType(currentPreset?.agent_type);
- const frozenIds = isG045Preset
-  ? permissionProjectIds.filter(id => id !== Number(effectiveProjectId))
-  : [];
-
- // Payload matches SuperiorSessionInitSerializer
- const payload = {
-  preset_id: parseInt(selectedPresetId),
-  name: name.trim() || undefined,
-  project_id: projectId,
-  frozen_project_ids: frozenIds,
-  thinking_level: 'auto',
-  temperature: 1.0,
- };
-
- try {
-  const res = await fetch(`${baseUrl}/api/agents/sessions/init/`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-  body: JSON.stringify(payload),
-  credentials: 'include'
-  });
-  const data = await res.json();
-  if (res.ok) {
-  const sessionId = data.data?.session_id;
-  if (sessionId && onSuccess) {
-   onSuccess(sessionId);
-  }
-  onClose();
-  } else {
-  alert("创建失败: " + JSON.stringify(data));
-  }
- } catch (e) {
-  alert("网络错误。");
- } finally {
-  setIsSubmitting(false);
- }
- };
-
- return (
- <div className="fixed inset-0 z-[100] flex items-center justify-center bg-cinder-glass-heavy backdrop-blur-md animate-in fade-in duration-200">
-  <div className="bg-exo-pure border border-exo-mist-10 rounded-[2px] w-full max-w-lg shadow-[0_0_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col">
-  {/* Header */}
-  <div className="px-6 py-4 border-b border-exo-mist-10 flex items-center justify-between bg-exo-pure/50">
-   <div className="flex flex-col">
-   <h3 className="font-bold tracking-[0.2em] tx-system-normal flex items-center gap-2 text-sm">
-    <Activity size={16} className="tx-system-accent" /> Node Initialization
-   </h3>
-   <span className="text-[0.5625rem] tx-system-mute tracking-widest opacity-40 mt-1">Establishing Secure Neural Link</span>
-   </div>
-   <button onClick={onClose} className="p-2 tx-system-mute hover:tx-system-normal transition-colors"><X size={18}/></button>
-  </div>
-
-  {/* Content */}
-  <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-hide max-h-[70vh]">
-   {/* Alias */}
-   <div className="space-y-3">
-   <label className="label-caps">Session Alias / 会话名称</label>
-   <input 
-    type="text" 
-    value={name} 
-    onChange={e => setName(e.target.value)} 
-    placeholder="AUTO-GENERATED IF NULL..." 
-    className="w-full bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-system-normal font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20" 
-   />
-   </div>
-
-   {/* Agent Selection */}
-   <div className="space-y-3">
-   <label className="label-caps">Neural Core / 选择 Agent</label>
-   <div className="grid grid-cols-1 gap-2">
-    {sortedPresets.map(preset => {
-    const isSelected = parseInt(selectedPresetId) === preset.id;
-    return (
-     <div 
-     key={preset.id} 
-     onClick={() => {
-      setSelectedPresetId(String(preset.id));
-      if (!isSuperiorType(preset.agent_type)) {
-      setPermissionProjectIds([]);
+  const handleSubmit = async () => {
+    if (!selectedPresetId) return alert("System Error: No Agent selected.");
+    setIsSubmitting(true);
+    const effectiveProjectId = selectedProjectId ||
+      (initialContext?.projectId ? String(initialContext.projectId) : "");
+    const projectId = effectiveProjectId ? Number(effectiveProjectId) : 0;
+    const isG045Preset = isSuperiorType(currentPreset?.agent_type);
+    const frozenIds = isG045Preset
+      ? permissionProjectIds.filter(id => id !== Number(effectiveProjectId))
+      : [];
+    const payload = {
+      preset_id: parseInt(selectedPresetId),
+      name: name.trim() || undefined,
+      project_id: projectId,
+      frozen_project_ids: frozenIds,
+      thinking_level: 'auto',
+      temperature: 1.0,
+    };
+    try {
+      const res = await fetch(`${baseUrl}/api/agents/sessions/init/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        body: JSON.stringify(payload),
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const sessionId = data.data?.session_id;
+        if (sessionId && onSuccess) onSuccess(sessionId);
+        onClose();
+      } else {
+        alert("创建失败: " + JSON.stringify(data));
       }
-     }}
-     className={`
-      group p-4 rounded-[2px] border cursor-pointer flex justify-between items-center transition-all
-      ${isSelected
-      ? (isSuperiorType(preset.agent_type) ? 'bg-exo-accent/10 border-exo-accent/60' : 'bg-white/5 border-white/40 shadow-brutalist')
-      : 'bg-cinder-glass-heavy border-exo-mist-10 tx-system-mute hover:border-exo-mist-20'}
-     `}
-     >
-     <div className="flex flex-col gap-1">
-      <span className={`text-[13px] font-bold tracking-tight ${isSelected ? (isSuperiorType(preset.agent_type) ? 'tx-system-accent' : 'tx-system-normal') : ''}`}>{preset.name}</span>
-      <span className="text-[0.625rem] opacity-40 font-mono tracking-widest">{preset.default_model}</span>
-     </div>
-     {isSelected ? (
-      <div className={`p-1 rounded-full ${isSuperiorType(preset.agent_type) ? 'bg-exo-accent text-exo-pure' : 'bg-white text-exo-pure'}`}>
-      <Check size={12} strokeWidth={3} />
+    } catch (e) {
+      alert("网络错误。");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const cardBase = 'group p-4 rounded-lg border cursor-pointer flex justify-between items-center transition-all';
+  const cardSelected = 'border-exo-accent/40 bg-exo-accent/5';
+  const cardIdle = 'border-exo-mist-10/30 bg-black/[0.02] dark:bg-white/[0.02] hover:border-exo-mist-10/50';
+  const optSelected = 'border-exo-accent/40 bg-exo-accent/5 tx-system-normal';
+  const optIdle = 'border-exo-mist-10/30 bg-black/[0.02] dark:bg-white/[0.02] tx-system-mute hover:border-exo-mist-10/50';
+
+  return (
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      icon={Activity}
+      title="NODE INITIALIZATION"
+      subtitle="Establishing secure neural link"
+      maxW="md"
+      bodyClassName="space-y-8"
+      footer={
+        <div className="flex items-center justify-end gap-4">
+          <Button variant="ghost" onClick={onClose}>ABORT</Button>
+          <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? <Activity size={14} className="animate-spin" /> : <Plus size={14} strokeWidth={1.5} />}
+            {isSubmitting ? 'COMMITTING...' : 'COMMIT LINK'}
+          </Button>
+        </div>
+      }
+    >
+      {/* Alias */}
+      <div className="space-y-3">
+        <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">Session Alias / 会话名称</label>
+        <input
+          className={FIELD_INPUT}
+          placeholder="AUTO-GENERATED IF NULL..."
+          value={name}
+          onChange={e => setName(e.target.value)}
+        />
       </div>
-     ) : (
-      <div className="w-4 h-4 rounded-full border border-exo-mist-10 group-hover:border-exo-mist-20" />
-     )}
-     </div>
-    );
-    })}
-   </div>
-   </div>
 
-   {/* Session Type — hidden for Superior/G045 */}
-   {!isG045 && (
-   <div className="space-y-3">
-    <label className="label-caps">Protocol Mode / 会话模式</label>
-    <div className="grid grid-cols-2 gap-3">
-    {[
-     { value: 'full', label: 'Full Protocol', icon: Activity, desc: 'Context cache + full memory injection' },
-     { value: 'lite', label: 'Lite Protocol', icon: MessageSquare, desc: 'Reduced overhead, lightweight' },
-    ].map(({ value, label, icon: Icon, desc }) => (
-     <div
-     key={value}
-     onClick={() => setSessionType(value)}
-     className={`
-      p-4 rounded-[2px] border cursor-pointer flex items-center gap-3 transition-all
-      ${sessionType === value
-      ? 'bg-exo-accent/10 border-exo-accent/60 tx-system-normal shadow-brutalist-gold'
-      : 'bg-cinder-glass-heavy border-exo-mist-10 tx-system-mute hover:border-exo-mist-20'}
-     `}
-     >
-     <Icon size={16} className={sessionType === value ? 'tx-system-accent' : ''} />
-     <div className="flex flex-col">
-      <span className="text-[0.6875rem] font-bold tracking-widest">{label}</span>
-      <span className="text-[0.5625rem] opacity-40 font-mono">{desc}</span>
-     </div>
-     </div>
-    ))}
-    </div>
-   </div>
-   )}
+      {/* Agent Selection */}
+      <div className="space-y-3">
+        <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">Neural Core / 选择 Agent</label>
+        <div className="grid grid-cols-1 gap-2">
+          {sortedPresets.map(preset => {
+            const isSelected = parseInt(selectedPresetId) === preset.id;
+            const superior = isSuperiorType(preset.agent_type);
+            return (
+              <div
+                key={preset.id}
+                onClick={() => {
+                  setSelectedPresetId(String(preset.id));
+                  if (!superior) setPermissionProjectIds([]);
+                }}
+                className={`${cardBase} ${isSelected ? cardSelected : cardIdle}`}
+              >
+                <div className="flex flex-col gap-1">
+                  <span className={`text-[13px] font-bold tracking-tight ${isSelected && superior ? 'tx-system-accent' : 'tx-system-normal'}`}>{preset.name}</span>
+                  <span className="text-[0.625rem] opacity-40 font-mono tracking-widest">{preset.default_model}</span>
+                </div>
+                {isSelected ? (
+                  <div className={`p-1 rounded-full ${superior ? 'bg-exo-accent text-exo-pure' : 'bg-exo-mist-20 text-exo-pure'}`}>
+                    <Check size={12} strokeWidth={3} />
+                  </div>
+                ) : (
+                  <div className="w-4 h-4 rounded-full border border-exo-mist-10/50 group-hover:border-exo-mist-10" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
-   {/* 所属 Project — single select, always shown */}
-   <div className="space-y-3">
-   <label className="label-caps flex justify-between items-center">
-    <span>所属 Project / 归属项目</span>
-    <span className="text-[0.5625rem] tx-system-mute font-mono tracking-tighter opacity-60">
-    [Optional · Single]
-    </span>
-   </label>
-   <div className="max-h-40 overflow-y-auto border border-exo-mist-10 rounded-[2px] bg-cinder-glass-heavy p-2 space-y-1 scrollbar-hide">
-    {projects.length === 0 && (
-    <div className="text-center py-4 text-[0.625rem] font-mono tx-system-mute opacity-30 italic">No project clusters found</div>
-    )}
-    {projects.map(proj => {
-    const isSelected = selectedProjectId === String(proj.id);
-    return (
-     <div
-     key={proj.id}
-     onClick={() => handleBelongingProject(proj.id)}
-     className={`
-      px-4 py-2.5 rounded-[2px] text-[0.6875rem] font-mono cursor-pointer flex justify-between items-center transition-all
-      ${isSelected
-      ? 'bg-exo-accent/10 tx-system-normal border border-exo-accent/20'
-      : 'tx-system-mute opacity-60 hover:tx-system-normal hover:bg-exo-accent/[0.04] border border-transparent'}
-     `}
-     >
-     <div className="flex items-center gap-3"><Folder size={12} className={isSelected ? 'tx-system-accent' : 'opacity-40'}/> {proj.name}</div>
-     {isSelected && <Check size={12} className="tx-system-accent" />}
-     </div>
-    );
-    })}
-   </div>
-   </div>
+      {/* Session Type — hidden for Superior/G045 */}
+      {!isG045 && (
+        <div className="space-y-3">
+          <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">Protocol Mode / 会话模式</label>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { value: 'full', label: 'Full Protocol', icon: Activity, desc: 'Context cache + full memory injection' },
+              { value: 'lite', label: 'Lite Protocol', icon: MessageSquare, desc: 'Reduced overhead, lightweight' },
+            ].map(({ value, label, icon: Icon, desc }) => (
+              <div
+                key={value}
+                onClick={() => setSessionType(value)}
+                className={`p-4 rounded-lg border cursor-pointer flex items-center gap-3 transition-all ${sessionType === value ? optSelected : optIdle}`}
+              >
+                <Icon size={16} className={sessionType === value ? 'tx-system-accent' : ''} />
+                <div className="flex flex-col">
+                  <span className="text-[0.7rem] font-mono tracking-[0.15em]">{label}</span>
+                  <span className="text-[0.6rem] opacity-40 font-mono">{desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-   {/* 权限 Project — multi select, enabled for Superior/G045, disabled for Standard */}
-   <div className="space-y-3">
-   <label className="label-caps flex justify-between items-center">
-    <span>权限 Project / 权限项目</span>
-    <span className={`text-[0.5625rem] font-mono tracking-tighter ${
-    isG045 ? 'tx-system-accent opacity-60' : 'tx-system-mute opacity-30'
-    }`}>
-    {isG045 ? '[Multi-Select Enabled]' : '[Superior/G045 Only]'}
-    </span>
-   </label>
-   <div
-    aria-disabled={!isG045}
-    className={`max-h-40 overflow-y-auto border border-exo-mist-10 rounded-[2px] bg-cinder-glass-heavy p-2 space-y-1 scrollbar-hide ${
-    !isG045 ? 'opacity-40 pointer-events-none' : ''
-    }`}
-   >
-    {projects.length === 0 && (
-    <div className="text-center py-4 text-[0.625rem] font-mono tx-system-mute opacity-30 italic">No project clusters found</div>
-    )}
-    {projects.map(proj => {
-    const isSelected = permissionProjectIds.includes(proj.id);
-    return (
-     <div
-     key={proj.id}
-     onClick={() => handlePermissionProject(proj.id)}
-     className={`
-      px-4 py-2.5 rounded-[2px] text-[0.6875rem] font-mono cursor-pointer flex justify-between items-center transition-all
-      ${isSelected
-      ? 'bg-purple-500/10 text-purple-300 border border-purple-500/20'
-      : 'tx-system-mute opacity-60 hover:tx-system-normal hover:bg-exo-accent/[0.04] border border-transparent'}
-     `}
-     >
-     <div className="flex items-center gap-3"><Folder size={12} className={isSelected ? 'text-purple-400' : 'opacity-40'}/> {proj.name}</div>
-     {isSelected && <Check size={12} className="text-purple-400" />}
-     </div>
-    );
-    })}
-   </div>
-   </div>
-  </div>
+      {/* 所属 Project — single select */}
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">所属 Project / 归属项目</label>
+          <span className="text-[0.55rem] tx-system-mute font-mono tracking-tighter opacity-50">[Optional · Single]</span>
+        </div>
+        <div className="max-h-40 overflow-y-auto border border-exo-mist-10/30 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] p-2 space-y-1 scrollbar-hide">
+          {projects.length === 0 && (
+            <div className="text-center py-4 text-[0.625rem] font-mono tx-system-mute opacity-30 italic">No project clusters found</div>
+          )}
+          {projects.map(proj => {
+            const isSelected = selectedProjectId === String(proj.id);
+            return (
+              <div
+                key={proj.id}
+                onClick={() => handleBelongingProject(proj.id)}
+                className={`px-4 py-2.5 rounded-lg text-[0.7rem] font-mono cursor-pointer flex justify-between items-center transition-all border ${
+                  isSelected
+                    ? 'bg-exo-accent/10 tx-system-normal border-exo-accent/20'
+                    : 'tx-system-mute opacity-60 hover:tx-system-normal hover:bg-exo-accent/[0.04] border-transparent'
+                }`}
+              >
+                <div className="flex items-center gap-3"><Folder size={12} className={isSelected ? 'tx-system-accent' : 'opacity-40'}/> {proj.name}</div>
+                {isSelected && <Check size={12} className="tx-system-accent" />}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
-  {/* Footer */}
-  <div className="p-4 border-t border-exo-mist-10 flex justify-end gap-3 bg-exo-pure/80 backdrop-blur-md">
-   <button 
-   onClick={onClose} 
-   className="px-6 py-2 rounded-[2px] text-[0.6875rem] font-bold tracking-widest tx-system-mute hover:tx-system-normal transition-colors"
-   >
-   Abort
-   </button>
-   <button 
-   onClick={handleSubmit} 
-   disabled={isSubmitting} 
-   className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[0.6875rem] font-bold tracking-[0.2em] hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
-   >
-   {isSubmitting ? <Activity size={14} className="animate-spin" /> : <Plus size={14} />} Commit Link
-   </button>
-  </div>
-  </div>
- </div>
- );
+      {/* 权限 Project — multi select, G045 only */}
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">权限 Project / 权限项目</label>
+          <span className={`text-[0.55rem] font-mono tracking-tighter ${isG045 ? 'tx-system-accent opacity-60' : 'tx-system-mute opacity-30'}`}>
+            {isG045 ? '[Multi-Select Enabled]' : '[Superior/G045 Only]'}
+          </span>
+        </div>
+        <div
+          aria-disabled={!isG045}
+          className={`max-h-40 overflow-y-auto border border-exo-mist-10/30 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] p-2 space-y-1 scrollbar-hide ${!isG045 ? 'opacity-40 pointer-events-none' : ''}`}
+        >
+          {projects.length === 0 && (
+            <div className="text-center py-4 text-[0.625rem] font-mono tx-system-mute opacity-30 italic">No project clusters found</div>
+          )}
+          {projects.map(proj => {
+            const isSelected = permissionProjectIds.includes(proj.id);
+            return (
+              <div
+                key={proj.id}
+                onClick={() => handlePermissionProject(proj.id)}
+                className={`px-4 py-2.5 rounded-lg text-[0.7rem] font-mono cursor-pointer flex justify-between items-center transition-all border ${
+                  isSelected
+                    ? 'bg-purple-500/10 text-purple-300 border-purple-500/20'
+                    : 'tx-system-mute opacity-60 hover:tx-system-normal hover:bg-exo-accent/[0.04] border-transparent'
+                }`}
+              >
+                <div className="flex items-center gap-3"><Folder size={12} className={isSelected ? 'text-purple-400' : 'opacity-40'}/> {proj.name}</div>
+                {isSelected && <Check size={12} className="text-purple-400" />}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </ModalShell>
+  );
 };
 
 export default NewSessionModal;

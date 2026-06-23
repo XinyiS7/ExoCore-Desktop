@@ -5,6 +5,7 @@ import EditPresetModal from '../components/modals/EditPresetModal';
 import AvatarCropModal from '../components/modals/AvatarCropModal';
 import SessionActionsMenu from '../components/chat/SessionActionsMenu';
 import BackToUpper from '../components/layout/BackButton';
+import { Button } from '../components/ui';
 
 /* ── Motion helper ── */
 const fadeUp = (delay) => ({
@@ -444,39 +445,13 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
 
           {/* ═══ Action buttons -> tx-decoration-normal ═══ */}
           <section style={fadeUp(0.1)} className="flex items-center gap-4 justify-center">
-            <button
-              onClick={() => openNewSession({ presetId: preset.id })}
-              className="tx-decoration-normal flex items-center gap-2 cursor-pointer transition-colors duration-300"
-              style={{
-                background: 'none',
-                border: '1px solid rgba(166,61,0,0.15)',
-                borderRadius: '6px',
-                padding: '8px 20px',
-                color: 'var(--cinder-flame-dim)',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = 'var(--cinder-flame)'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'var(--cinder-flame-dim)'; }}
-            >
-              <IconCreate size={14} />
-              New Session
-            </button>
+            <Button variant="primary" onClick={() => openNewSession({ presetId: preset.id })}>
+              <IconCreate size={14} /> New Session
+            </Button>
             {showMemoryBtn && (
-              <button
-                onClick={() => setView('agent_memory', { agentId: preset.id, agentName: preset.name })}
-                className="tx-decoration-normal flex items-center gap-2 cursor-pointer transition-colors duration-300"
-                style={{
-                  background: 'none',
-                  border: '1px solid rgba(168,122,255,0.15)',
-                  borderRadius: '6px',
-                  padding: '8px 20px',
-                  color: 'rgb(168,148,220)',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.color = 'rgb(188,168,240)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'rgb(168,148,220)'; }}
-              >
-                <IconMemory size={14} />
-                Manage Memory
-              </button>
+              <Button variant="primary" className="!border-purple-400/25 !text-purple-300 hover:!bg-purple-400/5 hover:!border-purple-400/50" onClick={() => setView('agent_memory', { agentId: preset.id, agentName: preset.name })}>
+                <IconMemory size={14} /> Manage Memory
+              </Button>
             )}
           </section>
 

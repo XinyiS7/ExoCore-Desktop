@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { configApi } from 'exo-shared';
 import { Save, Trash2, Plus, X, Edit3, Key } from 'lucide-react';
 import Toast from './Toast';
+import { Button } from '../ui';
 
 export default function KeyPoolSection({ platform, keys, loading, onKeysChanged }) {
  const [showAddForm, setShowAddForm] = useState(false);
@@ -154,83 +155,75 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
 
  if (loading && keys.length === 0) {
  return (
-  <div className="bg-chat-panel border border-white/5 rounded-lg p-4 flex items-center justify-center">
-  <span className="inline-block w-4 h-4 border-2 border-chat-muted/20 border-t-chat-muted/40 rounded-full animate-spin" />
-  </div>
+  <div className="bg-chat-panel border border-cinder-line rounded-lg p-4 flex items-center justify-center">
+   <span className="inline-block w-4 h-4 border-2 border-chat-muted/20 border-t-chat-muted/40 rounded-full animate-spin" />
+   </div>
  );
  }
 
  return (
- <div className="bg-chat-panel border border-white/5 rounded-lg p-3 space-y-3">
-  {/* Header */}
-  <div className="flex items-center justify-between">
-  <div className="flex items-center gap-2">
-   <Key size={13} className="tx-system-mute opacity-50" />
-   <span className="text-[0.725rem] font-mono tracking-[0.12em] tx-system-normal opacity-70">
-   Key Pool
-   </span>
-   <span className="text-[0.6625rem] font-mono tx-system-mute opacity-40">· {keys.length} keys</span>
-  </div>
-  {!showAddForm && (
-   <button
-   onClick={() => setShowAddForm(true)}
-   disabled={saving}
-   className="flex items-center gap-1 px-2.5 py-1 text-[0.6625rem] font-mono tracking-wider tx-system-accent opacity-60 hover:tx-system-accent border border-chat-accent/15 hover:border-chat-accent/30 rounded transition-all disabled:opacity-30"
-   >
-   <Plus size={11} /> Add
-   </button>
-  )}
-  </div>
+  <div className="bg-chat-panel border border-cinder-line rounded-lg p-3 space-y-3">
+   {/* Header */}
+   <div className="flex items-center justify-between">
+   <div className="flex items-center gap-2">
+    <Key size={13} className="tx-system-mute" />
+    <span className="tx-decoration-normal">
+    Key Pool
+    </span>
+    <span className="tx-decoration-mute">· {keys.length} keys</span>
+   </div>
+   {!showAddForm && (
+     <Button variant="primary" size="sm" onClick={() => setShowAddForm(true)} disabled={saving}>
+     <Plus size={11} /> Add
+     </Button>
+   )}
+   </div>
 
   {/* Add form — inline row */}
   {showAddForm && (
-  <div className="flex items-center gap-2 p-2 bg-chat-bg border border-white/8 rounded">
-   <input
-   type="text"
-   value={newAlias}
-   onChange={e => { setNewAlias(e.target.value); clearFeedback(); }}
-   placeholder="Alias"
-   maxLength={50}
-   disabled={saving}
-   className="flex-1 min-w-0 px-2.5 py-1.5 bg-chat-panel border border-white/8 rounded text-xs tx-system-normal outline-none focus:border-chat-accent/30 transition-colors placeholder:tx-system-mute opacity-30 font-mono"
-   />
-   <input
-   type="text"
-   value={newMasked}
-   onChange={e => handleMaskedKeyChange(e, newMasked, keyValueRef, setNewKeyValue, setNewMasked)}
-   onPaste={e => handlePaste(e, keyValueRef, setNewKeyValue, setNewMasked)}
-   placeholder="Paste API Key..."
-   autoComplete="off"
-   disabled={saving}
-   className="flex-1 min-w-0 px-2.5 py-1.5 bg-chat-panel border border-white/8 rounded text-xs tx-system-normal outline-none focus:border-chat-accent/30 transition-colors placeholder:tx-system-mute opacity-30 font-mono"
-   />
-   <button
-   onClick={handleAddKey}
-   disabled={!canAdd}
-   className="px-3 py-1.5 bg-chat-accent tx-system-normal text-[0.6625rem] font-bold tracking-[0.12em] rounded hover:brightness-110 disabled:opacity-20 disabled:grayscale transition-all flex items-center gap-1 flex-shrink-0"
-   >
-   {saving ? (
-    <span className="inline-block w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-   ) : (
-    <Save size={11} />
-   )}
-   Create
-   </button>
-   <button
-   onClick={resetAddForm}
-   disabled={saving}
-   className="p-1 tx-system-mute opacity-40 hover:tx-system-normal transition-colors flex-shrink-0"
-   >
-   <X size={13} />
-   </button>
-  </div>
+   <div className="flex items-center gap-2 p-2 bg-chat-bg border border-cinder-line rounded">
+    <input
+    type="text"
+    value={newAlias}
+    onChange={e => { setNewAlias(e.target.value); clearFeedback(); }}
+    placeholder="Alias"
+    maxLength={50}
+    disabled={saving}
+    className="flex-1 min-w-0 px-2.5 py-1.5 bg-chat-panel border border-cinder-line rounded tx-system-normal outline-none focus:border-chat-accent/30 transition-colors placeholder:tx-decoration-mute font-mono"
+    />
+    <input
+    type="text"
+    value={newMasked}
+    onChange={e => handleMaskedKeyChange(e, newMasked, keyValueRef, setNewKeyValue, setNewMasked)}
+    onPaste={e => handlePaste(e, keyValueRef, setNewKeyValue, setNewMasked)}
+    placeholder="Paste API Key..."
+    autoComplete="off"
+    disabled={saving}
+    className="flex-1 min-w-0 px-2.5 py-1.5 bg-chat-panel border border-cinder-line rounded tx-system-normal outline-none focus:border-chat-accent/30 transition-colors placeholder:tx-decoration-mute font-mono"
+    />
+     <Button variant="primary" size="sm" onClick={handleAddKey} disabled={!canAdd} className="shrink-0">
+     {saving ? (
+      <span className="inline-block w-2.5 h-2.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+     ) : (
+      <Save size={11} />
+     )}
+     Create
+     </Button>
+    <button
+    onClick={resetAddForm}
+    disabled={saving}
+    className="p-1 tx-system-mute hover:tx-system-normal transition-colors flex-shrink-0"
+    >
+    <X size={13} />
+    </button>
+   </div>
   )}
 
   {/* Key list — compact rows */}
   {keys.length === 0 ? (
-  <div className="text-center py-4 text-[0.725rem] tx-system-mute opacity-40 font-mono">
-   No keys configured for {platform}
-  </div>
+   <div className="text-center py-4 tx-decoration-mute">
+    No keys configured for {platform}
+   </div>
   ) : (
   <div className="space-y-0.5">
    {keys.map(k => (
@@ -244,36 +237,36 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
    >
     {/* Alias */}
     {editing === k.alias ? (
-    <input
-     type="text"
-     value={editAlias}
-     onChange={e => { setEditAlias(e.target.value); clearFeedback(); }}
-     maxLength={50}
-     disabled={saving}
-     className="w-32 px-2 py-0.5 bg-chat-panel border border-white/10 rounded text-xs tx-system-normal outline-none focus:border-chat-accent/40 font-mono"
-    />
+     <input
+      type="text"
+      value={editAlias}
+      onChange={e => { setEditAlias(e.target.value); clearFeedback(); }}
+      maxLength={50}
+      disabled={saving}
+      className="w-32 px-2 py-0.5 bg-chat-panel border border-cinder-line rounded tx-system-normal outline-none focus:border-chat-accent/40 font-mono"
+     />
     ) : (
-    <span className="text-xs tx-system-normal font-mono truncate min-w-0 flex-1">{k.alias}</span>
+     <span className="tx-system-normal truncate min-w-0 flex-1">{k.alias}</span>
     )}
 
     {/* Meta: last four + date */}
     {editing === k.alias && editMode === 'overwrite' ? (
-    <input
-     type="text"
-     value={editMasked}
-     onChange={e => handleMaskedKeyChange(e, editMasked, editKeyRef, setEditKeyValue, setEditMasked)}
-     onPaste={e => handlePaste(e, editKeyRef, setEditKeyValue, setEditMasked)}
-     placeholder="Paste new key..."
-     autoComplete="off"
-     disabled={saving}
-     className="w-40 px-2 py-0.5 bg-chat-panel border border-white/10 rounded text-xs tx-system-normal outline-none focus:border-chat-accent/40 font-mono"
-    />
+     <input
+      type="text"
+      value={editMasked}
+      onChange={e => handleMaskedKeyChange(e, editMasked, editKeyRef, setEditKeyValue, setEditMasked)}
+      onPaste={e => handlePaste(e, editKeyRef, setEditKeyValue, setEditMasked)}
+      placeholder="Paste new key..."
+      autoComplete="off"
+      disabled={saving}
+      className="w-40 px-2 py-0.5 bg-chat-panel border border-cinder-line rounded tx-system-normal outline-none focus:border-chat-accent/40 font-mono"
+     />
     ) : (
     <div className="flex items-center gap-4 mr-2 flex-shrink-0">
-     <code className="text-[0.725rem] tx-system-mute opacity-50 font-mono tabular-nums">
+     <code className="tx-decoration-mute tabular-nums">
      {k.last_four ? `****${k.last_four}` : '—'}
      </code>
-     <span className="text-[0.6625rem] tx-system-mute opacity-30 font-mono tabular-nums w-10 text-right">
+     <span className="tx-decoration-mute tabular-nums w-10 text-right">
      {shortDate(k.created_at)}
      </span>
     </div>
@@ -286,7 +279,7 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
      <button
       onClick={handleEditSave}
       disabled={!canEditSave}
-      className="p-1 text-green-400/50 hover:text-green-400 disabled:opacity-20 transition-colors"
+      className="p-1 text-green-600 hover:text-green-500 disabled:opacity-30 transition-colors"
      >
       {saving ? (
       <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -294,14 +287,14 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
       <Save size={12} strokeWidth={1.5} />
       )}
      </button>
-     <button onClick={cancelEdit} disabled={saving} className="p-1 tx-system-mute opacity-30 hover:tx-system-normal transition-colors">
+     <button onClick={cancelEdit} disabled={saving} className="p-1 tx-system-mute hover:tx-system-normal transition-colors">
       <X size={12} strokeWidth={1.5} />
      </button>
      {editMode === 'alias' && (
       <button
       onClick={() => setEditMode('overwrite')}
       disabled={saving}
-      className="text-[0.6rem] font-mono tracking-wider tx-system-accent opacity-40 hover:tx-system-accent transition-colors px-1"
+      className="tx-decoration-mute hover:tx-decoration-normal transition-colors px-1"
       >
       Key
       </button>
@@ -309,14 +302,14 @@ export default function KeyPoolSection({ platform, keys, loading, onKeysChanged 
      </>
     ) : (
      <>
-     <button onClick={() => startEdit(k)} disabled={saving} className="p-1 tx-system-mute opacity-30 hover:tx-system-accent opacity-50 transition-colors">
+     <button onClick={() => startEdit(k)} disabled={saving} className="p-1 tx-system-mute hover:tx-system-accent transition-colors">
       <Edit3 size={11} strokeWidth={1.5} />
      </button>
      <button
       onClick={() => deleting === k.alias ? handleDelete(k.alias) : setDeleting(k.alias)}
       disabled={saving}
       className={`p-1 transition-colors disabled:opacity-30 ${
-      deleting === k.alias ? 'text-red-400 hover:text-red-300' : 'tx-system-mute opacity-30 hover:text-red-400'
+      deleting === k.alias ? 'text-red-600 hover:text-red-500' : 'tx-system-mute hover:text-red-600'
       }`}
      >
       <Trash2 size={11} strokeWidth={1.5} />

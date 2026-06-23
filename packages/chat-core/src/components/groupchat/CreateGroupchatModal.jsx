@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Activity } from 'lucide-react';
 import { groupchatApi } from 'exo-shared';
+import { ModalShell, Button, FIELD_INPUT, FIELD_AREA } from '../ui';
 
 /**
  * Modal for creating or editing a Groupchat.
@@ -22,7 +23,6 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
 
   const isEdit = !!editing;
 
-  // Reset form when modal opens or editing changes
   useEffect(() => {
     if (!isOpen) return;
     if (editing) {
@@ -86,138 +86,103 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
 
   if (!isOpen) return null;
 
-  // Presets excluding user (id 2) — user is always implicitly a participant
   const agentPresets = presets.filter(p => p.id !== 2);
 
   return (
-    <div className="fixed inset-0 z-[150] bg-exo-bg/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-exo-pure border border-exo-mist-12 rounded-[4px] shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-exo-mist-10">
-          <h2 className="text-sm font-semibold tx-system-normal tracking-tight">
-            {isEdit ? 'Manage Groupchat' : 'New Groupchat'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1 tx-system-mute hover:tx-system-normal transition-colors rounded"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="p-5 space-y-5">
-          {/* Name */}
-          <div className="space-y-1.5">
-            <label className="text-[0.625rem] tracking-[0.2em] tx-system-mute">Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Groupchat name..."
-              autoFocus
-              className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-3 py-2 text-sm tx-system-normal outline-none focus:border-exo-accent/50 transition-colors font-sans placeholder:tx-system-mute opacity-40"
-            />
-          </div>
-
-          {/* Prompt */}
-          <div className="space-y-1.5">
-            <label className="text-[0.625rem] tracking-[0.2em] tx-system-mute">
-              Prompt <span className="tx-system-mute opacity-40">(optional)</span>
-            </label>
-            <textarea
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              placeholder="Background prompt for Superior agents..."
-              rows={3}
-              className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-3 py-2 text-sm tx-system-normal outline-none focus:border-exo-accent/50 transition-colors font-sans resize-y placeholder:tx-system-mute opacity-40"
-            />
-          </div>
-
-          {/* Participants */}
-          <div className="space-y-1.5">
-            <label className="text-[0.625rem] tracking-[0.2em] tx-system-mute">
-              Participants <span className="tx-system-mute opacity-40">({participantIds.length} agent{participantIds.length !== 1 ? 's' : ''} selected)</span>
-            </label>
-            {agentPresets.length === 0 ? (
-              <p className="text-xs tx-system-mute opacity-40 italic">No agent presets available.</p>
-            ) : (
-              <div className="max-h-48 overflow-y-auto space-y-0.5 bg-exo-bg border border-exo-mist-10 rounded-[2px] p-2">
-                {agentPresets.map(preset => {
-                  const checked = participantIds.includes(preset.id);
-                  return (
-                    <label
-                      key={preset.id}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-[2px] cursor-pointer transition-all ${
-                        checked ? 'bg-exo-accent/10 border border-exo-accent/20' : 'hover:bg-exo-accent/[0.02] border border-transparent'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleParticipant(preset.id)}
-                        className="sr-only"
-                      />
-                      <div className={`w-4 h-4 rounded-[2px] border flex items-center justify-center transition-all flex-shrink-0 ${
-                        checked ? 'bg-exo-accent border-exo-accent' : 'border-exo-mist-20'
-                      }`}>
-                        {checked && (
-                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                            <path d="M2 5l2 2 4-4" stroke="#0a0200" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm tx-system-normal truncate">{preset.name}</p>
-                        <p className="text-[0.5625rem] tx-system-mute opacity-50 font-mono">{preset.agent_type || 'standard'}</p>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      icon={Plus}
+      title={isEdit ? 'MANAGE GROUPCHAT' : 'NEW GROUPCHAT'}
+      subtitle={isEdit ? 'Update groupchat settings' : 'Create a new groupchat'}
+      maxW="sm"
+      z="z-[150]"
+      footer={
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            {isEdit && (
+              <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleting}>
+                <Trash2 size={12} /> {deleting ? 'DELETING...' : 'DELETE'}
+              </Button>
             )}
           </div>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" onClick={onClose}>CANCEL</Button>
+            <Button variant="primary" onClick={handleSave} disabled={saving || !name.trim()}>
+              {saving ? <Activity size={14} className="animate-spin" /> : <Plus size={14} strokeWidth={1.5} />}
+              {saving ? 'SAVING...' : isEdit ? 'SAVE' : 'CREATE'}
+            </Button>
+          </div>
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">Name</label>
+          <input
+            className={FIELD_INPUT}
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Groupchat name..."
+            autoFocus
+          />
+        </div>
 
-          {/* Error */}
-          {error && (
-            <div className="text-[0.6875rem] font-mono text-red-400 bg-red-500/5 border border-red-500/20 rounded-[2px] px-3 py-2">
-              {error}
+        <div className="space-y-3">
+          <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">Prompt <span className="opacity-40">(optional)</span></label>
+          <textarea
+            rows={3}
+            className={FIELD_AREA}
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            placeholder="Background prompt for Superior agents..."
+          />
+        </div>
+
+        <div className="space-y-3">
+          <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">
+            Participants <span className="opacity-40">({participantIds.length})</span>
+          </label>
+          {agentPresets.length === 0 ? (
+            <p className="text-xs tx-system-mute opacity-40 italic">No agent presets available.</p>
+          ) : (
+            <div className="max-h-48 overflow-y-auto space-y-1 border border-exo-mist-10/30 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] p-2 scrollbar-hide">
+              {agentPresets.map(preset => {
+                const checked = participantIds.includes(preset.id);
+                return (
+                  <label
+                    key={preset.id}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all border ${
+                      checked ? 'bg-exo-accent/10 border-exo-accent/20' : 'hover:bg-exo-accent/[0.04] border-transparent'
+                    }`}
+                  >
+                    <input type="checkbox" checked={checked} onChange={() => toggleParticipant(preset.id)} className="sr-only" />
+                    <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all flex-shrink-0 ${
+                      checked ? 'bg-exo-accent border-exo-accent' : 'border-exo-mist-20'
+                    }`}>
+                      {checked && (
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                          <path d="M2 5l2 2 4-4" stroke="#0a0200" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm tx-system-normal truncate">{preset.name}</p>
+                      <p className="text-[0.6rem] tx-system-mute opacity-50 font-mono">{preset.agent_type || 'standard'}</p>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-4 border-t border-exo-mist-10 bg-white/[0.02]">
-          <div>
-            {isEdit && (
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="px-3 py-1.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 rounded-[2px] text-[0.625rem] tracking-widest transition-colors flex items-center gap-1.5 disabled:opacity-30"
-              >
-                <Trash2 size={12} />
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
-            )}
+        {error && (
+          <div className="text-[0.7rem] font-mono text-red-500 bg-red-500/5 border border-red-500/20 rounded-lg px-4 py-2">
+            {error}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-1.5 text-[0.625rem] tracking-widest tx-system-mute hover:tx-system-normal transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving || !name.trim()}
-              className="px-4 py-1.5 bg-exo-accent/10 tx-system-accent border border-exo-accent/20 rounded-[2px] text-[0.625rem] tracking-widest hover:bg-exo-accent hover:text-black transition-colors flex items-center gap-1.5 disabled:opacity-30"
-            >
-              <Plus size={12} />
-              {saving ? 'Saving...' : isEdit ? 'Save' : 'Create'}
-            </button>
-          </div>
-        </div>
+        )}
       </div>
-    </div>
+    </ModalShell>
   );
 }

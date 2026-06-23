@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { configApi } from 'exo-shared';
 import { Save, AlertCircle, Shield, ChevronDown } from 'lucide-react';
 import Toast from './Toast';
+import { Button } from '../ui';
 
 const ROLES = ['system', 'main_session', 'sub_agent', 'vision', 'image_gen', 'web_search'];
 
@@ -130,33 +131,29 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
  };
 
  return (
- <div className="bg-chat-panel border border-white/5 rounded-lg p-3 space-y-3">
-  {/* Header */}
-  <div className="flex items-center justify-between">
-  <div className="flex items-center gap-2">
-   <Shield size={13} className="tx-system-mute opacity-50" />
-   <span className="text-[0.625rem] font-mono tracking-[0.12em] tx-system-normal opacity-70">Key Map</span>
-   {dirty && <span className="text-[0.5rem] font-mono tx-system-accent opacity-50">(modified)</span>}
-  </div>
-  <button
-   onClick={handleSave}
-   disabled={!canSave}
-   className="px-3 py-1.5 bg-chat-accent tx-system-normal text-[0.5625rem] font-bold tracking-[0.12em] rounded hover:brightness-110 disabled:opacity-20 disabled:grayscale transition-all flex items-center gap-1"
-  >
-   {saving ? (
-   <span className="inline-block w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-   ) : (
-   <Save size={11} />
-   )}
-   Save
-  </button>
-  </div>
+  <div className="bg-chat-panel border border-cinder-line rounded-lg p-3 space-y-3">
+   {/* Header */}
+   <div className="flex items-center justify-between">
+   <div className="flex items-center gap-2">
+    <Shield size={13} className="tx-system-mute" />
+    <span className="tx-decoration-normal">Key Map</span>
+    {dirty && <span className="tx-decoration-mute">(modified)</span>}
+   </div>
+    <Button variant="primary" size="sm" onClick={handleSave} disabled={!canSave}>
+     {saving ? (
+     <span className="inline-block w-2.5 h-2.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+     ) : (
+     <Save size={11} />
+     )}
+     Save
+    </Button>
+   </div>
 
-  {aliasOptions.length === 0 ? (
-  <div className="text-center py-4 text-[0.625rem] tx-system-mute opacity-40 font-mono">
-   No keys available. Create keys in the Key Pool section first.
-  </div>
-  ) : (
+   {aliasOptions.length === 0 ? (
+   <div className="text-center py-4 tx-decoration-mute">
+    No keys available. Create keys in the Key Pool section first.
+   </div>
+   ) : (
   <div className="space-y-1" ref={dropdownRef}>
    {ROLES.map(role => {
    const ra = assignments[role];
@@ -178,93 +175,93 @@ export default function RoleKeyMapSection({ platform, keys, keyMapForPlatform, o
      }`}
      onClick={() => toggleDropdown(role)}
     >
-     {/* Role label */}
-     <span className="text-[0.625rem] font-mono tx-system-normal opacity-70 w-[72px] flex-shrink-0 select-none">
-     {ROLE_LABELS[role]}
-     {isSystemRole && <span className="tx-system-accent opacity-50 ml-0.5">*</span>}
-     </span>
+      {/* Role label */}
+      <span className="tx-system-normal w-[120px] flex-shrink-0 select-none">
+      {ROLE_LABELS[role]}
+      {isSystemRole && <span className="tx-system-accent ml-0.5">*</span>}
+      </span>
 
-     {/* Selected value display */}
-     <span className={`flex-1 min-w-0 text-xs font-mono truncate select-none ${
-     isEmpty ? 'tx-system-mute opacity-30' : 'tx-system-normal opacity-80'
-     }`}>
-     {isEmpty ? '—' : selectedArr.join(', ')}
-     </span>
+      {/* Selected value display */}
+      <span className={`flex-1 min-w-0 truncate select-none ${
+      isEmpty ? 'tx-system-mute' : 'tx-system-normal'
+      }`}>
+      {isEmpty ? '—' : selectedArr.join(', ')}
+      </span>
 
-     {/* Warning for empty system role */}
-     {isSystemRole && isEmpty && dirty && (
-     <span className="text-[0.5rem] text-red-400/60 font-mono flex items-center gap-0.5 flex-shrink-0">
-      <AlertCircle size={9} /> required
-     </span>
-     )}
+      {/* Warning for empty system role */}
+      {isSystemRole && isEmpty && dirty && (
+      <span className="text-[0.7rem] text-red-600 font-mono flex items-center gap-0.5 flex-shrink-0">
+       <AlertCircle size={9} /> required
+      </span>
+      )}
 
-     {/* Chevron */}
-     <ChevronDown
-     size={12}
-     className={`tx-system-mute opacity-30 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
-     />
+      {/* Chevron */}
+      <ChevronDown
+      size={12}
+      className={`tx-system-mute transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+      />
     </div>
 
     {/* Dropdown */}
-    {isOpen && (
-     <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-chat-panel border border-white/10 rounded-md shadow-xl p-2 space-y-1.5">
-     {/* Key checkboxes */}
-     <div className="flex flex-wrap gap-1">
-      {aliasOptions.map(alias => {
-      const checked = ra.selectedKeys.has(alias);
-      return (
-       <button
-       key={alias}
-       onClick={(e) => { e.stopPropagation(); toggleKey(role, alias); }}
-       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-[3px] border text-[0.5625rem] font-mono transition-all ${
-        checked
-        ? 'bg-chat-accent/8 border-chat-accent/20 tx-system-accent'
-        : 'bg-transparent border-white/[0.06] tx-system-mute opacity-40 hover:border-exo-mist-12'
-       }`}
-       >
-       <span className={`w-2.5 h-2.5 rounded-[2px] border flex items-center justify-center flex-shrink-0 ${
-        checked ? 'bg-chat-accent border-chat-accent' : 'border-white/15'
-       }`}>
-        {checked && (
-        <svg width="6" height="6" viewBox="0 0 8 8" fill="none">
-         <path d="M1.5 4L3.5 6L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-        )}
-       </span>
-       {alias}
-       </button>
-      );
-      })}
-     </div>
-
-     {/* Default selector — only show when multiple keys selected */}
-     {selectedArr.length > 1 && (
-      <div className="border-t border-white/[0.04] pt-1.5">
-      <span className="text-[0.5rem] font-mono tracking-[0.1em] tx-system-mute opacity-40 px-1">Default</span>
-      <div className="flex flex-wrap gap-1 mt-1">
-       {selectedArr.map(alias => (
-       <button
+     {isOpen && (
+      <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-chat-bg border border-cinder-line rounded-md shadow-xl p-2 space-y-1.5">
+      {/* Key checkboxes */}
+      <div className="flex flex-wrap gap-1">
+       {aliasOptions.map(alias => {
+       const checked = ra.selectedKeys.has(alias);
+       return (
+        <button
         key={alias}
-        onClick={(e) => { e.stopPropagation(); setDefault(role, alias); }}
-        className={`inline-flex items-center gap-1 text-[0.5625rem] font-mono transition-colors ${
-        ra.defaultAlias === alias ? 'tx-system-accent' : 'tx-system-mute opacity-40 hover:tx-system-mute opacity-70'
+        onClick={(e) => { e.stopPropagation(); toggleKey(role, alias); }}
+         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border tx-decoration-normal transition-all ${
+         checked
+         ? 'bg-chat-accent/8 border-chat-accent/20'
+         : 'bg-transparent border-cinder-line tx-decoration-mute hover:tx-decoration-normal hover:border-exo-mist-12'
         }`}
-       >
-        <span className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center ${
-        ra.defaultAlias === alias ? 'border-chat-accent' : 'border-white/15'
+        >
+        <span className={`w-2.5 h-2.5 rounded-[2px] border flex items-center justify-center flex-shrink-0 ${
+         checked ? 'bg-chat-accent border-chat-accent' : 'border-cinder-line'
         }`}>
-        {ra.defaultAlias === alias && (
-         <span className="w-1 h-1 rounded-full bg-chat-accent" />
-        )}
+         {checked && (
+         <svg width="6" height="6" viewBox="0 0 8 8" fill="none">
+          <path d="M1.5 4L3.5 6L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+         </svg>
+         )}
         </span>
         {alias}
-       </button>
-       ))}
+        </button>
+       );
+       })}
       </div>
+
+      {/* Default selector — only show when multiple keys selected */}
+      {selectedArr.length > 1 && (
+       <div className="border-t border-cinder-line pt-1.5">
+       <span className="tx-decoration-mute px-1">Default</span>
+       <div className="flex flex-wrap gap-1 mt-1">
+        {selectedArr.map(alias => (
+        <button
+         key={alias}
+         onClick={(e) => { e.stopPropagation(); setDefault(role, alias); }}
+         className={`inline-flex items-center gap-1 tx-decoration-normal transition-colors ${
+         ra.defaultAlias === alias ? '' : 'tx-decoration-mute hover:tx-decoration-normal'
+         }`}
+        >
+         <span className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center ${
+         ra.defaultAlias === alias ? 'border-chat-accent' : 'border-cinder-line'
+         }`}>
+         {ra.defaultAlias === alias && (
+          <span className="w-1 h-1 rounded-full bg-chat-accent" />
+         )}
+         </span>
+         {alias}
+        </button>
+        ))}
+       </div>
+       </div>
+      )}
       </div>
      )}
-     </div>
-    )}
     </div>
    );
    })}

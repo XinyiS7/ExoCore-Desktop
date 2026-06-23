@@ -6,6 +6,7 @@ import {
 import { baseUrl } from 'exo-shared';
 import { getAgentAvatarUrl } from '../../utils/avatar';
 import EditPresetModal from '../modals/EditPresetModal';
+import { Button } from '../ui';
 import AvatarCropModal from '../modals/AvatarCropModal';
 import TriggeredNote from './TriggeredNote';
 import { getAgentHubOrder, isSuperiorType } from '../../utils/presets';
@@ -141,15 +142,14 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
               <Trash2 size={14} />
             </button>
             <div className="w-px h-8 bg-exo-mist-10 mx-1"></div>
-            <button
+            <Button variant="primary"
               onClick={() => {
                 openNewSession({ presetId: preset.id });
                 setCurrentTab('chat');
               }}
-              className="px-4 py-2 bg-white text-exo-pure rounded-[2px] flex items-center gap-2 text-[0.6875rem] font-bold tracking-widest hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95"
             >
               <Play size={12} fill="currentColor" /> Initiate
-            </button>
+            </Button>
           </div>
         </div>
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { conversationsApi, projectsApi, getConvProjectId } from 'exo-shared';
 import WorkDirModal from '../components/project/WorkDirModal';
+import ProjectPromptModal from '../components/modals/ProjectPromptModal';
 import BackToUpper from '../components/layout/BackButton';
 
 /* ── SVG Icons ── */
@@ -40,10 +41,10 @@ const fadeUp = (delay) => ({
 });
 
 /* ── Section header atom ── */
-const SectionHead = ({ label, children }) => (
+const SectionHead = ({ label, children, className = "tx-section-normal font-light" }) => (
   <div className="flex items-center gap-2.5">
     <div className="w-[18px] h-px" style={{ background: 'var(--cinder-line-glow)' }} />
-    <span className="tx-section-normal font-light">
+    <span className={className}>
       {label}
     </span>
     {children && <span style={{ marginLeft: 'auto' }}>{children}</span>}
@@ -264,10 +265,8 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
   const [sessions, setSessions] = useState([]);
   const [files, setFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [promptDraft, setPromptDraft] = useState('');
-  const [editingPrompt, setEditingPrompt] = useState(false);
-  const [savingPrompt, setSavingPrompt] = useState(false);
   const [showWorkDirModal, setShowWorkDirModal] = useState(false);
+  const [showPromptModal, setShowPromptModal] = useState(false);
   const [hoveredCrystal, setHoveredCrystal] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -402,118 +401,39 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
           onMouseEnter={() => setHoveredCrystal(true)}
           onMouseLeave={() => setHoveredCrystal(false)}
         >
-          <div style={{ background: 'none', border: 'none', padding: 0 }}>
-            <div className="flex items-center gap-2 mb-3.5">
-              <span className="tx-decoration-mute opacity-50">[</span>
-              <span className="tx-decoration-mute font-light">
-                SYSTEM PROMPT
-              </span>
-              <span className="tx-decoration-mute opacity-50">]</span>
-              {!editingPrompt ? (
-                <button
-                  onClick={() => { setPromptDraft(project?.prompt || ''); setEditingPrompt(true); }}
-                  className="ml-auto flex items-center cursor-pointer transition-all duration-400"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '2px',
-                    color: hoveredCrystal ? 'var(--cinder-flame)' : 'var(--cinder-text-faint)',
-                    opacity: hoveredCrystal ? 0.6 : 0,
-                    filter: hoveredCrystal ? 'drop-shadow(0 0 4px rgba(255,74,8,0.3))' : 'none',
-                  }}
-                >
-                  <IconPolygon size={14} />
-                </button>
-              ) : (
-                <div className="flex items-center gap-3 ml-auto">
-                  {savingPrompt && (
-                    <span className="font-light" style={{ fontSize: '9px', color: 'var(--cinder-text-faint)' }}>
-                      Saving...
-                    </span>
-                  )}
-                  <button
-                    onClick={async () => {
-                      if (promptDraft === (project?.prompt || '')) { setEditingPrompt(false); return; }
-                      setSavingPrompt(true);
-                      try {
-                        await projectsApi.updateProject(projectId, { prompt: promptDraft });
-                        appState.setProjects?.(prev =>
-                          prev.map(p => p.id === projectId ? { ...p, prompt: promptDraft } : p)
-                        );
-                      } catch (e) {
-                        console.error('Failed to save prompt', e);
-                      } finally {
-                        setSavingPrompt(false);
-                        setEditingPrompt(false);
-                      }
-                    }}
-                    className="font-light cursor-pointer transition-colors duration-300"
-                    style={{
-                      fontSize: '10px',
-                      letterSpacing: '0.06em',
-                      color: 'var(--cinder-flame)',
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                    }}
-                  >
-                    Done
-                  </button>
-                  <button
-                    onClick={() => setEditingPrompt(false)}
-                    className="font-light cursor-pointer transition-colors duration-300"
-                    style={{
-                      fontSize: '10px',
-                      letterSpacing: '0.06em',
-                      color: 'var(--cinder-text-faint)',
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--cinder-text-dim)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--cinder-text-faint)'; }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {editingPrompt ? (
-              <textarea
-                autoFocus
-                value={promptDraft}
-                onChange={e => setPromptDraft(e.target.value)}
-                placeholder="Define project context, conventions, and goals..."
-                rows={4}
-                className="w-full font-[inherit] font-light resize-none outline-none transition-all duration-300"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: '1px solid rgba(255,74,8,0.3)',
-                  padding: '8px 0',
-                  fontSize: '13px',
-                  lineHeight: '1.7',
-                  letterSpacing: '0.03em',
-                  color: 'rgba(205, 180, 150, 0.85)',
-                }}
-              />
-            ) : (
-              <p
-                className={`font-light tx-body-normal ${project?.prompt ? 'text-[rgba(205,180,150,0.75)]' : 'tx-body-mute opacity-50'}`}
-                style={{
-                  lineHeight: '1.7',
-                }}
-              >
-                {project?.prompt || 'No project prompt configured. Click the diamond icon to add one.'}
-              </p>
-            )}
+          <div className="flex items-center gap-2 mb-3.5">
+            <span className="tx-decoration-mute opacity-50">[</span>
+            <span className="tx-decoration-mute font-light">
+              SYSTEM PROMPT
+            </span>
+            <span className="tx-decoration-mute opacity-50">]</span>
+            <button
+              onClick={() => setShowPromptModal(true)}
+              className="ml-auto flex items-center cursor-pointer transition-all duration-400"
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '2px',
+                color: hoveredCrystal ? 'var(--cinder-flame)' : 'var(--cinder-text-faint)',
+                opacity: hoveredCrystal ? 0.6 : 0,
+                filter: hoveredCrystal ? 'drop-shadow(0 0 4px rgba(255,74,8,0.3))' : 'none',
+              }}
+            >
+              <IconPolygon size={14} />
+            </button>
           </div>
+
+          <p
+            className={`font-light tx-body-normal ${project?.prompt ? 'text-[rgba(205,180,150,0.75)]' : 'tx-body-mute opacity-50'}`}
+            style={{ lineHeight: '1.7' }}
+          >
+            {project?.prompt || 'No project prompt configured. Click the diamond icon to add one.'}
+          </p>
         </section>
 
         {/* ═══ Resources: Files + WorkDir ═══ */}
         <section style={fadeUp(0.14)} className="flex flex-col gap-4">
-          <SectionHead label="RESOURCES" />
+          <SectionHead label="RESOURCES" className="tx-nav-normal" />
           <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
 
           {/* Files row: [polygon] | file chips */}
@@ -567,7 +487,7 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
         {/* ═══ Threads (Sessions) ═══ */}
         <section style={fadeUp(0.2)}>
           <div className="flex items-center justify-between mb-1">
-            <SectionHead label="THREADS" />
+            <SectionHead label="THREADS" className="tx-nav-normal" />
             {sessions.length > 0 && (
               <span className="font-light" style={{ fontSize: '9px', letterSpacing: '0.04em', color: 'var(--cinder-text-faint)' }}>
                 {sessions.length} sessions
@@ -608,6 +528,18 @@ export default function ProjectDetail({ appState, setView, goBack, viewParams })
           setProjects={appState.setProjects}
           isOpen={showWorkDirModal}
           onClose={() => setShowWorkDirModal(false)}
+        />
+
+        {/* Project Prompt Modal */}
+        <ProjectPromptModal
+          project={project}
+          isOpen={showPromptModal}
+          onClose={() => setShowPromptModal(false)}
+          onSaved={(newPrompt) => {
+            appState.setProjects?.(prev =>
+              prev.map(p => p.id === projectId ? { ...p, prompt: newPrompt } : p)
+            );
+          }}
         />
       </div>
     </div>

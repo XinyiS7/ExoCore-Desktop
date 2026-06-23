@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Activity, Save, History, Tag, Clock, Zap, BookOpen, AlertCircle } from 'lucide-react';
 import { baseUrl, getCsrfToken } from 'exo-shared';
+import { Button } from '../ui';
 
 const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack }) => {
   const [topicLabel, setTopicLabel] = useState(proposal?.topic || '');
@@ -210,14 +211,10 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
                   </span>
                 )}
               </div>
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="px-6 py-2 bg-white text-exo-pure rounded-[2px] text-[0.7875rem] font-bold tracking-[0.2em] hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-2 shrink-0"
-              >
+              <Button variant="primary" onClick={handleSave} disabled={isSaving} className="shrink-0">
                 {isSaving ? <Activity size={13} className="animate-spin" /> : <Save size={13} />}
                 {isSaving ? 'Committing...' : 'Commit'}
-              </button>
+              </Button>
             </div>
           </div>
 

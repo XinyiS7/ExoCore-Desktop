@@ -4,6 +4,7 @@ import {
  Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2, SlidersHorizontal, Folder, ChevronDown
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Button } from '../ui';
 import { baseUrl, getCsrfToken, MAIN_MODEL_IDS, useTheme } from 'exo-shared';
 import { getAgentAvatarUrl, getUserAvatarUrl } from '../../utils/avatar';
 import { filesToAttachmentData, saveAttachments, enrichMessages, uploadFilesToAttachments } from '../../utils/attachmentStorage';
@@ -1094,8 +1095,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
      className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-2 py-1.5 text-xs tx-message-normal outline-none focus:border-exo-accent/50 transition-colors"
      />
      <div className="flex justify-end gap-2">
-     <button onClick={() => { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); }} className="px-3 py-1 tx-message-mute hover:tx-message-normal text-[0.7875rem] tracking-widest">取消</button>
-     <button onClick={handleAddAttachment} className="px-3 py-1 bg-exo-accent/10 tx-message-accent border border-exo-accent/20 rounded-[2px] text-[0.7875rem] tracking-widest hover:bg-exo-accent hover:text-black transition-colors">确认</button>
+      <Button variant="ghost" size="sm" onClick={() => { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); }}>取消</Button>
+      <Button variant="primary" size="sm" onClick={handleAddAttachment}>确认</Button>
      </div>
     </div>
     )}

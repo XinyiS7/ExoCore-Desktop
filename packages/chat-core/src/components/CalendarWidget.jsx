@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, X, Calendar, CheckCircle2, Circle, ChevronLeft, ChevronRight, Target, RefreshCw } from 'lucide-react';
 import { tasksApi } from 'exo-shared';
+import { Button } from './ui';
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
 
@@ -247,8 +248,8 @@ export default function CalendarWidget() {
                   className="bg-exo-metal border border-exo-border/50 rounded px-2 py-1 text-xs tx-system-normal opacity-70 outline-none focus:border-exo-accent/30 transition-colors"
                 />
                 <div className="flex gap-1.5 ml-auto">
-                  <button onClick={() => { setShowAddForm(false); setForm(EmptyForm); }} className="px-2 py-1 text-xs tx-system-mute hover:tx-system-normal transition-colors">取消</button>
-                  <button onClick={addTask} className="px-3 py-1 text-xs bg-exo-accent/10 tx-system-accent border border-exo-accent/20 rounded hover:bg-exo-accent hover:text-black transition-colors">添加</button>
+                  <Button variant="ghost" size="sm" onClick={() => { setShowAddForm(false); setForm(EmptyForm); }}>取消</Button>
+                  <Button variant="primary" size="sm" onClick={addTask}>添加</Button>
                 </div>
               </div>
             </div>

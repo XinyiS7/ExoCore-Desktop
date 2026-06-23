@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Send, Activity, CornerDownLeft, Camera } from 'lucide-react';
 import { baseUrl, getCsrfToken } from 'exo-shared';
 import { getAgentAvatarUrl, getUserAvatarUrl } from '../../utils/avatar';
+import { Button } from '../ui';
 import { setUserAvatar } from 'exo-shared/profile';
 import AvatarCropModal from './modals/AvatarCropModal';
 
@@ -256,14 +257,10 @@ const UserProfile = ({ presets }) => {
                 />
                 <div className="flex justify-between items-center pt-4 border-t border-exo-mist-6">
                   <span className="text-[0.5625rem] tx-body-mute tracking-tight opacity-40">Markdown & Links Supported</span>
-                  <button
-                    onClick={handlePost}
-                    disabled={!newPostContent.trim() || isPosting}
-                    className="px-6 py-2 bg-white text-exo-pure text-[0.6875rem] font-bold rounded-[2px] hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-2 tracking-widest"
-                  >
+                  <Button variant="primary" onClick={handlePost} disabled={!newPostContent.trim() || isPosting}>
                     {isPosting ? <Activity size={12} className="animate-spin" /> : <Send size={12} />}
                     Inscribe
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -379,13 +376,9 @@ const TweetCard = ({
                 autoFocus
                 className="flex-1 bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-body-normal outline-none focus:border-exo-accent/40 resize-none transition-all placeholder:opacity-20"
               />
-              <button
-                onClick={() => handleReply(tweet.id)}
-                disabled={!replyContent.trim() || isSubmittingReply}
-                className="px-4 py-2.5 bg-white text-exo-pure rounded-[2px] hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95 disabled:opacity-30 shrink-0"
-              >
+              <Button variant="primary" onClick={() => handleReply(tweet.id)} disabled={!replyContent.trim() || isSubmittingReply} className="shrink-0">
                 <Send size={14} />
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -430,13 +423,9 @@ const TweetCard = ({
                       autoFocus
                       className="flex-1 bg-cinder-glass-heavy border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm tx-body-normal outline-none focus:border-exo-accent/40 resize-none transition-all placeholder:opacity-20"
                     />
-                    <button
-                      onClick={() => handleReply(reply.id)}
-                      disabled={!replyContent.trim() || isSubmittingReply}
-                      className="px-4 py-2.5 bg-white text-exo-pure rounded-[2px] hover:bg-exo-accent transition-colors shadow-brutalist active:scale-95 disabled:opacity-30 shrink-0"
-                    >
+                    <Button variant="primary" onClick={() => handleReply(reply.id)} disabled={!replyContent.trim() || isSubmittingReply} className="shrink-0">
                       <Send size={14} />
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>

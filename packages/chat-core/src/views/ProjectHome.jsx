@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, MessageSquare, Hash } from 'lucide-react';
 import { conversationsApi, getConvProjectId } from 'exo-shared';
 import SessionActionsMenu from '../components/chat/SessionActionsMenu';
+import { Button } from '../components/ui';
 
 export default function ProjectHome({ appState, setView }) {
  const { openNewSession, setActiveSessionId } = appState;
@@ -42,13 +43,9 @@ export default function ProjectHome({ appState, setView }) {
    <h2 className="text-xs font-mono tracking-[0.3em] tx-system-mute">Chat Without Project</h2>
    <p className="text-[0.5625rem] tx-system-mute opacity-50 mt-0.5">{unassignedSessions.length} unassigned sessions</p>
   </div>
-  <button
-   onClick={() => openNewSession()}
-   className="flex items-center gap-2 px-4 py-2 bg-exo-accent/10 border border-exo-accent/30 rounded-md tx-system-accent text-xs font-medium hover:bg-exo-accent/20 active:scale-95 transition-colors"
-  >
-   <Plus size={14} strokeWidth={1.5} />
-   New Chat
-  </button>
+  <Button variant="primary" size="sm" onClick={() => openNewSession()}>
+   <Plus size={14} strokeWidth={1.5} /> New Chat
+  </Button>
   </div>
 
   {/* Unassigned Sessions List */}

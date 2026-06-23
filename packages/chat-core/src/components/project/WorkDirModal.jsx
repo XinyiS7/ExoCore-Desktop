@@ -1,160 +1,129 @@
 import React, { useState, useEffect } from 'react';
-import { FolderOpen, X } from 'lucide-react';
+import { FolderOpen, Activity } from 'lucide-react';
 import { baseUrl, getCsrfToken } from 'exo-shared';
+import { ModalShell, Button, FIELD_INPUT } from '../ui';
 
 const WorkDirModal = ({ projectId, currentWorkDir, setProjects, isOpen, onClose }) => {
- const [workDirDraft, setWorkDirDraft] = useState('');
- const [isSaving, setIsSaving] = useState(false);
- const [error, setError] = useState(null);
- const [fetching, setFetching] = useState(false);
+  const [workDirDraft, setWorkDirDraft] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [fetching, setFetching] = useState(false);
 
- useEffect(() => {
- if (!isOpen || !projectId) return;
+  useEffect(() => {
+    if (!isOpen || !projectId) return;
+    let cancelled = false;
+    setFetching(true);
+    setError(null);
+    fetch(`${baseUrl}/api/core/projects/${projectId}/`, { credentials: 'include' })
+      .then(res => res.ok ? res.json() : Promise.reject(res))
+      .then(detail => {
+        if (!cancelled) {
+          setWorkDirDraft(detail.work_dir || '');
+          setFetching(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setWorkDirDraft(currentWorkDir || '');
+          setFetching(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [isOpen, projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
- let cancelled = false;
- setFetching(true);
- setError(null);
+  const handleSave = async () => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`${baseUrl}/api/core/projects/${projectId}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({ work_dir: workDirDraft }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setProjects(prev => prev.map(p => p.id === projectId ? { ...p, work_dir: updated.work_dir } : p));
+        onClose();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || errData.work_dir || '保存失败，请检查路径是否有效');
+      }
+    } catch (err) {
+      setError(err.message || '网络错误，请重试');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
- fetch(`${baseUrl}/api/core/projects/${projectId}/`, { credentials: 'include' })
-  .then(res => res.ok ? res.json() : Promise.reject(res))
-  .then(detail => {
-  if (!cancelled) {
-   setWorkDirDraft(detail.work_dir || '');
-   setFetching(false);
-  }
-  })
-  .catch(() => {
-  if (!cancelled) {
-   setWorkDirDraft(currentWorkDir || '');
-   setFetching(false);
-  }
-  });
+  const handleClear = async () => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`${baseUrl}/api/core/projects/${projectId}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({ work_dir: '' }),
+      });
+      if (res.ok) {
+        setProjects(prev => prev.map(p => p.id === projectId ? { ...p, work_dir: '' } : p));
+        onClose();
+      } else {
+        throw new Error('清除失败');
+      }
+    } catch (err) {
+      setError(err.message || '网络错误，请重试');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
- return () => { cancelled = true; };
- }, [isOpen, projectId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const hasExisting = Boolean(currentWorkDir);
 
- useEffect(() => {
- if (!isOpen) return;
- const handler = (e) => { if (e.key === 'Escape') onClose(); };
- window.addEventListener('keydown', handler);
- return () => window.removeEventListener('keydown', handler);
- }, [isOpen, onClose]);
-
- const handleSave = async () => {
- setIsSaving(true);
- setError(null);
- try {
-  const res = await fetch(`${baseUrl}/api/core/projects/${projectId}/`, {
-  method: 'PATCH',
-  headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-  credentials: 'include',
-  body: JSON.stringify({ work_dir: workDirDraft }),
-  });
-  if (res.ok) {
-  const updated = await res.json();
-  setProjects(prev => prev.map(p => p.id === projectId ? { ...p, work_dir: updated.work_dir } : p));
-  onClose();
-  } else {
-  const errData = await res.json().catch(() => ({}));
-  throw new Error(errData.detail || errData.work_dir || '保存失败，请检查路径是否有效');
-  }
- } catch (err) {
-  setError(err.message || '网络错误，请重试');
- } finally {
-  setIsSaving(false);
- }
- };
-
- const handleClear = async () => {
- setIsSaving(true);
- setError(null);
- try {
-  const res = await fetch(`${baseUrl}/api/core/projects/${projectId}/`, {
-  method: 'PATCH',
-  headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-  credentials: 'include',
-  body: JSON.stringify({ work_dir: '' }),
-  });
-  if (res.ok) {
-  setProjects(prev => prev.map(p => p.id === projectId ? { ...p, work_dir: '' } : p));
-  onClose();
-  } else {
-  throw new Error('清除失败');
-  }
- } catch (err) {
-  setError(err.message || '网络错误，请重试');
- } finally {
-  setIsSaving(false);
- }
- };
-
- const hasExisting = Boolean(currentWorkDir);
- const folderColor = error ? 'text-red-400' : hasExisting ? 'text-green-400' : 'tx-system-mute';
-
- if (!isOpen) return null;
-
- return (
- <div className="fixed inset-0 z-50 flex items-center justify-center">
-  <div className="absolute inset-0 bg-cinder-glass-heavy" onClick={onClose} />
-  <div className="relative bg-exo-panel border border-exo-border rounded-xl w-full max-w-lg mx-4 p-6 shadow-2xl">
-  <div className="flex items-center justify-between mb-4">
-   <h3 className="text-sm font-bold tx-system-normal flex items-center gap-2">
-   <FolderOpen size={18} className={folderColor} />
-   工作目录设置
-   </h3>
-   <button onClick={onClose} className="p-1 tx-system-mute hover:tx-system-normal transition-colors">
-   <X size={16} />
-   </button>
-  </div>
-
-  <p className="text-xs tx-system-mute mb-4 leading-relaxed">
-   设置后，项目文件将上传至 <code className="text-[0.625rem] bg-cinder-glass-heavy px-1 py-0.5 rounded border border-exo-border">{'{工作目录}\\ExoCore_Files\\uploads\\'}</code>，
-   而非默认存储路径。同时 <code className="text-[0.625rem] bg-cinder-glass-heavy px-1 py-0.5 rounded border border-exo-border">read_project</code> 工具将以该目录为根目录。
-  </p>
-
-  <div className="mb-4">
-   <label className="text-[0.625rem] tracking-wider tx-system-mute block mb-1.5">目录路径</label>
-   <input
-   type="text"
-   value={workDirDraft}
-   onChange={e => { setWorkDirDraft(e.target.value); setError(null); }}
-   placeholder={fetching ? '加载中...' : 'D:\\Alicia\\Projects\\MyProject'}
-   disabled={fetching}
-   className="w-full bg-cinder-glass-heavy border border-exo-border rounded-md px-3 py-2 text-sm tx-system-normal focus:border-exo-accent/40 outline-none transition-all placeholder:tx-system-mute opacity-30"
-   onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
-   />
-   {error && (
-   <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">{error}</p>
-   )}
-  </div>
-
-  <div className="flex items-center justify-between">
-   <button
-   onClick={handleClear}
-   disabled={isSaving || !hasExisting}
-   className="text-xs tx-system-mute hover:text-red-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-   >
-   清除路径
-   </button>
-   <div className="flex items-center gap-2">
-   <button
-    onClick={onClose}
-    className="px-4 py-1.5 text-xs tx-system-mute hover:tx-system-normal border border-exo-border rounded-md hover:border-exo-accent/30 transition-all"
-   >
-    取消
-   </button>
-   <button
-    onClick={handleSave}
-    disabled={isSaving || fetching}
-    className="px-4 py-1.5 text-xs font-bold text-black bg-exo-accent rounded-md hover:bg-exo-accent/80 active:scale-95 transition-colors disabled:opacity-50"
-   >
-    {isSaving ? '保存中...' : '保存'}
-   </button>
-   </div>
-  </div>
-  </div>
- </div>
- );
+  return (
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      icon={FolderOpen}
+      title="工作目录设置"
+      subtitle="Project working directory"
+      maxW="md"
+      footer={
+        <div className="flex items-center justify-between gap-3">
+          <Button variant="ghost" size="sm" onClick={handleClear} disabled={isSaving || !hasExisting} className="hover:!text-red-500 hover:!bg-red-500/5">
+            清除路径
+          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" onClick={onClose}>取消</Button>
+            <Button variant="primary" onClick={handleSave} disabled={isSaving || fetching}>
+              {isSaving ? <Activity size={14} className="animate-spin" /> : <FolderOpen size={14} strokeWidth={1.5} />}
+              {isSaving ? '保存中...' : '保存'}
+            </Button>
+          </div>
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        <p className="text-xs tx-system-mute leading-relaxed">
+          设置后，项目文件将上传至 <code className="text-[0.625rem] bg-black/[0.04] dark:bg-white/[0.04] px-1.5 py-0.5 rounded-md">{'{工作目录}\\ExoCore_Files\\uploads\\'}</code>，
+          而非默认存储路径。同时 <code className="text-[0.625rem] bg-black/[0.04] dark:bg-white/[0.04] px-1.5 py-0.5 rounded-md">read_project</code> 工具将以该目录为根目录。
+        </p>
+        <div className="space-y-3">
+          <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">目录路径</label>
+          <input
+            className={`${FIELD_INPUT} ${fetching ? 'opacity-40' : ''}`}
+            placeholder={fetching ? '加载中...' : 'D:\\Alicia\\Projects\\MyProject'}
+            value={workDirDraft}
+            disabled={fetching}
+            onChange={e => { setWorkDirDraft(e.target.value); setError(null); }}
+            onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
+          />
+          {error && <p className="text-xs text-red-500">{error}</p>}
+        </div>
+      </div>
+    </ModalShell>
+  );
 };
 
 export default WorkDirModal;
