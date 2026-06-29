@@ -41,7 +41,7 @@ export default function KeyManagePanel() {
  if (isLoading) {
  return (
   <div className="flex items-center justify-center h-64">
-  <RefreshCw size={20} className="animate-spin tx-system-mute opacity-40" />
+   <RefreshCw size={20} className="animate-spin tx-system-mute opacity-60" />
   </div>
  );
  }
@@ -51,17 +51,17 @@ export default function KeyManagePanel() {
  return (
  <div className="h-full flex flex-col">
   {/* Platform tabs */}
-  <div className="flex gap-0 border-b border-white/5 px-5 pt-2">
-  {platforms.map(p => (
-   <button
-   key={p}
-   onClick={() => setActivePlatform(p)}
-   className={`px-4 py-2 text-[0.625rem] font-mono tracking-[0.12em] transition-all border-b-2 -mb-[1px] ${
-    activePlatform === p
-    ? 'tx-system-accent border-chat-accent bg-chat-accent/5'
-    : 'tx-system-mute opacity-40 border-transparent hover:tx-system-mute opacity-60 hover:border-chat-muted/15'
-   }`}
-   >
+  <div className="flex gap-0 border-b border-cinder-line px-5 pt-2">
+   {platforms.map(p => (
+    <button
+    key={p}
+    onClick={() => setActivePlatform(p)}
+    className={`px-4 py-2 tx-decoration-normal transition-all border-b-2 -mb-[1px] ${
+     activePlatform === p
+     ? 'border-chat-accent bg-chat-accent/5'
+     : 'tx-decoration-mute border-transparent hover:tx-decoration-normal hover:border-chat-muted/15'
+    }`}
+    >
    {p}
    </button>
   ))}

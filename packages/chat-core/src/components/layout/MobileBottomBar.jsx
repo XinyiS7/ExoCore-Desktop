@@ -80,8 +80,8 @@ export default function MobileBottomBar() {
       style={{
         height: '60px',
         paddingBottom: 'env(safe-area-inset-bottom)',
-        borderTop: '1px solid rgba(255,255,255,0.04)',
-        background: 'rgba(15, 9, 9, 0.6)',
+        borderTop: '1px solid var(--cinder-line)',
+        background: 'var(--cinder-glass-heavy)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
       }}
@@ -94,8 +94,8 @@ export default function MobileBottomBar() {
             onClick={() => navigate(route)}
             className="flex items-center justify-center bg-transparent border-none cursor-pointer p-2 transition-all duration-300"
             style={{
-              opacity: active ? 1 : 0.4,
-              color: active ? 'var(--cinder-flame-dim)' : 'var(--cinder-text-faint)',
+              opacity: active ? 1 : 0.85,
+              color: active ? 'var(--tx-warm-gold)' : 'var(--tx-warm-ember)',
               fontFamily: 'inherit',
             }}
           >
@@ -104,7 +104,7 @@ export default function MobileBottomBar() {
               style={{
                 width: '22px',
                 height: '22px',
-                filter: active ? 'drop-shadow(0 0 8px rgba(255,74,8,0.4))' : 'none',
+                filter: active ? 'drop-shadow(0 0 8px rgba(248,191,116,0.6))' : 'none',
               }}
             >
               <Icon />

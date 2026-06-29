@@ -1,12 +1,15 @@
 import React from 'react';
 import { useProfile, useFont } from 'exo-shared';
+import { NotificationProvider } from './contexts/NotificationContext';
+import NotificationPanel from './components/notifications/NotificationPanel';
 
 export default function App() {
   const { userAvatar, userNick } = useProfile();
   useFont(); // Inject CSS font variables
 
   return (
-    <div className="w-full h-screen bg-cncl-bg text-cncl-text font-sans flex items-center justify-center">
+    <NotificationProvider>
+      <div className="w-full h-screen bg-cncl-bg text-cncl-text font-sans flex items-center justify-center">
       {/* User identity hint in corner */}
       <div className="fixed top-3 right-4 flex items-center gap-2 opacity-60">
         <span className="text-xs text-cncl-muted">{userNick}</span>
@@ -21,6 +24,8 @@ export default function App() {
         <h1 className="text-cncl-accent text-2xl mb-4">ExoCore // Council</h1>
         <p className="text-cncl-muted">Multi-Agent Workspace — Coming in V3.1</p>
       </div>
-    </div>
+      </div>
+      <NotificationPanel />
+    </NotificationProvider>
   );
 }

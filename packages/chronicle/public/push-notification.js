@@ -70,6 +70,10 @@ self.addEventListener('push', (event) => {
         url: data.url || '/',
         registerId: data.register_id || null,
         presetId: data.preset_id || null,
+        title: backendTitle || '',
+        body: body || '',
+        senderName: data.sender_name || 'ExoCore',
+        senderType: data.sender_type || null,
       },
       actions: [
         { action: 'navigate', title: '跳转' },
@@ -104,7 +108,15 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   const clickAction = event.action;  // 'navigate' | 'dismiss' | '' (点主体)
-  const action = clickAction === 'dismiss' ? 'dismiss' : 'navigate';
+  // 点「跳转」按钮 → 导航；点通知主体 → 展开内联内容；点「关闭」按钮 → 仅 dismiss
+  let action;
+  if (clickAction === 'navigate') {
+    action = 'navigate';
+  } else if (clickAction === 'dismiss') {
+    action = 'dismiss';
+  } else {
+    action = 'expand';
+  }
   const notificationData = event.notification.data;
   const urlToOpen = notificationData?.url || '/';
 
@@ -119,30 +131,47 @@ self.addEventListener('notificationclick', (event) => {
         includeUncontrolled: true,
       });
 
-      // 1. Try to find and focus an existing window
-      let focused = null;
+      // 提取目标路径的第一段作为 base（如 /chat/agent/6 → /chat）
+      const targetBase = '/' + (urlToOpen.split('/')[1] || '');
+
+      // 1. 查找 URL 前缀匹配的窗口
+      let matchedClient = null;
       for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.postMessage({
-            type: 'PUSH_NAVIGATE',
-            url: action === 'navigate' ? urlToOpen : null,
-            action,
-            registerId: notificationData?.registerId || null,
-            presetId: notificationData?.presetId || null,
-            subscriptionEndpoint,
-          });
-          focused = await client.focus();
+        if (!client.url.includes(self.location.origin)) continue;
+        if (!('focus' in client)) continue;
+        if (client.url.includes(targetBase)) {
+          matchedClient = client;
           break;
         }
       }
 
-      // 2. navigate → no existing window → open new one
-      //    dismiss → never open new window
-      if (!focused && action === 'navigate' && clients.openWindow) {
+      if (matchedClient) {
+        // 已有对应 SPA 窗口 → postMessage 让 React 层处理（ACK / 导航 / 内联展开）
+        matchedClient.postMessage({
+          type: 'PUSH_NAVIGATE',
+          url: action === 'navigate' ? urlToOpen : null,
+          action,
+          registerId: notificationData?.registerId || null,
+          presetId: notificationData?.presetId || null,
+          subscriptionEndpoint,
+          // 内联展开时携带完整通知内容
+          ...(action === 'expand' && {
+            title: notificationData?.title || '',
+            body: notificationData?.body || '',
+            senderName: notificationData?.senderName || 'ExoCore',
+            senderType: notificationData?.senderType || null,
+          }),
+        });
+        // dismiss 不聚焦窗口 — 用户点关闭就是不想被打扰
+        if (action !== 'dismiss') {
+          await matchedClient.focus();
+        }
+      } else if (action === 'navigate' && clients.openWindow) {
+        // 没开对应 SPA → 打开新窗口导航到目标页
         await clients.openWindow(urlToOpen);
       }
+      // dismiss + 无匹配窗口 → 什么都不做，直接关通知
 
-      // 3. Close notification
       event.notification.close();
     })()
   );

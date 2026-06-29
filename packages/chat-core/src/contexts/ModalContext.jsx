@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import NewSessionModal from '../components/modals/NewSessionModal';
 import DestructorModal from '../components/modals/DestructorModal';
 import CreateProjectModal from '../components/modals/CreateProjectModal';
+import CreatePresetModal from '../components/modals/CreatePresetModal';
 
 const ModalContext = createContext(null);
 
@@ -26,6 +27,7 @@ export function ModalProvider({ children, appState, setView }) {
     onDelete: null,
   });
   const [createProjectConfig, setCreateProjectConfig] = useState({ isOpen: false });
+  const [createPresetConfig, setCreatePresetConfig] = useState({ isOpen: false, onSuccess: null });
 
   const openNewSession = useCallback(
     (ctx, cb) => setNewSessionConfig({ isOpen: true, initialContext: ctx, onSuccess: cb || null }),
@@ -54,6 +56,15 @@ export function ModalProvider({ children, appState, setView }) {
     [],
   );
 
+  const openCreatePreset = useCallback(
+    (cb) => setCreatePresetConfig({ isOpen: true, onSuccess: cb || null }),
+    [],
+  );
+  const closeCreatePreset = useCallback(
+    () => setCreatePresetConfig({ isOpen: false, onSuccess: null }),
+    [],
+  );
+
   const ctx = {
     newSessionConfig,
     openNewSession,
@@ -64,6 +75,9 @@ export function ModalProvider({ children, appState, setView }) {
     createProjectConfig,
     openCreateProject,
     closeCreateProject,
+    createPresetConfig,
+    openCreatePreset,
+    closeCreatePreset,
   };
 
   // ── onSuccess fallback for NewSessionModal ──
@@ -114,6 +128,16 @@ export function ModalProvider({ children, appState, setView }) {
           isOpen={createProjectConfig.isOpen}
           onClose={closeCreateProject}
           setProjects={appState.setProjects}
+        />
+      )}
+
+      {createPresetConfig.isOpen && (
+        <CreatePresetModal
+          isOpen={createPresetConfig.isOpen}
+          onClose={closeCreatePreset}
+          onCreated={() => {
+            createPresetConfig.onSuccess?.();
+          }}
         />
       )}
     </ModalContext.Provider>

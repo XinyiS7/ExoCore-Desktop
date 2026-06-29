@@ -82,14 +82,14 @@ export default function SettingsView() {
 		{/* Left nav — overlay on mobile, inline sidebar on desktop */}
 		<nav
 			className={`
-				w-52 flex-shrink-0 border-r border-white/5 bg-chat-bg py-6 flex flex-col
+				w-52 flex-shrink-0 border-r border-cinder-line bg-chat-bg py-6 flex flex-col
 				md:relative md:flex md:z-auto
 				fixed inset-y-0 left-0 z-50
 				${navVisible ? 'flex' : 'hidden'}
 			`}
 		>
 			<div className="px-4 mb-4 flex items-center justify-between">
-				<h1 className="text-sm font-semibold tx-system-normal opacity-90 tracking-tight">Settings</h1>
+				<h1 className="tx-subtitle-normal">Settings</h1>
 				{/* Close button — mobile only */}
 				<button
 					onClick={() => setNavVisible(false)}
@@ -114,9 +114,9 @@ export default function SettingsView() {
 					}`}
 				>
 					<Icon size={16} strokeWidth={1.5} />
-					<span className="font-sans text-[13px]">{label}</span>
+					<span className="tx-nav-normal">{label}</span>
 					{!enabled && (
-					<span className="text-[0.5625rem] tracking-wider tx-system-mute opacity-20 ml-auto">
+					<span className="tx-decoration-mute ml-auto">
 						soon
 					</span>
 					)}

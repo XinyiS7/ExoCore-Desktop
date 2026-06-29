@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import { getUserAvatarUrl } from '../../utils/avatar';
 import { setUserAvatar } from 'exo-shared/profile';
-import AvatarCropModal from './modals/AvatarCropModal';
+import AvatarCropModal from '../modals/AvatarCropModal';
 import { baseUrl, MODEL_REGISTRY } from 'exo-shared';
 
 // ─── Color map — seeded from static MODEL_REGISTRY, enriched from API response ──
@@ -244,14 +244,14 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
 
   {/* Overlay */}
   <div
-  className={`fixed inset-0 z-[150] transition-opacity duration-300 ${
-   isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-  }`}
-  onClick={handleBackdrop}
+   className={`fixed inset-0 z-[150] bg-cinder-glass-heavy backdrop-blur-md transition-opacity duration-300 ${
+    isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+   }`}
+   onClick={handleBackdrop}
   >
   {/* Panel */}
   <div
-   className={`absolute inset-y-0 left-0 w-[400px] max-w-[95vw] bg-exo-panel border-r border-exo-border flex flex-col shadow-2xl transition-transform duration-300 ease-out ${
+   className={`absolute inset-y-0 left-0 w-[400px] max-w-[95vw] bg-exo-pure border-r border-exo-mist-10 flex flex-col shadow-[0_0_60px_rgba(0,0,0,0.08)] transition-transform duration-300 ease-out ${
    isOpen ? 'translate-x-0' : '-translate-x-full'
    }`}
    onClick={e => e.stopPropagation()}

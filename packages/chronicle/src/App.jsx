@@ -2,6 +2,8 @@ import React from 'react';
 import { Routes, Route, NavLink } from 'react-router-dom';
 import { MessageCircle, CheckSquare, Calendar, BookOpen } from 'lucide-react';
 import { useProfile, useFont } from 'exo-shared';
+import { NotificationProvider } from './contexts/NotificationContext';
+import NotificationPanel from './components/notifications/NotificationPanel';
 import TimelineView from './views/TimelineView';
 import TaskListView from './views/TaskListView';
 import CalendarView from './views/CalendarView';
@@ -12,7 +14,8 @@ export default function App() {
   useFont(); // Inject --font-system, --font-message, --font-code CSS variables
 
   return (
-    <div className="w-full h-screen flex flex-col bg-chron-bg text-chron-text font-sans">
+    <NotificationProvider>
+      <div className="w-full h-screen flex flex-col bg-chron-bg text-chron-text font-sans">
       {/* Top bar — user identity display (desktop) */}
       <header className="hidden md:flex items-center justify-between h-10 px-4 border-b border-chron-accent/10 bg-chron-panel/80 shrink-0">
         <div className="flex items-center gap-2">
@@ -87,6 +90,8 @@ export default function App() {
           <span className="text-[0.625rem] tracking-wide">Calendar</span>
         </NavLink>
       </nav>
+      <NotificationPanel />
     </div>
+    </NotificationProvider>
   );
 }

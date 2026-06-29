@@ -37,6 +37,8 @@ import ChatShell from './components/chat/ChatShell';
 
 // Modal context (shared state across all routes)
 import { ModalProvider, useModalContext } from './contexts/ModalContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import NotificationPanel from './components/notifications/NotificationPanel';
 
 // ─── AppLayout shell ─────────────────────────────────────────────────
 function AppLayout() {
@@ -67,7 +69,8 @@ function AppLayout() {
 
   return (
     <ModalProvider appState={appStateForModals} setView={setView}>
-      <div className="w-full flex cinder-aura" style={{ height: '100dvh' }}>
+      <NotificationProvider>
+        <div className="w-full flex cinder-aura" style={{ height: '100dvh' }}>
         {/* Desktop: 64px vertical-rl text sidebar */}
         <DesktopSidebar />
 
@@ -86,7 +89,10 @@ function AppLayout() {
           {/* Mobile: fixed bottom navigation bar */}
           <MobileBottomBar />
         </div>
-      </div>
+        </div>
+        {/* Floating notification panel — overlays above layout */}
+        <NotificationPanel />
+      </NotificationProvider>
     </ModalProvider>
   );
 }

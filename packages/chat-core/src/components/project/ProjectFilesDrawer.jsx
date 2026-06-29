@@ -48,12 +48,12 @@ export default function ProjectFilesDrawer({
  return (
  <>
   {/* Backdrop */}
-  <div className="fixed inset-0 z-40 bg-cinder-glass-heavy" onClick={onClose} />
+  <div className="fixed inset-0 z-40 bg-cinder-glass-heavy backdrop-blur-md" onClick={onClose} />
 
   {/* Drawer */}
-  <div className="fixed top-0 right-0 h-full w-[350px] max-w-[90vw] bg-chat-panel border-l border-white/5 shadow-2xl z-50 flex flex-col animate-fade-in overflow-hidden">
+  <div className="fixed top-0 right-0 h-full w-[350px] max-w-[90vw] bg-exo-pure border-l border-exo-mist-10 shadow-[0_0_60px_rgba(0,0,0,0.08)] z-50 flex flex-col animate-fade-in overflow-hidden">
   {/* Header */}
-  <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0">
+  <div className="flex items-center justify-between px-4 py-3 border-b border-exo-mist-10 shrink-0">
    <div className="flex items-center gap-2">
    <FolderOpen size={14} className="tx-body-accent opacity-60" />
    <span className="text-xs font-medium tx-body-normal truncate">

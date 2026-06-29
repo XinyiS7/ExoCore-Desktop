@@ -5,11 +5,11 @@ function FontSelector({ label, description, value, onChange }) {
   return (
     <div className="space-y-2.5">
       <div>
-        <span className="text-[0.625rem] tracking-[0.12em] tx-system-normal opacity-70">
+        <span className="tx-decoration-normal">
           {label}
         </span>
         {description && (
-          <p className="text-[0.5625rem] tx-system-mute opacity-40 mt-0.5 leading-relaxed">{description}</p>
+          <p className="tx-decoration-mute mt-0.5 leading-relaxed">{description}</p>
         )}
       </div>
 
@@ -21,7 +21,7 @@ function FontSelector({ label, description, value, onChange }) {
             className={`w-full text-left px-3 py-2 rounded-md border transition-all ${
               value === font.value
                 ? 'border-chat-accent/30 bg-chat-accent/5 tx-system-normal'
-                : 'border-transparent bg-white/[0.02] tx-system-mute hover:border-exo-mist-10 hover:bg-exo-accent/[0.03]'
+                : 'border-transparent bg-cinder-surface tx-system-mute hover:border-exo-mist-10 hover:bg-exo-accent/[0.03]'
             }`}
           >
             <div className="flex items-center gap-2.5">
@@ -33,14 +33,14 @@ function FontSelector({ label, description, value, onChange }) {
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-medium truncate">
+                <p className="tx-system-normal font-medium truncate">
                   {font.label}
                   {font.value === 'sarasa' && (
-                    <span className="ml-1.5 text-[0.5625rem] tx-system-mute font-normal">默认</span>
+                    <span className="ml-1.5 tx-decoration-mute">默认</span>
                   )}
                 </p>
                 <p
-                  className="text-[0.625rem] tx-system-mute opacity-50 mt-0.5 truncate"
+                  className="tx-decoration-mute mt-0.5 truncate"
                   style={{ fontFamily: getFontStack(font.value) }}
                 >
                   {font.preview}
@@ -65,10 +65,10 @@ function ScaleSlider({ value, onChange, config }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[0.625rem] tracking-[0.12em] tx-system-normal opacity-70">
+        <span className="tx-decoration-normal">
           🔤 Font Scale · 全局缩放
         </span>
-        <span className="text-sm font-medium tx-system-accent tabular-nums">
+        <span className="tx-system-accent tabular-nums">
           {pct}%
         </span>
       </div>
@@ -83,7 +83,7 @@ function ScaleSlider({ value, onChange, config }) {
           value={value}
           onChange={handleChange}
           className="w-full h-1.5 rounded-full appearance-none cursor-pointer
-            bg-white/[0.06]
+            bg-cinder-line
             [&::-webkit-slider-thumb]:appearance-none
             [&::-webkit-slider-thumb]:w-4
             [&::-webkit-slider-thumb]:h-4
@@ -94,7 +94,7 @@ function ScaleSlider({ value, onChange, config }) {
             [&::-webkit-slider-thumb]:transition-transform
             [&::-webkit-slider-thumb]:hover:scale-110"
           style={{
-            background: `linear-gradient(to right, rgba(255,74,8,0.2) 0%, rgba(255,74,8,0.2) ${((value - config.min) / (config.max - config.min)) * 100}%, rgba(255,255,255,0.06) ${((value - config.min) / (config.max - config.min)) * 100}%, rgba(255,255,255,0.06) 100%)`,
+            background: `linear-gradient(to right, rgb(var(--exo-accent-rgb) / 0.2) 0%, rgb(var(--exo-accent-rgb) / 0.2) ${((value - config.min) / (config.max - config.min)) * 100}%, rgb(var(--exo-metal-rgb) / 0.3) ${((value - config.min) / (config.max - config.min)) * 100}%, rgb(var(--exo-metal-rgb) / 0.3) 100%)`,
           }}
         />
 
@@ -104,10 +104,10 @@ function ScaleSlider({ value, onChange, config }) {
             <button
               key={p}
               onClick={() => onChange(p)}
-              className={`text-[0.5625rem] transition-colors ${
-                Math.abs(value - p) < config.step
-                  ? 'tx-system-accent font-medium'
-                  : 'tx-system-mute opacity-40 hover:tx-system-mute opacity-70'
+              className={`tx-decoration-normal transition-colors ${
+                 Math.abs(value - p) < config.step
+                   ? 'font-medium'
+                   : 'tx-decoration-mute hover:tx-decoration-normal'
               }`}
             >
               {p}
@@ -116,7 +116,7 @@ function ScaleSlider({ value, onChange, config }) {
         </div>
       </div>
 
-      <p className="text-[0.5625rem] tx-system-mute opacity-40 leading-relaxed">
+      <p className="tx-decoration-mute leading-relaxed">
         基准字号 16px。拖动滑块调整全局文本缩放，所有 rem 单位同步响应。
       </p>
     </div>
@@ -135,7 +135,7 @@ export default function AppearancePanel() {
   return (
     <div className="flex-1 h-full overflow-y-auto">
       <div className="max-w-xl px-8 py-8">
-        <h2 className="text-sm font-semibold tx-system-normal opacity-90 tracking-tight mb-6">
+        <h2 className="tx-subtitle-normal mb-6">
           🎨 Appearance
         </h2>
 
@@ -148,7 +148,7 @@ export default function AppearancePanel() {
             onChange={setSystemFont}
           />
 
-          <div className="border-t border-white/5" />
+          <div className="border-t border-cinder-line" />
 
           {/* Message Font */}
           <FontSelector
@@ -158,7 +158,7 @@ export default function AppearancePanel() {
             onChange={setMessageFont}
           />
 
-          <div className="border-t border-white/5" />
+          <div className="border-t border-cinder-line" />
 
           {/* Code Font */}
           <FontSelector
@@ -168,7 +168,7 @@ export default function AppearancePanel() {
             onChange={setCodeFont}
           />
 
-          <div className="border-t border-white/5" />
+          <div className="border-t border-cinder-line" />
 
           {/* Font Scale Slider */}
           <ScaleSlider
@@ -177,15 +177,15 @@ export default function AppearancePanel() {
             config={scaleConfig}
           />
 
-          <div className="border-t border-white/5" />
+          <div className="border-t border-cinder-line" />
 
           {/* Theme Toggle */}
           <div className="space-y-3">
             <div>
-              <span className="text-[0.625rem] tracking-[0.12em] tx-system-normal opacity-70">
+              <span className="tx-decoration-normal">
                 🎨 Theme · 主题
               </span>
-              <p className="text-[0.5625rem] tx-system-mute opacity-40 mt-0.5 leading-relaxed">
+              <p className="tx-decoration-mute mt-0.5 leading-relaxed">
                 切换深色 / 浅色全局配色方案
               </p>
             </div>
@@ -196,7 +196,7 @@ export default function AppearancePanel() {
                 className={`flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-all ${
                   theme === 'dark'
                     ? 'border-chat-accent/40 bg-chat-accent/10 tx-system-accent shadow-glow-gold'
-                    : 'border-white/5 bg-white/[0.02] tx-system-mute hover:border-white/10'
+                    : 'border-cinder-line bg-cinder-surface tx-system-mute hover:border-exo-mist-20'
                 }`}
               >
                 <span className="block text-lg mb-1">🌙</span>
@@ -208,7 +208,7 @@ export default function AppearancePanel() {
                 className={`flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-all ${
                   theme === 'light'
                     ? 'border-chat-accent/40 bg-chat-accent/10 tx-system-accent shadow-glow-gold'
-                    : 'border-white/5 bg-white/[0.02] tx-system-mute hover:border-white/10'
+                    : 'border-cinder-line bg-cinder-surface tx-system-mute hover:border-exo-mist-20'
                 }`}
               >
                 <span className="block text-lg mb-1">☀️</span>
@@ -221,8 +221,8 @@ export default function AppearancePanel() {
         {/* Preview cards */}
         <div className="mt-8 space-y-4">
           {/* System font preview */}
-          <div className="p-4 rounded-lg border border-white/5 bg-chat-panel">
-            <p className="text-[0.625rem] tracking-[0.2em] tx-system-mute opacity-40 mb-3">
+          <div className="p-4 rounded-lg border border-cinder-line bg-chat-panel">
+            <p className="tx-decoration-mute mb-3">
               System Font Preview · 系统字体
             </p>
             <div style={{ fontFamily: 'var(--font-system)' }}>
@@ -236,8 +236,8 @@ export default function AppearancePanel() {
           </div>
 
           {/* Message font preview */}
-          <div className="p-4 rounded-lg border border-white/5 bg-chat-panel">
-            <p className="text-[0.625rem] tracking-[0.2em] tx-system-mute opacity-40 mb-3">
+          <div className="p-4 rounded-lg border border-cinder-line bg-chat-panel">
+            <p className="tx-decoration-mute mb-3">
               Message Font Preview · 消息字体
             </p>
             <div style={{ fontFamily: 'var(--font-message)' }}>
@@ -251,13 +251,13 @@ export default function AppearancePanel() {
           </div>
 
           {/* Code font preview */}
-          <div className="p-4 rounded-lg border border-white/5 bg-chat-panel">
-            <p className="text-[0.625rem] tracking-[0.2em] tx-system-mute opacity-40 mb-3">
+          <div className="p-4 rounded-lg border border-cinder-line bg-chat-panel">
+            <p className="tx-decoration-mute mb-3">
               Code Font Preview · 代码字体
             </p>
             <div style={{ fontFamily: 'var(--font-code)' }}>
               <p className="text-sm tx-system-normal leading-relaxed mb-1">
-                <code className="bg-white/[0.04] px-1 py-0.5 rounded text-xs">
+                  <code className="bg-cinder-surface px-1 py-0.5 rounded text-xs">
                   const hello = () =&gt; "Hello World";
                 </code>
               </p>

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Plus } from 'lucide-react';
 import { getAgentAvatarUrl } from '../utils/avatar';
 import { baseUrl } from 'exo-shared';
 import { getAgentHubOrder, isSuperiorType } from '../utils/presets';
 import TriggeredNote from '../components/agent/TriggeredNote';
 import BackToUpper from '../components/layout/BackButton';
+import { useModalContext } from '../contexts/ModalContext';
 
 /* ── Motion helper ── */
 const fadeUp = (delay) => ({
@@ -97,6 +99,7 @@ const IconLock = ({ size = 10 }) => (
    ═══════════════════════════════════════════ */
 export default function AgentHub({ appState, setView, goBack }) {
   const { presets = [] } = appState;
+  const { openCreatePreset } = useModalContext();
   const [anchorMap, setAnchorMap] = useState({});
   const [dragging, setDragging] = useState(null);
   const [dragOver, setDragOver] = useState(null);
@@ -236,10 +239,36 @@ export default function AgentHub({ appState, setView, goBack }) {
 
           {/* ═══ Header ═══ */}
           <section style={fadeUp(0)}>
-            <SectionHead label="Agent Hub" />
-            <p className="tx-decoration-mute mt-1.5 ml-[28px]">
-              Digital entities...
-            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <SectionHead label="Agent Hub" />
+                <p className="tx-decoration-mute mt-1.5 ml-[28px]">
+                  Digital entities...
+                </p>
+              </div>
+              <button
+                onClick={() => openCreatePreset(() => appState.refreshPresets?.())}
+                className="flex items-center gap-2 px-4 py-2 rounded-[4px] text-[0.6875rem] font-mono tracking-[0.15em] transition-all duration-300 shrink-0"
+                style={{
+                  background: 'var(--cinder-surface)',
+                  border: '1px solid var(--cinder-line)',
+                  color: 'var(--tx-warm-ember)',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'var(--cinder-panel)';
+                  e.currentTarget.style.borderColor = 'rgba(231,77,2,0.25)';
+                  e.currentTarget.style.color = 'var(--tx-warm-gold)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'var(--cinder-surface)';
+                  e.currentTarget.style.borderColor = 'var(--cinder-line)';
+                  e.currentTarget.style.color = 'var(--tx-warm-ember)';
+                }}
+              >
+                <Plus size={12} />
+                新建
+              </button>
+            </div>
           </section>
 
           {/* ═══ G045 The Prime ═══ */}
