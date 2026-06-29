@@ -6,6 +6,7 @@
 @import 'exo-shared/styles/base.css';
 @import 'exo-shared/styles/transitions.css';
 @import './styles/typography.css';
+@import 'katex/dist/katex.min.css';
 
 @tailwind base;
 @tailwind components;

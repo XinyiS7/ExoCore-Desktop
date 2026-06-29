@@ -25,12 +25,14 @@ function extractText(node) {
 const RE_UNICODE_BACKTICK = /[｀]/g;
 const RE_UNICODE_TILDE = /[～]/g;
 const RE_ENTITY_BACKTICK = /&#(?:96|x60);/gi;
+const RE_UNICODE_DOLLAR = /[＄]/g;  // U+FF04 fullwidth dollar sign — LLMs sometimes emit this instead of ASCII $
 function normalizeMarkdown(text) {
  if (!text) return text;
  return text
  .replace(RE_UNICODE_BACKTICK, '`')
  .replace(RE_UNICODE_TILDE, '~')
- .replace(RE_ENTITY_BACKTICK, '`');
+ .replace(RE_ENTITY_BACKTICK, '`')
+ .replace(RE_UNICODE_DOLLAR, '$');
 }
 
 // ── Mermaid lazy-load ────────────────────────────────────────────────
