@@ -3,7 +3,9 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
 import App from './App';
 import './index.css';
+import 'katex/dist/katex.min.css';
 import { apiFetch } from 'exo-shared';
+import { pushNotification } from './stores/notificationStore';
 
 // Strip trailing slash: Vite's BASE_URL is "/chat/" → basename "/chat"
 const BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -33,7 +35,8 @@ function PushNavigateListener() {
     async function handleMessage(event) {
       if (event.data?.type !== 'PUSH_NAVIGATE') return;
 
-      const { url, action, registerId, presetId, subscriptionEndpoint } = event.data;
+      const { url, action, registerId, presetId, subscriptionEndpoint,
+              title, body, senderName, senderType } = event.data;
 
       // dismiss → 只回执，不跳转
       if (action === 'dismiss') {
@@ -57,13 +60,25 @@ function PushNavigateListener() {
         return;
       }
 
-      // navigate → 跳转 + 回执
-      if (action === 'navigate' && url) {
-        const path = url.startsWith(BASENAME)
-          ? url.slice(BASENAME.length) || '/'
-          : url;
-        navigate(path);
+      // expand → 显示内联通知面板，不跳转，不发 ACK（对方不知道已读）
+      if (action === 'expand') {
+        window.focus();
 
+        pushNotification({
+          title,
+          body,
+          senderName,
+          senderType,
+          url,
+          registerId,
+          presetId,
+          subscriptionEndpoint,
+        });
+        return;
+      }
+
+      // navigate → 回执（SW 已处理 openWindow/focus，不再 navigate 避免空刷新）
+      if (action === 'navigate') {
         if (registerId) {
           try {
             const match = path.match(/\/agent\/(\d+)/);
