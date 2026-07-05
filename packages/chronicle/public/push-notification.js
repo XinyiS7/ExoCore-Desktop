@@ -145,14 +145,31 @@ self.addEventListener('notificationclick', (event) => {
         }
       }
 
+      // ── ACK 回执：SW 直接 fetch ──
+      // 有窗口时 React PushNavigateListener 也会发 ack（双保险，RegisterAckView 幂等）；
+      // 无窗口时这是唯一的 ack 路径，确保 Agent 感知用户已处理通知。
+      const registerId = notificationData?.registerId || null;
+      const presetId = notificationData?.presetId || null;
+      if (registerId && (action === 'navigate' || action === 'dismiss')) {
+        const ackUrl = `/api/agents/registers/${registerId}/ack/?preset_id=${presetId || ''}`;
+        fetch(ackUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action,
+            subscription_endpoint: subscriptionEndpoint || null,
+          }),
+        }).catch(() => { /* silent — SW may be killed before fetch completes */ });
+      }
+
       if (matchedClient) {
-        // 已有对应 SPA 窗口 → postMessage 让 React 层处理（ACK / 导航 / 内联展开）
+        // 已有对应 SPA 窗口 → postMessage 让 React 层处理（导航 / 内联展开）
         matchedClient.postMessage({
           type: 'PUSH_NAVIGATE',
           url: action === 'navigate' ? urlToOpen : null,
           action,
-          registerId: notificationData?.registerId || null,
-          presetId: notificationData?.presetId || null,
+          registerId,
+          presetId,
           subscriptionEndpoint,
           // 内联展开时携带完整通知内容
           ...(action === 'expand' && {
@@ -170,7 +187,7 @@ self.addEventListener('notificationclick', (event) => {
         // 没开对应 SPA → 打开新窗口导航到目标页
         await clients.openWindow(urlToOpen);
       }
-      // dismiss + 无匹配窗口 → 什么都不做，直接关通知
+      // dismiss + 无匹配窗口 → ack 已由上方 fetch 发送，直接关通知
 
       event.notification.close();
     })()
