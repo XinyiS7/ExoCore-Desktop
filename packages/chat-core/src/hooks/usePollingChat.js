@@ -15,6 +15,11 @@ export const usePollingChat = () => {
     };
 
     const onAbort = () => {
+      // Notify backend to stop LLM generation before cleaning up
+      fetch(
+        `${baseUrl}/api/agents/chat/${sessionId}/stop/?message_id=${messageId}`,
+        { method: 'POST', headers: { 'X-CSRFToken': getCsrfToken() }, credentials: 'include' }
+      ).catch(() => {});
       localStorage.removeItem(`exo_async_${sessionId}`);
       if (signal) signal.removeEventListener('abort', onAbort);
       cleanup();
@@ -136,9 +141,16 @@ export const usePollingChat = () => {
     });
   }, [pollLoop]);
 
-  const abortPolling = useCallback(() => {
+  const abortPolling = useCallback((messageId, sessionId) => {
     isPollingRef.current = false;
     if (pollingTimerRef.current) clearTimeout(pollingTimerRef.current);
+    // Notify backend to stop LLM generation
+    if (messageId && sessionId) {
+      fetch(
+        `${baseUrl}/api/agents/chat/${sessionId}/stop/?message_id=${messageId}`,
+        { method: 'POST', headers: { 'X-CSRFToken': getCsrfToken() }, credentials: 'include' }
+      ).catch(() => {});
+    }
   }, []);
 
   return { sendMessageAsync, abortPolling, resumePolling };

@@ -601,9 +601,37 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  }, [theme]);
 
  const handleStop = () => {
+ // 1. Capture async token BEFORE abort (abort() synchronously fires
+ //    the onAbort handler in pollLoop which removes localStorage)
+ const asyncToken = localStorage.getItem(`exo_async_${activeSessionId}`);
+
+ // 2. Abort frontend request (fetch + polling)
  if (abortControllerRef.current) {
   abortControllerRef.current.abort();
   setIsGenerating(false);
+ }
+
+ // 3. Notify backend to stop LLM generation
+ const stopUrl = `${baseUrl}/api/agents/chat/${activeSessionId}/stop/`;
+
+ if (asyncToken) {
+  try {
+   const parsed = JSON.parse(asyncToken);
+   fetch(`${stopUrl}?message_id=${parsed.message_id}`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrfToken() },
+    credentials: 'include',
+   }).catch(() => {});
+  } catch {}
+ } else {
+  // SSE mode: no message_id — best-effort call (backend needs
+  // session-level stop support to make this effective; see
+  // docs/superpowers/specs/sse-stop-event.md)
+  fetch(stopUrl, {
+   method: 'POST',
+   headers: { 'X-CSRFToken': getCsrfToken() },
+   credentials: 'include',
+  }).catch(() => {});
  }
  };
 
