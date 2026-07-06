@@ -62,8 +62,8 @@ export default function MobileBottomBar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Hide on chat routes — L3 overlay consumes full screen
-  if (location.pathname.startsWith('/chat/')) return null;
+  // Hide on chat / groupchat routes — maximize mobile viewport for message interfaces
+  if (location.pathname.startsWith('/chat/') || location.pathname.startsWith('/groupchat')) return null;
 
   const isActive = (route) => {
     if (route === '/') return location.pathname === '/';

@@ -10,6 +10,47 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 **Shell environment:** Git Bash (Windows). Use Bash tool for shell commands, not PowerShell.
 
+# Communication Principles
+
+**1. First Principles Thinking:**
+  1. Identify the scope and scalability of the requirements.
+  2. Break down the requirements into the most basic steps or specific problems.
+  3. Rebuild a more scalable and maintainable solution from the ground up.
+
+**2. Abstraction and decoupling:**
+  In complex systems, maintain decoupling of sub-modules and abstract functionality to improve maintenance and update performance.
+  Possess long-term and holistic thinking; never adopt a simple, fragile, single solution for the sake of quick problem-solving. Prioritize maintaining the system's scalability and robustness.
+
+# Development Protocol
+
+**1. Plan First, Work Later:**
+- Before any implementation, think through the approach and identify all files that will be touched.
+- **Surgical Implementation:** Follow the plan strictly. Avoid "scope creep" or unrelated refactoring during a feature task.
+- **Review & Refine:** After coding, perform a self-review. Check for:
+  - **Functional Partitioning:** Is the logic in the right layer? (Components handle UI, hooks handle state, shared handles API). Zero tolerance for spaghetti logic crossing boundaries.
+  - **Decoupling:** Are modules too tightly bound? Use interfaces/abstractions where appropriate.
+  - **Robustness:** No silent failures. Avoid "empty" catch blocks. Errors must be logged or surfaced correctly.
+  - **No Shortcuts:** Resist the urge to "hack" a quick fix.
+
+**2. State Management & Collaboration:**
+- **Atomic Commits:** Commit at each logical milestone.
+- **Per-File Checkpointing:** When executing a multi-step plan, commit immediately after completing each file's staged changes.
+
+**3. Elegant Programming & Anti-Spaghetti:**
+- **Strict Layer Integrity:** Components handle UI rendering; hooks manage state and side effects; shared package handles API communication. NEVER leak API calls directly into view components.
+- **Clarity > Cleverness:** Write code that is easy for the next agent (or human) to understand.
+- **Standardization:** Use the project's established patterns (e.g., `exo-shared` API client, Cinder CSS variables for theming, ModalShell for modals).
+- **Minimalism:** Remove dead code, unused imports, and redundant comments immediately.
+
+**4. Grounding & Anti-Hallucination (CRITICAL):**
+- **NO INVENTION:** NEVER assume a component, hook, API endpoint, or data field exists. You MUST empirically verify its exact name and signature by reading the source code or using Grep before writing code that interacts with it.
+- **No Mocking/Stubbing Data:** Do not invent mock data structures, fake API responses, or "stub" implementations unless explicitly directed. Always use the actual API contracts and data shapes present in the project.
+- **Prove It Before You Write It:** If you are unsure about an API response shape or component interface, read the defining file or `ReactSheet_Reorganized.md` first. Hallucinating API shapes or component props causes critical system failures and is strictly forbidden.
+
+**5. String Quotes:**
+- Prefer double quotes as the outermost string delimiter in JavaScript/JSX.
+- Always verify quotes are ASCII `"` (U+0022), not Chinese curly quotes `“` / `”` (U+201C / U+201D).
+
 ## Repository Boundaries (CRITICAL)
 
 This repo is **ExoCore-Desktop** (React + Vite frontend).
@@ -24,6 +65,7 @@ If a task requires backend or extension changes:
 
 ## Before You Code
 
+- **Plan first, work later.** Think through the approach before writing any code. Identify all files that will be touched and verify assumptions by reading source files.
 - **Evaluate necessity.** Not every request needs to be implemented exactly as stated. Think about whether the ask is reasonable, whether a simpler approach exists, and whether the benefit justifies the complexity. Push back on over-engineering.
 - **Check the API contract first.** `ReactSheet_Reorganized.md` defines the data shapes. If a proposed change doesn't match the spec, discuss before coding.
 - **Respect existing patterns.** This monorepo has established conventions — match them. Don't introduce new patterns without a reason.

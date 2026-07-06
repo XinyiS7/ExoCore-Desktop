@@ -534,10 +534,11 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                     onClick={() => handleSessionClick(s)}
                     onMouseEnter={e => {
                       e.currentTarget.style.borderImage = 'linear-gradient(90deg, transparent, rgba(255,74,8,0.35) 20%, rgba(255,74,8,0.35) 80%, transparent) 1';
-                      e.currentTarget.style.background = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.006) 50%, transparent)';
+                      e.currentTarget.style.background = 'var(--cinder-glass)';
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.borderImage = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04) 20%, rgba(255,255,255,0.04) 80%, transparent) 1';
+                      e.currentTarget.style.borderImage = 'none';
+                      e.currentTarget.style.borderBottom = '1px solid var(--cinder-line)';
                       e.currentTarget.style.background = 'none';
                     }}
                     style={{
@@ -546,9 +547,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                       padding: '12px 0',
                       background: 'none',
                       border: 'none',
-                      borderBottom: '1px solid transparent',
-                      borderImage: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04) 20%, rgba(255,255,255,0.04) 80%, transparent) 1',
-                      borderImageSlice: 1,
+                      borderBottom: '1px solid var(--cinder-line)',
                     }}
                   >
                     <span
@@ -563,14 +562,12 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                       {formatLastActive(s.last_message_at)}
                       {s.message_count != null && ` · ${s.message_count} msgs`}
                     </span>
-                    <div className="shrink-0" onClick={e => e.stopPropagation()}>
-                      <SessionActionsMenu
-                        session={s}
-                        onUpdated={handleSessionRename}
-                        onDeleted={handleSessionDelete}
-                        openDestructor={appState.openDestructor}
-                      />
-                    </div>
+                    <SessionActionsMenu
+                      session={s}
+                      onUpdated={handleSessionRename}
+                      onDeleted={handleSessionDelete}
+                      openDestructor={appState.openDestructor}
+                    />
                   </div>
                 ))}
               </div>

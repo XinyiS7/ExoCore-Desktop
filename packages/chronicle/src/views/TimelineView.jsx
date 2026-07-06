@@ -188,7 +188,6 @@ export default function TimelineView() {
               {tweets.map(tweet => {
                 const { name, avatar, isUser } = getAuthorInfo(tweet);
                 const isReplyingHere = replyingToId === tweet.id;
-                const allReplies = flattenReplies(tweet.replies);
                 return (
                   <div key={tweet.id} className="py-5">
                     <div className="flex gap-3">
@@ -220,16 +219,55 @@ export default function TimelineView() {
                         )}
                       </div>
                     </div>
-                    {/* Replies */}
-                    {allReplies.length > 0 && (
+                    {/* Replies (2-level nesting) */}
+                    {tweet.replies?.length > 0 && (
                       <div className="mt-3 ml-8 pl-4 border-l border-chron-border/50 space-y-3">
-                        {allReplies.map(reply => {
+                        {tweet.replies.map(reply => {
                           const ri = getAuthorInfo(reply);
+                          const isReplyingToReply = replyingToId === reply.id;
                           return (
-                            <div key={reply.id} className="text-xs leading-relaxed">
-                              <span className={`font-bold mr-1.5 ${ri.isUser ? 'text-chron-text' : 'text-chron-accent'}`}>{ri.name}:</span>
-                              <span className="text-chron-text/60 whitespace-pre-wrap">{reply.content}</span>
-                              <span className="text-[0.6rem] text-chron-muted/30 ml-2">[{formatTime(reply.created_at)}]</span>
+                            <div key={reply.id}>
+                              {/* First-level reply */}
+                              <div className="text-xs leading-relaxed">
+                                <span className={`font-bold mr-1.5 ${ri.isUser ? 'text-chron-text' : 'text-chron-accent'}`}>{ri.name}:</span>
+                                <span className="text-chron-text/60 whitespace-pre-wrap">{reply.content}</span>
+                                <span className="text-[0.6rem] text-chron-muted/30 ml-2">[{formatTime(reply.created_at)}]</span>
+                              </div>
+                              {/* Reply button for first-level reply */}
+                              <button
+                                onClick={() => { setReplyingToId(isReplyingToReply ? null : reply.id); setReplyContent(''); }}
+                                className="mt-1 text-[0.6rem] font-bold tracking-widest text-chron-muted/30 hover:text-chron-accent transition-colors flex items-center gap-1"
+                              >
+                                <CornerDownLeft size={10} /> Reply
+                              </button>
+                              {isReplyingToReply && (
+                                <div className="mt-1.5 flex gap-2 items-end">
+                                  <textarea rows={2} value={replyContent} onChange={e => setReplyContent(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); handleReply(reply.id); } }}
+                                    placeholder={`Reply to ${ri.name}...`} autoFocus
+                                    className="flex-1 bg-chron-accent/5 border border-chron-border rounded px-3 py-2 text-xs text-chron-text outline-none focus:border-chron-accent/40 resize-none placeholder:text-chron-muted/30"
+                                  />
+                                  <button onClick={() => handleReply(reply.id)} disabled={!replyContent.trim() || isSubmittingReply}
+                                    className="px-3 py-2 bg-chron-accent text-chron-bg rounded hover:brightness-110 transition-all active:scale-95 disabled:opacity-30 shrink-0">
+                                    <Send size={12} />
+                                  </button>
+                                </div>
+                              )}
+                              {/* Second-level replies */}
+                              {reply.replies?.length > 0 && (
+                                <div className="mt-2 ml-6 pl-3 border-l border-chron-border/30 space-y-2">
+                                  {reply.replies.map(subReply => {
+                                    const sri = getAuthorInfo(subReply);
+                                    return (
+                                      <div key={subReply.id} className="text-[0.7rem] leading-relaxed">
+                                        <span className={`font-bold mr-1 ${sri.isUser ? 'text-chron-text' : 'text-chron-accent'}`}>{sri.name}:</span>
+                                        <span className="text-chron-text/50 whitespace-pre-wrap">{subReply.content}</span>
+                                        <span className="text-[0.55rem] text-chron-muted/30 ml-1">[{formatTime(subReply.created_at)}]</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -245,15 +283,4 @@ export default function TimelineView() {
       </div>
     </div>
   );
-}
-
-function flattenReplies(repliesList) {
-  let flat = [];
-  if (!repliesList) return flat;
-  repliesList.forEach(r => {
-    flat.push(r);
-    if (r.replies?.length) flat = flat.concat(flattenReplies(r.replies));
-  });
-  flat.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-  return flat;
 }

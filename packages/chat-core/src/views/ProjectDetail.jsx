@@ -125,16 +125,14 @@ const ThreadRow = ({ session, agentName, onClick, onRename, onDelete, openDestru
         cursor: 'pointer',
         background: 'none',
         border: 'none',
-        borderBottom: '1px solid transparent',
-        borderImage: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04) 20%, rgba(255,255,255,0.04) 80%, transparent) 1',
-        borderImageSlice: 1,
+        borderBottom: '1px solid var(--cinder-line)',
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.borderImage = 'linear-gradient(90deg, transparent, rgba(255,74,8,0.35) 20%, rgba(255,74,8,0.35) 80%, transparent) 1';
-        e.currentTarget.style.background = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.006) 50%, transparent)';
+        e.currentTarget.style.borderBottom = '1px solid var(--cinder-flame)';
+        e.currentTarget.style.background = 'var(--cinder-glass)';
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.borderImage = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04) 20%, rgba(255,255,255,0.04) 80%, transparent) 1';
+        e.currentTarget.style.borderBottom = '1px solid var(--cinder-line)';
         e.currentTarget.style.background = 'none';
       }}
     >
@@ -187,11 +185,12 @@ const ThreadRow = ({ session, agentName, onClick, onRename, onDelete, openDestru
               position: 'fixed',
               top: (() => { const r = triggerRef.current?.getBoundingClientRect(); return r ? r.bottom + 4 : 0; })(),
               right: (() => { const r = triggerRef.current?.getBoundingClientRect(); return r ? window.innerWidth - r.right : 0; })(),
-              background: 'rgba(10,8,6,0.92)',
-              backdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255,255,255,0.06)',
+              background: 'var(--cinder-glass-heavy)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid var(--cinder-line)',
               borderRadius: '2px',
-              boxShadow: '0 12px 32px rgba(0,0,0,0.08)',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.12)',
               padding: '4px 0',
               minWidth: '130px',
               zIndex: 9999,
@@ -207,7 +206,7 @@ const ThreadRow = ({ session, agentName, onClick, onRename, onDelete, openDestru
                 letterSpacing: '0.05em',
                 color: 'var(--cinder-text)',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--cinder-glass)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
             >
               <span style={{ fontSize: '10px', opacity: 0.5 }}>✎</span> Rename

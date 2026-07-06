@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { conversationsApi, getConvProjectId, projectsApi } from 'exo-shared';
 import BackToUpper from '../components/layout/BackButton';
@@ -55,18 +56,44 @@ export default function ProjectList({ appState, setView, goBack }) {
   const [conversations, setConversations] = useState([]);
   const [hoveredCard, setHoveredCard] = useState(null);
   const [menuProjectId, setMenuProjectId] = useState(null);
-  const menuRef = useRef(null);
+  const [menuPos, setMenuPos] = useState(null);
+  const menuTriggerRef = useRef(null);
+  const menuDropdownRef = useRef(null);
 
+  // Close on outside click — check both trigger and portal dropdown
   useEffect(() => {
     if (!menuProjectId) return;
     const close = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      const hitTrigger = menuTriggerRef.current?.contains(e.target);
+      const hitDropdown = menuDropdownRef.current?.contains(e.target);
+      if (!hitTrigger && !hitDropdown) {
         setMenuProjectId(null);
       }
     };
     document.addEventListener('mousedown', close);
     return () => document.removeEventListener('mousedown', close);
   }, [menuProjectId]);
+
+  // Recalc portal position on scroll/resize while open
+  const recalcMenuPos = useCallback(() => {
+    if (!menuTriggerRef.current) return;
+    const rect = menuTriggerRef.current.getBoundingClientRect();
+    setMenuPos({
+      top: rect.bottom + 4,
+      right: window.innerWidth - rect.right,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!menuProjectId) return;
+    recalcMenuPos();
+    window.addEventListener('resize', recalcMenuPos);
+    window.addEventListener('scroll', recalcMenuPos, { passive: true, capture: true });
+    return () => {
+      window.removeEventListener('resize', recalcMenuPos);
+      window.removeEventListener('scroll', recalcMenuPos, { capture: true });
+    };
+  }, [menuProjectId, recalcMenuPos]);
 
   const handleDeleteProject = (proj) => {
     setMenuProjectId(null);
@@ -245,7 +272,18 @@ export default function ProjectList({ appState, setView, goBack }) {
                       {/* 独立菜单操作 */}
                       <div onClick={e => e.stopPropagation()} className="flex items-center">
                         <button
-                          onClick={() => setMenuProjectId(menuProjectId === proj.id ? null : proj.id)}
+                          ref={menuProjectId === proj.id ? menuTriggerRef : null}
+                          onClick={(e) => {
+                            const nextOpen = menuProjectId !== proj.id;
+                            if (nextOpen) {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setMenuPos({
+                                top: rect.bottom + 4,
+                                right: window.innerWidth - rect.right,
+                              });
+                            }
+                            setMenuProjectId(nextOpen ? proj.id : null);
+                          }}
                           className="p-1 transition-colors opacity-40 group-hover:opacity-80"
                           title="Project actions"
                           style={{ color: 'var(--tx-neutral-20)', background: 'none', border: 'none', cursor: 'pointer' }}
@@ -255,14 +293,29 @@ export default function ProjectList({ appState, setView, goBack }) {
                           <IconMenu size={13} />
                         </button>
 
-                        {menuProjectId === proj.id && (
+                        {menuProjectId === proj.id && menuPos && createPortal(
                           <div
-                            ref={menuRef}
-                            className="absolute right-4 top-full mt-1 w-32 bg-cinder-glass-heavy backdrop-blur-xl border border-white/[0.06] rounded-[2px] shadow-2xl py-1 z-50"
+                            ref={menuDropdownRef}
+                            style={{
+                              position: 'fixed',
+                              top: menuPos.top,
+                              right: menuPos.right,
+                              zIndex: 9999,
+                              background: 'var(--cinder-glass-heavy)',
+                              backdropFilter: 'blur(24px)',
+                              WebkitBackdropFilter: 'blur(24px)',
+                              border: '1px solid var(--cinder-line)',
+                              borderRadius: '2px',
+                              boxShadow: '0 10px 25px rgba(0,0,0,0.4)',
+                            }}
+                            className="w-32 py-1"
                           >
                             <button
                               onClick={() => handleDeleteProject(proj)}
-                              className="w-full flex items-center gap-2 px-3 py-1.5 text-[0.6875rem] text-red-400 font-mono tracking-wider hover:bg-red-500/10 transition-colors text-left"
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-[0.6875rem] font-mono tracking-wider transition-colors text-left"
+                              style={{ color: 'var(--cinder-flame)', background: 'none', border: 'none', cursor: 'pointer' }}
+                              onMouseEnter={e => { e.currentTarget.style.color = 'var(--cinder-text)'; e.currentTarget.style.background = 'var(--cinder-glass)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.color = 'var(--cinder-flame)'; e.currentTarget.style.background = 'none'; }}
                             >
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
                                 <polyline points="3 6 5 6 21 6" />
@@ -270,7 +323,8 @@ export default function ProjectList({ appState, setView, goBack }) {
                               </svg>
                               DELETE
                             </button>
-                          </div>
+                          </div>,
+                          document.body
                         )}
                       </div>
                     </div>

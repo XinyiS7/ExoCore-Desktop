@@ -67,8 +67,6 @@ function PushNavigateListener() {
       if (action === 'navigate') {
         if (registerId) {
           try {
-            const match = path.match(/\/agent\/(\d+)/);
-            const pid = match ? match[1] : presetId;
             await apiFetch(
               `/api/agents/registers/${registerId}/ack/`,
               {
@@ -77,7 +75,7 @@ function PushNavigateListener() {
                   action: 'navigate',
                   subscription_endpoint: subscriptionEndpoint || null,
                 },
-                params: pid ? { preset_id: pid } : {},
+                params: presetId ? { preset_id: presetId } : {},
               },
             );
           } catch (_) { /* silent */ }
