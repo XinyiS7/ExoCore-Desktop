@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Send, Settings, RefreshCw } from 'lucide-react';
+import { Send, Settings, RefreshCw, Zap } from 'lucide-react';
 import { groupchatApi } from 'exo-shared';
 import { getAgentAvatarUrl, getUserAvatarUrl } from '../utils/avatar';
 import { formatDateSeparator, isDifferentDay } from '../utils/time';
@@ -7,7 +7,9 @@ import GroupchatMessage from '../components/groupchat/GroupchatMessage';
 import AuroraBackground from '../components/chat/AuroraBackground';
 import BackToUpper from '../components/layout/BackButton';
 
-const MSGS_PER_PAGE = 20;
+const MSGS_PER_PAGE = 40;  // live 群聊上下文需要更大窗口
+const BROADCAST_POLL_INTERVAL = 3000;   // ms
+const BROADCAST_TIMEOUT_MS = 60000;     // ms
 
 /**
  * Extract active @mention at cursor position.
@@ -54,6 +56,14 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
  const [isLoadingMore, setIsLoadingMore] = useState(false);
  const [isSending, setIsSending] = useState(false);
  const [sendError, setSendError] = useState('');
+
+ // ── Broadcast state ──
+ const [broadcastState, setBroadcastState] = useState(null);
+ // null = idle
+ // { participants: [6,8], replied: Set, startedAt: number }
+ const pollRef = useRef(null);
+ const elapsedRef = useRef(0);
+ const [broadcastElapsed, setBroadcastElapsed] = useState(0);
 
  // ── Mention state ──
  const [mentionIndex, setMentionIndex] = useState(0);
@@ -171,6 +181,12 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
  setMessages([]);
  setHasMore(false);
  setSendError('');
+ if (pollRef.current) {
+  clearInterval(pollRef.current);
+  pollRef.current = null;
+ }
+ setBroadcastState(null);
+ setBroadcastElapsed(0);
 
  // Restore draft
  const savedDraft = localStorage.getItem(`exo_gc_draft_${groupchat.id}`);
@@ -204,6 +220,16 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
  }, 500);
  return () => { if (draftTimerRef.current) clearTimeout(draftTimerRef.current); };
  }, [inputValue, groupchat?.id]);
+
+ // ── Broadcast polling cleanup on unmount ──
+ useEffect(() => {
+  return () => {
+   if (pollRef.current) {
+    clearInterval(pollRef.current);
+    pollRef.current = null;
+   }
+  };
+ }, []);
 
  // ── Auto-resize textarea ──
  const autoResize = () => {
@@ -278,6 +304,107 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
  } finally {
   setIsSending(false);
  }
+ };
+
+ // ── Broadcast handler ──
+ const handleBroadcast = async () => {
+  if (!inputValue.trim() || isSending || broadcastState) return;
+  const content = inputValue.trim();
+  setInputValue('');
+  setIsSending(true);
+  setSendError('');
+  localStorage.removeItem(`exo_gc_draft_${groupchat.id}`);
+
+  try {
+   const mention_ids = parseMentionIds(content);
+   const newMsg = await groupchatApi.sendMessage(groupchat.id, {
+    sender_id: userId,
+    content,
+    mention_ids,
+   });
+   allHistoryRef.current = [...allHistoryRef.current, newMsg];
+   setMessages(prev => [...prev, newMsg]);
+   requestAnimationFrame(() => scrollToBottom(true));
+
+   // 触发 broadcast
+   const bcResp = await groupchatApi.broadcast(groupchat.id, {
+    message_id: newMsg.id,
+   });
+
+   if (!bcResp.participants || bcResp.participants.length === 0) {
+    setIsSending(false);
+    return;  // 没有 agent 参与者
+   }
+
+   const state = {
+    participants: bcResp.participants,
+    replied: new Set(),
+    startedAt: Date.now(),
+   };
+   setBroadcastState(state);
+   setBroadcastElapsed(0);
+
+   // 启动计时器（用于 UI 倒计时，避免 Date.now() 在 JSX 中）
+   const elapsedTimer = setInterval(() => {
+    setBroadcastElapsed(prev => {
+     const elapsed = Math.floor((Date.now() - state.startedAt) / 1000);
+     if (elapsed * 1000 >= BROADCAST_TIMEOUT_MS) {
+      clearInterval(elapsedTimer);
+     }
+     return elapsed;
+    });
+   }, 1000);
+
+   // 轮询：拉取新消息，检测 agent 回复
+   const doPoll = async () => {
+    try {
+     const data = await groupchatApi.getMessages(groupchat.id);
+     const msgs = Array.isArray(data) ? data : [];
+     const newSenders = new Set();
+     for (const m of msgs) {
+      if (bcResp.participants.includes(m.sender_id)) {
+       newSenders.add(m.sender_id);
+      }
+     }
+     // 更新可见消息
+     allHistoryRef.current = msgs;
+     const startIdx = Math.max(0, msgs.length - MSGS_PER_PAGE);
+     setMessages(msgs.slice(startIdx));
+     requestAnimationFrame(() => scrollToBottom(true));
+
+     // 检查完成条件
+     setBroadcastState(prev => {
+      if (!prev) return null;
+      const updated = new Set(prev.replied);
+      for (const sid of newSenders) updated.add(sid);
+      if (updated.size >= prev.participants.length) {
+       // 全部回复 → 停止
+       if (pollRef.current) clearInterval(pollRef.current);
+       if (elapsedTimer) clearInterval(elapsedTimer);
+       pollRef.current = null;
+       return null;
+      }
+      if (Date.now() - prev.startedAt > BROADCAST_TIMEOUT_MS) {
+       // 超时 → 停止
+       if (pollRef.current) clearInterval(pollRef.current);
+       if (elapsedTimer) clearInterval(elapsedTimer);
+       pollRef.current = null;
+       return null;
+      }
+      return { ...prev, replied: updated };
+     });
+    } catch (_) {}
+   };
+
+   // 立即执行第一次 poll
+   doPoll();
+   // 启动定时轮询
+   pollRef.current = setInterval(doPoll, BROADCAST_POLL_INTERVAL);
+  } catch (err) {
+   setSendError('Broadcast trigger failed — agents not notified. Try again.');
+  } finally {
+   setIsSending(false);
+  }
  };
 
  // ── Refresh messages (e.g. after navigating back) ──
@@ -464,6 +591,16 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
    </div>
   )}
 
+  {broadcastState && (
+   <div className="mb-2 text-[0.6875rem] tx-system-accent bg-exo-accent/5 border border-exo-accent/20 rounded-[2px] px-3 py-2 flex items-center gap-2">
+   <RefreshCw size={12} className="animate-spin" />
+   <span>
+    {broadcastState.replied.size}/{broadcastState.participants.length} agents replied
+    {" · "}{broadcastElapsed}s
+   </span>
+   </div>
+  )}
+
   <div className="flex items-end gap-3">
    <div className="relative flex-1">
    {/* Mention autocomplete popup */}
@@ -520,6 +657,14 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
     style={{ minHeight: '2.75rem' }}
    />
    </div>
+   <button
+   onClick={handleBroadcast}
+   disabled={isSending || !inputValue.trim() || !!broadcastState}
+   className="p-2.5 bg-exo-accent/20 text-exo-accent border border-exo-accent/30 rounded-md hover:bg-exo-accent hover:text-exo-pure disabled:opacity-20 disabled:grayscale transition-colors flex-shrink-0"
+   title="Broadcast to all agents"
+   >
+   <Zap size={16} />
+   </button>
    <button
    onClick={handleSend}
    disabled={isSending || !inputValue.trim()}
