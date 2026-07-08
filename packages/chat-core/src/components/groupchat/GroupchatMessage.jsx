@@ -67,10 +67,10 @@ const MD_COMPONENTS = {
  * - User messages (sender_id === 2): right-aligned, bubble with border
  * - Agent messages: left-aligned, prose content, no bubble
  * - @mentions highlighted inline with accent color
- * - No thinking, no reasoning, no action toolbar
+ * - thinking/reasoning: collapsible <details> block for agent messages, full content
  *
  * Props:
- * - msg: { sender_id, content, created_at, mention_ids }
+ * - msg: { sender_id, content, created_at, mention_ids, reasoning_content }
  * - isUser: boolean
  * - senderName: string
  * - senderAvatarUrl: string
@@ -111,6 +111,16 @@ const GroupchatMessage = React.memo(({ msg, isUser, senderName, senderAvatarUrl,
   </div>
   ) : (
   <div className="w-full prose prose-invert prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none" style={undefined}>
+   {msg.reasoning_content && (
+    <details className="mb-3 group/thinking">
+     <summary className="text-[0.625rem] tx-system-mute opacity-50 cursor-pointer hover:opacity-80 transition-opacity select-none tracking-wider">
+      💭 thinking
+     </summary>
+     <div className="mt-2 pl-3 border-l-2 border-exo-accent/20 text-[0.75rem] tx-system-mute opacity-70 whitespace-pre-wrap leading-relaxed">
+      {msg.reasoning_content}
+     </div>
+    </details>
+   )}
    <ReactMarkdown
    remarkPlugins={[remarkGfm, remarkMath]}
    rehypePlugins={[rehypeHighlight, rehypeKatex, rehypeRaw]}
