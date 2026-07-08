@@ -107,7 +107,8 @@ self.addEventListener('push', (event) => {
 });
 
 self.addEventListener('notificationclick', (event) => {
-  const clickAction = event.action;  // 'navigate' | 'dismiss' | '' (点主体)
+  const clickAction = event.action;  // 'navigate' | 'dismiss' | ''
+  console.log('[ExoPush] notificationclick raw event.action=' + JSON.stringify(clickAction)); (点主体)
   // 点「跳转」按钮 → 导航；点通知主体 → 导航（web 通知点主体必然回到页面）；
   // 点「关闭」按钮 → 仅 dismiss
   let action;
