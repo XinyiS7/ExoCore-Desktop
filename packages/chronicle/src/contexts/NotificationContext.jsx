@@ -42,6 +42,10 @@ export function NotificationProvider({ children }) {
       } catch (_) { /* silent */ }
     }
     removeNotification(item.id);
+    // 真正导航到目标页
+    if (item.url) {
+      navigate(item.url);
+    }
   }, []);
 
   const ctx = { notifications, dismiss, navigateTo };

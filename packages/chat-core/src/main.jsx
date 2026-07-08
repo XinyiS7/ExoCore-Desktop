@@ -60,7 +60,7 @@ function PushNavigateListener() {
         return;
       }
 
-      // expand → 显示内联通知面板，不跳转，不发 ACK（对方不知道已读）
+      // expand → 显示内联通知面板 + 导航（旧 SW 兼容：点击主体已归类为 navigate）
       if (action === 'expand') {
         window.focus();
 
@@ -74,10 +74,14 @@ function PushNavigateListener() {
           presetId,
           subscriptionEndpoint,
         });
+        // 旧 SW 缓存兼容：expand 本质是点击通知主体 → 执行导航
+        if (url) {
+          navigate(url);
+        }
         return;
       }
 
-      // navigate → 回执（SW 已处理 openWindow/focus，不再 navigate 避免空刷新）
+      // navigate → 回执 + 真正导航到目标页
       if (action === 'navigate') {
         if (registerId) {
           try {
@@ -95,6 +99,10 @@ function PushNavigateListener() {
           } catch (_) {
             // Silent
           }
+        }
+        // 收到 postMessage 后真正导航到目标 URL
+        if (url) {
+          navigate(url);
         }
       }
     }

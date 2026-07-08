@@ -108,14 +108,14 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   const clickAction = event.action;  // 'navigate' | 'dismiss' | '' (点主体)
-  // 点「跳转」按钮 → 导航；点通知主体 → 展开内联内容；点「关闭」按钮 → 仅 dismiss
+  // 点「跳转」按钮 → 导航；点通知主体 → 导航（web 通知点主体必然回到页面）；
+  // 点「关闭」按钮 → 仅 dismiss
   let action;
-  if (clickAction === 'navigate') {
-    action = 'navigate';
-  } else if (clickAction === 'dismiss') {
+  if (clickAction === 'dismiss') {
     action = 'dismiss';
   } else {
-    action = 'expand';
+    // 点击「跳转」按钮 或 点击通知主体 → 统一归类为 navigate
+    action = 'navigate';
   }
   const notificationData = event.notification.data;
   const urlToOpen = notificationData?.url || '/';
@@ -150,7 +150,7 @@ self.addEventListener('notificationclick', (event) => {
       // 无窗口时这是唯一的 ack 路径，确保 Agent 感知用户已处理通知。
       const registerId = notificationData?.registerId || null;
       const presetId = notificationData?.presetId || null;
-      if (registerId && (action === 'navigate' || action === 'dismiss')) {
+      if (registerId) {
         const ackUrl = `/api/agents/registers/${registerId}/ack/?preset_id=${presetId || ''}`;
         fetch(ackUrl, {
           method: 'POST',
@@ -162,32 +162,24 @@ self.addEventListener('notificationclick', (event) => {
         }).catch(() => { /* silent — SW may be killed before fetch completes */ });
       }
 
-      if (matchedClient) {
-        // 已有对应 SPA 窗口 → postMessage 让 React 层处理（导航 / 内联展开）
-        matchedClient.postMessage({
-          type: 'PUSH_NAVIGATE',
-          url: action === 'navigate' ? urlToOpen : null,
-          action,
-          registerId,
-          presetId,
-          subscriptionEndpoint,
-          // 内联展开时携带完整通知内容
-          ...(action === 'expand' && {
-            title: notificationData?.title || '',
-            body: notificationData?.body || '',
-            senderName: notificationData?.senderName || 'ExoCore',
-            senderType: notificationData?.senderType || null,
-          }),
-        });
-        // dismiss 不聚焦窗口 — 用户点关闭就是不想被打扰
-        if (action !== 'dismiss') {
+      if (action === 'navigate') {
+        if (matchedClient) {
+          // 已有对应 SPA 窗口 → postMessage 让 React 层处理导航
+          matchedClient.postMessage({
+            type: 'PUSH_NAVIGATE',
+            url: urlToOpen,
+            action,
+            registerId,
+            presetId,
+            subscriptionEndpoint,
+          });
           await matchedClient.focus();
+        } else if (clients.openWindow) {
+          // 没开对应 SPA → 打开新窗口导航到目标页
+          await clients.openWindow(urlToOpen);
         }
-      } else if (action === 'navigate' && clients.openWindow) {
-        // 没开对应 SPA → 打开新窗口导航到目标页
-        await clients.openWindow(urlToOpen);
       }
-      // dismiss + 无匹配窗口 → ack 已由上方 fetch 发送，直接关通知
+      // dismiss → ack 已由上方 fetch 发送，不聚焦窗口，直接关通知
 
       event.notification.close();
     })()
