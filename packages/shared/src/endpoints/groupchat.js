@@ -24,3 +24,8 @@ export function getMessages(id) {
 export function sendMessage(id, data) {
   return apiFetch(`/api/groupchat/${id}/messages/`, { method: 'POST', body: data });
 }
+
+// ── Broadcast (§8.4) ──
+export function broadcast(id, data = {}) {
+  return apiFetch(`/api/groupchat/${id}/broadcast/`, { method: 'POST', body: data });
+}
