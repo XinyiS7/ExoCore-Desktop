@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Plus, ChevronRight, Users } from 'lucide-react';
 import { groupchatApi } from 'exo-shared';
 import GroupchatRoom from './GroupchatRoom';
@@ -17,8 +18,9 @@ import CreateGroupchatModal from '../components/groupchat/CreateGroupchatModal';
  */
 export default function GroupchatList({ appState, viewParams, goBack }) {
  const { presets, refreshKey } = appState;
- const [groupchats, setGroupchats] = useState([]);
- const [selectedId, setSelectedId] = useState(viewParams?.id || null);
+  const navigate = useNavigate();
+  const [groupchats, setGroupchats] = useState([]);
+  const selectedId = viewParams?.id || null;
  const [showCreateModal, setShowCreateModal] = useState(false);
  const [editingGroupchat, setEditingGroupchat] = useState(null);
 
@@ -29,24 +31,14 @@ export default function GroupchatList({ appState, viewParams, goBack }) {
   .catch(() => {});
  };
 
- useEffect(() => { fetchGroupchats(); }, [refreshKey]);
+  useEffect(() => { fetchGroupchats(); }, [refreshKey]);
 
- // Sync selectedId from route param changes
- useEffect(() => {
- if (viewParams?.id) setSelectedId(viewParams.id);
- }, [viewParams?.id]);
-
- const selected = groupchats.find(g => g.id === selectedId) || null;
+  const selected = groupchats.find(g => g.id === selectedId) || null;
 
  // ── Handlers ──
- const handleSelect = (gc) => {
- if (selectedId === gc.id) {
-  // Already selected — deselect (mobile: go back)
-  setSelectedId(null);
- } else {
-  setSelectedId(gc.id);
- }
- };
+  const handleSelect = (gc) => {
+  navigate(`/groupchat/${gc.id}`);
+  };
 
  const handleManage = () => {
  if (selected) {
@@ -135,7 +127,7 @@ export default function GroupchatList({ appState, viewParams, goBack }) {
    <GroupchatRoom
    groupchat={selected}
    presets={presets}
-   onBack={() => setSelectedId(null)}
+    onBack={() => navigate('/groupchat')}
    onManage={handleManage}
    />
   ) : (

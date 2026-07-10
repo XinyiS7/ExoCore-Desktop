@@ -453,11 +453,11 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
   });
   return;
   }
-  if (e.key === 'Enter' && !e.shiftKey) {
-  e.preventDefault();
-  selectMention(filteredParticipants[mentionIndex]);
-  return;
-  }
+   if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+   e.preventDefault();
+   selectMention(filteredParticipants[mentionIndex]);
+   return;
+   }
   if (e.key === 'Escape') {
   e.preventDefault();
   // Dismiss by moving cursor (trigger re-detect)
@@ -466,12 +466,22 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
   }
  }
 
- // Normal Enter to send
- if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+  // Ctrl+Shift+Enter: broadcast / live (mirrors ChatArea cache-send slot)
+  if (e.key === 'Enter' && e.ctrlKey && e.shiftKey && !e.isComposing) {
+  if (mention.active || isSending || broadcastState) return;
+  e.preventDefault();
+  handleBroadcast();
+  return;
+  }
+
+  // Ctrl+Enter to send (matches ChatArea)
+  if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) {
+  if (mention.active) return;
   e.preventDefault();
   handleSend();
- }
- };
+  return;
+  }
+  };
 
  // ── Input change handler ──
  const handleInputChange = (e) => {

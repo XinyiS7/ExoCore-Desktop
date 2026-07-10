@@ -62,8 +62,9 @@ export default function MobileBottomBar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Hide on chat / groupchat routes — maximize mobile viewport for message interfaces
-  if (location.pathname.startsWith('/chat/') || location.pathname.startsWith('/groupchat')) return null;
+  // Hide only on full-screen message interfaces (chat session, groupchat room).
+  // The groupchat LIST (/groupchat) keeps the bottom bar; only /groupchat/:id hides it.
+  if (location.pathname.startsWith('/chat/') || location.pathname.startsWith('/groupchat/')) return null;
 
   const isActive = (route) => {
     if (route === '/') return location.pathname === '/';

@@ -6,6 +6,7 @@ import rehypeHighlight from 'rehype-highlight';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import { formatMessageTime } from '../../utils/time';
+import { useTheme } from 'exo-shared';
 
 /**
  * Escape HTML special characters so user content can't inject tags.
@@ -53,7 +54,7 @@ const MD_COMPONENTS = {
  span({ children, className, ...props }) {
  if (className === 'mention-inline') {
   return (
-  <span className="tx-message-accent font-semibold bg-exo-accent/10 px-1 py-0.5 rounded-[2px] inline-flex items-baseline gap-0.5" {...props}>
+   <span className="mention-inline font-semibold px-1 py-0.5 rounded-[2px] inline-flex items-baseline gap-0.5" {...props}>
    {children}
   </span>
   );
@@ -77,6 +78,7 @@ const MD_COMPONENTS = {
  * - mentionNames: string[] — resolved names from mention_ids
  */
 const GroupchatMessage = React.memo(({ msg, isUser, senderName, senderAvatarUrl, mentionNames }) => {
+ const { theme } = useTheme();
  const processedContent = highlightMentions(msg.content, mentionNames);
 
  return (
@@ -100,7 +102,7 @@ const GroupchatMessage = React.memo(({ msg, isUser, senderName, senderAvatarUrl,
 
   {/* Content */}
   {isUser ? (
-  <div className="max-w-[92%] bg-exo-pure border border-exo-mist-12 rounded-[4px] rounded-tr-none p-4 text-sm shadow-brutalist transition-all hover:border-exo-mist-20 prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none tx-message-normal opacity-90" style={undefined}>
+   <div className={`max-w-[92%] bg-exo-pure border border-exo-mist-12 rounded-[4px] rounded-tr-none p-4 text-sm shadow-brutalist transition-all hover:border-exo-mist-20 prose ${theme !== 'light' ? 'prose-invert' : ''} prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none tx-message-normal opacity-90`} style={{ fontFamily: 'var(--font-message)' }}>
    <ReactMarkdown
    remarkPlugins={[remarkGfm, remarkMath]}
    rehypePlugins={[rehypeHighlight, rehypeKatex, rehypeRaw]}
@@ -110,7 +112,7 @@ const GroupchatMessage = React.memo(({ msg, isUser, senderName, senderAvatarUrl,
    </ReactMarkdown>
   </div>
   ) : (
-  <div className="w-full prose prose-invert prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none" style={undefined}>
+   <div className={`w-full prose ${theme !== 'light' ? 'prose-invert' : ''} prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none`} style={{ fontFamily: 'var(--font-message)' }}>
    {msg.reasoning_content && (
     <details className="mb-3 group/thinking">
      <summary className="text-[0.625rem] tx-system-mute opacity-50 cursor-pointer hover:opacity-80 transition-opacity select-none tracking-wider">
