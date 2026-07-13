@@ -5,7 +5,6 @@ import { getAgentAvatarUrl, getUserAvatarUrl } from '../utils/avatar';
 import { formatDateSeparator, isDifferentDay } from '../utils/time';
 import GroupchatMessage from '../components/groupchat/GroupchatMessage';
 import AuroraBackground from '../components/chat/AuroraBackground';
-import BackToUpper from '../components/layout/BackButton';
 
 const MSGS_PER_PAGE = 40;  // live 群聊上下文需要更大窗口
 const BROADCAST_POLL_INTERVAL = 3000;   // ms
@@ -54,8 +53,9 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
  const [cursorPos, setCursorPos] = useState(0);
  const [hasMore, setHasMore] = useState(false);
  const [isLoadingMore, setIsLoadingMore] = useState(false);
- const [isSending, setIsSending] = useState(false);
- const [sendError, setSendError] = useState('');
+const [isSending, setIsSending] = useState(false);
+const [sendError, setSendError] = useState('');
+const [inputFocused, setInputFocused] = useState(false);
 
  // ── Broadcast state ──
  const [broadcastState, setBroadcastState] = useState(null);
@@ -511,8 +511,6 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
   {/* Header */}
   <div className="relative z-20 flex-shrink-0 border-b border-exo-mist-10 bg-exo-pure/40 backdrop-blur-md px-4 md:px-6 py-2 flex items-center justify-between">
   <div className="flex items-center gap-2 min-w-0">
-   {/* Mobile back to groupchat list */}
-   <BackToUpper label="Groupchats" onClick={onBack} className="md:hidden" />
    <div className="min-w-0">
    <span className="text-sm font-sans font-medium tx-system-normal opacity-90 truncate block">
     {groupchat?.name || 'Groupchat'}
@@ -593,7 +591,7 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
   </div>
 
   {/* Input area */}
-  <div className="flex-shrink-0 p-4 border-t border-exo-mist-10 bg-exo-pure/80 backdrop-blur-xl relative z-10">
+  <div className="flex-shrink-0 p-4 border-t border-cinder-line bg-exo-pure/40 backdrop-blur-xl flex flex-col gap-2 relative z-10">
   {sendError && (
    <div className="mb-2 text-[0.6875rem] text-red-400 bg-red-500/5 border border-red-500/20 rounded-[2px] px-3 py-2 flex items-center justify-between">
    <span>{sendError}</span>
@@ -611,8 +609,7 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
    </div>
   )}
 
-  <div className="flex items-end gap-3">
-   <div className="relative flex-1">
+  <div className={`relative flex flex-col bg-exo-pure/40 backdrop-blur-md border rounded-[4px] transition-all overflow-visible ${inputFocused || inputValue ? 'border-cinder-line-glow shadow-glow-gold' : 'border-cinder-line'}`}>
    {/* Mention autocomplete popup */}
    {showMentionPopup && (
     <div
@@ -663,25 +660,34 @@ export default function GroupchatRoom({ groupchat, presets, onBack, onManage }) 
     placeholder="Message... (@ to mention)"
     rows={1}
     disabled={isSending}
-    className="w-full bg-exo-pure border border-exo-mist-10 rounded-[4px] px-4 py-2.5 text-sm tx-system-normal opacity-90 outline-none resize-none focus:border-exo-accent/40 transition-colors font-sans placeholder:tx-system-mute opacity-40 disabled:opacity-50 max-h-[40vh]"
-    style={{ minHeight: '2.75rem' }}
+    onFocus={() => setInputFocused(true)}
+    onBlur={() => { if (!inputValue) setInputFocused(false); }}
+    className="w-full bg-transparent text-sm tx-system-normal opacity-90 outline-none resize-none px-4 pt-2.5 pb-1 disabled:opacity-50 overflow-y-auto max-h-[40vh] font-sans placeholder:tx-system-mute opacity-40"
+    style={{ minHeight: (inputFocused || inputValue) ? '4.5rem' : '2.5rem' }}
    />
+
+   <div className="flex items-center justify-between px-3 pb-2.5">
+    <span className="text-[0.625rem] tx-system-mute opacity-30 tracking-wider tabular-nums">
+     {inputValue.length}
+    </span>
+    <div className="flex items-center gap-2">
+     <button
+     onClick={handleBroadcast}
+     disabled={isSending || !inputValue.trim() || !!broadcastState}
+     className="p-1.5 bg-exo-accent/20 text-exo-accent border border-exo-accent/30 rounded-[2px] hover:bg-exo-accent hover:text-exo-pure disabled:opacity-20 disabled:grayscale transition-colors flex-shrink-0"
+     title="Broadcast to all agents"
+     >
+     <Zap size={15} strokeWidth={1} />
+     </button>
+     <button
+     onClick={handleSend}
+     disabled={isSending || !inputValue.trim()}
+     className="p-1.5 bg-exo-accent text-exo-pure rounded-[2px] hover:shadow-glow-gold hover:bg-exo-accentGlow disabled:opacity-20 disabled:grayscale transition-colors flex-shrink-0"
+     >
+     <Send size={15} strokeWidth={1} />
+     </button>
+    </div>
    </div>
-   <button
-   onClick={handleBroadcast}
-   disabled={isSending || !inputValue.trim() || !!broadcastState}
-   className="p-2.5 bg-exo-accent/20 text-exo-accent border border-exo-accent/30 rounded-md hover:bg-exo-accent hover:text-exo-pure disabled:opacity-20 disabled:grayscale transition-colors flex-shrink-0"
-   title="Broadcast to all agents"
-   >
-   <Zap size={16} />
-   </button>
-   <button
-   onClick={handleSend}
-   disabled={isSending || !inputValue.trim()}
-   className="p-2.5 bg-exo-accent text-exo-pure rounded-md hover:shadow-glow-gold hover:bg-exo-accentGlow disabled:opacity-20 disabled:grayscale transition-colors flex-shrink-0"
-   >
-   <Send size={16} />
-   </button>
   </div>
   </div>
  </div>

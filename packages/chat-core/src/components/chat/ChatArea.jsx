@@ -1405,6 +1405,9 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     <button onClick={() => fileInputRef.current?.click()} title="挂载文档区块" className="p-1 tx-message-mute opacity-20 hover:tx-message-mute opacity-50 transition-colors"><Paperclip size={14} strokeWidth={1} /></button>
     <input type="file" ref={imageInputRef} className="hidden" multiple accept="image/*" onChange={(e) => { handleFilesSelected(e.target.files); e.target.value = ''; }} />
     <input type="file" ref={fileInputRef} className="hidden" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.json,.zip,.py,.js,.ts,.jsx,.tsx,.html,.css,.xml,.yaml,.yml,.toml,.sh,.log" onChange={(e) => { handleFilesSelected(e.target.files); e.target.value = ''; }} />
+    <span className="text-[0.625rem] tx-message-mute opacity-30 tracking-wider tabular-nums ml-1">
+     {inputValue.length}
+    </span>
    </div>
    <div className="flex items-center gap-2">
     {rightExtraButton}

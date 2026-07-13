@@ -108,7 +108,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   const clickAction = event.action;  // 'navigate' | 'dismiss' | ''
-  console.log('[ExoPush] notificationclick raw event.action=' + JSON.stringify(clickAction)); (点主体)
+  console.log('[ExoPush] notificationclick raw event.action=' + JSON.stringify(clickAction)); // (点主体)
   // 点「跳转」按钮 → 导航；点通知主体 → 导航（web 通知点主体必然回到页面）；
   // 点「关闭」按钮 → 仅 dismiss
   let action;
@@ -229,3 +229,26 @@ function urlBase64ToUint8Array(base64String) {
   }
   return outputArray;
 }
+
+/**
+ * Handle notification swipe-away or system "Clear All"
+ */
+self.addEventListener('notificationclose', (event) => {
+  const notificationData = event.notification.data;
+  const registerId = notificationData?.registerId || null;
+  const presetId = notificationData?.presetId || null;
+  
+  if (registerId) {
+    const ackUrl = `/api/agents/registers/${registerId}/ack/?preset_id=${presetId || ''}`;
+    event.waitUntil(
+      fetch(ackUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'dismiss',
+          source: 'system_swipe'
+        }),
+      }).catch(() => { /* silent */ })
+    );
+  }
+});

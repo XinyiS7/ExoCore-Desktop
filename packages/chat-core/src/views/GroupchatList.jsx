@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Plus, ChevronRight, Users } from 'lucide-react';
 import { groupchatApi } from 'exo-shared';
 import GroupchatRoom from './GroupchatRoom';
+import BackToUpper from '../components/layout/BackButton';
 import CreateGroupchatModal from '../components/groupchat/CreateGroupchatModal';
 
 /**
@@ -62,9 +63,16 @@ export default function GroupchatList({ appState, viewParams, goBack }) {
 
  const isMobileRoom = selectedId && selected;
 
- return (
- <div className="flex-1 h-full flex bg-exo-bg overflow-hidden">
-  {/* === Left Panel: Groupchat Sidebar === */}
+return (
+  <div className="flex-1 h-full flex flex-col bg-exo-bg overflow-hidden">
+   {/* Desktop back header */}
+   <div className="hidden md:flex items-center h-12 px-4 flex-shrink-0">
+    <BackToUpper label="Home" onClick={() => navigate('/')} />
+   </div>
+
+   {/* Split view */}
+   <div className="flex-1 h-full flex bg-exo-bg overflow-hidden">
+   {/* === Left Panel: Groupchat Sidebar === */}
   <div className={`${isMobileRoom ? 'hidden md:flex' : 'flex'} md:flex w-full md:w-72 lg:w-80 flex-shrink-0 flex-col border-r border-exo-mist-8 h-full`}>
   {/* Sidebar Header */}
   <div className="flex-shrink-0 px-5 py-4 border-b border-exo-mist-8 flex items-center justify-between">
@@ -145,14 +153,15 @@ export default function GroupchatList({ appState, viewParams, goBack }) {
   )}
   </div>
 
-  {/* Create / Edit Modal */}
+{/* Create / Edit Modal */}
   <CreateGroupchatModal
-  isOpen={showCreateModal}
-  onClose={handleModalClose}
-  onSaved={handleSaved}
-  presets={presets}
-  editing={editingGroupchat}
+   isOpen={showCreateModal}
+   onClose={handleModalClose}
+   onSaved={handleSaved}
+   presets={presets}
+   editing={editingGroupchat}
   />
- </div>
+   </div>
+  </div>
  );
 }
