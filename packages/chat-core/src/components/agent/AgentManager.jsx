@@ -8,7 +8,7 @@ import { getAgentAvatarUrl } from '../../utils/avatar';
 import EditPresetModal from '../modals/EditPresetModal';
 import { Button } from '../ui';
 import AvatarCropModal from '../modals/AvatarCropModal';
-import TriggeredNote from './TriggeredNote';
+import MarqueeArea from './MarqueeArea';
 import { getAgentHubOrder, isSuperiorType } from '../../utils/presets';
 
 const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, refreshPresets }) => {
@@ -164,7 +164,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
               </div>
               <span className="text-[0.5625rem] tx-system-accent opacity-40 tracking-tighter">[L3_SYNC_ACTIVE]</span>
             </div>
-            <TriggeredNote plasmids={plasmidCache[preset.id] || []} />
+            <MarqueeArea plasmids={plasmidCache[preset.id] || []} />
           </div>
         )}
       </div>

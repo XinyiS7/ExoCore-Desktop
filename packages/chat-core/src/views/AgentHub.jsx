@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { getAgentAvatarUrl } from '../utils/avatar';
 import { baseUrl, memoryApi } from 'exo-shared';
 import { getAgentHubOrder, isSuperiorType } from '../utils/presets';
-import TriggeredNote from '../components/agent/TriggeredNote';
+import MarqueeArea from '../components/agent/MarqueeArea';
 import BackToUpper from '../components/layout/BackButton';
 import { useModalContext } from '../contexts/ModalContext';
 
@@ -372,15 +372,17 @@ export default function AgentHub({ appState, setView, goBack }) {
                           </p>
                         )}
 
-                        {/* Divider + Memory anchor ticker */}
+                        {/* Divider + Plasmid marquee */}
                         {isSuperiorType(p.agent_type) && (
-                          <>
-                            <div
-                              className="my-3"
-                              style={{ borderTop: '1px solid var(--cinder-line)' }}
-                            />
-                            <TriggeredNote plasmids={plasmids || []} />
-                          </>
+                          <div
+                            style={{
+                              borderTop: '1px solid var(--cinder-line)',
+                              marginTop: '6px',
+                              paddingTop: '2px',
+                            }}
+                          >
+                            <MarqueeArea plasmids={plasmids || []} />
+                          </div>
                         )}
                       </div>
                     </div>
@@ -489,12 +491,15 @@ export default function AgentHub({ appState, setView, goBack }) {
                           </p>
                         )}
 
-                        {/* Memory anchor ticker */}
+                        {/* Plasmid marquee */}
                         <div
-                          className="mt-2"
-                          style={{ borderTop: '1px solid var(--cinder-line)' }}
+                          style={{
+                            borderTop: '1px solid var(--cinder-line)',
+                            marginTop: '6px',
+                            paddingTop: '2px',
+                          }}
                         >
-                          <TriggeredNote plasmids={plasmids || []} />
+                          <MarqueeArea plasmids={plasmids || []} />
                         </div>
                       </div>
                     </div>
