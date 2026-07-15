@@ -3,7 +3,7 @@ import {
   BrainCircuit, Cpu, Hash, Edit3, Trash2,
   GripVertical, Play, Sparkles, Clock, Camera
 } from 'lucide-react';
-import { baseUrl } from 'exo-shared';
+import { baseUrl, memoryApi } from 'exo-shared';
 import { getAgentAvatarUrl } from '../../utils/avatar';
 import EditPresetModal from '../modals/EditPresetModal';
 import { Button } from '../ui';
@@ -13,7 +13,7 @@ import { getAgentHubOrder, isSuperiorType } from '../../utils/presets';
 
 const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, refreshPresets }) => {
   const [editTarget, setEditTarget] = useState(null);
-  const [anchorCache, setAnchorCache] = useState({});
+  const [plasmidCache, setPlasmidCache] = useState({});
   const [cardOrder, setCardOrder] = useState(() => getAgentHubOrder());
   const [dragging, setDragging] = useState(null);
   const [dragOver, setDragOver] = useState(null);
@@ -42,11 +42,10 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
 
   useEffect(() => {
     g045Presets.forEach(p => {
-      if (anchorCache[p.id] !== undefined) return;
-      fetch(`${baseUrl}/api/agents/presets/${p.id}/triggered-notes/snapshot/`, { credentials: 'include' })
-        .then(res => res.json())
-        .then(data => setAnchorCache(prev => ({ ...prev, [p.id]: Array.isArray(data) ? data : [] })))
-        .catch(() => setAnchorCache(prev => ({ ...prev, [p.id]: [] })));
+      if (plasmidCache[p.id] !== undefined) return;
+      memoryApi.listPlasmids({ preset_id: p.id })
+        .then(data => setPlasmidCache(prev => ({ ...prev, [p.id]: Array.isArray(data) ? data : [] })))
+        .catch(() => setPlasmidCache(prev => ({ ...prev, [p.id]: [] })));
     });
   }, [g045Presets.map(p => p.id).join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -165,7 +164,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
               </div>
               <span className="text-[0.5625rem] tx-system-accent opacity-40 tracking-tighter">[L3_SYNC_ACTIVE]</span>
             </div>
-            <TriggeredNote anchors={anchorCache[preset.id] || []} />
+            <TriggeredNote plasmids={plasmidCache[preset.id] || []} />
           </div>
         )}
       </div>

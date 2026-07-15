@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import { getAgentAvatarUrl } from '../utils/avatar';
-import { baseUrl } from 'exo-shared';
+import { baseUrl, memoryApi } from 'exo-shared';
 import { getAgentHubOrder, isSuperiorType } from '../utils/presets';
 import TriggeredNote from '../components/agent/TriggeredNote';
 import BackToUpper from '../components/layout/BackButton';
@@ -100,13 +100,13 @@ const IconLock = ({ size = 10 }) => (
 export default function AgentHub({ appState, setView, goBack }) {
   const { presets = [] } = appState;
   const { openCreatePreset } = useModalContext();
-  const [anchorMap, setAnchorMap] = useState({});
+  const [plasmidMap, setPlasmidMap] = useState({});
   const [dragging, setDragging] = useState(null);
   const [dragOver, setDragOver] = useState(null);
   const [hoveredCard, setHoveredCard] = useState(null);
   const draggingRef = useRef(null);
 
-  /* ── Fetch anchors for G045 & Superior agents ── */
+  /* ── Fetch plasmids for G045 & Superior agents ── */
   const superiorPresetIds = useMemo(
     () => presets.filter((p) => isSuperiorType(p.agent_type)).map((p) => p.id).join(','),
     [presets],
@@ -118,27 +118,22 @@ export default function AgentHub({ appState, setView, goBack }) {
 
     let cancelled = false;
 
-    const fetchAnchors = async () => {
+    const fetchPlasmids = async () => {
       const map = {};
       await Promise.all(
         ids.map(async (id) => {
           try {
-            const res = await fetch(
-              `${baseUrl}/api/agents/presets/${id}/triggered-notes/snapshot/`,
-              { credentials: 'include' },
-            );
-            if (!res.ok) return;
-            const data = await res.json();
-            map[id] = Array.isArray(data) ? data : data.anchors || [];
+            const data = await memoryApi.listPlasmids({ preset_id: id });
+            map[id] = Array.isArray(data) ? data : [];
           } catch (err) {
-            console.error(`Failed to fetch anchors for preset ${id}:`, err);
+            console.error(`Failed to fetch plasmids for preset ${id}:`, err);
           }
         }),
       );
-      if (!cancelled) setAnchorMap(map);
+      if (!cancelled) setPlasmidMap(map);
     };
 
-    fetchAnchors();
+    fetchPlasmids();
     return () => { cancelled = true; };
   }, [superiorPresetIds]);
 
@@ -277,7 +272,7 @@ export default function AgentHub({ appState, setView, goBack }) {
               <NavHead label="THE PRIME" />
               <div className="mt-3 flex flex-col gap-3">
                 {g045Presets.map((p) => {
-                  const anchors = anchorMap[p.id];
+                  const plasmids = plasmidMap[p.id];
                   const avatarUrl = getAgentAvatarUrl(p.id, p.name);
                   const isHovered = hoveredCard === `g045-${p.id}`;
                   const isDragging = dragging === p.id;
@@ -384,7 +379,7 @@ export default function AgentHub({ appState, setView, goBack }) {
                               className="my-3"
                               style={{ borderTop: '1px solid var(--cinder-line)' }}
                             />
-                            <TriggeredNote anchors={anchors || []} />
+                            <TriggeredNote plasmids={plasmids || []} />
                           </>
                         )}
                       </div>
@@ -401,7 +396,7 @@ export default function AgentHub({ appState, setView, goBack }) {
               <NavHead label="SUPERIOR" />
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {superiorPresets.map((p, i) => {
-                  const anchors = anchorMap[p.id];
+                  const plasmids = plasmidMap[p.id];
                   const avatarUrl = getAgentAvatarUrl(p.id, p.name);
                   const isHovered = hoveredCard === `sup-${p.id}`;
                   const isDragging = dragging === p.id;
@@ -499,7 +494,7 @@ export default function AgentHub({ appState, setView, goBack }) {
                           className="mt-2"
                           style={{ borderTop: '1px solid var(--cinder-line)' }}
                         >
-                          <TriggeredNote anchors={anchors || []} />
+                          <TriggeredNote plasmids={plasmids || []} />
                         </div>
                       </div>
                     </div>

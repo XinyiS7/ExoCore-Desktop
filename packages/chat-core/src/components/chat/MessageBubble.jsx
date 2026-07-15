@@ -271,7 +271,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
  if (!bookmarkText.trim()) return;
  setBookmarkStatus('saving');
  try {
-  const res = await fetch(`${baseUrl}/api/memory/portraits/`, {
+  const res = await fetch(`${baseUrl}/api/memory/plasmids/`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
   credentials: 'include',

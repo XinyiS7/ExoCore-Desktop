@@ -40,7 +40,3 @@ export function pollChatStatus(sessionId, messageId, cursor = 0) {
   return apiFetch(`/api/agents/chat/${sessionId}/status/`, { method: 'GET', params: { message_id: messageId, cursor } });
 }
 
-// ── Triggered Notes ──
-export function getTriggeredNotesSnapshot(presetId) {
-  return apiFetch(`/api/agents/presets/${presetId}/triggered-notes/snapshot/`, { method: 'GET' });
-}

@@ -1,6 +1,6 @@
 ========================================================
   ExoCore — React 前端接口数据格式速查表（重整版）
-  最后更新：2026-06-09（第九篇 Push 通知 & 订阅）
+   最后更新：2026-07-15（Portrait/TriggeredNote → MemoryPlasmid 合并）
 ========================================================
 
 本文是纯数据格式速查，不是后端行为说明书。
@@ -70,7 +70,11 @@
 
 // ── 1.3a. SSE 模式（默认） ──
 // POST /api/agents/chat/<session_id>/?mode=sse （默认）
-// 事件类型与 data 格式见主文档，无变动。
+// 事件类型与 data 格式见 §1.3c（async 模式事件列表一致）。
+//
+// cache_skipped — 非 Gemini 模型收到 force_cache_rebuild 时的降级提示
+// event: cache_skipped
+// data: {"reason": "platform_not_supported"}
 
 // ── 1.3b. Async 轮询模式 ──
 // POST /api/agents/chat/<session_id>/?mode=async
@@ -83,8 +87,9 @@
   "temperature": 1.0,
   "model": null,                    // 可选模型覆盖
   "api_key_alias": null,            // 可选 API Key 别名；null = 使用默认 key
-  "memory_injection_enabled": false,// 记忆注入开关（embedding/UserPortrait/cross_window/vibe/private_logs）
+  "memory_injection_enabled": false,// 记忆注入开关（embedding/MemoryPlasmid/cross_window/vibe/private_logs）
   "cache_enabled": false,           // Gemini 远端缓存开关（成本控制）
+  "force_cache_rebuild": false,     // 手动触发远端缓存重建（覆盖 cache_enabled，仅 Gemini 有效）
   "session_type": "lite",           // "full" | "lite" — 上下文结构模式（每次请求携带，默认 lite）
   "files": [],                      // 可选上传文件
   "pending_attachments": [],        // 可选附件 ID
@@ -124,7 +129,6 @@
 //    - reasoning → RAG 检索过程提示
 //    - status → 状态提示文字
 //    - reference → 引用链接
-//    - triggered_note_created → TriggeredNote 创建通知
 // 4. status="done" → 停止轮询，GET /chat/<sid>/ 拉完整消息列表
 // 5. status="stopped" → 用户手动停止，已生成的部分内容已持久化，拉消息列表即可
 // 6. status="error" → 显示错误，停止轮询
@@ -335,20 +339,10 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 // 附件随消息在历史窗口中自然升降 —— 消息滚出窗口时附件也随之消失。
 
 
-1.8  GET /api/agents/presets/<preset_id>/triggered-notes/snapshot/  — TriggeredNote 快照
+1.8  [已退役] TriggeredNote 快照
 ─────────────────────────────────────────────────────────────
-返回指定 Superior 预设下随机 15 条高分活跃 TriggeredNote 快照。
-筛选条件：is_active=True, current_weight >= 0.8
-
-[
-  {
-    "keywords": "量子纠缠, EPR",
-    "note": "量子纠缠是两个粒子之间的一种量子力学现象...",
-    "is_persistent": true,
-    "weight": 0.95
-  },
-  ...
-]
+TriggeredNote 模型已删除（migration 0033），关键词触发能力吸收至 MemoryPlasmid.trigger_keywords。
+前端不再使用此接口，详见 §2.2 MemoryPlasmid。
 
 
 1.9  CRUD /api/agents/chronicle/  — ChronicleEntry（大事记）
@@ -400,7 +394,7 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-第二篇  记忆 & 画像 (Memory / Portraits / Scope)
+第二篇  记忆 & 质粒 (Memory / Plasmids / Scope)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 2.1  GET /api/memory/knowledge/  — KnowledgeFragment 列表
@@ -434,61 +428,64 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 // 格式见主文档，无变动。
 
 
-2.2  CRUD /api/memory/portraits/  — UserPortrait
+2.2  CRUD /api/memory/plasmids/  — MemoryPlasmid（记忆质粒）
 ─────────────────────────────────────────────────────────────
+原 UserPortrait + TriggeredNote 合并为一。统一 heat 召回（EMA）+ trigger_keywords 即时路。
 
-// ── 2.2a. GET /api/memory/portraits/?preset_id=<id>
-// 可附加过滤: &scope=work &source=highlight &is_processed=false
-// 返回 Array<UserPortrait>
+// ── 2.2a. GET /api/memory/plasmids/?preset_id=<id>
+// 查询该 preset 及其全局（preset_id=2）条目。支持过滤：&scope=&is_processed=
+// 返回 Array<MemoryPlasmid>
 
 [
   {
     "id": 3,
     "preset": 1,
-    "conversation": 12,          // null = user_manual（非会话来源）
-    "message": 101,              // null = 非划线来源
-    "source": "highlight",       // "highlight" | "g045_tool" | "user_manual"
     "content": "量子纠缠是两个粒子…",
     "scope": "work",             // 有效值来自 scope_keywords.json + "global"；null = 处理中
     "tags": ["量子纠缠", "物理"],
+    "weight": 0.85,              // 0..1，EMA 激活权重（控制触发门槛/优先级/sticky）
     "is_processed": true,        // false = 分类中，scope/tags 暂为空
     "created_at": "2026-04-21T14:23:00Z",
     "updated_at": "2026-04-21T14:25:00Z"
   }
 ]
 
-// ── 2.2b. GET /api/memory/portraits/tags/?preset_id=<id>
+// ── 2.2b. GET /api/memory/plasmids/tags/?preset_id=<id>
 // 返回该 preset 下所有已有 tag（去重、排序），供 autocomplete 使用
-// 注意：此路由必须在 /portraits/<pk>/ 之前匹配
+// 注意：此路由必须在 /plasmids/<pk>/ 之前匹配
 
 ["爱好", "物理", "量子纠缠"]
 
-// ── 2.2c. POST /api/memory/portraits/ — 用户手动新增（user_manual）
+// ── 2.2c. POST /api/memory/plasmids/ — 用户手动新增（user_manual）
 // Request（preset_id 与 message_id 互斥，只能传其一）：
 { "preset_id": 1, "content": "我喜欢读科幻小说", "scope": "写作", "tags": ["科幻"] }
 // scope 可选，有效值来自 scope_keywords.json + "global"；传无效值 → 400
-// 省略 scope → 自动分类（is_processed 从 false 变为 true）
-// 提供 scope → 直接写入，跳过自动分类
+// 省略 scope → 自动分类（is_processed=false，异步填充）
+// 提供 scope → 直接写入，is_processed=true，跳过自动分类
+// Response (201)：完整 MemoryPlasmid 对象
 
-// ── 2.2d. POST /api/memory/portraits/ — 划线笔记（highlight）
-{ "message_id": 101, "content": "量子纠缠是两个粒子…" }
-// preset / conversation 自动从 message 所属会话派生；自动触发分类
+// ── 2.2d. POST /api/memory/plasmids/ — 划线笔记（highlight）
+// ⚠️ 行为变更：highlight 路径现在创建 ChronicleEntry(kind="highlight")，不是 MemoryPlasmid。
+// { "message_id": 101, "content": "量子纠缠是两个粒子…" }
+// preset / conversation 从 message 所属会话自动派生
+// Response (201)：ChronicleEntry 对象，非 MemoryPlasmid
 
-// ── 2.2e. PATCH /api/memory/portraits/<pk>/
-// 可编辑字段：content / scope / tags（三者可单独或组合）
-// - content 仅 preset_id=2（用户全局记忆）可编辑；agent 条目 → 403
-// - scope 设有效值（scope_keywords.json 中 + "global" 兜底）→ 写入并置 is_processed=true
-// - scope 传 null → 清除 scope，is_processed 保持不变（不重触发分类）
-// - tags 修改不影响 is_processed
-
+// ── 2.2e. PATCH /api/memory/plasmids/<pk>/
+// 可编辑字段：content / tags / scope
+// - content 仅 preset_id=2（用户全局记忆）可编辑；非全局条目 → 403
+// - scope 传入有效值（scope_keywords.json + "global"）→ 写入并置 is_processed=true
+// - scope 传 null → 清除 scope，is_processed 保持不变
+// - tags 为 JSON 数组，修改不影响 is_processed
+//
 // Request 示例：
-{ "scope": "life" }                       // 增改 scope
-{ "scope": null }                         // 清除 scope
-{ "content": "修改后的内容", "scope": "work", "tags": ["新标签"] }  // 同时编辑三个字段
+{ "scope": "life" }
+{ "scope": null }
+{ "content": "修改后的内容", "scope": "work", "tags": ["新标签"] }
+// Response：完整更新后的 MemoryPlasmid 对象
 
-// Response：返回完整更新后的 UserPortrait 对象
-
-// ── 2.2f. DELETE /api/memory/portraits/<pk>/  → 204 No Content
+// ── 2.2f. DELETE /api/memory/plasmids/<pk>/
+// Header: X-Preset-ID: <caller_preset_id>   // 仅条目所属 preset 可删除，否则 → 403
+// → 204 No Content
 
 
 2.3  GET/PUT /api/memory/scope-keywords/  — Scope 关键词表
@@ -521,16 +518,12 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 ┌─────────────────────┬──────────┬──────────────────┬──────────────────────────────┐
 │ 模型                │ 字段名   │ 类型             │ 前端可操作                   │
 ├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┤
-│ UserPortrait         │ scope    │ CharField(50)    │ PATCH 可编辑；新建可选填      │
-│ (memory/portraits/)  │          │                  │ 有效值来自 scope_keywords     │
-│                     │          │                  │ + "global" 兜底              │
+│ MemoryPlasmid        │ scope    │ CharField(50)    │ PATCH 可编辑；新建可选填      │
+│ (memory/plasmids/)   │          │                  │ 有效值来自 scope_keywords     │
+│                      │          │                  │ + "global" 兜底              │
 ├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┤
 │ KnowledgeFragment   │ topic    │ CharField(100)   │ PATCH 可编辑；列表 ?topic=   │
 │ (memory/knowledge/) │          │                  │ 过滤                        │
-├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┤
-│ TriggeredNote        │ scope    │ JSONField(list)  │ 只读，自动生成               │
-│ (agents/triggered-  │          │                  │                              │
-│  notes/)            │          │                  │                              │
 ├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┤
 │ ChronicleEntry      │ scope    │ CharField(50)    │ CRUD 可编辑                  │
 │ (agents/chronicle/) │          │                  │ 值: 表 / 里（可扩展）         │
@@ -740,6 +733,8 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
   "deepseek_api_key":                  "",
   "google_calendar_id":               "user@gmail.com",
   "google_calendar_credentials_path": "/path/to/gcal.json",
+  "google_calendar_extra_ids":       ["en.de#sports@group.v.calendar.google.com"],
+  "google_calendar_delegation_user": "",
 
   "self_check_preset_ids":  [1],      // G045 preset IDs allowed to self-check
   "deep_org_preset_ids":    [1],      // G045 preset IDs allowed deep-organize
@@ -759,34 +754,58 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
   "model_extract_chunk_metadata": "",           // [deprecated] 改用 model_roles.sub_agent
 
   "model_roles": {                              // 模型角色 → 模型ID 映射（空字符串 = 使用硬编码默认）
-    "sub_agent":  "deepseek-v4-flash",          // 后台杂活：子代理 / 压实 / 摘要 / 记忆整理
-    "vision":     "gemini-2.5-flash",           // 识图
-    "image_gen":  "gemini-3-pro-image-preview", // 生图 (tool 类型)
-    "web_search": "gemini-2.5-flash-lite"       // 联网搜索 (SearchAgent)
+    // ── Google Services（锁定 Gemini — 底层调用 Google API） ──
+    "web_search":          "gemini-2.5-flash",        // 联网搜索 (SearchAgent, Google Grounding)
+    "vision":              "gemini-2.5-flash-lite",   // 图片/图表识别 (ImageDescriber, Google Vision)
+    "calendar_sub_agent":  "gemini-2.5-flash",        // 日历/任务读写 (CalendarSubAgent, Google Calendar)
+    "image_gen":           "gemini-3-pro-image-preview", // 图片生成 (tool 类型, Google Imagen)
+    // ── 文书工作 / Provider-Neutral（可自由切换 provider） ──
+    "sub_agent":           "deepseek-v4-flash"        // 异步子代理 (summarize/translate/code_review/data_extract)
   },
   // Agent 自己的模型走 AgentPreset.default_model → settings.DEFAULT_MODEL，不在此处
 
   "key_map": {                              // platform → role → {keys, default}
     "deepseek": {
-      "system":       {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
-      "main_session": {"keys": ["我的主力key"],         "default": "我的主力key"},
-      "sub_agent":    {"keys": ["ds-bg"],               "default": "ds-bg"},
-      "vision":       {"keys": [],                      "default": null},
-      "image_gen":    {"keys": [],                      "default": null},
-      "web_search":   {"keys": [],                      "default": null}
+      "system":              {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
+      "main_session":        {"keys": ["我的主力key"],         "default": "我的主力key"},
+      "sub_agent":           {"keys": ["ds-bg"],               "default": "ds-bg"},
+      "vision":              {"keys": [],                      "default": null},
+      "image_gen":           {"keys": [],                      "default": null},
+      "web_search":          {"keys": [],                      "default": null},
+      "calendar_sub_agent":  {"keys": [],                      "default": null}
     },
     "gemini": {
-      "system":       {"keys": ["gem-paid"], "default": "gem-paid"},
-      "main_session": {"keys": [],            "default": null},
-      "sub_agent":    {"keys": [],            "default": null},
-      "vision":       {"keys": [],            "default": null},
-      "image_gen":    {"keys": [],            "default": null},
-      "web_search":   {"keys": [],            "default": null}
+      "system":              {"keys": ["gem-paid"], "default": "gem-paid"},
+      "main_session":        {"keys": [],            "default": null},
+      "sub_agent":           {"keys": [],            "default": null},
+      "vision":              {"keys": [],            "default": null},
+      "image_gen":           {"keys": [],            "default": null},
+      "web_search":          {"keys": [],            "default": null},
+      "calendar_sub_agent":  {"keys": [],            "default": null}
     }
   },
 
   "updated_at": "2026-04-25T10:00:00Z"
 }
+
+// ── Google Calendar 多日历字段说明 ──
+// google_calendar_extra_ids:
+//   额外订阅日历的 ID 列表（JSON 数组）。这些日历的事件会被定时同步和
+//   CalendarSubAgent 查询拉取。公开订阅日历（足球赛程、公共假期等）直接
+//   填入 calendar ID 即可，无需 domain-wide delegation。
+//   获取方式：Google Calendar 网页版 → 左侧日历 → 三个点 → "设置和共享"
+//   → "整合日历" → 复制"日历 ID"。
+//
+//   **分层缓存策略**：
+//   - 定时 brief（每天 7:00/14:00/21:00）：主日历每次新鲜拉取，额外日历
+//     每天首次拉取后缓存（subscribed_events_cache.json），当天后续同步复用缓存
+//   - CalendarSubAgent（delegate_calendar 按需查询）：全量日历新鲜拉取
+//
+// google_calendar_delegation_user:
+//   域范围委托用户邮箱。仅在 G Suite 管理员配置了 domain-wide delegation
+//   后生效，用于 calendarList().list() 发现用户可访问的日历列表。
+//   空字符串 = 不启用委托，服务账号以自身身份调用 API。
+//   注意：公开订阅日历不需要此配置，直接加到 extra_ids 即可。
 
 // ── 5.1b. PATCH
 // 部分更新。任何以 "****" 开头的 key 字段视为未修改，忽略。
@@ -874,20 +893,22 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 // ── Request:
 {
   "deepseek": {
-    "system":       {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
-    "main_session": {"keys": ["我的主力key"],         "default": "我的主力key"},
-    "sub_agent":    {"keys": ["ds-bg"],               "default": "ds-bg"},
-    "vision":       {"keys": [],                      "default": null},
-    "image_gen":    {"keys": [],                      "default": null},
-    "web_search":   {"keys": [],                      "default": null}
+    "system":              {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
+    "main_session":        {"keys": ["我的主力key"],         "default": "我的主力key"},
+    "sub_agent":           {"keys": ["ds-bg"],               "default": "ds-bg"},
+    "vision":              {"keys": [],                      "default": null},
+    "image_gen":           {"keys": [],                      "default": null},
+    "web_search":          {"keys": [],                      "default": null},
+    "calendar_sub_agent":  {"keys": [],                      "default": null}
   },
   "gemini": {
-    "system":       {"keys": ["gem-paid"], "default": "gem-paid"},
-    "main_session": {"keys": [],            "default": null},
-    "sub_agent":    {"keys": [],            "default": null},
-    "vision":       {"keys": [],            "default": null},
-    "image_gen":    {"keys": [],            "default": null},
-    "web_search":   {"keys": [],            "default": null}
+    "system":              {"keys": ["gem-paid"], "default": "gem-paid"},
+    "main_session":        {"keys": [],            "default": null},
+    "sub_agent":           {"keys": [],            "default": null},
+    "vision":              {"keys": [],            "default": null},
+    "image_gen":           {"keys": [],            "default": null},
+    "web_search":          {"keys": [],            "default": null},
+    "calendar_sub_agent":  {"keys": [],            "default": null}
   }
 }
 
@@ -895,20 +916,22 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 {
   "key_map": {
     "deepseek": {
-      "system":       {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
-      "main_session": {"keys": ["我的主力key"],         "default": "我的主力key"},
-      "sub_agent":    {"keys": ["ds-bg"],               "default": "ds-bg"},
-      "vision":       {"keys": [],                      "default": null},
-      "image_gen":    {"keys": [],                      "default": null},
-      "web_search":   {"keys": [],                      "default": null}
+      "system":              {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
+      "main_session":        {"keys": ["我的主力key"],         "default": "我的主力key"},
+      "sub_agent":           {"keys": ["ds-bg"],               "default": "ds-bg"},
+      "vision":              {"keys": [],                      "default": null},
+      "image_gen":           {"keys": [],                      "default": null},
+      "web_search":          {"keys": [],                      "default": null},
+      "calendar_sub_agent":  {"keys": [],                      "default": null}
     },
     "gemini": {
-      "system":       {"keys": ["gem-paid"], "default": "gem-paid"},
-      "main_session": {"keys": [],            "default": null},
-      "sub_agent":    {"keys": [],            "default": null},
-      "vision":       {"keys": [],            "default": null},
-      "image_gen":    {"keys": [],            "default": null},
-      "web_search":   {"keys": [],            "default": null}
+      "system":              {"keys": ["gem-paid"], "default": "gem-paid"},
+      "main_session":        {"keys": [],            "default": null},
+      "sub_agent":           {"keys": [],            "default": null},
+      "vision":              {"keys": [],            "default": null},
+      "image_gen":           {"keys": [],            "default": null},
+      "web_search":          {"keys": [],            "default": null},
+      "calendar_sub_agent":  {"keys": [],            "default": null}
     }
   }
 }
@@ -1030,8 +1053,10 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
 
 6.4  Calendar Snapshots (GCal + ExoCore merged)
 ─────────────────────────────────────────────────────────────
-后台定时任务（启动 + 每 24h）从 Google Calendar 拉取事件，与 ExoCore
-内部 ScheduleEntry 合并去重后写入 JSON 快照。Google Tasks 不在此范围内。
+后台定时任务（启动 + 每天 7:00/14:00/21:00 三次）从 Google Calendar 拉取
+事件（主日历 + google_calendar_extra_ids 中的订阅日历），与 ExoCore 内部
+ScheduleEntry 合并去重后写入 JSON 快照。订阅日历采用日期级缓存，每天仅首次
+同步时刷新。Google Tasks 不在此范围内。
 
 // ── 6.4a. GET /api/tasks/calendar/  — 90 天全量快照
 // 首次启动后立即可用；若文件尚未生成返回 503。
@@ -1054,7 +1079,9 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
       "html_link": "https://www.google.com/calendar/event?eid=...",
       "entry_type": null,                      // null for GCal events
       "status": null,
-      "exocore_entry_id": null                 // null for GCal events
+      "exocore_entry_id": null,                // null for GCal events
+      "calendar_name": "xinyikathy@gmail.com", // 来源日历名称
+      "calendar_id": "xinyikathy@gmail.com"    // 来源日历 ID
     },
     {
       "id": "exo_5",
@@ -1068,7 +1095,9 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
       "html_link": "https://www.google.com/calendar/event?eid=...",  // if synced
       "entry_type": "todo",
       "status": "active",
-      "exocore_entry_id": 5
+      "exocore_entry_id": 5,
+      "calendar_name": null,                   // null for ExoCore entries
+      "calendar_id": null
     },
     {
       "id": "4dlo979grhe8hei2u9ikukv94g",
@@ -1082,13 +1111,19 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
       "html_link": "https://www.google.com/calendar/event?eid=...",
       "entry_type": null,
       "status": null,
-      "exocore_entry_id": null
+      "exocore_entry_id": null,
+      "calendar_name": "xinyikathy@gmail.com",
+      "calendar_id": "xinyikathy@gmail.com"
     }
   ]
 }
 
 // 去重规则: ExoCore 条目如已同步到 GCal (gcal_event_id 匹配某 GCal 事件),
 // 则仅保留 GCal 版本，不重复出现。
+//
+// calendar_name / calendar_id: 标识事件来源日历。GCal 事件携带其所属日历的
+// 名称和 ID；ExoCore 内部条目这两个字段为 null。前端可据此区分主日历事件与
+// 订阅日历事件（如 [德甲赛程]）。
 
 // ── 6.4b. GET /api/tasks/calendar/today/  — 48h 快照
 // calendar_schedule.json 的子集，供 timeline / routine 近期提醒。
@@ -1341,21 +1376,35 @@ GET /api/tasks/completions/?entry=<pk>
 9.4  POST /api/agents/registers/<pk>/ack/  — 通知查看回执
 ─────────────────────────────────────────────────────────────
 用途：用户操作通知后回调，将 Register 内容前缀 [推送通知] 替换为用户行为。
+后端通过 subscription_endpoint 反查 PushSubscription.device_name，
+将设备名写入前缀，供 Superior 后续读到 Register 时知晓在哪台设备上操作。
 
 // Request:
 // POST /api/agents/registers/42/ack/?preset_id=6
-{ "action": "navigate" }     // "navigate" | "dismiss"
+{
+  "action": "navigate",                              // "navigate" | "dismiss"
+  "subscription_endpoint": "https://fcm.googleapis.com/fcm/send/..."  // 可选，SW 自动获取
+}
 
 // action 含义:
 //   navigate = 用户点击了「跳转」按钮或通知主体（已跳转查看）
 //   dismiss  = 用户点击了「关闭」按钮（明确忽略）
 
-// Response (200):
-// navigate → 前缀替换为 [已被用户查看]
-{ "id": 42, "content": "[已被用户查看] 编译完成" }
+// subscription_endpoint:
+//   Service Worker 从 pushManager.getSubscription().endpoint 获取，前端透传。
+//   后端据此查找 PushSubscription.device_name，生成含设备名的前缀。
+//   省略或查不到时 fallback 为不含设备名的旧格式。
 
-// dismiss → 前缀替换为 [已被用户忽略]
-{ "id": 43, "content": "[已被用户忽略] 编译完成" }
+// Response (200) — 有设备名:
+// navigate → 前缀替换为 [用户已在"PC"上查看]
+{ "id": 42, "content": "[用户已在\"PC\"上查看] 编译完成" }
+
+// dismiss → 前缀替换为 [用户已在"PC"上忽略]
+{ "id": 43, "content": "[用户已在\"PC\"上忽略] 编译完成" }
+
+// Response (200) — 无设备名 / 未传 endpoint（fallback）:
+{ "id": 44, "content": "[已被用户查看] 编译完成" }
+{ "id": 45, "content": "[已被用户忽略] 编译完成" }
 
 // 404: { "error": "Register id=42 not found for preset 6" }
 // 400: { "error": "preset_id query param is required" }

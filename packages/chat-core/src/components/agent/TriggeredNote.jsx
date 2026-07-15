@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 /* ── Geometric SVG icons ── */
 const IconPulse = ({ size = 12 }) => (
@@ -18,24 +18,32 @@ const IconPersist = ({ size = 10 }) => (
   </svg>
 );
 
-const TriggeredNote = ({ anchors = [] }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+const TriggeredNote = ({ plasmids = [] }) => {
+  const [currentIndex, setCurrentIndex] = useState(() =>
+    plasmids.length > 0 ? Math.floor(Math.random() * plasmids.length) : 0,
+  );
   const [isFading, setIsFading] = useState(true);
+  const prevLength = useRef(plasmids.length);
 
   useEffect(() => {
-    if (anchors.length <= 1) return;
+    if (plasmids.length <= 1) return;
+    // Reset index if array content changed significantly
+    if (prevLength.current !== plasmids.length) {
+      setCurrentIndex(Math.floor(Math.random() * plasmids.length));
+      prevLength.current = plasmids.length;
+    }
     const timer = setInterval(() => {
       setIsFading(false);
       setTimeout(() => {
-        setCurrentIndex(prev => (prev + 1) % anchors.length);
+        setCurrentIndex(prev => (prev + 1) % plasmids.length);
         setIsFading(true);
       }, 400);
     }, 8000);
     return () => clearInterval(timer);
-  }, [anchors.length]);
+  }, [plasmids.length]);
 
   /* ── Empty state ── */
-  if (anchors.length === 0) {
+  if (plasmids.length === 0) {
     return (
       <div
         className="h-16 flex items-center justify-center tx-decoration-mute"
@@ -54,9 +62,12 @@ const TriggeredNote = ({ anchors = [] }) => {
     );
   }
 
-  const anchor = anchors[currentIndex];
-  const keywords = (anchor.keywords || '').split(',').map(k => k.trim()).filter(Boolean).slice(0, 2);
-  const needsScroll = anchor.note && anchor.note.length > 80;
+  const plasmid = plasmids[currentIndex];
+  const content = plasmid.content || '';
+  const tags = (plasmid.tags || []).slice(0, 2);
+  const weight = plasmid.weight != null ? plasmid.weight : 0;
+  const isPersistent = weight >= 0.9;
+  const needsMarquee = content.length > 40;
 
   return (
     <div
@@ -81,7 +92,7 @@ const TriggeredNote = ({ anchors = [] }) => {
               className="flex gap-1.5 overflow-x-auto whitespace-nowrap h-full items-center"
               style={{ scrollbarWidth: 'none', paddingRight: '40px' }}
             >
-              {keywords.map((kw, i) => (
+              {tags.map((tag, i) => (
                 <span
                   key={i}
                   className="tx-decoration-mute tracking-widest whitespace-nowrap flex-shrink-0"
@@ -89,7 +100,7 @@ const TriggeredNote = ({ anchors = [] }) => {
                     fontSize: '9px',
                     padding: '2px 8px',
                     borderRadius: '2px',
-                    ...(anchor.is_persistent
+                    ...(isPersistent
                       ? {
                           background: 'rgba(255,74,8,0.12)',
                           color: 'var(--cinder-flame)',
@@ -102,7 +113,7 @@ const TriggeredNote = ({ anchors = [] }) => {
                         }),
                   }}
                 >
-                  {kw}
+                  {tag}
                 </span>
               ))}
             </div>
@@ -117,11 +128,11 @@ const TriggeredNote = ({ anchors = [] }) => {
 
           {/* Weight badge */}
           <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-            {anchor.is_persistent && (
+            {isPersistent && (
               <span
                 className="animate-pulse"
                 style={{ color: 'var(--cinder-flame)', display: 'flex', alignItems: 'center' }}
-                title="Persistent Weight"
+                title="High-Weight Plasmid"
               >
                 <IconPersist size={10} />
               </span>
@@ -137,33 +148,40 @@ const TriggeredNote = ({ anchors = [] }) => {
                 minWidth: '34px',
               }}
             >
-              {anchor.weight != null ? anchor.weight.toFixed(2) : '0.00'}
+              {weight.toFixed(2)}
             </span>
           </div>
         </div>
 
-        {/* Essential note — tx-system-mute for readability */}
+        {/* Content — horizontal marquee for long text */}
         <div className="h-10 overflow-hidden">
-          <div className="h-full overflow-hidden">
+          <div className="h-full overflow-hidden whitespace-nowrap">
             <p
-              key={currentIndex}
-              className="tracking-tight italic whitespace-pre-wrap tx-system-mute"
+              className="tracking-tight italic tx-system-mute"
               style={{
-                ...(needsScroll
-                  ? { animation: 'ticker-scroll 8s linear infinite' }
+                whiteSpace: 'nowrap',
+                display: 'inline-block',
+                ...(needsMarquee
+                  ? {
+                      animation: `plasmid-marquee ${Math.max(content.length * 0.15, 4)}s linear infinite`,
+                      paddingRight: '40px',
+                    }
                   : {}),
               }}
             >
-              "{anchor.note}"
+              "{content}"
+              {needsMarquee && (
+                <span style={{ paddingLeft: '40px' }}>"{content}"</span>
+              )}
             </p>
           </div>
         </div>
       </div>
 
       <style>{`
-        @keyframes ticker-scroll {
-          0% { transform: translateY(0); }
-          90%, 100% { transform: translateY(calc(-1 * (100% - 2.5rem))); }
+        @keyframes plasmid-marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
         }
       `}</style>
     </div>

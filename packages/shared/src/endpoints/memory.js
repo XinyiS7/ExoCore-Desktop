@@ -1,24 +1,24 @@
 import { apiFetch } from '../api';
 
-// ── UserPortrait (§2.2) ──
-export function listPortraits(params = {}) {
+// ── MemoryPlasmid (§2.2) ──
+export function listPlasmids(params = {}) {
   // params: preset_id, scope, source, is_processed
-  return apiFetch('/api/memory/portraits/', { method: 'GET', params });
+  return apiFetch('/api/memory/plasmids/', { method: 'GET', params });
 }
-export function createPortrait(data) {
+export function createPlasmid(data) {
   // preset_id or message_id (mutually exclusive), content, scope?, tags?
-  return apiFetch('/api/memory/portraits/', { method: 'POST', body: data });
+  return apiFetch('/api/memory/plasmids/', { method: 'POST', body: data });
 }
-export function updatePortrait(portraitId, data) {
+export function updatePlasmid(plasmidId, data) {
   // PATCH: content (only preset_id=2), scope, tags
-  return apiFetch(`/api/memory/portraits/${portraitId}/`, { method: 'PATCH', body: data });
+  return apiFetch(`/api/memory/plasmids/${plasmidId}/`, { method: 'PATCH', body: data });
 }
-export function deletePortrait(portraitId) {
-  return apiFetch(`/api/memory/portraits/${portraitId}/`, { method: 'DELETE' });
+export function deletePlasmid(plasmidId) {
+  return apiFetch(`/api/memory/plasmids/${plasmidId}/`, { method: 'DELETE' });
 }
-export function listPortraitTags(presetId) {
-  // GET /api/memory/portraits/tags/?preset_id=<id> — must match BEFORE /portraits/<pk>/
-  return apiFetch('/api/memory/portraits/tags/', { method: 'GET', params: { preset_id: presetId } });
+export function listPlasmidTags(presetId) {
+  // GET /api/memory/plasmids/tags/?preset_id=<id> — must match BEFORE /plasmids/<pk>/
+  return apiFetch('/api/memory/plasmids/tags/', { method: 'GET', params: { preset_id: presetId } });
 }
 
 // ── KnowledgeFragment (§2.1) ──
