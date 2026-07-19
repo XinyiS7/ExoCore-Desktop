@@ -178,8 +178,6 @@ error payload (commit 6 shape):
 | deep_org_weekday | int | 0=Mon |
 | deep_org_hour | int | 0-23 |
 | model_generate_abstract | string | |
-| model_roles | object/list | **[已废弃]** 将在 P1-11 commit 7 移除；使用 §3.8 |
-| key_map | object | **[已废弃]** 将在 P1-11 commit 7 移除；使用 Endpoint.api_key FK |
 | updated_at | datetime | |
 
 ### 3.2 GET `/api/core/models/` — 旧模型列表（兼容）
@@ -301,23 +299,19 @@ key_value write-only，响应不返回。last_four 自动提取。
 - style_shadow：model name 字符串或 null (auto → general_sub_agent)
 - main 的 style_shadow model 必须 enabled + fc ability + family 兼容 endpoint
 
-### 3.8 PUT `/api/core/config/key-map/` — Key Map
-
-**[已废弃]** 将在 P1-11 commit 7 移除。使用 Endpoint.api_key FK (§3.5) 替代。
-
-### 3.9 Projects — 项目管理
+### 3.8 Projects — 项目管理
 
 **GET /api/core/projects/** — 列表，title/description/work_dir
 
 **POST /api/core/projects/** / **PATCH** / **DELETE** — 删除触发 archive
 
-### 3.10 Project Files — 项目文件
+### 3.9 Project Files — 项目文件
 
 **POST /api/core/projects/<project_pk>/files/** — multipart 上传
 
 **DELETE /api/core/projects/<project_pk>/files/<pk>/** — 删除文件 + KnowledgeFragment
 
-### 3.11 Tweets — 时间线推文
+### 3.10 Tweets — 时间线推文
 
 **GET /api/core/tweets/** — 列表（支持回复嵌套）
 
