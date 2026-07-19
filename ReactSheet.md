@@ -438,6 +438,7 @@ SSE 和 async polling 共用的稳定 error payload：
 | `rate_limited` | HTTP 429 | true |
 | `service_unavailable` | HTTP 5xx | true |
 | `target_resolution_error` | resolver 失败 | false |
+| `protocol_error` | provider 返回违反 gateway 契约的数据 | false |
 
 ### target_resolution_error 子 code
 
