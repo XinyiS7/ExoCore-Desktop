@@ -9,8 +9,11 @@ export function getModelInfo(modelId) {
 
 /** Get the list of main role configurations from the model catalog roles. */
 export function getMainRoles(catalog) {
-  if (!catalog || !Array.isArray(catalog.roles)) return [];
-  return catalog.roles.filter(r => r.role === 'main');
+  if (!catalog || !catalog.roles) return [];
+  if (Array.isArray(catalog.roles)) {
+    return catalog.roles.filter(r => r.role === 'main');
+  }
+  return catalog.roles.main || [];
 }
 
 /** Get configured and enabled compatible endpoints for a given model. */
@@ -30,17 +33,28 @@ export function getCompatibleEndpoints(catalog, modelName) {
 export function resolveInitialSessionTarget(catalog, preset) {
   const model = preset?.default_model || '';
   
+  let mainRolesList = [];
+  if (catalog?.roles) {
+    if (Array.isArray(catalog.roles)) {
+      mainRolesList = catalog.roles.filter(r => r.role === 'main');
+    } else {
+      mainRolesList = catalog.roles.main || [];
+    }
+  }
+
   if (!model) {
     // Fallback to the first registered main role model
-    const firstMain = catalog?.roles?.find(r => r.role === 'main');
-    return { model: firstMain?.model || '', endpoint: firstMain?.endpoint || null };
+    const firstMain = mainRolesList[0];
+    const defaultEndpoint = firstMain ? (firstMain.default_endpoint || firstMain.endpoint) : null;
+    return { model: firstMain?.model || '', endpoint: defaultEndpoint };
   }
   
   // Find the registered main configuration for this model
-  const mainEntry = catalog?.roles?.find(r => r.role === 'main' && r.model === model);
+  const mainEntry = mainRolesList.find(r => r.model === model);
   
   if (mainEntry) {
-    return { model, endpoint: mainEntry.endpoint };
+    const defaultEndpoint = mainEntry.default_endpoint || mainEntry.endpoint;
+    return { model, endpoint: defaultEndpoint };
   }
   
   const compatible = getCompatibleEndpoints(catalog, model);

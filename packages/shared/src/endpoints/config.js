@@ -42,13 +42,6 @@ export function deleteApiKey(alias) {
   return apiFetch(`/api/core/apikeys/${encodeURIComponent(alias)}/`, { method: 'DELETE' });
 }
 
-// ── Key Map (§5.4) ──
-
-/** PUT /api/core/config/key-map/ — assign keys to roles per platform */
-export function updateKeyMap(keyMap) {
-  return apiFetch('/api/core/config/key-map/', { method: 'PUT', body: keyMap });
-}
-
 // ── Model Catalog & Endpoints & Roles (P1-11) ──
 
 /** GET /api/core/model-catalog/ — 统一获取模型与端点快照 */

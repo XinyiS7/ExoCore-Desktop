@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Edit3, Activity, Save } from 'lucide-react';
-import { baseUrl, getCsrfToken, MAIN_MODEL_IDS } from 'exo-shared';
+import { baseUrl, getCsrfToken, MAIN_MODEL_IDS, configApi } from 'exo-shared';
 import { ModalShell, Button, FIELD_INPUT, FIELD_AREA } from '../ui';
 
 const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
   const [form, setForm] = useState({ name: '', description: '', default_model: '', system_prompt: '' });
   const [isSaving, setIsSaving] = useState(false);
   const isSystemPromptOnly = mode === 'system_prompt';
+
+  const [models, setModels] = useState(MAIN_MODEL_IDS);
 
   useEffect(() => {
     if (preset) {
@@ -18,6 +20,28 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
       });
     }
   }, [preset]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    configApi.getModelCatalog()
+      .then(catalog => {
+        let mainRolesList = [];
+        if (catalog?.roles) {
+          if (Array.isArray(catalog.roles)) {
+            mainRolesList = catalog.roles.filter(r => r.role === 'main');
+          } else {
+            mainRolesList = catalog.roles.main || [];
+          }
+        }
+        const mainNames = [...new Set(mainRolesList.map(r => r.model))];
+        if (mainNames.length > 0) {
+          setModels(mainNames);
+        }
+      })
+      .catch(() => {
+        setModels(MAIN_MODEL_IDS);
+      });
+  }, [isOpen]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -78,7 +102,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved, mode }) => {
               value={form.default_model}
               onChange={e => setForm(p => ({ ...p, default_model: e.target.value }))}
             >
-              {MAIN_MODEL_IDS.map(m => <option key={m} value={m} className="bg-exo-pure">{m}</option>)}
+              {models.map(m => <option key={m} value={m} className="bg-exo-pure">{m}</option>)}
             </select>
           </div>
           <div className="space-y-3 col-span-2">

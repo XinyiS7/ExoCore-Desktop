@@ -96,17 +96,15 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
     let ignore = false;
     configApi.getModelCatalog().then(catalog => {
       if (ignore) return;
-      const mainRole = catalog.roles?.find(r => r.role === 'main');
-      const mainEpId = mainRole?.endpoint;
-      
-      let eligibleModels = catalog.models || [];
-      if (mainEpId) {
-        eligibleModels = eligibleModels.filter(m => 
-          m.compatible_endpoint_ids?.includes(mainEpId)
-        );
+      let mainRolesList = [];
+      if (catalog?.roles) {
+        if (Array.isArray(catalog.roles)) {
+          mainRolesList = catalog.roles.filter(r => r.role === 'main');
+        } else {
+          mainRolesList = catalog.roles.main || [];
+        }
       }
-      
-      const mainNames = eligibleModels.map(m => m.name);
+      const mainNames = [...new Set(mainRolesList.map(r => r.model))];
       setMainModels(mainNames.length > 0 ? mainNames : MAIN_MODEL_IDS);
     }).catch(() => {
       if (!ignore) setMainModels(MAIN_MODEL_IDS);

@@ -135,14 +135,20 @@ export default function ControlsDrawer({
    }}
    className="bg-transparent outline-none text-[0.6875rem] font-sans tx-system-normal opacity-50 cursor-pointer max-w-[140px] truncate hover:tx-system-normal opacity-80 transition-colors"
   >
-   {(() => {
-     const registeredMainModels = catalog?.roles
-       ? [...new Set(catalog.roles.filter(r => r.role === 'main').map(r => r.model))]
-       : [];
-     return registeredMainModels.map(modelName => (
-       <option key={modelName} value={modelName} className="bg-exo-pure tx-system-normal">{modelName}</option>
-     ));
-   })()}
+    {(() => {
+      let mainRolesList = [];
+      if (catalog?.roles) {
+        if (Array.isArray(catalog.roles)) {
+          mainRolesList = catalog.roles.filter(r => r.role === 'main');
+        } else {
+          mainRolesList = catalog.roles.main || [];
+        }
+      }
+      const registeredMainModels = [...new Set(mainRolesList.map(r => r.model))];
+      return registeredMainModels.map(modelName => (
+        <option key={modelName} value={modelName} className="bg-exo-pure tx-system-normal">{modelName}</option>
+      ));
+    })()}
   </select>
 
   <span className="tx-system-mute opacity-12 text-[0.5625rem] select-none flex-shrink-0">|</span>

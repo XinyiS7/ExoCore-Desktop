@@ -75,23 +75,40 @@ export default function ModelAssignPanel() {
   };
 
   const initializeState = (data) => {
-    // 1. Extract main role configs (there can be multiple main entries)
-    const mains = data.roles?.filter(r => r.role === 'main') || [];
-    const mainEntries = mains.map(mr => ({
+    // 1. Extract main role configs
+    let mains = [];
+    if (data.roles) {
+      if (Array.isArray(data.roles)) {
+        mains = data.roles.filter(r => r.role === 'main');
+      } else {
+        mains = data.roles.main || [];
+      }
+    }
+    const mainEntries = mains.map((mr, idx) => ({
       model: mr.model || '',
-      endpoint: mr.endpoint || null,
-      style_shadow: mr.style_shadow || ''
+      endpoint: mr.default_endpoint || mr.endpoint || null,
+      style_shadow: mr.style_shadow || 'auto',
+      position: mr.position ?? idx
     }));
+    // Sort by position to preserve user ordering
+    mainEntries.sort((a, b) => a.position - b.position);
     setMainRoles(mainEntries);
     setInitialMainRoles(JSON.parse(JSON.stringify(mainEntries)));
 
     // 2. Extract 1-to-1 helper role configs
     const others = {};
     OTHER_MODEL_ROLES.forEach(({ key }) => {
-      const found = data.roles?.find(r => r.role === key);
+      let found = null;
+      if (data.roles) {
+        if (Array.isArray(data.roles)) {
+          found = data.roles.find(r => r.role === key);
+        } else if (data.roles.support) {
+          found = data.roles.support[key];
+        }
+      }
       others[key] = {
         model: found?.model || '',
-        endpoint: found?.endpoint || null
+        endpoint: found?.default_endpoint || found?.endpoint || null
       };
     });
     setOtherRoles(others);
@@ -104,7 +121,7 @@ export default function ModelAssignPanel() {
 
   // Handlers for Main Models Registry
   const handleAddMainRole = () => {
-    setMainRoles(prev => [...prev, { model: '', endpoint: null, style_shadow: '' }]);
+    setMainRoles(prev => [...prev, { model: '', endpoint: null, style_shadow: 'auto' }]);
   };
 
   const handleRemoveMainRole = (index) => {
@@ -177,22 +194,45 @@ export default function ModelAssignPanel() {
   const handleSave = async () => {
     if (!canSave) return;
     clearFeedback();
+
+    // ── Validation ──
+    if (mainRoles.length === 0) {
+      setFeedback({ type: 'error', msg: '请至少配置一个主模型角色 (Main Role)' });
+      return;
+    }
+    for (let i = 0; i < mainRoles.length; i++) {
+      if (!mainRoles[i].model || !mainRoles[i].endpoint) {
+        setFeedback({ type: 'error', msg: `主模型配置不完整 (第 ${i + 1} 行)，请确保模型和端点已选择` });
+        return;
+      }
+    }
+    for (const r of OTHER_MODEL_ROLES) {
+      const otherVal = otherRoles[r.key];
+      if (!otherVal || !otherVal.model || !otherVal.endpoint) {
+        setFeedback({ type: 'error', msg: `辅助角色 "${r.label}" 配置不完整，必须配齐所有辅助模型与端点` });
+        return;
+      }
+    }
+
     setSaving(true);
     try {
-      // Compile final payload combining list of mains and single others
-      const payload = [
-        ...mainRoles.map(mr => ({
-          role: 'main',
+      // Compile final payload into the new nested structure { main, support }
+      const payload = {
+        main: mainRoles.map((mr, idx) => ({
           model: mr.model,
-          endpoint: mr.endpoint,
-          style_shadow: mr.style_shadow || null
+          default_endpoint: mr.endpoint,
+          style_shadow: (mr.style_shadow === 'auto' || !mr.style_shadow) ? null : mr.style_shadow,
+          position: mr.position ?? idx
         })),
-        ...OTHER_MODEL_ROLES.map(({ key }) => ({
-          role: key,
+        support: {}
+      };
+      
+      OTHER_MODEL_ROLES.forEach(({ key }) => {
+        payload.support[key] = {
           model: otherRoles[key]?.model || '',
-          endpoint: otherRoles[key]?.endpoint || null
-        }))
-      ];
+          default_endpoint: otherRoles[key]?.endpoint || null
+        };
+      });
       
       await configApi.updateModelRoles(payload);
       
@@ -314,11 +354,11 @@ export default function ModelAssignPanel() {
                       {/* Style Shadow Select */}
                       <div className="col-span-3">
                         <select
-                          value={mr.style_shadow || ''}
+                          value={mr.style_shadow || 'auto'}
                           onChange={e => handleMainFieldChange(idx, 'style_shadow', e.target.value)}
                           className="w-full appearance-none bg-chat-bg border border-cinder-line rounded px-2.5 py-1.5 text-xs font-mono tx-system-normal outline-none focus:border-chat-accent/30 cursor-pointer"
                         >
-                          <option value="">— 无影子 (None) —</option>
+                          <option value="auto">Auto / 自动 (通用 sub-agent)</option>
                           {getFcModels().map(m => (
                             <option key={m.name} value={m.name}>{m.name}</option>
                           ))}
