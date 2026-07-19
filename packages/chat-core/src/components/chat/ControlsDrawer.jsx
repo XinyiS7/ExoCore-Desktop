@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { configApi, MODEL_REGISTRY, MAIN_MODEL_IDS, useTheme } from 'exo-shared';
-import { Cpu, Key, Palette, Check, X } from 'lucide-react';
+import { getCompatibleEndpoints, changeTargetModel, useTheme } from 'exo-shared';
+import { Cpu, Globe, Palette, Check, X } from 'lucide-react';
 import { getCustomPalettes, saveCustomPalette, deleteCustomPalette, updateCustomPalette, computeStops, getPalette, DEFAULT_PALETTE_ID, THEME_DEFAULT_LIGHT, THEME_DEFAULT_DARK, STOP_NAMES, ALL_PRESETS } from './palettes';
 
 const MAX_CUSTOM = 3;
 
 export default function ControlsDrawer({
- currentModel,
+ catalog,
+ sessionTarget,
+ setSessionTarget,
  thinkingLevel,
  temperature,
  chatMode,
@@ -27,81 +29,14 @@ export default function ControlsDrawer({
   .filter(([, p]) => p.theme === theme)
   .map(([id, p]) => p);
 
- // Key alias state
- const [aliases, setAliases] = useState([]);
- const [selectedAlias, setSelectedAlias] = useState('');
  const [memInjectEnabled, setMemInjectEnabled] = useState(() =>
- localStorage.getItem(`exo_mem_inject_${sessionId}`) !== 'false'
+  localStorage.getItem(`exo_mem_inject_${sessionId}`) !== 'false'
  );
-
- // Determine platform from current model
- const platform = MODEL_REGISTRY.find(m => m.id === currentModel)?.provider || '';
-
- // Load key_map + aliases
- const loadKeyData = useCallback(async () => {
- if (!sessionId || !platform) return;
- try {
-  const [config, keys] = await Promise.all([
-  configApi.getConfig(),
-  configApi.listApiKeys(platform),
-  ]);
-  const keyMap = config.key_map || {};
-  const platformMap = keyMap[platform] || {};
-
-  // Build alias list from keys
-  const aliasList = (Array.isArray(keys) ? keys : []).map(k => k.alias);
-  setAliases(aliasList);
-
-  // Determine default: localStorage override > session default > system default
-  const stored = localStorage.getItem(`exo_session_key_${sessionId}`);
-  if (stored && aliasList.includes(stored)) {
-  setSelectedAlias(stored);
-  return;
-  }
-
-  // New key_map format (ReactSheet §5.4): each role = {keys: [...], default: alias}
-  // Also handles legacy string format for backward compatibility
-  const getRoleDefault = (roleRef) => {
-  if (!roleRef) return null;
-  // New format: {keys, default}
-  if (typeof roleRef === 'object' && roleRef.default) {
-   return aliasList.includes(roleRef.default) ? roleRef.default : null;
-  }
-  // Legacy format: plain alias string
-  if (typeof roleRef === 'string' && aliasList.includes(roleRef)) {
-   return roleRef;
-  }
-  return null;
-  };
-
-  const def = getRoleDefault(platformMap.session)
-  || getRoleDefault(platformMap.system)
-  || aliasList[0]
-  || '';
-  setSelectedAlias(def);
-  // Persist the resolved default so ChatArea sees it at send-time
-  if (def) {
-  localStorage.setItem(`exo_session_key_${sessionId}`, def);
-  }
- } catch {
-  // Silently fail — key selector will show empty
- }
- }, [sessionId, platform]);
-
- useEffect(() => { loadKeyData(); }, [loadKeyData]);
 
  // Re-sync memInjectEnabled when sessionId changes (toggle mounted across session switches)
  useEffect(() => {
- setMemInjectEnabled(localStorage.getItem(`exo_mem_inject_${sessionId}`) !== 'false');
+  setMemInjectEnabled(localStorage.getItem(`exo_mem_inject_${sessionId}`) !== 'false');
  }, [sessionId]);
-
- // Persist alias choice to localStorage
- const handleAliasChange = (alias) => {
- setSelectedAlias(alias);
- if (sessionId) {
-  localStorage.setItem(`exo_session_key_${sessionId}`, alias);
- }
- };
 
  // ── Color scheme state ──
  const currentPalette = getPalette(paletteId);
@@ -192,13 +127,22 @@ export default function ControlsDrawer({
   <Cpu size={10} className="tx-system-mute opacity-25 flex-shrink-0" />
 
   <select
-   value={currentModel}
-   onChange={e => onPreferenceChange({ model: e.target.value })}
+   value={sessionTarget?.model || ''}
+   onChange={e => {
+     const nextModel = e.target.value;
+     const result = changeTargetModel(catalog, sessionTarget, nextModel);
+     setSessionTarget({ model: result.model, endpoint: result.endpoint });
+   }}
    className="bg-transparent outline-none text-[0.6875rem] font-sans tx-system-normal opacity-50 cursor-pointer max-w-[140px] truncate hover:tx-system-normal opacity-80 transition-colors"
   >
-   {MAIN_MODEL_IDS.map(m => (
-   <option key={m} value={m} className="bg-exo-pure tx-system-normal">{m}</option>
-   ))}
+   {(() => {
+     const registeredMainModels = catalog?.roles
+       ? [...new Set(catalog.roles.filter(r => r.role === 'main').map(r => r.model))]
+       : [];
+     return registeredMainModels.map(modelName => (
+       <option key={modelName} value={modelName} className="bg-exo-pure tx-system-normal">{modelName}</option>
+     ));
+   })()}
   </select>
 
   <span className="tx-system-mute opacity-12 text-[0.5625rem] select-none flex-shrink-0">|</span>
@@ -283,25 +227,37 @@ export default function ControlsDrawer({
   )}
   </div>
 
-  {/* Row 2: Key Alias + Memory Injection */}
+  {/* Row 2: Endpoint + Memory Injection */}
   <div className="flex items-center gap-3">
-  <Key size={10} className="tx-system-mute opacity-25 flex-shrink-0" />
+  <Globe size={10} className="tx-system-mute opacity-25 flex-shrink-0" />
   <span className="text-[0.625rem] tx-system-mute opacity-40 flex-shrink-0">
-   Key
+   Endpoint
   </span>
-  {aliases.length > 0 ? (
-   <select
-   value={selectedAlias}
-   onChange={e => handleAliasChange(e.target.value)}
-   className="bg-transparent outline-none text-[0.6875rem] font-sans tx-system-normal opacity-50 cursor-pointer hover:tx-system-normal opacity-80 transition-colors max-w-[160px] truncate"
-   >
-   {aliases.map(a => (
-    <option key={a} value={a} className="bg-exo-pure tx-system-normal">{a}</option>
-   ))}
-   </select>
+  {sessionTarget?.model ? (
+   (() => {
+     const compatibleEndpoints = getCompatibleEndpoints(catalog, sessionTarget.model);
+     return compatibleEndpoints.length > 0 ? (
+       <select
+         value={sessionTarget.endpoint || ''}
+         onChange={e => setSessionTarget(p => ({ ...p, endpoint: e.target.value ? Number(e.target.value) : null }))}
+         className="bg-transparent outline-none text-[0.6875rem] font-sans tx-system-normal opacity-50 cursor-pointer hover:tx-system-normal opacity-80 transition-colors max-w-[160px] truncate"
+       >
+         <option value="" className="bg-exo-pure tx-system-normal">— Select Endpoint —</option>
+         {compatibleEndpoints.map(ep => (
+           <option key={ep.id} value={ep.id} className="bg-exo-pure tx-system-normal">
+             {ep.name} ({ep.provider})
+           </option>
+         ))}
+       </select>
+     ) : (
+       <span className="text-[0.625rem] tx-system-mute opacity-25 italic">
+         No compatible endpoints enabled
+       </span>
+     );
+   })()
   ) : (
    <span className="text-[0.625rem] tx-system-mute opacity-25 italic">
-   {platform ? `No keys configured for ${platform}` : 'Select a model first'}
+    Select a model first
    </span>
   )}
 

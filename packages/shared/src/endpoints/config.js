@@ -48,3 +48,60 @@ export function deleteApiKey(alias) {
 export function updateKeyMap(keyMap) {
   return apiFetch('/api/core/config/key-map/', { method: 'PUT', body: keyMap });
 }
+
+// ── Model Catalog & Endpoints & Roles (P1-11) ──
+
+/** GET /api/core/model-catalog/ — 统一获取模型与端点快照 */
+export function getModelCatalog() {
+  return apiFetch('/api/core/model-catalog/', { method: 'GET' });
+}
+
+/** GET /api/core/model-entries/ — 模型列表 */
+export function listModelEntries() {
+  return apiFetch('/api/core/model-entries/', { method: 'GET' });
+}
+
+/** POST /api/core/model-entries/ — 创建模型 */
+export function createModelEntry(data) {
+  return apiFetch('/api/core/model-entries/', { method: 'POST', body: data });
+}
+
+/** PATCH /api/core/model-entries/<id>/ — 修改模型 */
+export function updateModelEntry(id, data) {
+  return apiFetch(`/api/core/model-entries/${encodeURIComponent(id)}/`, { method: 'PATCH', body: data });
+}
+
+/** DELETE /api/core/model-entries/<id>/ — 删除模型 */
+export function deleteModelEntry(id) {
+  return apiFetch(`/api/core/model-entries/${encodeURIComponent(id)}/`, { method: 'DELETE' });
+}
+
+/** GET /api/core/endpoints/ — 获取端点通道列表 */
+export function listEndpoints() {
+  return apiFetch('/api/core/endpoints/', { method: 'GET' });
+}
+
+/** POST /api/core/endpoints/ — 创建通道端点 */
+export function createEndpoint(data) {
+  return apiFetch('/api/core/endpoints/', { method: 'POST', body: data });
+}
+
+/** PATCH /api/core/endpoints/<id>/ — 修改端点通道 */
+export function updateEndpoint(id, data) {
+  return apiFetch(`/api/core/endpoints/${encodeURIComponent(id)}/`, { method: 'PATCH', body: data });
+}
+
+/** DELETE /api/core/endpoints/<id>/ — 注销端点 */
+export function deleteEndpoint(id) {
+  return apiFetch(`/api/core/endpoints/${encodeURIComponent(id)}/`, { method: 'DELETE' });
+}
+
+/** GET /api/core/config/roles/ — 获取角色配置绑定 */
+export function getModelRoles() {
+  return apiFetch('/api/core/config/roles/', { method: 'GET' });
+}
+
+/** PUT /api/core/config/roles/ — 保存角色配置搭配 */
+export function updateModelRoles(rows) {
+  return apiFetch('/api/core/config/roles/', { method: 'PUT', body: rows });
+}

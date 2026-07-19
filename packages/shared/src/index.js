@@ -5,7 +5,7 @@ export { baseUrl, getCsrfToken, apiFetch, MODEL_REGISTRY, AVAILABLE_MODELS, MAIN
 export { fetchCurrentUser, isAuthenticated } from './auth';
 
 // Models
-export { getModelInfo } from './models';
+export { getModelInfo, getMainRoles, getCompatibleEndpoints, resolveInitialSessionTarget, changeTargetModel } from './models';
 
 // Hooks
 export { useApi } from './hooks/useApi';

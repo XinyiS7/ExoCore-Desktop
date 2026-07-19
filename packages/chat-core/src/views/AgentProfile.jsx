@@ -94,12 +94,20 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
 
   useEffect(() => {
     let ignore = false;
-    configApi.listModels().then(models => {
+    configApi.getModelCatalog().then(catalog => {
       if (ignore) return;
-      const main = (Array.isArray(models) ? models : [])
-        .filter(m => m.roles?.includes('main'))
-        .map(m => m.id);
-      setMainModels(main.length > 0 ? main : MAIN_MODEL_IDS);
+      const mainRole = catalog.roles?.find(r => r.role === 'main');
+      const mainEpId = mainRole?.endpoint;
+      
+      let eligibleModels = catalog.models || [];
+      if (mainEpId) {
+        eligibleModels = eligibleModels.filter(m => 
+          m.compatible_endpoint_ids?.includes(mainEpId)
+        );
+      }
+      
+      const mainNames = eligibleModels.map(m => m.name);
+      setMainModels(mainNames.length > 0 ? mainNames : MAIN_MODEL_IDS);
     }).catch(() => {
       if (!ignore) setMainModels(MAIN_MODEL_IDS);
     });

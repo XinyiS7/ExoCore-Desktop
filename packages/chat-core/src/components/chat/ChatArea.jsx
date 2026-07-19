@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../ui';
-import { baseUrl, getCsrfToken, MAIN_MODEL_IDS, useTheme } from 'exo-shared';
+import { baseUrl, getCsrfToken, MAIN_MODEL_IDS, useTheme, configApi, resolveInitialSessionTarget } from 'exo-shared';
 import { getAgentAvatarUrl, getUserAvatarUrl } from '../../utils/avatar';
 import { filesToAttachmentData, saveAttachments, enrichMessages, uploadFilesToAttachments } from '../../utils/attachmentStorage';
 import { formatDateSeparator, isDifferentDay } from '../../utils/time';
@@ -43,6 +43,28 @@ const applyDeltaToMessage = (msg, text, eventType) => {
  return msg;
 };
 
+const MOCK_CATALOG = {
+  models: [
+    { name: "gemini-2.5-flash", family: "gemini", abilities: ["fc", "vision", "grounding", "context_cache"], compatible_endpoint_ids: [2, 3] },
+    { name: "gemini-2.5-pro", family: "gemini", abilities: ["fc", "vision", "grounding", "context_cache"], compatible_endpoint_ids: [2, 3] },
+    { name: "deepseek-v4-flash", family: "deepseek", abilities: ["fc", "thinking"], compatible_endpoint_ids: [1] },
+    { name: "deepseek-v4-pro", family: "deepseek", abilities: ["fc", "thinking"], compatible_endpoint_ids: [1] },
+    { name: "gemini-3-pro-image", family: "gemini", abilities: ["image_gen"], compatible_endpoint_ids: [2] }
+  ],
+  endpoints: [
+    { id: 1, name: "DeepSeek 官方", provider: "deepseek", payload_format: "openai", cache_transport: "inline_chunk", attachment_transports: ["inline_text"], configured: true, enabled: true },
+    { id: 2, name: "Gemini 官方", provider: "gemini", payload_format: "gemini", cache_transport: "remote_reference", attachment_transports: ["file_uri", "inline_text", "inline_image"], configured: true, enabled: true },
+    { id: 3, name: "OpenRouter Gemini", provider: "openrouter", payload_format: "openai", cache_transport: "inline_chunk", attachment_transports: ["inline_text", "inline_image"], configured: true, enabled: true }
+  ],
+  roles: [
+    { role: "main", model: "deepseek-v4-pro", endpoint: 1 },
+    { role: "general_sub_agent", model: "deepseek-v4-flash", endpoint: 1 },
+    { role: "vision_helper", model: "gemini-2.5-flash-lite", endpoint: 2 },
+    { role: "grounding", model: "gemini-2.5-flash", endpoint: 2 },
+    { role: "image_gen", model: "gemini-3-pro-image", endpoint: 2 }
+  ]
+};
+
 const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowConvList, openNewSession, presets, headerTitleOverride, rightExtraButton, onBack, fileTree, pendingInsert, onInsertConsumed, onLoadDirectory, project }) => {
  const navigate = useNavigate();
  const location = useLocation();
@@ -61,7 +83,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  const abortControllerRef = useRef(null);
  const [thinkingLevel, setThinkingLevel] = useState("auto");
  const [temperature, setTemperature] = useState(1.0);
- const [currentModel, setCurrentModel] = useState("");
+ const [catalog, setCatalog] = useState(null);
+ const [sessionTarget, setSessionTarget] = useState({ model: "", endpoint: null });
  const [sessionType, setSessionType] = useState(() =>
  activeSessionId
   ? (localStorage.getItem(`exo_session_type_${activeSessionId}`) || 'lite')
@@ -83,6 +106,18 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  const getThemeDefaultId = (t) => {
   return t === 'light' ? THEME_DEFAULT_LIGHT : THEME_DEFAULT_DARK;
  };
+
+ useEffect(() => {
+  configApi.getModelCatalog()
+   .then(data => setCatalog(data))
+   .catch(() => setCatalog(MOCK_CATALOG));
+ }, []);
+
+ useEffect(() => {
+  if (!catalog || !sessionInfo) return;
+  const p = presets.find(x => x.id === sessionInfo.agent_preset_id);
+  setSessionTarget(resolveInitialSessionTarget(catalog, p));
+ }, [catalog, sessionInfo]);
 
  const [paletteId, setPaletteId] = useState(() => {
   const stored = activeSessionId
@@ -433,7 +468,11 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    setSessionType(st);
    localStorage.setItem(`exo_session_type_${activeSessionId}`, st);
    const p = presets.find(x => x.id === current.agent_preset_id);
-   setCurrentModel(p ? p.default_model : (MAIN_MODEL_IDS[0] || ""));
+   if (catalog) {
+    setSessionTarget(resolveInitialSessionTarget(catalog, p));
+   } else {
+    setSessionTarget({ model: p ? p.default_model : (MAIN_MODEL_IDS[0] || ""), endpoint: null });
+   }
   }
   });
 
@@ -718,15 +757,13 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   let response;
   const bodyData = {
   content: currentInput,
-  model: currentModel,
+  model: sessionTarget.model,
+  endpoint: sessionTarget.endpoint,
   session_type: sessionType,
   force_cache_rebuild: forceCacheRebuild,
   thinking_level: thinkingLevel,
   temperature: temperature,
   cache_enabled: activeSessionId && localStorage.getItem(`exo_cache_enabled_${activeSessionId}`) !== 'false',
-  ...(activeSessionId && localStorage.getItem(`exo_session_key_${activeSessionId}`)
-   ? { api_key_alias: localStorage.getItem(`exo_session_key_${activeSessionId}`) }
-   : {}),
   ...(activeSessionId && { memory_injection_enabled: localStorage.getItem(`exo_mem_inject_${activeSessionId}`) !== 'false' }),
   ...(currentPending.length > 0 || composeAttachments.some(e => e.attachmentId != null)
    ? { pending_attachments: [
@@ -913,7 +950,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  const paletteColors = livePalette || getPalette(paletteId)?.colors || {};
 
  const updatePreference = (updates) => {
- if (updates.model !== undefined) setCurrentModel(updates.model);
+ if (updates.model !== undefined) setSessionTarget(prev => ({ ...prev, model: updates.model }));
  if (updates.thinking_level !== undefined) setThinkingLevel(updates.thinking_level);
  if (updates.temperature !== undefined) setTemperature(parseFloat(updates.temperature));
 
@@ -1219,7 +1256,9 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   {/* Controls drawer — replaces old inline row */}
   {controlsExpanded && (
    <ControlsDrawer
-   currentModel={currentModel}
+   catalog={catalog}
+   sessionTarget={sessionTarget}
+   setSessionTarget={setSessionTarget}
    thinkingLevel={thinkingLevel}
    temperature={temperature}
    chatMode={chatMode}

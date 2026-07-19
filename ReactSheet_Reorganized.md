@@ -1,185 +1,120 @@
-========================================================
-  ExoCore — React 前端接口数据格式速查表（重整版）
-   最后更新：2026-07-15（Portrait/TriggeredNote → MemoryPlasmid 合并）
-========================================================
+# ExoCore — React 前端接口数据格式速查表（简明版）
 
-本文是纯数据格式速查，不是后端行为说明书。
-只包含 Request / Response 的字段、类型、枚举值。
-后端回落逻辑、DB 写入细节、内部调用链请参考 CLAUDE.md 和源码。
+本文件仅记录 Request / Response 的数据结构字段、类型、枚举值及状态码，不包含冗余的背景说明与代码逻辑解释。
 
+---
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-第一篇  会话 & 聊天 (Agents / Conversations)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 第一篇  会话 & 聊天 (Agents / Conversations)
 
-1.1  GET /api/agents/conversations/  — 会话列表
-─────────────────────────────────────────────────────────────
-返回 Array<Conversation>，已自动排除 Archived 会话。
-
+### 1.1 GET `/api/agents/conversations/` — 会话列表
+**Response (200):**
+```json
 [
   {
     "id": 12,
     "name": "关于量子纠缠的讨论",
     "created_at": "2026-03-10T14:23:00Z",
-    "last_message_at": "2026-03-10T15:01:44Z",   // 最后一条 assistant 消息时间，无则同 created_at
-
-    // 所属项目（无项目为 0）
-    "project": 3,                                  // project.id；0 = 无项目归属（API 层 sentinel，DB 存 null）
-    "project_name": "Grand-Archives",              // null = 无项目归属
-
-    // agent 快速筛选字段（返回 DB 原始类型，前端自行处理显示）
-    "agent_type": "superior",                      // "superior" | "g045"（legacy alias，等同于 superior）| "standard"
-    "agent_preset_id": 2,                          // AgentPreset.id
-
-    // 会话偏好（加载会话时用于回显下拉框）
-    "session_type": "full",                        // "full" | "lite"
-    "thinking_level": "auto",                      // "off" | "auto" | "low" | "medium" | "high"
-    "temperature": 1.0,                            // 0.0 ~ 2.0，每次发消息后自动持久化
-    "memory_injection_enabled": true,              // 记忆注入偏好；null = 未设置；可通过 PATCH 持久化
-
-    // 嵌套的 AgentSession（精简版，preset 信息已由上方扁平字段覆盖）
+    "last_message_at": "2026-03-10T15:01:44Z",
+    "project": 3, // 0 = 无项目
+    "project_name": "Grand-Archives", // null = 无项目
+    "agent_type": "superior", // "superior" | "standard"
+    "agent_preset_id": 2,
+    "session_type": "full", // "full" | "lite"
+    "thinking_level": "auto", // "off" | "auto" | "low" | "medium" | "high"
+    "temperature": 1.0,
+    "memory_injection_enabled": true,
     "agent_session": {
       "id": 5,
-      "frozen_project_ids": [3, 7]                // Superior 权限快照（g045 ≡ superior）；standard 为 []
+      "frozen_project_ids": [3, 7]
     }
-  },
-  ...
+  }
 ]
+```
 
-
-1.2  GET /api/agents/chat/<session_id>/  — 消息历史
-─────────────────────────────────────────────────────────────
-返回 Array<Message>，按时间顺序排列。
-
+### 1.2 GET `/api/agents/chat/<session_id>/` — 消息历史
+**Response (200):**
+```json
 [
   {
     "id": 101,
-    "role": "user",
+    "role": "user", // "user" | "assistant" | "system"
     "content": "量子纠缠是什么？",
     "reasoning_content": null,
     "platform": "gemini-3.1-pro-preview",
     "created_at": "2026-03-10T14:23:01Z",
-    "index_in_session": 0                         // 与 HistoryChunk.start/end_index 对应
-  },
-  ...
+    "index_in_session": 0
+  }
 ]
+```
 
+### 1.3 POST `/api/agents/chat/<session_id>/` — 发送消息
 
-1.3  POST /api/agents/chat/<session_id>/  — 发送消息
-─────────────────────────────────────────────────────────────
-
-// ── 1.3a. SSE 模式（默认） ──
-// POST /api/agents/chat/<session_id>/?mode=sse （默认）
-// 事件类型与 data 格式见 §1.3c（async 模式事件列表一致）。
-//
-// cache_skipped — 非 Gemini 模型收到 force_cache_rebuild 时的降级提示
-// event: cache_skipped
-// data: {"reason": "platform_not_supported"}
-
-// ── 1.3b. Async 轮询模式 ──
-// POST /api/agents/chat/<session_id>/?mode=async
-// 立即返回 token，后台线程继续处理。前端关闭/刷新不中断 LLM 调用。
-//
-// Request body 与 SSE 模式完全一致：
+#### 1.3a. SSE 模式 (mode=sse)
+**Request Body:**
+```json
 {
   "content": "你好",
   "thinking_level": "medium",
   "temperature": 1.0,
-  "model": null,                    // 可选模型覆盖
-  "api_key_alias": null,            // 可选 API Key 别名；null = 使用默认 key
-  "memory_injection_enabled": false,// 记忆注入开关（embedding/MemoryPlasmid/cross_window/vibe/private_logs）
-  "cache_enabled": false,           // Gemini 远端缓存开关（成本控制）
-  "force_cache_rebuild": false,     // 手动触发远端缓存重建（覆盖 cache_enabled，仅 Gemini 有效）
-  "session_type": "lite",           // "full" | "lite" — 上下文结构模式（每次请求携带，默认 lite）
-  "files": [],                      // 可选上传文件
-  "pending_attachments": [],        // 可选附件 ID
-  "edit_message_id": null           // 可选：指定一条用户消息，从其位置重新生成回复（见 1.3e）
+  "model": "gemini-2.5-flash", // 可选覆盖
+  "endpoint": 3, // 可选端点 ID 覆盖
+  "memory_injection_enabled": false,
+  "cache_enabled": false,
+  "force_cache_rebuild": false,
+  "session_type": "lite", // "full" | "lite"
+  "files": [],
+  "pending_attachments": [],
+  "edit_message_id": null
 }
+```
 
-// api_key_alias: 可选，传入 ApiKey 别名
+**SSE Events:**
+*   `event: thinking` (delta 文本)
+*   `event: content` (delta 文本)
+*   `event: reasoning` (delta 检索文本)
+*   `event: status` (状态文本)
+*   `event: reference` (JSON 格式引用数据)
+*   `event: cache_skipped` -> `{"reason": "platform_not_supported"}`
+*   `event: error`
+    ```json
+    {
+      "code": "attachment_failed" | "invalid_model_endpoint_pair" | "model_disabled" | "endpoint_disabled" | "endpoint_not_configured" | "target_config_error",
+      "message": "错误描述文字"
+    }
+    ```
 
-// Response (200) — 立即返回:
+#### 1.3b. Async 轮询模式 (mode=async)
+**Request Body:** 同 SSE 模式。
+**Response (200):**
+```json
 {
-  "message_id": "a1b2c3d4",        // 轮询 token（UUID 前 8 位）
+  "message_id": "a1b2c3d4",
   "status": "processing"
 }
+```
 
-// ── 1.3c. 轮询状态 ──
-// GET /api/agents/chat/<session_id>/status/?message_id=<token>&cursor=<int>
-// 每 500ms 轮询一次，获取增量事件。
-// cursor 是事件索引（非字节偏移）。
-//
-// Response:
+**GET `/api/agents/chat/<session_id>/status/?message_id=<token>&cursor=<int>`**
+**Response (200):**
+```json
 {
-  "status": "streaming",           // "streaming" | "done" | "stopped" | "error" | "not_found"
-  "events": [                      // cursor 之后的新增事件（类型与 SSE 模式一致）
-    {"event_type": "thinking", "delta": "嗯，用户问的是..."},
-    {"event_type": "content", "delta": "你好！"}
+  "status": "streaming" | "done" | "stopped" | "error" | "not_found",
+  "events": [
+    { "event_type": "thinking" | "content" | "reasoning" | "status" | "reference", "delta": "..." }
   ],
-  "cursor": 2,                     // 下次轮询带上此值（已完成的事件总数）
-  "error_message": null            // 仅 error 时非 null
+  "cursor": 2,
+  "error_message": null
 }
+```
 
-// 前端轮询逻辑:
-// 1. POST ?mode=async → 取得 message_id
-// 2. setInterval 500ms: GET /status/?message_id=<id>&cursor=<last_cursor>
-// 3. events 按 event_type 分别渲染:
-//    - thinking → 可折叠的思考面板
-//    - content → 打字机动画正文
-//    - reasoning → RAG 检索过程提示
-//    - status → 状态提示文字
-//    - reference → 引用链接
-// 4. status="done" → 停止轮询，GET /chat/<sid>/ 拉完整消息列表
-// 5. status="stopped" → 用户手动停止，已生成的部分内容已持久化，拉消息列表即可
-// 6. status="error" → 显示错误，停止轮询
-
-// ── 1.3d. 停止异步生成 ──
-// POST /api/agents/chat/<session_id>/stop/?message_id=<token>
-// 前端点击「停止」按钮时调用。后端设置停止信号，LLM 在下个 chunk 到达时检测并中断。
-// 已生成的部分内容会正常持久化为 assistant 消息（content 截断于中断点）。
-//
-// Response (200):
+**POST `/api/agents/chat/<session_id>/stop/?message_id=<token>`**
+**Response (200):**
+```json
 { "status": "stop_requested" }
-// 404: { "error": "message_id is required or buffer not found" }
+```
 
-
-// ── 1.3e. 消息编辑 / 重生成 ──
-// 统一通过 edit_message_id 参数实现。
-// 语义：把指定用户消息当作最新输入，截断其后所有消息，重新获得 AI 回复。
-//
-// edit_message_id 指向一条 role='user' 的消息：
-//   - content 非空 → 编辑消息内容后重发（edit + regenerate）
-//   - content 为空   → 保留原内容，纯重生成（redo）
-//
-// 传 edit_message_id 时：
-//   - 不持久化 thinking_level / temperature（保留当前偏好不变）
-//   - 不创建新的 user message（复用原消息或覆盖其 content）
-//   - truncate 点 = edit_msg.index_in_session + 1（删除该用户消息之后的所有消息）
-//
-// Request 示例 — 纯 redo（content 留空）：
-{
-  "content": "",
-  "edit_message_id": 42,
-  "thinking_level": "medium",
-  "temperature": 1.0
-}
-//
-// Request 示例 — 编辑后重发：
-{
-  "content": "修改后的消息内容",
-  "edit_message_id": 42,
-  "thinking_level": "medium",
-  "temperature": 1.0
-}
-//
-// Response：与正常 SSE / async 流程完全一致，无额外字段。
-
-
-1.4  GET /api/agents/conversations/<pk>/history_chunks/  — HistoryChunk 列表
-─────────────────────────────────────────────────────────────
-返回该会话所有 HistoryChunk（长期记忆片段），按时间顺序排列。
-用途：记忆管理页，展示一个会话的全部压实历史。
-
+### 1.4 GET `/api/agents/conversations/<pk>/history_chunks/` — HistoryChunk 列表
+**Response (200):**
+```json
 {
   "conversation_id": 12,
   "session_name": "关于量子纠缠的讨论",
@@ -187,135 +122,89 @@
   "history_chunks": [
     {
       "id": 7,
-      "start_index": 0,                // 对应原始消息的 index_in_session 起始
-      "end_index": 9,                  // 对应原始消息的 index_in_session 结束
-      "topic": "量子纠缠基本原理",       // LLM 提炼的话题标签
-      "summary": "用户询问了量子纠缠的基本原理...", // LLM 生成的陈述性摘要
+      "start_index": 0,
+      "end_index": 9,
+      "topic": "量子纠缠基本原理",
+      "summary": "摘要...",
       "keywords": ["量子纠缠", "EPR"],
-      "unresolved": false,             // 是否包含未竟事宜
+      "unresolved": false,
       "created_at": "2026-03-10T15:00:00Z"
     }
   ]
 }
+```
 
-
-1.5  GET/PATCH /api/memory/history_chunks/<pk>/  — HistoryChunk 详情
-─────────────────────────────────────────────────────────────
-用途：用户手动维护 HistoryChunk 元数据（话题标签/关键词/未竟状态）。
-原始聊天记录通过 start_index/end_index 只读展示，不在此处传输。
-
-// GET 返回：
+### 1.5 GET/PATCH `/api/memory/history_chunks/<pk>/` — HistoryChunk 详情
+**GET Response (200):**
+```json
 {
   "id": 7,
   "conversation": 12,
   "session_name": "关于量子纠缠的讨论",
   "session_type": "full",
-  "start_index": 0,       // 对应 Message.index_in_session 起始（用于加载原始消息）
-  "end_index": 9,         // 对应 Message.index_in_session 结束
-
-  // 可编辑
+  "start_index": 0,
+  "end_index": 9,
   "topic_label": "量子纠缠基本原理",
   "keywords": ["量子纠缠", "EPR"],
   "unresolved": false,
-
-  // 只读
   "time_ref": "3月某个下午",
-  "emotion": "好奇/探索",
-  "entities": ["量子纠缠", "EPR悖论"],
+  "emotion": "好奇",
+  "entities": ["量子纠缠"],
   "importance": 0.8,
-
   "created_at": "2026-03-10T15:00:00Z"
 }
-
-// PATCH 请求体（只允许以下三个字段）：
+```
+**PATCH Request:**
+```json
 {
   "topic_label": "新的话题标签",
   "keywords": ["新关键词"],
   "unresolved": true
 }
-
-// PATCH 响应:
+```
+**PATCH Response (200):**
+```json
 { "msg": "已保存。", "updated": ["topic_label"] }
+```
 
-
-1.6  GET/POST/DELETE /api/agents/conversations/{pk}/cache/  — 会话缓存 & 快照
-─────────────────────────────────────────────────────────────
-Gemini 管理远端 Context Cache + 本地快照；DeepSeek / 非 Gemini 仅管理本地快照。
-platform 字段用于前端区分会话类型，据此决定展示"远端缓存"还是"本地快照"状态栏。
-
-// ── 1.6a. GET  — 查询缓存与快照状态
-// 始终返回 200 OK。has_snapshot 对 Gemini 和 DeepSeek 均有效。
-
-// Response (Gemini 有远端缓存 + 快照):
+### 1.6 GET/POST/DELETE `/api/agents/conversations/{pk}/cache/` — 会话缓存 & 快照
+**GET Response (200):**
+```json
 {
   "active": true,
-  "platform": "gemini",                        // 提供商名称，用于前端区分展示
-  "cache_name": "cachedContents/abc123...",
+  "platform": "gemini" | "deepseek",
+  "cache_name": "cachedContents/...",
   "model": "gemini-3.1-pro-preview",
-  "created_at": "2026-05-04T10:00:00+00:00",
-  "expires_at": "2026-05-04T11:00:00+00:00",
-  "remaining_seconds": 2145,                  // 实时计算，已扣除网络延迟
-  "renewals": 2,                              // 历史续期次数
-  "ttl_seconds": 1500,                        // 缓存初始 TTL 25min（参考值）
-
-  "has_snapshot": true,                       // 本地 cache_chunk 快照是否存在
-  "snapshot_cache_end_idx": 405               // 快照对应的 cache_end_index
-}
-
-// Response (DeepSeek — 仅快照，无远端缓存):
-{
-  "active": false,
-  "platform": "deepseek",
+  "created_at": "2026-05-04T10:00:00Z",
+  "expires_at": "2026-05-04T11:00:00Z",
+  "remaining_seconds": 2145,
+  "renewals": 2,
+  "ttl_seconds": 1500,
   "has_snapshot": true,
   "snapshot_cache_end_idx": 405
 }
-
-// Response (无缓存无快照):
-{ "active": false, "platform": "deepseek", "has_snapshot": false }
-
-// ── 1.6b. POST .../cache/renew/  — 手动续期 30 分钟 (Gemini only)
-// Response (200):
+```
+**POST `/api/agents/conversations/{pk}/cache/renew/`**
+**Response (200):**
+```json
 {
   "ok": true,
-  "expires_at": "2026-05-04T11:30:00+00:00",
+  "expires_at": "2026-05-04T11:30:00Z",
   "renewals": 3
 }
+```
+**DELETE `/api/agents/conversations/{pk}/cache/`** -> `204 No Content`
 
-// Response (409 — 无活跃缓存):
-{ "error": "no active cache" }
+### 1.7 POST/GET/DELETE `/api/agents/conversations/{id}/attachments/` — 附件管理
 
-// ── 1.6c. DELETE .../cache/  — 手动释放缓存/快照
-// → 204 No Content
-// 无缓存也无快照: 404 { "error": "当前无活跃缓存或快照" }
-
-
-1.7  POST/GET/DELETE /api/agents/conversations/{id}/attachments/  — 附件管理
-─────────────────────────────────────────────────────────────
-
-附件是消息级的，绑定在发送它们的用户消息上。
-附件随消息在历史窗口中自然升降 —— 消息滚出窗口时附件也随之消失。
-
-┌─────────────────────┬──────────────────────────────────────────┐
-│ 来源                │ 行为                                      │
-├─────────────────────┼──────────────────────────────────────────┤
-│ chat POST files     │ 落盘 → Part → LLM → confirm_uploaded_files│
-│                     │ → SessionAttachment + user_msg.attachment_ids│
-├─────────────────────┼──────────────────────────────────────────┤
-│ attachments POST    │ multipart: 落盘 → 立即创建 SessionAttachment│
-│                     │ 返回 {id, storage_path, ...} 供前端引用    │
-│                     │ json: 验证 storage_path → 返回 meta       │
-├─────────────────────┼──────────────────────────────────────────┤
-│ pending_attachments │ 引用已有 storage_path → Part → LLM        │
-│                     │ → confirm_pending 查重复用，不创建重复记录 │
-└─────────────────────┴──────────────────────────────────────────┘
-
-// ── 1.7a. POST multipart/form-data（直接上传） ──
-// Response (201):
+#### 1.7a. POST multipart/form-data (上传)
+**Response (201) — 全部成功:**
+```json
 {
   "attachments": [
     {
       "id": 12,
-      "storage_path": "/abs/path/to/uploads/attachments/5/image.png",
+      "storage_path": "/path/to/uploads/attachments/5/image.png",
       "display_name": "image.png",
       "original_filename": "image.png",
       "mime_type": "image/png",
@@ -323,381 +212,215 @@ platform 字段用于前端区分会话类型，据此决定展示"远端缓存"
     }
   ]
 }
+```
+**Response (201) — 部分失败:**
+```json
+{
+  "attachments": [ { "id": 12, "storage_path": "...", ... } ],
+  "failures": [
+    {
+      "display_name": "huge-photo.jpg",
+      "mime_type": "image/jpeg",
+      "stage": "resolve", // preprocess | read | persist | decode | resolve | db
+      "reason": "Gemini 上传失败: file too large"
+    }
+  ]
+}
+```
+**Response (422) — 全部失败:**
+```json
+{
+  "error": "all attachments failed",
+  "failures": [
+    { "display_name": "huge-photo.jpg", "mime_type": "image/jpeg", "stage": "resolve", "reason": "..." }
+  ]
+}
+```
 
-// ── 1.7b. POST application/json（验证已有路径） ──
-// { "storage_path": "/existing/file.md", "display_name": "笔记" }
-// → 200 { storage_path, display_name, mime_type, file_size, ... }
+#### 1.7b. POST application/json (验证已有路径)
+**Request:**
+```json
+{ "storage_path": "/existing/file.md", "display_name": "笔记" }
+```
+**Response (200):** 同 1.7a 成功项。
 
-// ── 1.7c. GET  — 列表
-// 返回该会话所有附件（user 上传 + tool_collection 缓存）。
+#### 1.7c. GET `/api/agents/conversations/{id}/attachments/`
+**Response (200):** Array<Attachment>
 
-// ── 1.7d. DELETE .../attachments/delete/
-// Body: { "source": "user"|"tool_collection", "id": <int|str> }
-// 返回: 204 No Content
+#### 1.7d. DELETE `/api/agents/conversations/{id}/attachments/delete/`
+**Request Body:**
+```json
+{
+  "source": "user" | "tool_collection",
+  "id": 12 // 当 source="user" 时为 int ID，当 source="tool_collection" 时为 string local_path
+}
+```
+**Response:** `204 No Content`
 
-// 附件是消息级的，绑定在发送它们的用户消息上。
-// 附件随消息在历史窗口中自然升降 —— 消息滚出窗口时附件也随之消失。
+### 1.8 [已退役] TriggeredNote 快照
 
-
-1.8  [已退役] TriggeredNote 快照
-─────────────────────────────────────────────────────────────
-TriggeredNote 模型已删除（migration 0033），关键词触发能力吸收至 MemoryPlasmid.trigger_keywords。
-前端不再使用此接口，详见 §2.2 MemoryPlasmid。
-
-
-1.9  CRUD /api/agents/chronicle/  — ChronicleEntry（大事记）
-─────────────────────────────────────────────────────────────
-
-// ── 1.9a. GET /api/agents/chronicle/ — 列表
-// 支持过滤: ?preset=<id>，按 event_time 降序排列
-
+### 1.9 CRUD `/api/agents/chronicle/` — ChronicleEntry（大事记）
+**GET Response (200):**
+```json
 [
   {
     "id": 3,
     "preset": 1,
     "event_time": "2026-05-16",
-    "content": "完成毕设答辩，导师给予了肯定的评价...",
-    "scope": "表",
-    "keywords": ["毕设", "毕业", "答辩"],
+    "content": "内容...",
+    "scope": "表", // "表" | "里"
+    "keywords": ["毕设"],
     "modified_at": "2026-05-16T15:30:00Z"
-  },
-  {
-    "id": 2,
-    "preset": 1,
-    "event_time": "2026-05-10",
-    "content": "和姐妹深夜通话聊了很多，感觉关系又近了一步",
-    "scope": "里",
-    "keywords": ["姐妹", "关系", "深夜"],
-    "modified_at": "2026-05-11T08:00:00Z"
   }
 ]
-
-// ── 1.9b. POST /api/agents/chronicle/ — 创建
-// Request:
+```
+**POST Request:**
+```json
 {
   "preset": 1,
   "event_time": "2026-05-16",
-  "content": "完成毕设答辩，导师给予了肯定的评价...",
-  "scope": "表",                              // 可选：表/里（可扩展）
-  "keywords": ["毕设", "毕业", "答辩"]         // 可选
+  "content": "内容...",
+  "scope": "表",
+  "keywords": ["毕设"]
 }
-// Response (201): 同上格式，含完整对象
+```
+**PATCH Request:** (仅支持更新 event_time, content, scope, keywords)
 
-// ── 1.9c. GET    /api/agents/chronicle/<id>/ — 详情
-// ── 1.9d. PATCH  /api/agents/chronicle/<id>/ — 部分更新
-//         可更新字段: event_time, content, scope, keywords
-//         preset 创建后不可修改
-// ── 1.9e. DELETE /api/agents/chronicle/<id>/ — 删除
+---
 
-// scope 字段说明:
-//   前端展示为 表/里 两个分类，但 scope 为自由文本（CharField），后续可按需扩展
+## 第二篇  记忆 & 质粒 (Memory / Plasmids)
 
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-第二篇  记忆 & 质粒 (Memory / Plasmids / Scope)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-2.1  GET /api/memory/knowledge/  — KnowledgeFragment 列表
-─────────────────────────────────────────────────────────────
-支持过滤: ?topic=<value>&project=<id>，分页: page_size=50
-
+### 2.1 GET `/api/memory/knowledge/` — KnowledgeFragment 列表
+**Response (200):**
+```json
 {
   "count": 120,
-  "next": "http://.../api/memory/knowledge/?topic=work&page=2",
+  "next": "http://...",
   "previous": null,
   "results": [
     {
       "id": 5,
       "uid": "a1b2c3d4",
-      "title": "项目架构设计笔记",
+      "title": "项目架构设计",
       "topic": "work",
       "status": "active",
       "source_type": "obsidian_md",
-      "tags": ["架构", "设计"],
-      "keywords": ["Django", "微服务"],
-      "abstract": "本文讨论了项目架构的设计原则...",
+      "tags": ["架构"],
+      "keywords": ["Django"],
+      "abstract": "概要...",
       "project": 3,
       "created_at": "2026-03-10T14:00:00Z",
       "updated_at": "2026-05-01T09:00:00Z"
     }
   ]
 }
+```
 
-// GET  /api/memory/knowledge/<pk>/ — 详情
-// PATCH /api/memory/knowledge/<pk>/ — 编辑 abstract/keywords
-// 格式见主文档，无变动。
-
-
-2.2  CRUD /api/memory/plasmids/  — MemoryPlasmid（记忆质粒）
-─────────────────────────────────────────────────────────────
-原 UserPortrait + TriggeredNote 合并为一。统一 heat 召回（EMA）+ trigger_keywords 即时路。
-
-// ── 2.2a. GET /api/memory/plasmids/?preset_id=<id>
-// 查询该 preset 及其全局（preset_id=2）条目。支持过滤：&scope=&is_processed=
-// 返回 Array<MemoryPlasmid>
-
+### 2.2 CRUD `/api/memory/plasmids/` — MemoryPlasmid（记忆质粒）
+**GET Response (200) `?preset_id=<id>`:**
+```json
 [
   {
     "id": 3,
     "preset": 1,
-    "content": "量子纠缠是两个粒子…",
-    "scope": "work",             // 有效值来自 scope_keywords.json + "global"；null = 处理中
-    "tags": ["量子纠缠", "物理"],
-    "weight": 0.85,              // 0..1，EMA 激活权重（控制触发门槛/优先级/sticky）
-    "is_processed": true,        // false = 分类中，scope/tags 暂为空
+    "content": "记忆内容",
+    "scope": "work", // null = 分类中
+    "tags": ["量子纠缠"],
+    "weight": 0.85,
+    "is_processed": true,
     "created_at": "2026-04-21T14:23:00Z",
     "updated_at": "2026-04-21T14:25:00Z"
   }
 ]
+```
+**GET `/api/memory/plasmids/tags/?preset_id=<id>` (所有 Tag 列表)**
+**Response (200):** `["tag1", "tag2"]`
 
-// ── 2.2b. GET /api/memory/plasmids/tags/?preset_id=<id>
-// 返回该 preset 下所有已有 tag（去重、排序），供 autocomplete 使用
-// 注意：此路由必须在 /plasmids/<pk>/ 之前匹配
-
-["爱好", "物理", "量子纠缠"]
-
-// ── 2.2c. POST /api/memory/plasmids/ — 用户手动新增（user_manual）
-// Request（preset_id 与 message_id 互斥，只能传其一）：
-{ "preset_id": 1, "content": "我喜欢读科幻小说", "scope": "写作", "tags": ["科幻"] }
-// scope 可选，有效值来自 scope_keywords.json + "global"；传无效值 → 400
-// 省略 scope → 自动分类（is_processed=false，异步填充）
-// 提供 scope → 直接写入，is_processed=true，跳过自动分类
-// Response (201)：完整 MemoryPlasmid 对象
-
-// ── 2.2d. POST /api/memory/plasmids/ — 划线笔记（highlight）
-// ⚠️ 行为变更：highlight 路径现在创建 ChronicleEntry(kind="highlight")，不是 MemoryPlasmid。
-// { "message_id": 101, "content": "量子纠缠是两个粒子…" }
-// preset / conversation 从 message 所属会话自动派生
-// Response (201)：ChronicleEntry 对象，非 MemoryPlasmid
-
-// ── 2.2e. PATCH /api/memory/plasmids/<pk>/
-// 可编辑字段：content / tags / scope
-// - content 仅 preset_id=2（用户全局记忆）可编辑；非全局条目 → 403
-// - scope 传入有效值（scope_keywords.json + "global"）→ 写入并置 is_processed=true
-// - scope 传 null → 清除 scope，is_processed 保持不变
-// - tags 为 JSON 数组，修改不影响 is_processed
-//
-// Request 示例：
-{ "scope": "life" }
-{ "scope": null }
-{ "content": "修改后的内容", "scope": "work", "tags": ["新标签"] }
-// Response：完整更新后的 MemoryPlasmid 对象
-
-// ── 2.2f. DELETE /api/memory/plasmids/<pk>/
-// Header: X-Preset-ID: <caller_preset_id>   // 仅条目所属 preset 可删除，否则 → 403
-// → 204 No Content
-
-
-2.3  GET/PUT /api/memory/scope-keywords/  — Scope 关键词表
-─────────────────────────────────────────────────────────────
-
-// ── 2.3a. GET — 读取当前关键词表
-
+**POST Request:**
+```json
 {
-  "work": ["毕设", "项目", "任务", "会议", "treffen", "开发", "需求", "文档", "进度",
-           "汇报", "上班", "同事", "客户", "方案", "计划", "deadline", "提测", "发布",
-           "bug", "review", "部署", "接口", "数据库"],
-  "life": ["生活", "健康", "睡眠", "睡觉", "饮食", "吃饭", "运动", "锻炼", "医院",
-           "买", "钱", "账单", "房子", "家", "搬", "天气", "出行", "旅行", "假期",
-           "休息", "日程", "安排", "事务"],
-  "游戏": ["魂", "怪猎", "只狼", "法环", "血源", "饥荒", "博德之门", "博3", "DnD", "仁王"],
-  "写作": ["科幻", "葉上书", "无尽焰", "脑洞", "读后感", "甜饼", "同人", "神话", "随笔", "剧情"],
-  "emotion": ["爱", "desire", "难过", "开心", "焦虑", "压力", "累", "烦",
-              "喜欢", "讨厌", "害怕", "孤独", "姐妹", "朋友", "关系", "妈咪", "亲密",
-              "信任", "失落", "迷茫", "困惑", "担心", "期待"]
+  "preset_id": 1,
+  "content": "我喜欢读科幻",
+  "scope": "写作", // 可选。传值则直接写入跳过自动分类，留空自动分类 (is_processed=false)
+  "tags": ["科幻"]
 }
+```
+**PATCH Request:** (支持修改 content, scope, tags。其中 content 仅全局 preset 2 可改)
+**DELETE Request:** Header 包含 `X-Preset-ID: <preset_id>`。
 
-// ── 2.3b. PUT — 全量替换
-// Body 格式与 GET 返回值完全一致。
+### 2.3 GET/PUT `/api/memory/scope-keywords/` — Scope 关键词表
+**GET Response / PUT Request (200):**
+```json
+{
+  "work": ["项目", "文档"],
+  "life": ["生活", "睡眠"],
+  "emotion": ["焦虑", "开心"]
+}
+```
 
+---
 
-2.4  Scope 体系总览
-─────────────────────────────────────────────────────────────
-各模型中 scope 相关字段对照：
+## 第三篇  项目 & 文件 (Core / Projects)
 
-┌─────────────────────┬──────────┬──────────────────┬──────────────────────────────┐
-│ 模型                │ 字段名   │ 类型             │ 前端可操作                   │
-├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┤
-│ MemoryPlasmid        │ scope    │ CharField(50)    │ PATCH 可编辑；新建可选填      │
-│ (memory/plasmids/)   │          │                  │ 有效值来自 scope_keywords     │
-│                      │          │                  │ + "global" 兜底              │
-├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┤
-│ KnowledgeFragment   │ topic    │ CharField(100)   │ PATCH 可编辑；列表 ?topic=   │
-│ (memory/knowledge/) │          │                  │ 过滤                        │
-├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┤
-│ ChronicleEntry      │ scope    │ CharField(50)    │ CRUD 可编辑                  │
-│ (agents/chronicle/) │          │                  │ 值: 表 / 里（可扩展）         │
-├─────────────────────┼──────────┼──────────────────┼──────────────────────────────┤
-│ scope_keywords.json │ —        │ JSON dict        │ GET/PUT /api/memory/         │
-│ (memory/scope-      │          │ (scope→keywords) │ scope-keywords/              │
-│  keywords/)         │          │                  │                              │
-└─────────────────────┴──────────┴──────────────────┴──────────────────────────────┘
+### 3.1 GET `/api/core/projects/<project_pk>/files/` — 项目文件列表
+**Response (200):** Array<ProjectFile | ObsidianSyncEntry>
 
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-第三篇  项目 & 文件 (Core / Projects)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-3.1  GET /api/core/projects/<project_pk>/files/  — 项目文件列表
-─────────────────────────────────────────────────────────────
-返回 Array<ProjectFile | ObsidianSyncEntry>，含 web 上传 + Obsidian 同步两类。
-格式见主文档，无变动。
-
-// ── 上传路径规则 ──
-// Project.work_dir 非空 → {work_dir}/ExoCore_Files/uploads/{filename}
-// Project.work_dir 为空 → projects/{project.id}/{filename}（MEDIA_ROOT 下旧路径）
-
-
-3.2  GET/PATCH /api/core/projects/<id>/  — 项目详情 & 工作目录 & 背景提示词
-─────────────────────────────────────────────────────────────
-
-// ── 3.2a. 数据模型 ──
-// Project 模型字段：
-//   prompt   = TextField(blank=True, default="") — 项目背景提示
-//   work_dir = CharField(max_length=500, blank=True, default="") — 项目磁盘根目录
-// 空字符串 = 未设置（无项目背景 / 未绑定磁盘目录）。
-
-// ── 3.2b. GET — 详情
+### 3.2 GET/PATCH `/api/core/projects/<id>/` — 项目详情
+**GET Response (200):**
+```json
 {
   "id": 3,
   "name": "Grand-Archives",
   "description": "",
-  "prompt": "本项目用于归档所有学术论文的讨论和审阅...",
+  "prompt": "项目提示词...",
   "work_dir": "D:\\Alicia\\Projects\\GrandArchives",
   "created_at": "2026-03-01T10:00:00Z"
 }
+```
+**PATCH Request:** 可修改 name, prompt, work_dir。
 
-// ── 3.2c. PATCH — 部分更新
-{ "prompt": "新的项目背景说明..." }
-{ "work_dir": "D:\\Alicia\\Projects\\MyProject" }
-// 或同时更新多个字段：
-{ "name": "New-Name", "prompt": "新的背景...", "work_dir": "D:\\Alicia\\Projects\\NewProject" }
-
-// ── 3.2d. work_dir 行为说明 ──
-
-// work_dir 非空时：
-//   - 项目文件上传路径 → {work_dir}/ExoCore_Files/uploads/{filename}
-//   - read_project 工具根目录 → 使用 work_dir（而非全局 PROJECT_DIR）
-//   - sync_project 命令扫描根目录 → {work_dir}/ExoCore_Files/
-//
-// work_dir 为空时：
-//   - 项目文件上传路径 → projects/{project.id}/{filename}（MEDIA_ROOT 下）
-//   - read_project 工具根目录 → 回退到 settings.PROJECT_DIR
-//   - sync_project 命令 → 报错退出
-
-// ── 3.2e. work_dir 设置后生效 ──
-// PATCH work_dir 后，read_project 工具使用 work_dir 而非全局 PROJECT_DIR。
-// 前端如需同步文件夹内容，联系后端运行 sync_project 管理命令。
-
-
-3.3  GET /api/core/projects/<id>/tree/  — 完整目录树（递归）
-─────────────────────────────────────────────────────────────
-用途：前端 @ 路径补全 / 文件选择器。
-**一次请求返回完整递归树**，前端拿到静态结构后本地搜索，不逐层请求。
-后端负责：递归扫描、排除规则、排序、跳过隐藏文件。
-缓存 30 秒。
-
-// ── 3.3a. 前提 ──
-// Project.work_dir 必须非空，否则返回 400:
-// { "error": "项目未绑定工作目录，请先设置 work_dir。" }
-
-// ── 3.3b. GET /api/core/projects/<id>/tree/  — 完整递归树（默认）
-// ── 3.3c. GET /api/core/projects/<id>/tree/?path=src — 仅返回单层子目录
-//         （可选，用于 Drawer 按需展开；不带 path 时返回完整递归树）
-
-// Response (200) — 递归嵌套:
+### 3.3 GET `/api/core/projects/<id>/tree/` — 完整目录树
+**Response (200):**
+```json
 {
-  "path": "",                    // 根目录（空字符串）
+  "path": "",
   "entries": [
     {
-      "name": "src",             "type": "dir",  "path": "src",
-      "entries": [                                 // ← 目录项嵌套子内容
-        {
-          "name": "components",  "type": "dir",  "path": "src/components",
-          "entries": [
-            { "name": "ChatArea.jsx",    "type": "file", "path": "src/components/ChatArea.jsx",    "size": 12345 },
-            { "name": "ChatShell.jsx",   "type": "file", "path": "src/components/ChatShell.jsx",   "size": 6789 }
-          ]
-        },
-        { "name": "main.jsx",    "type": "file", "path": "src/main.jsx",    "size": 1024 }
+      "name": "src",
+      "type": "dir",
+      "path": "src",
+      "entries": [
+        { "name": "main.jsx", "type": "file", "path": "src/main.jsx", "size": 1024 }
       ]
     },
-    { "name": "README.md",       "type": "file", "path": "README.md",       "size": 2048 },
-    { "name": "package.json",    "type": "file", "path": "package.json",    "size": 1024 }
+    { "name": "README.md", "type": "file", "path": "README.md", "size": 2048 }
   ]
 }
+```
 
-// 排序: 目录优先 → 文件，各自按名称忽略大小写字母排序。
-// path 字段使用正斜杠 "/" 分隔，跨平台统一。
+---
 
-// ── 3.3d. 后端排除规则 ──
-//
-// 完全隐藏（不出现于结果中）：
-//   .git, __pycache__, .venv, venv, .env,
-//   dist, .next, build, target, .turbo, .pnpm, .yarn,
-//   .cache, .vite, coverage, *.pyc, .DS_Store, Thumbs.db
-// 以及所有 . 开头的隐藏文件和目录。
-//
-// 黑洞目录（显示但不递归 — 依赖目录文件数极大）：
-//   node_modules, vendor, bower_components, packages
-// 这些目录的 entry 只有 {name, type, path}，不包含 entries 子内容。
+## 第四篇  时间线 (Core / Tweets)
 
-// ── 3.3e. 错误响应 ──
-
-// work_dir 未绑定 → 400
-{ "error": "项目未绑定工作目录，请先设置 work_dir。" }
-
-// 路径包含非法字符 → 400
-{ "error": "路径包含非法字符。" }
-
-// 路径穿越攻击 → 400
-{ "error": "路径穿越检测：不允许访问工作目录以外的路径。" }
-
-// 路径不存在 → 404
-{ "error": "路径不存在: src/nope" }
-
-// 路径指向文件而非目录 → 400
-{ "error": "路径指向文件而非目录，请使用上级目录。" }
-
-// 权限不足 → 403
-{ "error": "没有权限读取该目录。" }
-
-// ── 3.3f. 前端补全流程 ──
-// 1. 进入 project session → GET /tree/ 一次拿到完整递归树 → 存入 state
-// 2. 用户输入 @ → 本地递归搜索 fileTree，按名字匹配（精确 > 前缀 > 包含）
-// 3. 用户输入 @src/ → 按路径逐层导航 + 名字过滤，纯本地计算
-// 4. 选中后插入 path 字段的值到输入框
-// 5. 30s 轮询刷新全树（文件结构变动不频繁，增量更新）
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-第四篇  时间线 (Core / Tweets)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-4.1  GET /api/core/tweets/  — 分页推文列表
-─────────────────────────────────────────────────────────────
-根推文 + 嵌套回复，最多 2 层。用途：时间线首屏及无限滚动加载。
-
-// 首次请求：GET /api/core/tweets/
-// 翻页请求：GET /api/core/tweets/?before_id=38
-
-// Response (200)：
+### 4.1 GET `/api/core/tweets/` — 推文列表
+**Response (200) `?before_id=`:**
+```json
 {
   "tweets": [
     {
       "id": 42,
-      "author": "agent:2",                       // 统一格式 "agent:{preset_id}"；agent:2 = 用户
-      "content": "今天写代码好累...",
+      "author": "agent:2", // "agent:{preset_id}"。2 = 用户
+      "content": "消息...",
       "parent": null,
-      "created_at": "2026-03-21T14:30:00Z",      // 后端已自动转换为本地时间字符串
+      "created_at": "2026-03-21T14:30:00Z",
       "replies": [
         {
           "id": 43,
           "author": "agent:1",
-          "content": "要注意休息哦～",
+          "content": "回复...",
           "parent": 42,
-          "created_at": "14:45:00",              // 回复层级可能仅返回时分
-          "replies": [...]
+          "created_at": "14:45:00",
+          "replies": []
         }
       ]
     }
@@ -705,455 +428,248 @@ TriggeredNote 模型已删除（migration 0033），关键词触发能力吸收�
   "has_more": true,
   "next_before_id": 22
 }
+```
 
+### 4.2 POST `/api/core/tweets/` — 发新推文
+**Request:** `{ "content": "今天天气不错" }`
 
-4.2  POST /api/core/tweets/  — 发新推文
-─────────────────────────────────────────────────────────────
-{ "content": "今天天气不错" }
+### 4.3 POST `/api/core/tweets/<id>/reply/` — 回复推文
+**Request:** `{ "content": "回复内容" }`
 
+---
 
-4.3  POST /api/core/tweets/<id>/reply/  — 回复推文
-─────────────────────────────────────────────────────────────
-{ "content": "我也觉得！" }
+## 第五篇  系统配置与模型通道 (Config, Models & Endpoints)
 
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-第五篇  系统配置 (Core / Config & Models)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-5.1  GET/PATCH /api/core/config/  — SystemConfig
-─────────────────────────────────────────────────────────────
-系统配置单例。API key 字段读取时始终 masking（"****<last4>"）。
-
-// ── 5.1a. GET
-// API key 字段：若已设置 → "****<last4>"；若未设置 → ""
-
+### 5.1 GET/PATCH `/api/core/config/` — SystemConfig
+**GET Response (200) / PATCH Request:**
+```json
 {
-  "gemini_api_key":                   "****abcd",   // masked; "" if not set
-  "deepseek_api_key":                  "",
-  "google_calendar_id":               "user@gmail.com",
+  "gemini_api_key": "****abcd", // masked on GET
+  "deepseek_api_key": "",
+  "google_calendar_id": "user@gmail.com",
   "google_calendar_credentials_path": "/path/to/gcal.json",
-  "google_calendar_extra_ids":       ["en.de#sports@group.v.calendar.google.com"],
+  "google_calendar_extra_ids": ["id"],
   "google_calendar_delegation_user": "",
-
-  "self_check_preset_ids":  [1],      // G045 preset IDs allowed to self-check
-  "deep_org_preset_ids":    [1],      // G045 preset IDs allowed deep-organize
-  "heartbeat_preset_ids":  [1],      // G045 preset IDs allowed HeartBeat interaction
-
-  "active_start": "09:00",            // TimeField — HH:MM
-  "active_end":   "23:00",
-
-  "heartbeat_base_hours":         2,  // active window min interval hours
-  "heartbeat_random_hours":       2,  // random addon (active + night)
-  "night_heartbeat_base_hours":   6,  // outside active window min interval
-
-  "deep_org_weekday": 0,              // 0=Mon … 6=Sun
-  "deep_org_hour":    3,              // 0-23; read once at server startup
-
-  "model_generate_abstract":      "",           // [deprecated] 改用 model_roles.sub_agent
-  "model_extract_chunk_metadata": "",           // [deprecated] 改用 model_roles.sub_agent
-
-  "model_roles": {                              // 模型角色 → 模型ID 映射（空字符串 = 使用硬编码默认）
-    // ── Google Services（锁定 Gemini — 底层调用 Google API） ──
-    "web_search":          "gemini-2.5-flash",        // 联网搜索 (SearchAgent, Google Grounding)
-    "vision":              "gemini-2.5-flash-lite",   // 图片/图表识别 (ImageDescriber, Google Vision)
-    "calendar_sub_agent":  "gemini-2.5-flash",        // 日历/任务读写 (CalendarSubAgent, Google Calendar)
-    "image_gen":           "gemini-3-pro-image-preview", // 图片生成 (tool 类型, Google Imagen)
-    // ── 文书工作 / Provider-Neutral（可自由切换 provider） ──
-    "sub_agent":           "deepseek-v4-flash"        // 异步子代理 (summarize/translate/code_review/data_extract)
-  },
-  // Agent 自己的模型走 AgentPreset.default_model → settings.DEFAULT_MODEL，不在此处
-
-  "key_map": {                              // platform → role → {keys, default}
-    "deepseek": {
-      "system":              {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
-      "main_session":        {"keys": ["我的主力key"],         "default": "我的主力key"},
-      "sub_agent":           {"keys": ["ds-bg"],               "default": "ds-bg"},
-      "vision":              {"keys": [],                      "default": null},
-      "image_gen":           {"keys": [],                      "default": null},
-      "web_search":          {"keys": [],                      "default": null},
-      "calendar_sub_agent":  {"keys": [],                      "default": null}
-    },
-    "gemini": {
-      "system":              {"keys": ["gem-paid"], "default": "gem-paid"},
-      "main_session":        {"keys": [],            "default": null},
-      "sub_agent":           {"keys": [],            "default": null},
-      "vision":              {"keys": [],            "default": null},
-      "image_gen":           {"keys": [],            "default": null},
-      "web_search":          {"keys": [],            "default": null},
-      "calendar_sub_agent":  {"keys": [],            "default": null}
-    }
-  },
-
+  "self_check_preset_ids": [1],
+  "deep_org_preset_ids": [1],
+  "heartbeat_preset_ids": [1],
+  "active_start": "09:00",
+  "active_end": "23:00",
+  "heartbeat_base_hours": 2,
+  "heartbeat_random_hours": 2,
+  "night_heartbeat_base_hours": 6,
+  "deep_org_weekday": 0,
+  "deep_org_hour": 3,
   "updated_at": "2026-04-25T10:00:00Z"
 }
+```
 
-// ── Google Calendar 多日历字段说明 ──
-// google_calendar_extra_ids:
-//   额外订阅日历的 ID 列表（JSON 数组）。这些日历的事件会被定时同步和
-//   CalendarSubAgent 查询拉取。公开订阅日历（足球赛程、公共假期等）直接
-//   填入 calendar ID 即可，无需 domain-wide delegation。
-//   获取方式：Google Calendar 网页版 → 左侧日历 → 三个点 → "设置和共享"
-//   → "整合日历" → 复制"日历 ID"。
-//
-//   **分层缓存策略**：
-//   - 定时 brief（每天 7:00/14:00/21:00）：主日历每次新鲜拉取，额外日历
-//     每天首次拉取后缓存（subscribed_events_cache.json），当天后续同步复用缓存
-//   - CalendarSubAgent（delegate_calendar 按需查询）：全量日历新鲜拉取
-//
-// google_calendar_delegation_user:
-//   域范围委托用户邮箱。仅在 G Suite 管理员配置了 domain-wide delegation
-//   后生效，用于 calendarList().list() 发现用户可访问的日历列表。
-//   空字符串 = 不启用委托，服务账号以自身身份调用 API。
-//   注意：公开订阅日历不需要此配置，直接加到 extra_ids 即可。
-
-// ── 5.1b. PATCH
-// 部分更新。任何以 "****" 开头的 key 字段视为未修改，忽略。
-// 返回更新后的 config（同样 masked）。
-
-// Validation:
-//   - active_start / active_end: HH:MM string
-//   - deep_org_weekday: 0–6
-//   - deep_org_hour: 0–23
-//   - model_roles: 合法角色名见上方 Shape，模型 ID 非空时必须存在于 model_registry
-//   - model_* fields (deprecated): 若非空则必须存在于 model_registry
-//   - *_preset_ids: 必须是有效的 G045/superior AgentPreset IDs
-
-// Request example:
-{ "gemini_api_key": "sk-newkey", "self_check_preset_ids": [1, 2], "deep_org_hour": 4 }
-// → key stored; subsequent GET returns "****wkey"
-
-// To leave a key unchanged, send its masked value:
-{ "gemini_api_key": "****abcd" }   // → ignored, DB untouched
-
-
-5.2  GET /api/core/models/  — Model Registry
-─────────────────────────────────────────────────────────────
-返回完整 model registry，供 NLP model selector dropdown 使用。
-
+### 5.2 [兼容期接口] GET `/api/core/models/` — 历史模型映射
+*前端迁移完新 Catalog 与 Endpoint 后将弃用。*
+**Response (200):**
+```json
 [
-  { "provider": "gemini",   "id": "gemini-3.1-pro-preview", "roles": ["main"] },
-  { "provider": "gemini",   "id": "gemini-2.5-flash",       "roles": ["sub_agent"] },
-  { "provider": "deepseek", "id": "deepseek-v4-pro",        "roles": ["main"] }
-  // ... all entries from model_registry.list_models()
+  { "provider": "gemini", "id": "gemini-2.5-flash", "roles": ["sub_agent"] }
 ]
+```
 
-// AgentPreset 的 feature toggles 通过 SystemConfig 的 *_preset_ids 列表管理，不在 preset 模型上。
+### 5.3 [旧版接口] CRUD `/api/core/apikeys/` — 历史密钥管理
+*在新 Endpoint 注册后不再推荐使用。*
 
+### 5.4 [旧版接口] PUT `/api/core/config/key-map/` — 历史 Key-Map 关联
+*已废弃，由 5.8 角色端点绑定代替。*
 
-5.3  CRUD /api/core/apikeys/  — API Key 管理
-─────────────────────────────────────────────────────────────
-
-// ── 5.3a. GET /api/core/apikeys/ — 列表
-// 支持过滤: ?platform=deepseek
-
-[
-  {
-    "alias": "我的主力key",
-    "platform": "deepseek",
-    "last_four": "a1b2",
-    "created_at": "2026-06-03T12:00:00Z",
-    "updated_at": "2026-06-03T12:00:00Z"
-  }
-]
-
-// alias 即资源标识符，唯一且不含 /。key_value 永不返回。
-
-// ── 5.3b. POST /api/core/apikeys/ — 新建
-// Request:
+### 5.5 GET `/api/core/model-catalog/` — 统一模型与端点目录
+**Response (200):**
+```json
 {
-  "alias": "我的主力key",
-  "platform": "deepseek",
-  "key_value": "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxa1b2"
-}
-// Response (201): 同上列表项格式（无 key_value）
-
-// ── 5.3c. GET    /api/core/apikeys/<alias>/ — 详情
-// ── 5.3d. PATCH  /api/core/apikeys/<alias>/ — 仅可改 alias
-// Request: { "alias": "新别名" }
-// ── 5.3e. PUT    /api/core/apikeys/<alias>/overwrite/ — 覆盖 key_value
-// Request: { "key_value": "sk-new..." }
-// ── 5.3f. DELETE /api/core/apikeys/<alias>/ — 级联删除
-// 删除所有同 key_value 的行 + 清空 SystemConfig 中同值的兜底字段
-// Response:
-{
-  "deleted_aliases": ["我的主力key", "备用key"],
-  "cleared_system_config": ["deepseek"]
-}
-
-
-5.4  PUT /api/core/config/key-map/  — 设置 Key Map
-─────────────────────────────────────────────────────────────
-
-// 按平台和角色分配 Key。每个 role = {keys: [...], default: <alias>}。
-// keys 和 default 均接受 alias（字符串）或 ID（整数）。
-// system.default 必填且必须在 system.keys 中；其他角色 default=null → 回落 system.default。
-// 角色: system | session | sub_agent | background
-
-// ── Request:
-{
-  "deepseek": {
-    "system":              {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
-    "main_session":        {"keys": ["我的主力key"],         "default": "我的主力key"},
-    "sub_agent":           {"keys": ["ds-bg"],               "default": "ds-bg"},
-    "vision":              {"keys": [],                      "default": null},
-    "image_gen":           {"keys": [],                      "default": null},
-    "web_search":          {"keys": [],                      "default": null},
-    "calendar_sub_agent":  {"keys": [],                      "default": null}
-  },
-  "gemini": {
-    "system":              {"keys": ["gem-paid"], "default": "gem-paid"},
-    "main_session":        {"keys": [],            "default": null},
-    "sub_agent":           {"keys": [],            "default": null},
-    "vision":              {"keys": [],            "default": null},
-    "image_gen":           {"keys": [],            "default": null},
-    "web_search":          {"keys": [],            "default": null},
-    "calendar_sub_agent":  {"keys": [],            "default": null}
-  }
-}
-
-// ── Response:
-{
-  "key_map": {
-    "deepseek": {
-      "system":              {"keys": ["我的主力key", "备用key"], "default": "我的主力key"},
-      "main_session":        {"keys": ["我的主力key"],         "default": "我的主力key"},
-      "sub_agent":           {"keys": ["ds-bg"],               "default": "ds-bg"},
-      "vision":              {"keys": [],                      "default": null},
-      "image_gen":           {"keys": [],                      "default": null},
-      "web_search":          {"keys": [],                      "default": null},
-      "calendar_sub_agent":  {"keys": [],                      "default": null}
-    },
-    "gemini": {
-      "system":              {"keys": ["gem-paid"], "default": "gem-paid"},
-      "main_session":        {"keys": [],            "default": null},
-      "sub_agent":           {"keys": [],            "default": null},
-      "vision":              {"keys": [],            "default": null},
-      "image_gen":           {"keys": [],            "default": null},
-      "web_search":          {"keys": [],            "default": null},
-      "calendar_sub_agent":  {"keys": [],            "default": null}
+  "models": [
+    {
+      "name": "gemini-2.5-flash",
+      "family": "gemini",
+      "abilities": ["fc", "vision", "grounding", "context_cache"],
+      "compatible_endpoint_ids": [2, 3]
     }
-  }
+  ],
+  "endpoints": [
+    {
+      "id": 2,
+      "name": "Gemini 官方",
+      "provider": "gemini",
+      "payload_format": "gemini", // "gemini" | "openai"
+      "cache_transport": "remote_reference", // "remote_reference" | "inline_chunk"
+      "attachment_transports": ["file_uri", "inline_text", "inline_image"],
+      "configured": true,
+      "enabled": true
+    }
+  ],
+  "roles": [
+    { "role": "main", "model": "deepseek-v4-pro", "endpoint": 1 }
+  ]
 }
-// 返回 alias 字符串，前端无需知晓 DB ID。
-// 后续可扩展 strategy 字段（如 "round_robin"）实现轮询。
+```
 
+### 5.6 CRUD `/api/core/model-entries/` — 模型条目管理
+*   **GET `/api/core/model-entries/`**: 获取已注册的模型列表。
+*   **POST `/api/core/model-entries/`**: 创建模型。
+    ```json
+    {
+      "name": "deepseek-reasoner",
+      "family": "deepseek",
+      "abilities": ["fc", "thinking"],
+      "enabled": true
+    }
+    ```
+*   **PATCH `/api/core/model-entries/<id>/`**: 部分修改模型定义。
+*   **DELETE `/api/core/model-entries/<id>/`**: 注销/删除模型。
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-第六篇  日程 & 习惯 (Tasks / Calendar)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+### 5.7 CRUD `/api/core/endpoints/` — 通道端点管理 (Endpoint)
+*   **GET `/api/core/endpoints/`**: 获取已注册的通道端点列表。
+*   **POST `/api/core/endpoints/`**: 创建端点。
+    ```json
+    {
+      "name": "OpenRouter Gemini",
+      "provider": "openrouter",
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_key": 2, // 绑定的 ApiKey 整数 ID
+      "payload_format": "openai",
+      "cache_transport": "inline_chunk",
+      "attachment_transports": ["inline_text", "inline_image"],
+      "supported_families": ["gemini"],
+      "supported_models": [],
+      "excluded_models": [],
+      "model_name_prefix": "",
+      "model_name_overrides": {},
+      "enabled": true
+    }
+    ```
+*   **PATCH `/api/core/endpoints/<id>/`**: 部分修改通道配置。
+*   **DELETE `/api/core/endpoints/<id>/`**: 注销端点。
 
-6.1  CRUD /api/tasks/entries/  — ScheduleEntry
-─────────────────────────────────────────────────────────────
+### 5.8 GET/PUT `/api/core/config/roles/` — 角色模型映射配置
+*   **GET `/api/core/config/roles/`**: 获取各模型角色的当前绑定。支持注册多个 `role: "main"` 条目作为可供预设选择的主模型列表。
+    **Response (200):**
+    ```json
+    [
+      { "role": "main", "model": "deepseek-v4-pro", "endpoint": 1, "style_shadow": "deepseek-v4-flash" },
+      { "role": "main", "model": "gemini-2.5-pro", "endpoint": 2, "style_shadow": "gemini-2.5-flash" },
+      { "role": "general_sub_agent", "model": "deepseek-v4-flash", "endpoint": 1 },
+      { "role": "vision_helper", "model": "gemini-2.5-flash-lite", "endpoint": 2 },
+      { "role": "grounding", "model": "gemini-2.5-flash", "endpoint": 2 },
+      { "role": "image_gen", "model": "gemini-3-pro-image", "endpoint": 2 }
+    ]
+    ```
+*   **PUT `/api/core/config/roles/`**: 全量保存绑定搭配。
+    **Request Body:** 同 GET 返回数组结构。
 
-// ── 6.1a. GET /api/tasks/entries/
-// 可附加过滤: ?status=active&entry_type=todo&is_pinned=true
-// 返回: Array<ScheduleEntry>
+---
 
+## 第六篇  日程 & 习惯 (Tasks / Calendar)
+
+### 6.1 CRUD `/api/tasks/entries/` — ScheduleEntry 任务条目
+**GET Response (200) `?status=active&entry_type=`:**
+```json
 [
   {
     "id": 5,
-    "title": "Review PR #42",
-    "description": "Check the authentication middleware changes",
-    "entry_type": "todo",              // "todo" | "periodic" | "goal"
-    "status": "active",                // "active" | "suspended" | "escalated" | "archived"
+    "title": "Review PR",
+    "description": "...",
+    "entry_type": "todo", // "todo" | "periodic" | "goal"
+    "status": "active", // "active" | "suspended" | "escalated" | "archived"
     "is_pinned": false,
     "start_date": "2026-04-01",
-    "tags": ["dev", "review"],
-
-    // [todo 专用]
-    "due_date": "2026-05-03",
-
-    // [periodic 专用]
-    "interval_unit": null,             // "day" | "week" | "month"
-    "interval_value": null,            // 每 N 个单位
-    "end_type": null,                  // "count" | "date" | "never"
+    "tags": ["dev"],
+    "due_date": "2026-05-03", // todo 专用
+    "interval_unit": null, // periodic 专用: "day" | "week" | "month"
+    "interval_value": null, // periodic 专用
+    "end_type": null, // periodic 专用: "count" | "date" | "never"
     "end_count": null,
     "end_date": null,
-    "occurrences_done": 0,             // 已完成次数; next_due = start_date + interval × occurrences_done
-
-    // [goal 专用]
-    "goal_count": null,                // 每周期目标次数
-    "goal_period": null,               // "week" | "month"
-    "cycle_start": null,               // 当前周期起始日期
-    "cycle_due": null,                 // 当前周期截止日期
-
-    // GCal 同步
-    "gcal_event_id": "",               // 空字符串 = 未同步
+    "occurrences_done": 0,
+    "goal_count": null, // goal 专用
+    "goal_period": null, // goal 专用: "week" | "month"
+    "cycle_start": null,
+    "cycle_due": null,
+    "gcal_event_id": "",
     "gcal_event_link": "",
-
     "created_at": "2026-04-09T10:00:00Z",
     "updated_at": "2026-04-20T14:30:00Z"
   }
 ]
+```
+**POST Request:** 创建任务，Body 根据 `entry_type` 选择性传参。
 
-// ── 6.1b. POST /api/tasks/entries/ — 创建
+### 6.2 任务动作
+
+*   **POST `/api/tasks/entries/<pk>/complete/` — 打卡/完成**
+    **Request (Optional):** `{ "note": "did 3 sets" }`
+    **Response (201):** CompletionRecord 对象
+*   **POST `/api/tasks/entries/<pk>/suspend/` — 挂起**
+*   **POST `/api/tasks/entries/<pk>/resume/` — 恢复**
+
+### 6.3 Google Calendar 同步
+
+*   **POST `/api/tasks/entries/<pk>/gcal/` — 同步到 GCal**
+    **Response (200):**
+    ```json
+    {
+      "gcal_synced": true,
+      "gcal_event_id": "abcd1234",
+      "gcal_event_link": "https://..."
+    }
+    ```
+*   **DELETE `/api/tasks/entries/<pk>/gcal/` — 解除关联** -> `204 No Content`
+
+### 6.4 GET `/api/tasks/calendar/` — 90 天全区日历快照
+**Response (200) `/api/tasks/calendar/` 或 `/calendar/today/` (48h):**
+```json
 {
-  "title": "Review PR",
-  "description": "...",
-  "entry_type": "todo",                // 必填
-  "start_date": "2026-05-01",
-  "due_date": "2026-05-03",            // todo 用
-  "tags": ["dev"],
-  // periodic 可选字段: interval_unit, interval_value, end_type, end_count, end_date
-  // goal 可选字段: goal_count, goal_period
-}
-
-// ── 6.1c. GET    /api/tasks/entries/<pk>/ — 单条详情
-// ── 6.1d. PATCH  /api/tasks/entries/<pk>/ — 部分更新
-// ── 6.1e. DELETE /api/tasks/entries/<pk>/ — 软删除 (status → "archived")
-
-
-6.2  Entry Actions
-─────────────────────────────────────────────────────────────
-
-// ── 6.2a. POST /api/tasks/entries/<pk>/complete/  — 打卡完成
-// Body (optional): { "note": "did 3 sets" }
-// 返回: CompletionRecord 对象
-//
-// 按 entry_type 自动差异化行为：
-//
-//   todo:
-//     - 创建 CompletionRecord 后自动将 status 设为 "archived"
-//     - 一次性任务，完成即结束，不可重复打卡
-//     - 前端收到 201 后应将该项从活跃列表移除 / 标记为已完成
-//
-//   periodic:
-//     - occurrences_done += 1
-//     - 若设置了 end_count 且 occurrences_done >= end_count → status 自动 "archived"
-//     - 若设置了 end_date 且 next_due > end_date → status 自动 "archived"
-//
-//   goal:
-//     - 创建 CompletionRecord（含 cycle_start 标识归属周期）
-//     - 不自动归档，允许超额完成
-//     - 返回的 CompletionRecord 含 cycle_start 字段，前端可据此统计当前周期进度
-
-// ── 6.2b. POST /api/tasks/entries/<pk>/suspend/  — 挂起 (status → "suspended")
-// ── 6.2c. POST /api/tasks/entries/<pk>/resume/   — 恢复 (status → "active")
-
-
-6.3  Google Calendar Sync
-─────────────────────────────────────────────────────────────
-
-// ── 6.3a. POST /api/tasks/entries/<pk>/gcal/
-// 将 ScheduleEntry 推送到 Google Calendar（创建或更新 all-day event）。
-// 成功返回:
-{
-  "gcal_synced": true,
-  "gcal_event_id": "abcd1234",
-  "gcal_event_link": "https://www.google.com/calendar/event?eid=..."
-}
-// 失败 (502):
-{ "detail": "GCal sync failed: ...", "gcal_synced": false }
-
-// ── 6.3b. DELETE /api/tasks/entries/<pk>/gcal/
-// 解除 GCal 关联（删除远端 event，清空本地 gcal_event_id/link）。
-// 返回: 204 No Content
-
-
-6.4  Calendar Snapshots (GCal + ExoCore merged)
-─────────────────────────────────────────────────────────────
-后台定时任务（启动 + 每天 7:00/14:00/21:00 三次）从 Google Calendar 拉取
-事件（主日历 + google_calendar_extra_ids 中的订阅日历），与 ExoCore 内部
-ScheduleEntry 合并去重后写入 JSON 快照。订阅日历采用日期级缓存，每天仅首次
-同步时刷新。Google Tasks 不在此范围内。
-
-// ── 6.4a. GET /api/tasks/calendar/  — 90 天全量快照
-// 首次启动后立即可用；若文件尚未生成返回 503。
-
-{
-  "fetched_at": "2026-05-02T17:06:34+00:00",
+  "fetched_at": "2026-05-02T17:06:34Z",
   "window_start": "2026-05-02",
   "window_end": "2026-07-31",
-  "count": 4,
+  "count": 2,
   "events": [
     {
-      "id": "60ojiob1c5im8b9o..._20260503",   // GCal event ID (含 recurrence suffix)
-      "source": "gcal",                        // "gcal" | "exocore"
-      "title": "Misu 内驱",
-      "start": "2026-05-03",                   // all_day=true 时仅日期
-      "end": "2026-05-04",                     // GCal exclusive end
+      "id": "gcal_event_id",
+      "source": "gcal" | "exocore",
+      "title": "任务名称",
+      "start": "2026-05-03", // all_day=false 时为 ISO 8601 带时间字符串
+      "end": "2026-05-04",
       "all_day": true,
       "description": "",
       "location": "",
-      "html_link": "https://www.google.com/calendar/event?eid=...",
-      "entry_type": null,                      // null for GCal events
-      "status": null,
-      "exocore_entry_id": null,                // null for GCal events
-      "calendar_name": "xinyikathy@gmail.com", // 来源日历名称
-      "calendar_id": "xinyikathy@gmail.com"    // 来源日历 ID
-    },
-    {
-      "id": "exo_5",
-      "source": "exocore",
-      "title": "[ExoCore] Review PR #42",
-      "start": "2026-05-03",
-      "end": "2026-05-04",
-      "all_day": true,
-      "description": "Check the authentication middleware changes",
-      "location": null,
-      "html_link": "https://www.google.com/calendar/event?eid=...",  // if synced
-      "entry_type": "todo",
-      "status": "active",
-      "exocore_entry_id": 5,
-      "calendar_name": null,                   // null for ExoCore entries
-      "calendar_id": null
-    },
-    {
-      "id": "4dlo979grhe8hei2u9ikukv94g",
-      "source": "gcal",
-      "title": "ZBH treffen",
-      "start": "2026-05-05T13:00:00+02:00",    // all_day=false 时带时间
-      "end": "2026-05-05T14:30:00+02:00",
-      "all_day": false,
-      "description": "",
-      "location": "Albert-Einstein-Ring, Hamburg",
-      "html_link": "https://www.google.com/calendar/event?eid=...",
+      "html_link": "https://...",
       "entry_type": null,
       "status": null,
       "exocore_entry_id": null,
-      "calendar_name": "xinyikathy@gmail.com",
-      "calendar_id": "xinyikathy@gmail.com"
+      "calendar_name": "xinyi@gmail.com",
+      "calendar_id": "xinyi@gmail.com"
     }
   ]
 }
+```
 
-// 去重规则: ExoCore 条目如已同步到 GCal (gcal_event_id 匹配某 GCal 事件),
-// 则仅保留 GCal 版本，不重复出现。
-//
-// calendar_name / calendar_id: 标识事件来源日历。GCal 事件携带其所属日历的
-// 名称和 ID；ExoCore 内部条目这两个字段为 null。前端可据此区分主日历事件与
-// 订阅日历事件（如 [德甲赛程]）。
-
-// ── 6.4b. GET /api/tasks/calendar/today/  — 48h 快照
-// calendar_schedule.json 的子集，供 timeline / routine 近期提醒。
-// 结构与 §6.4a 完全一致，仅 window_start/window_end 为 48h 范围。
-// 若文件尚未生成返回 503。
-
-
-6.5  GET /api/tasks/completions/  — CompletionRecord 列表
-─────────────────────────────────────────────────────────────
-GET /api/tasks/completions/?entry=<pk>
-
+### 6.5 GET `/api/tasks/completions/` — 历史打卡记录
+**Response (200) `?entry=<pk>`:**
+```json
 [
   {
     "id": 12,
     "entry": 5,
     "completed_at": "2026-05-01T09:30:00Z",
-    "cycle_start": null,               // goal 类型记录归属周期
-    "note": "did 3 sets"
+    "cycle_start": null,
+    "note": "备注内容"
   }
 ]
+```
 
+---
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-第七篇  用量统计 (Telemetry)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 第七篇  用量统计 (Telemetry)
 
-7.1  GET /api/telemetry/usage/?mode=&from=  — 每日粒度用量
-─────────────────────────────────────────────────────────────
-折线图用。mode: "week" (7天) | "month" (30天)。from: 起始日期 YYYY-MM-DD，默认今天。
-
+### 7.1 GET `/api/telemetry/usage/` — 每日用量折线
+**Response (200) `?mode=week|month&from=YYYY-MM-DD`:**
+```json
 {
   "daily": [
     {
@@ -1161,17 +677,10 @@ GET /api/tasks/completions/?entry=<pk>
       "models": [
         {
           "model": "gemini-3.1-pro-preview",
-          "input_tokens": 12345,      // promptTokenCount (char-based estimate for non-Gemini)
-          "output_tokens": 6789,      // candidatesTokenCount
-          "cached_tokens": 12000,     // cachedContentTokenCount (Gemini) / prompt_cache_hit_tokens (DeepSeek); 0 = miss
+          "input_tokens": 12345,
+          "output_tokens": 6789,
+          "cached_tokens": 12000,
           "conversation_count": 5
-        },
-        {
-          "model": "deepseek-v4-pro",
-          "input_tokens": 800,
-          "output_tokens": 250,
-          "cached_tokens": 750,
-          "conversation_count": 2
         }
       ]
     }
@@ -1180,251 +689,97 @@ GET /api/tasks/completions/?entry=<pk>
   "to": "2026-04-27",
   "is_current": true
 }
+```
 
+### 7.2 GET `/api/telemetry/weekly/` — 周度聚合用量
+**Response (200) `?weeks=12&from=YYYY-MM-DD`:** Array 聚合结果。
 
-7.2  GET /api/telemetry/weekly/  — 周度聚合用量
-─────────────────────────────────────────────────────────────
-概览用。参数: ?weeks=12&from=YYYY-MM-DD。from: 周一日期，默认本周一。
+### 7.3 GET `/api/telemetry/monthly/` — 月度聚合用量
+**Response (200) `?months=6&from=YYYY-MM`:** Array 聚合结果。
 
-{
-  "weekly": [
-    {
-      "week": "04/21–04/27",
-      "is_current": true,
-      "models": [
-        {"model": "gemini-3.1-pro-preview", "input_tokens": 12345, "output_tokens": 6789, "cached_tokens": 12000, "conversation_count": 5}
-      ]
-    }
-  ]
-}
+---
 
+## 第八篇  群聊 (GroupChat)
 
-7.3  GET /api/telemetry/monthly/  — 月度聚合用量
-─────────────────────────────────────────────────────────────
-概览用。参数: ?months=6&from=YYYY-MM。from: 月份 YYYY-MM，默认当月。
-
-{
-  "monthly": [
-    {
-      "month": "2026-04",
-      "is_current": true,
-      "models": [
-        {"model": "gemini-3.1-pro-preview", "input_tokens": 123450, "output_tokens": 67890, "cached_tokens": 120000, "conversation_count": 50}
-      ]
-    }
-  ]
-}
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-第八篇  群聊 (GroupChat)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-8.1  GET/POST /api/groupchat/  — 群聊列表 & 创建
-─────────────────────────────────────────────────────────────
-
-// ── 8.1a. GET /api/groupchat/ — 列表
-// 支持过滤: ?participant_id=2  返回该参加者所在的所有群聊
-// 按 created_at 降序排列
-
+### 8.1 GET/POST `/api/groupchat/` — 群聊列表与创建
+**GET Response (200) `?participant_id=` / POST Response (201):**
+```json
 [
   {
     "id": 3,
-    "name": "技术讨论",
-    "prompt": "AI 技术前沿讨论群，聚焦 LLM 架构与工具开发",
+    "name": "讨论群",
+    "prompt": "提示词...",
     "participant_ids": [2, 6],
-    "created_at": "2026-06-07T19:47:46.338185Z"
+    "created_at": "2026-06-07T19:47:46Z"
   }
 ]
+```
 
-// ── 8.1b. POST /api/groupchat/ — 创建
-// Request:
-{
-  "name": "技术讨论",
-  "prompt": "AI 技术前沿讨论群，聚焦 LLM 架构与工具开发",
-  "participant_ids": [2, 6]
-}
-// prompt 可选，默认为空字符串。participant_ids 中 2 = 用户，其他为 AgentPreset.id。
-// Response (201): 同上列表项格式
+### 8.2 GET/PATCH/DELETE `/api/groupchat/<id>/` — 单群详情/修改/解散
+**PATCH Request:** 可传 name, prompt, participant_ids。
+**DELETE:** -> `204 No Content`
 
-
-8.2  GET/PATCH/DELETE /api/groupchat/<id>/  — 群聊详情 & 更新 & 删除
-─────────────────────────────────────────────────────────────
-
-// ── 8.2a. GET — 详情
-{
-  "id": 3,
-  "name": "技术讨论",
-  "prompt": "AI 技术前沿讨论群，聚焦 LLM 架构与工具开发",
-  "participant_ids": [2, 6],
-  "created_at": "2026-06-07T19:47:46.338185Z"
-}
-
-// ── 8.2b. PATCH — 部分更新（覆盖式 participant_ids）
-// 可更新字段: name, prompt, participant_ids（均可选）
-// Request:
-{ "name": "技术讨论v2", "participant_ids": [2, 6, 8] }
-// 更新 participant_ids 即时生效——Superior Wakeup 的 build_summary 按新名单推送。
-// Response: 更新后的完整对象
-
-// ── 8.2c. DELETE — 删除群聊
-// → 204 No Content
-// CASCADE 删除所有关联消息
-
-
-8.3  GET/POST /api/groupchat/<id>/messages/  — 消息列表 & 发消息
-─────────────────────────────────────────────────────────────
-
-// ── 8.3a. GET — 消息列表
-// 按 created_at 正序排列（最早在上）
-
+### 8.3 GET/POST `/api/groupchat/<id>/messages/` — 消息流
+**GET Response (200) / POST Response (201):**
+```json
 [
-  {
-    "id": 2,
-    "group": 3,
-    "sender_id": 2,
-    "content": "第一条消息！",
-    "mention_ids": [],
-    "created_at": "2026-06-07T19:48:21.264922Z"
-  },
   {
     "id": 3,
     "group": 3,
-    "sender_id": 6,
-    "content": "收到，@用户 你好！",
+    "sender_id": 6, // 2 = 用户，其他 = AgentPreset.id
+    "content": "消息正文",
     "mention_ids": [2],
-    "created_at": "2026-06-07T19:48:21.340439Z"
+    "created_at": "2026-06-07T19:48:21Z"
   }
 ]
+```
 
-// ── 8.3b. POST — 发消息
-// Request:
-{
-  "sender_id": 2,
-  "content": "第一条消息！",
-  "mention_ids": []
-}
-// sender_id: 2 = 用户，其他 = AgentPreset.id
-// mention_ids: 被 @ 的 preset_id 列表，可选（空数组 = 不 @ 任何人）
-// Response (201): 同上列表项格式
+---
 
+## 第九篇  Push 通知 & 订阅 (Push / Register)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-第九篇  Push 通知 & 订阅 (Push / Register)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-9.1  POST /api/push/subscribe/  — 订阅推送
-─────────────────────────────────────────────────────────────
-浏览器 Service Worker 注册后调用，upsert（同 endpoint 重复订阅 = 更新）。
-
-// Request:
+### 9.1 POST `/api/push/subscribe/` — 注册浏览器推送
+**Request:**
+```json
 {
   "subscription": {
     "endpoint": "https://fcm.googleapis.com/fcm/send/...",
     "expirationTime": null,
     "keys": { "p256dh": "...", "auth": "..." }
   },
-  "device_name": "iPhone"                // 可选，用户自定义设备名
+  "device_name": "iPhone"
 }
+```
+**Response (201):** 包含完整订阅项 ID、设备名及 `is_active`。
 
-// Response (201):
+### 9.2 POST `/api/push/unsubscribe/` — 取消推送
+**Request:** `{ "endpoint": "https://..." }` -> `204 No Content`
+
+### 9.3 Service Worker 接收的 Push Payload
+```json
 {
-  "id": 3,
-  "endpoint": "https://fcm.googleapis.com/fcm/send/...",
-  "p256dh": "...",
-  "auth": "...",
-  "user_agent": "Mozilla/5.0 ...",
-  "device_name": "iPhone",               // 空字符串 = 未设置
-  "is_active": true,
-  "created_at": "2026-06-09T12:00:00Z",
-  "updated_at": "2026-06-09T12:00:00Z"
-}
-
-
-9.2  POST /api/push/unsubscribe/  — 取消订阅
-─────────────────────────────────────────────────────────────
-
-// Request:
-{ "endpoint": "https://fcm.googleapis.com/fcm/send/..." }
-
-// Response: 204 No Content（幂等，不存在也返回 204）
-
-
-9.3  Push 消息 Payload（后端 → 浏览器）
-─────────────────────────────────────────────────────────────
-由 PushService.send_to_all() 生成，经 Web Push 送达 Service Worker。
-
-{
-  "title": "编译完成",
-  "body": "前端构建已成功完成。",
+  "title": "通知标题",
+  "body": "通知正文",
   "data": {
-    "url": "/chat/agent/6",              // 点击通知跳转目标
-    "sender_type": "agent",              // "agent" | "system"
-    "sender_name": "G045",               // AgentPreset.name 或 "ExoCore"
-    "preset_id": 6,                      // null 当 sender_type="system"
-    "register_id": 42                    // 可选，关联的短期 Register 条目 ID
+    "url": "/chat/agent/6",
+    "sender_type": "agent" | "system",
+    "sender_name": "G045",
+    "preset_id": 6,
+    "register_id": 42
   },
-  "requireInteraction": true             // false = low urgency 时自动关闭
+  "requireInteraction": true
 }
-// 多条推送始终堆叠，不替换。
+```
 
-// Service Worker 收到后调用 showNotification()。
-// notificationclick → postMessage({ type: 'PUSH_NAVIGATE', url, registerId })
-// 前端先 navigate(url)，若有 registerId 则调 POST /ack/ 将前缀替换为 [已被用户查看]。
-
-
-9.4  POST /api/agents/registers/<pk>/ack/  — 通知查看回执
-─────────────────────────────────────────────────────────────
-用途：用户操作通知后回调，将 Register 内容前缀 [推送通知] 替换为用户行为。
-后端通过 subscription_endpoint 反查 PushSubscription.device_name，
-将设备名写入前缀，供 Superior 后续读到 Register 时知晓在哪台设备上操作。
-
-// Request:
-// POST /api/agents/registers/42/ack/?preset_id=6
+### 9.4 POST `/api/agents/registers/<pk>/ack/` — 通知回执状态变更
+**Request:**
+```json
 {
-  "action": "navigate",                              // "navigate" | "dismiss"
-  "subscription_endpoint": "https://fcm.googleapis.com/fcm/send/..."  // 可选，SW 自动获取
+  "action": "navigate" | "dismiss",
+  "subscription_endpoint": "https://..."
 }
-
-// action 含义:
-//   navigate = 用户点击了「跳转」按钮或通知主体（已跳转查看）
-//   dismiss  = 用户点击了「关闭」按钮（明确忽略）
-
-// subscription_endpoint:
-//   Service Worker 从 pushManager.getSubscription().endpoint 获取，前端透传。
-//   后端据此查找 PushSubscription.device_name，生成含设备名的前缀。
-//   省略或查不到时 fallback 为不含设备名的旧格式。
-
-// Response (200) — 有设备名:
-// navigate → 前缀替换为 [用户已在"PC"上查看]
+```
+**Response (200):**
+```json
 { "id": 42, "content": "[用户已在\"PC\"上查看] 编译完成" }
-
-// dismiss → 前缀替换为 [用户已在"PC"上忽略]
-{ "id": 43, "content": "[用户已在\"PC\"上忽略] 编译完成" }
-
-// Response (200) — 无设备名 / 未传 endpoint（fallback）:
-{ "id": 44, "content": "[已被用户查看] 编译完成" }
-{ "id": 45, "content": "[已被用户忽略] 编译完成" }
-
-// 404: { "error": "Register id=42 not found for preset 6" }
-// 400: { "error": "preset_id query param is required" }
-
-// 幂等：已替换前缀的 Register 不会再次替换。
-
-9.5  PushSubscription 模型字段
-─────────────────────────────────────────────────────────────
-字段一览（DB 层，非全部通过 API 暴露）：
-
-┌─────────────────┬──────────────┬──────────────────────────────────┐
-│ 字段            │ 类型         │ 说明                             │
-├─────────────────┼──────────────┼──────────────────────────────────┤
-│ id              │ int          │ 主键                             │
-│ endpoint        │ URLField     │ Push service 端点，unique        │
-│ p256dh          │ CharField    │ 客户端 DH 公钥                   │
-│ auth            │ CharField    │ 客户端 auth secret               │
-│ user_agent      │ CharField    │ 浏览器 UA，自动从请求头获取       │
-│ device_name     │ CharField    │ 用户自定义设备名，不检查重名       │
-│ is_active       │ BooleanField │ 软停用（410 Gone 自动标记 false） │
-│ created_at      │ DateTime     │ 首次订阅时间                     │
-│ updated_at      │ DateTime     │ 最后更新时间                     │
-└─────────────────┴──────────────┴──────────────────────────────────┘
+```
