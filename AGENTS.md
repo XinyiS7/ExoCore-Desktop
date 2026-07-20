@@ -2,8 +2,7 @@
 
 This file provides guidance to Codex when working with code in this repository.
 
-**Parent spec:** `../ReactSheet_Reorganized.md` — API contract (reorganized, this is the active reference).
-**API contract (legacy):** `../ExoCore/ReactSheet.txt` — original flat spec, superseded by ReactSheet_Reorganized.md.
+**API contract:** `ReactSheet.md` — active API reference (in-repo).
 **Cross-module context:** `../AGENT.md` and `../.agent/project.md`
 **Nginx deployment:** `../nginx/nginx.conf` — reverse proxy config
 **Startup script:** `../hybrid_start.ps1` — unified pgvector + Django + nginx launcher
@@ -25,7 +24,7 @@ If a task requires backend or extension changes:
 ## Before You Code
 
 - **Evaluate necessity.** Not every request needs to be implemented exactly as stated. Think about whether the ask is reasonable, whether a simpler approach exists, and whether the benefit justifies the complexity. Push back on over-engineering.
-- **Check the API contract first.** `ReactSheet_Reorganized.md` defines the data shapes. If a proposed change doesn't match the spec, discuss before coding.
+- **Check the API contract first.** `ReactSheet.md` defines the data shapes. If a proposed change doesn't match the spec, discuss before coding.
 - **Respect existing patterns.** This monorepo has established conventions — match them. Don't introduce new patterns without a reason.
 
 # V3 Frontend Split

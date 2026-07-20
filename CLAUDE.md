@@ -2,8 +2,7 @@
 
 This file provides guidance to Claude Code when working with code in this repository.
 
-**Parent spec:** `../ReactSheet_Reorganized.md` — API contract (reorganized, this is the active reference).
-**API contract (legacy):** `../ExoCore/ReactSheet.txt` — original flat spec, superseded by ReactSheet_Reorganized.md.
+**API contract:** `ReactSheet.md` — active API reference (in-repo).
 **Cross-module context:** `../AGENT.md` and `../.agent/project.md`
 **Nginx deployment:** `../nginx/nginx.conf` — reverse proxy config
 **Startup script:** `../hybrid_start.ps1` — unified pgvector + Django + nginx launcher
@@ -45,7 +44,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 **4. Grounding & Anti-Hallucination (CRITICAL):**
 - **NO INVENTION:** NEVER assume a component, hook, API endpoint, or data field exists. You MUST empirically verify its exact name and signature by reading the source code or using Grep before writing code that interacts with it.
 - **No Mocking/Stubbing Data:** Do not invent mock data structures, fake API responses, or "stub" implementations unless explicitly directed. Always use the actual API contracts and data shapes present in the project.
-- **Prove It Before You Write It:** If you are unsure about an API response shape or component interface, read the defining file or `ReactSheet_Reorganized.md` first. Hallucinating API shapes or component props causes critical system failures and is strictly forbidden.
+- **Prove It Before You Write It:** If you are unsure about an API response shape or component interface, read the defining file or `ReactSheet.md` first. Hallucinating API shapes or component props causes critical system failures and is strictly forbidden.
 
 **5. String Quotes:**
 - Prefer double quotes as the outermost string delimiter in JavaScript/JSX.
@@ -67,7 +66,7 @@ If a task requires backend or extension changes:
 
 - **Plan first, work later.** Think through the approach before writing any code. Identify all files that will be touched and verify assumptions by reading source files.
 - **Evaluate necessity.** Not every request needs to be implemented exactly as stated. Think about whether the ask is reasonable, whether a simpler approach exists, and whether the benefit justifies the complexity. Push back on over-engineering.
-- **Check the API contract first.** `ReactSheet_Reorganized.md` defines the data shapes. If a proposed change doesn't match the spec, discuss before coding.
+- **Check the API contract first.** `ReactSheet.md` defines the data shapes. If a proposed change doesn't match the spec, discuss before coding.
 - **Respect existing patterns.** This monorepo has established conventions — match them. Don't introduce new patterns without a reason.
 
 # V3 Frontend Split
