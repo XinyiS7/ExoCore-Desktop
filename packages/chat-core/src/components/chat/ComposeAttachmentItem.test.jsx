@@ -9,72 +9,202 @@ function makeEntry(overrides = {}) {
     name: 'test.jpg',
     type: 'image/jpeg',
     uploading: false,
-    error: null,
+    attachmentId: null,
+    status: null,
+    diagnostics: [],
     ...overrides,
   };
 }
 
+function failedDiagnostics(message = '上传失败') {
+  return [{ stage: 'upload', code: 'attachment_upload_failed', level: 'error', message }];
+}
+
 describe('ComposeAttachmentItem', () => {
+  // ── Basic rendering ──
   it('shows the file name', () => {
-    render(<ComposeAttachmentItem entry={makeEntry({ name: 'photo.png' })} onRemove={vi.fn()} />);
+    render(<ComposeAttachmentItem
+      entry={makeEntry({ name: 'photo.png' })}
+      onRemove={vi.fn()}
+    />);
     expect(screen.getByText('photo.png')).toBeInTheDocument();
   });
 
   it('renders image preview when preview is provided', () => {
-    render(<ComposeAttachmentItem entry={makeEntry({ preview: 'blob:test' })} onRemove={vi.fn()} />);
+    render(<ComposeAttachmentItem
+      entry={makeEntry({ preview: 'blob:test' })}
+      onRemove={vi.fn()}
+    />);
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', 'blob:test');
   });
 
+  // ── Uploading ──
   it('shows uploading spinner for image entries', () => {
-    render(<ComposeAttachmentItem entry={makeEntry({ preview: 'blob:test', uploading: true })} onRemove={vi.fn()} />);
-    // The spinner is an animate-spin div; verify it exists within the overlay
+    render(<ComposeAttachmentItem
+      entry={makeEntry({ preview: 'blob:test', uploading: true })}
+      onRemove={vi.fn()}
+    />);
     expect(document.querySelector('.animate-spin')).toBeTruthy();
   });
 
-  it('displays error text for failed image entries, not just "!"', () => {
+  // ── Failed image ──
+  it('displays error text from diagnostics for failed image entries', () => {
     render(
       <ComposeAttachmentItem
-        entry={makeEntry({ preview: 'blob:test', error: 'upload' })}
+        entry={makeEntry({
+          preview: 'blob:test',
+          status: 'failed',
+          attachmentId: null,
+          diagnostics: failedDiagnostics('上传失败'),
+        })}
         onRemove={vi.fn()}
       />
     );
-    // Should show human-readable Chinese label, not the old single "!"
     expect(screen.getByText('上传失败')).toBeInTheDocument();
-    // The old pattern was an isolated "!" — verify we have a real error message
+    // The old pattern was an isolated "!" — verify no bare "!"
     const errorNodes = Array.from(document.querySelectorAll('span'))
       .filter(el => el.textContent.trim() === '!');
     expect(errorNodes).toHaveLength(0);
   });
 
-  it('displays preprocess error label', () => {
+  it('displays first error diagnostic when multiple diagnostics exist', () => {
     render(
       <ComposeAttachmentItem
-        entry={makeEntry({ preview: 'blob:test', error: 'preprocess' })}
+        entry={makeEntry({
+          preview: 'blob:test',
+          status: 'failed',
+          attachmentId: null,
+          diagnostics: [
+            { stage: 'preprocess', code: 'x', level: 'warning', message: '无关' },
+            { stage: 'upload', code: 'attachment_upload_failed', level: 'error', message: '文件过大' },
+            { stage: 'resolve', code: 'y', level: 'error', message: '还有这个错误' },
+          ],
+        })}
         onRemove={vi.fn()}
       />
     );
-    expect(screen.getByText('压缩失败')).toBeInTheDocument();
+    // Should show the first error message, not the warning
+    expect(screen.getByText('文件过大')).toBeInTheDocument();
+    expect(screen.queryByText('无关')).toBeNull();
+    expect(screen.queryByText('还有这个错误')).toBeNull();
   });
 
-  it('shows error on non-image chip entries', () => {
+  // ── Failed non-image chip ──
+  it('shows error on non-image chip via diagnostics', () => {
     render(
       <ComposeAttachmentItem
-        entry={makeEntry({ name: 'doc.pdf', type: 'application/pdf', error: 'upload' })}
+        entry={makeEntry({
+          name: 'doc.pdf',
+          type: 'application/pdf',
+          status: 'failed',
+          attachmentId: null,
+          diagnostics: failedDiagnostics('上传失败'),
+        })}
         onRemove={vi.fn()}
       />
     );
     expect(screen.getByText('上传失败')).toBeInTheDocument();
   });
 
+  it('falls back to raw message for unknown error', () => {
+    render(
+      <ComposeAttachmentItem
+        entry={makeEntry({
+          preview: 'blob:test',
+          status: 'failed',
+          attachmentId: null,
+          diagnostics: [{ stage: 'unknown', code: 'x', level: 'error', message: 'Something went wrong' }],
+        })}
+        onRemove={vi.fn()}
+      />
+    );
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+  });
+
+  // ── OK degraded (amber state) ──
+  it('shows amber overlay with warning for ok_degraded image', () => {
+    render(
+      <ComposeAttachmentItem
+        entry={makeEntry({
+          preview: 'blob:test',
+          uploading: false,
+          attachmentId: 12,
+          status: 'ok_degraded',
+          diagnostics: [
+            { stage: 'preprocess', code: 'image_preprocess_failed', level: 'warning', message: '已使用原图' },
+          ],
+        })}
+        onRemove={vi.fn()}
+      />
+    );
+    // Warning message visible in amber overlay
+    expect(screen.getByText('已使用原图')).toBeInTheDocument();
+    // But NOT red error text (amber overlay ≠ red overlay)
+    expect(screen.queryByTestId('attachment-error-text')).toBeNull();
+  });
+
+  it('shows amber chip for ok_degraded non-image file', () => {
+    render(
+      <ComposeAttachmentItem
+        entry={makeEntry({
+          name: 'data.zip',
+          type: 'application/zip',
+          uploading: false,
+          attachmentId: 7,
+          status: 'ok_degraded',
+          diagnostics: [
+            { stage: 'upload', code: 'x', level: 'warning', message: '部分降级' },
+          ],
+        })}
+        onRemove={vi.fn()}
+      />
+    );
+    const warningEl = screen.getByTestId('attachment-warning-text');
+    expect(warningEl).toBeInTheDocument();
+    expect(warningEl.textContent).toBe('部分降级');
+  });
+
+  it('shows fallback label when ok_degraded has no diagnostics', () => {
+    render(
+      <ComposeAttachmentItem
+        entry={makeEntry({
+          preview: 'blob:test',
+          uploading: false,
+          attachmentId: 3,
+          status: 'ok_degraded',
+          diagnostics: [],
+        })}
+        onRemove={vi.fn()}
+      />
+    );
+    expect(screen.getByText('已降级处理')).toBeInTheDocument();
+  });
+
+  // ── Close button ──
   it('close button is always visible (no hover dependency)', () => {
     render(<ComposeAttachmentItem entry={makeEntry({ preview: 'blob:test' })} onRemove={vi.fn()} />);
-    // The button uses aria-label — find by role button with the remove label
     const btns = screen.getAllByRole('button');
     const removeBtn = btns.find(b => b.getAttribute('aria-label')?.includes('Remove'));
     expect(removeBtn).toBeTruthy();
-    // Button should not rely on opacity-0 for visibility
     expect(removeBtn.className).not.toContain('opacity-0');
+  });
+
+  it('remove button works on ok_degraded entries too', () => {
+    render(
+      <ComposeAttachmentItem
+        entry={makeEntry({
+          preview: 'blob:test',
+          attachmentId: 12,
+          status: 'ok_degraded',
+          diagnostics: [{ stage: 'preprocess', code: 'x', level: 'warning', message: 'test' }],
+        })}
+        onRemove={vi.fn()}
+      />
+    );
+    const btns = screen.getAllByRole('button');
+    const removeBtn = btns.find(b => b.getAttribute('aria-label')?.includes('Remove'));
+    expect(removeBtn).toBeTruthy();
   });
 
   it('calls onRemove with clientId when remove button clicked', () => {
@@ -86,15 +216,5 @@ describe('ComposeAttachmentItem', () => {
     fireEvent.click(removeBtn);
 
     expect(onRemove).toHaveBeenCalledWith(42);
-  });
-
-  it('falls back to raw error string when stage is unknown', () => {
-    render(
-      <ComposeAttachmentItem
-        entry={makeEntry({ preview: 'blob:test', error: 'Something went wrong' })}
-        onRemove={vi.fn()}
-      />
-    );
-    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
   });
 });

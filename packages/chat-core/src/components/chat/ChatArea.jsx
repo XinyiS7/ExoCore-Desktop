@@ -235,67 +235,105 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  }, 0);
  }, [inputValue]);
 
- const handleFilesSelected = (files) => {
- if (!activeSessionId || files.length === 0) return;
+  const handleFilesSelected = (files) => {
+  if (!activeSessionId || files.length === 0) return;
 
- const fileArray = Array.from(files);
- const entries = fileArray.map(f => ({
-  clientId: ++nextClientIdRef.current,
-  file: f,
-  preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
-  name: f.name,
-  type: f.type,
-  attachmentId: null,
-  uploading: true,
-  error: null,
- }));
-
- setComposeAttachments(prev => [...prev, ...entries]);
-
- uploadFilesToAttachments(activeSessionId, fileArray)
-  .then(({ attachments, failures }) => {
-  // Consume display_name in order to handle duplicate filenames correctly
-  const remainingAttachments = [...attachments];
-  const remainingFailures = [...failures];
-
-  setComposeAttachments(prev => prev.map(e => {
-   const match = entries.find(en => en.clientId === e.clientId);
-   if (!match) return e;
-
-   const failIdx = remainingFailures.findIndex(f => f.display_name === e.name);
-   if (failIdx !== -1) {
-    const failed = remainingFailures.splice(failIdx, 1)[0];
-    return { ...e, uploading: false, error: failed.stage || 'upload failed' };
-   }
-
-   const attIdx = remainingAttachments.findIndex(a => a.display_name === e.name);
-   if (attIdx !== -1) {
-    const att = remainingAttachments.splice(attIdx, 1)[0];
-    return { ...e, attachmentId: att.id, uploading: false };
-   }
-
-   return { ...e, uploading: false, error: 'No attachment result' };
+  const fileArray = Array.from(files);
+  const entries = fileArray.map(f => ({
+   clientId: ++nextClientIdRef.current,
+   file: f,
+   preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
+   name: f.name,
+   type: f.type,
+   attachmentId: null,
+   uploading: true,
+   status: null,
+   diagnostics: [],
   }));
-  fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/attachments/`, { credentials: 'include' })
-   .then(res => res.json())
-   .then(data => setSessionAttachments(Array.isArray(data) ? data : (data.attachments || [])))
-   .catch(() => {});
-  })
-  .catch(err => {
-  setComposeAttachments(prev => prev.map(e => {
-   const match = entries.find(en => en.clientId === e.clientId);
-   if (!match) return e;
 
-   if (err.failures && Array.isArray(err.failures)) {
-    const failed = err.failures.find(f => f.display_name === e.name);
-    if (failed) {
-     return { ...e, uploading: false, error: failed.stage || err.message };
+  // Build clientId → batchIdx lookup for O(1) input_index matching
+  const batchIdxByClientId = new Map();
+  entries.forEach((e, i) => batchIdxByClientId.set(e.clientId, i));
+
+  setComposeAttachments(prev => [...prev, ...entries]);
+
+  uploadFilesToAttachments(activeSessionId, fileArray)
+   .then((data) => {
+   const results = data.results || [];
+
+   setComposeAttachments(prev => prev.map(e => {
+    const batchIdx = batchIdxByClientId.get(e.clientId);
+    if (batchIdx === undefined) return e;
+
+    const result = results[batchIdx];
+    if (!result) {
+     return {
+      ...e,
+      uploading: false,
+      status: 'failed',
+      diagnostics: [{ stage: 'resolve', code: 'no_result', level: 'error', message: 'No result' }],
+     };
     }
-   }
-   return { ...e, uploading: false, error: err.message };
-  }));
-  });
- };
+
+    return {
+     ...e,
+     uploading: false,
+     attachmentId: result.attachment?.id || null,
+     status: result.status,
+     diagnostics: result.diagnostics || [],
+    };
+   }));
+   fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/attachments/`, { credentials: 'include' })
+    .then(res => res.json())
+    .then(data => setSessionAttachments(Array.isArray(data) ? data : (data.attachments || [])))
+    .catch(() => {});
+   })
+   .catch(err => {
+   const results = err.results || [];
+   const failures = err.failures || [];
+
+   setComposeAttachments(prev => prev.map(e => {
+    const batchIdx = batchIdxByClientId.get(e.clientId);
+    if (batchIdx === undefined) return e;
+
+    // Prefer results[] when server provides it (M1 contract)
+    const result = results[batchIdx];
+    if (result) {
+     return {
+      ...e,
+      uploading: false,
+      attachmentId: result.attachment?.id || null,
+      status: result.status,
+      diagnostics: result.diagnostics || [],
+     };
+    }
+
+    // Fallback: match by input_index in failures[]
+    const failed = failures.find(f => f.input_index === batchIdx);
+    if (failed) {
+     return {
+      ...e,
+      uploading: false,
+      attachmentId: null,
+      status: 'failed',
+      diagnostics: failed.diagnostics || [{
+       stage: failed.stage,
+       code: failed.code,
+       level: 'error',
+       message: failed.message,
+      }],
+     };
+    }
+
+    return {
+     ...e,
+     uploading: false,
+     status: 'failed',
+     diagnostics: [{ stage: 'resolve', code: 'upload_error', level: 'error', message: err.message || 'Upload failed' }],
+    };
+   }));
+   });
+  };
 
  const handleRemoveComposeAttachment = (clientId) => {
  setComposeAttachments(prev => {
@@ -707,9 +745,21 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  const editMessageId = options.editMessageId ?? editingMessageId;
  const forceCacheRebuild = options.forceCacheRebuild || false;
 
- if ((!inputValue.trim() && editMessageId == null && composeAttachments.length === 0) || isGenerating) return;
+  if ((!inputValue.trim() && editMessageId == null && composeAttachments.length === 0) || isGenerating) return;
 
- let historyToKeep = [...allHistoryRef.current];
+  // Send guard: block if uploads pending or failed entries remain
+  const uploadingEntries = composeAttachments.filter(e => e.uploading);
+  if (uploadingEntries.length > 0) {
+   alert('还有文件在上传中，请稍候');
+   return;
+  }
+  const failedEntries = composeAttachments.filter(e => e.status === 'failed');
+  if (failedEntries.length > 0) {
+   alert(`以下文件上传失败，请移除后重试：\n${failedEntries.map(e => e.name).join('\n')}`);
+   return;
+  }
+
+  let historyToKeep = [...allHistoryRef.current];
  let userMsg = null;
  let aiMsg = { id: Date.now(), role: 'assistant', content: '', reasoning_content: '', reasoning_steps: [], new_anchors: [] };
 
