@@ -92,7 +92,59 @@ error payload (commit 6 shape):
 
 ### 1.5 Conversation Attachments — 会话附件
 
-**POST /api/agents/conversations/<pk>/attachments/** — 上传文件/图片
+**POST /api/agents/conversations/<pk>/attachments/** — 上传文件/图片（multipart `files`）
+
+部分或全部成功返回 201；全部失败返回 422。两种状态都返回与输入文件同序、等长的
+`results`。`attachments` / `failures` 是兼容字段，由 `results` 派生。
+
+```json
+{
+  "attachments": [{"id": 12, "display_name": "ok.jpg", "mime_type": "image/jpeg"}],
+  "failures": [{
+    "input_index": 1,
+    "display_name": "failed.jpg",
+    "mime_type": "image/jpeg",
+    "stage": "upload",
+    "code": "attachment_upload_failed",
+    "message": "图片上传失败",
+    "reason": "图片上传失败",
+    "diagnostics": [{
+      "stage": "upload",
+      "code": "attachment_upload_failed",
+      "level": "error",
+      "message": "图片上传失败",
+      "input_variant": "preprocessed"
+    }]
+  }],
+  "results": [
+    {
+      "input_index": 0,
+      "status": "ok",
+      "attachment": {"id": 12, "display_name": "ok.jpg", "mime_type": "image/jpeg"},
+      "diagnostics": []
+    },
+    {
+      "input_index": 1,
+      "status": "failed",
+      "attachment": null,
+      "diagnostics": [{
+        "stage": "upload",
+        "code": "attachment_upload_failed",
+        "level": "error",
+        "message": "图片上传失败",
+        "input_variant": "preprocessed"
+      }]
+    }
+  ]
+}
+```
+
+- `status`: `ok | ok_degraded | failed`
+- `diagnostics`: 按处理顺序排列；可同时含 preprocess warning 与 upload error
+- `input_variant`: `preprocessed | original`
+- `detail` 是服务端诊断字段，HTTP 响应永不输出
+- 422 额外包含 `"error": "all attachments failed"`，同时保留完整
+  `attachments: []`、`failures` 与 `results`
 
 **DELETE /api/agents/conversations/<pk>/attachments/delete/** — 批量删除
 
