@@ -8,6 +8,7 @@ import { Button } from '../ui';
 import { baseUrl, getCsrfToken, MAIN_MODEL_IDS, useTheme, configApi, resolveInitialSessionTarget } from 'exo-shared';
 import { getAgentAvatarUrl, getUserAvatarUrl } from '../../utils/avatar';
 import { filesToAttachmentData, saveAttachments, enrichMessages, uploadFilesToAttachments } from '../../utils/attachmentStorage';
+import ComposeAttachmentItem from './ComposeAttachmentItem';
 import { formatDateSeparator, isDifferentDay } from '../../utils/time';
 import MessageBubble from './MessageBubble';
 import BranchSessionModal from '../modals/BranchSessionModal';
@@ -252,14 +253,28 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  setComposeAttachments(prev => [...prev, ...entries]);
 
  uploadFilesToAttachments(activeSessionId, fileArray)
-  .then(attachments => {
+  .then(({ attachments, failures }) => {
+  // Consume display_name in order to handle duplicate filenames correctly
+  const remainingAttachments = [...attachments];
+  const remainingFailures = [...failures];
+
   setComposeAttachments(prev => prev.map(e => {
-   const idx = entries.findIndex(en => en.clientId === e.clientId);
-   if (idx === -1) return e;
-   const att = attachments[idx];
-   return att
-   ? { ...e, attachmentId: att.id, uploading: false }
-   : { ...e, uploading: false, error: 'No attachment returned' };
+   const match = entries.find(en => en.clientId === e.clientId);
+   if (!match) return e;
+
+   const failIdx = remainingFailures.findIndex(f => f.display_name === e.name);
+   if (failIdx !== -1) {
+    const failed = remainingFailures.splice(failIdx, 1)[0];
+    return { ...e, uploading: false, error: failed.stage || 'upload failed' };
+   }
+
+   const attIdx = remainingAttachments.findIndex(a => a.display_name === e.name);
+   if (attIdx !== -1) {
+    const att = remainingAttachments.splice(attIdx, 1)[0];
+    return { ...e, attachmentId: att.id, uploading: false };
+   }
+
+   return { ...e, uploading: false, error: 'No attachment result' };
   }));
   fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/attachments/`, { credentials: 'include' })
    .then(res => res.json())
@@ -269,7 +284,15 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   .catch(err => {
   setComposeAttachments(prev => prev.map(e => {
    const match = entries.find(en => en.clientId === e.clientId);
-   return match ? { ...e, uploading: false, error: err.message } : e;
+   if (!match) return e;
+
+   if (err.failures && Array.isArray(err.failures)) {
+    const failed = err.failures.find(f => f.display_name === e.name);
+    if (failed) {
+     return { ...e, uploading: false, error: failed.stage || err.message };
+    }
+   }
+   return { ...e, uploading: false, error: err.message };
   }));
   });
  };
@@ -1318,40 +1341,12 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
 
    {composeAttachments.length > 0 && (
    <div className="flex flex-wrap gap-2 px-3 pt-3 pb-2 border-b border-exo-mist-10 bg-cinder-glass">
-    {composeAttachments.map(e => (
-    <div key={e.clientId} className="relative group">
-     {e.preview ? (
-     <div className="relative h-14 w-14 rounded-md overflow-hidden border border-exo-mist-10">
-      <img src={e.preview} alt={e.name} className="w-full h-full object-cover" />
-      {e.uploading && (
-      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-       <div className="w-4 h-4 border-2 border-exo-accent/50 border-t-exo-accent rounded-full animate-spin" />
-      </div>
-      )}
-      {e.error && (
-      <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
-       <span className="text-[0.7rem] text-red-400 ">!</span>
-      </div>
-      )}
-     </div>
-     ) : (
-     <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[0.725rem] ${
-      e.error ? 'border-red-500/30 text-red-400 bg-red-500/5' :
-      e.uploading ? 'border-exo-mist-10 tx-message-mute bg-exo-pure' :
-      'border-exo-accent/20 tx-message-accent bg-exo-accent/5'
-     }`}>
-      <FileText size={10} strokeWidth={1} />
-      <span className="max-w-[120px] truncate">{e.name}</span>
-      {e.uploading && <div className="w-2.5 h-2.5 border-2 border-exo-accent/50 border-t-exo-accent rounded-full animate-spin" />}
-     </div>
-     )}
-     <button
-     onClick={() => handleRemoveComposeAttachment(e.clientId)}
-     className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-exo-pure border border-cinder-line tx-message-mute hover:text-red-400 hover:border-red-400/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
-     >
-     <X size={10} strokeWidth={1} />
-     </button>
-    </div>
+    {composeAttachments.map(entry => (
+     <ComposeAttachmentItem
+      key={entry.clientId}
+      entry={entry}
+      onRemove={handleRemoveComposeAttachment}
+     />
     ))}
    </div>
    )}
