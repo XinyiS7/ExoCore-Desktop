@@ -3,6 +3,21 @@ import { baseUrl, getCsrfToken } from 'exo-shared';
 // 移除对 localStorage 的持久化依赖，仅保留用于前端本地临时预览生成的方法
 
 /**
+ * Typed error carrying structured attachment upload response data.
+ */
+export class AttachmentUploadError extends Error {
+  constructor(status, responseBody) {
+    const message = responseBody.error || `Upload failed (${status})`;
+    super(message);
+    this.name = 'AttachmentUploadError';
+    this.status = status || 0;
+    this.error = responseBody.error || null;
+    this.failures = responseBody.failures || [];
+    this.results = responseBody.results || null;
+  }
+}
+
+/**
  * 将 File 对象数组转换为可用于本地预览的数据（dataUrl）。
  */
 export async function filesToAttachmentData(files) {
@@ -57,6 +72,12 @@ export function enrichMessages(messages) {
 
 /**
  * Upload multiple files as multipart/form-data to a conversation's attachments endpoint.
+ *
+ * Returns a normalized payload object:
+ *   { attachments: Array, failures: Array, results: Array|null }
+ *
+ * On non-2xx, throws AttachmentUploadError with status, error, failures, and results
+ * (when the backend provides them).
  */
 export async function uploadFilesToAttachments(sessionId, files) {
   const formData = new FormData();
@@ -72,11 +93,20 @@ export async function uploadFilesToAttachments(sessionId, files) {
     }
   );
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Upload failed (${res.status})`);
+  let data;
+  try {
+    data = await res.json();
+  } catch (_) {
+    data = {};
   }
 
-  const data = await res.json();
-  return data.attachments || [];
+  if (!res.ok) {
+    throw new AttachmentUploadError(res.status, data);
+  }
+
+  return {
+    attachments: data.attachments || [],
+    failures: data.failures || [],
+    results: data.results || null,
+  };
 }
