@@ -182,18 +182,43 @@ error payload (commit 6 shape):
 
 **GET /api/memory/plasmids/**
 
+Query: `preset_id`（必填），可选 `scope` / `source` / `is_processed`。`is_processed`
+为兼容筛选：`true` 等价于 `processing_status=ready`。
+
 ```json
 [{
-  "id": 1, "title": "User preference",
+  "id": 1,
+  "preset": 6,
+  "conversation": 1,
+  "message": null,
+  "source": "user_manual",
   "content": "Always use dark mode",
-  "conversation": 1, "tags": ["preference"],
-  "weight": 1.0, "created_at": "..."
+  "scope": "global",
+  "tags": ["preference"],
+  "trigger_keywords": ["dark mode"],
+  "weight": 1.0,
+  "processing_status": "ready",
+  "processing_error": "",
+  "processing_attempts": 0,
+  "last_processed_at": "...",
+  "is_processed": true,
+  "created_at": "...",
+  "updated_at": "..."
 }]
 ```
 
-**POST /api/memory/plasmids/** — title + content (必填)
+`processing_status`: `pending | processing | ready | failed`。只有 `ready` 会进入召回；
+`is_processed` 是只读兼容字段。embedding 与正文 hash 不对前端暴露。
 
-**PATCH /api/memory/plasmids/<pk>/** / **DELETE**
+**POST /api/memory/plasmids/** — 手动创建：
+`{preset_id, content, scope?, tags?, trigger_keywords?, weight?}`。即使提供 scope，创建后也先
+进入 pending，embedding 成功后转为 ready。
+
+**PATCH /api/memory/plasmids/<pk>/** —
+可修改 `content`（沿用现有全局条目权限）、`scope`、`tags`、`trigger_keywords`、`weight`。
+修改正文会触发重新索引；processing 字段只读。
+
+**DELETE /api/memory/plasmids/<pk>/**
 
 **GET /api/memory/plasmids/tags/** — 所有标签列表
 
