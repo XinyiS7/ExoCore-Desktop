@@ -1,19 +1,33 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
  Save, Plus, RefreshCw, X, FileText,
- Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2, SlidersHorizontal, Folder, ChevronDown
+ Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2, SlidersHorizontal, Folder, ChevronDown, Mic
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../ui';
 import { baseUrl, getCsrfToken, MAIN_MODEL_IDS, useTheme, configApi, resolveInitialSessionTarget } from 'exo-shared';
 import { getAgentAvatarUrl, getUserAvatarUrl } from '../../utils/avatar';
-import { filesToAttachmentData, saveAttachments, enrichMessages, uploadFilesToAttachments } from '../../utils/attachmentStorage';
+import { filesToAttachmentData, saveAttachments, enrichMessages, uploadFilesToAttachments, audioCapable, audioUploadErrorMessage, MAX_AUDIO_BYTES } from '../../utils/attachmentStorage';
 import ComposeAttachmentItem from './ComposeAttachmentItem';
+import AudioComposeBar from './AudioComposeBar';
 import { formatDateSeparator, isDifferentDay } from '../../utils/time';
 import MessageBubble from './MessageBubble';
 import BranchSessionModal from '../modals/BranchSessionModal';
 import ContextCacheIndicator from './ContextCacheIndicator';
 import { usePollingChat } from '../../hooks/usePollingChat';
+import { useAudioRecorder } from '../../hooks/useAudioRecorder';
+import {
+ audioRecoveryInitial,
+ audioRecoveryUploadSuccess,
+ audioRecoveryMarkDone,
+ audioRecoveryMarkError,
+ audioRecoveryBeginAttempt,
+ audioRecoveryOnStreamEnd,
+ audioRecoveryAbandon,
+ audioRecoverySessionSwitch,
+ resolveAudioForSend,
+} from '../../utils/audioRecoveryMachine';
+import RecoverableAudioItem from './RecoverableAudioItem';
 import AuroraBackground from './AuroraBackground';
 import ControlsDrawer from './ControlsDrawer';
 import { DEFAULT_PALETTE_ID, THEME_DEFAULT_LIGHT, THEME_DEFAULT_DARK, getPalette } from './palettes';
@@ -46,8 +60,11 @@ const applyDeltaToMessage = (msg, text, eventType) => {
 
 const MOCK_CATALOG = {
   models: [
-    { name: "gemini-2.5-flash", family: "gemini", abilities: ["fc", "vision", "grounding", "context_cache"], compatible_endpoint_ids: [2, 3] },
-    { name: "gemini-2.5-pro", family: "gemini", abilities: ["fc", "vision", "grounding", "context_cache"], compatible_endpoint_ids: [2, 3] },
+    { name: "gemini-3.6-flash", family: "gemini", abilities: ["audio", "context_cache", "fc", "grounding", "thinking", "vision"], compatible_endpoint_ids: [1, 2] },
+    { name: "gemini-3-flash-preview", family: "gemini", abilities: ["audio", "context_cache", "fc", "grounding", "thinking", "vision"], compatible_endpoint_ids: [1, 2] },
+    { name: "gemini-3.1-pro-preview", family: "gemini", abilities: ["audio", "context_cache", "fc", "grounding", "thinking", "vision"], compatible_endpoint_ids: [1, 2] },
+    { name: "gemini-3.1-flash-lite", family: "gemini", abilities: ["audio", "context_cache", "fc", "grounding", "thinking", "vision"], compatible_endpoint_ids: [1, 2] },
+    { name: "gemini-2.5-flash-lite", family: "gemini", abilities: ["audio", "context_cache", "fc", "grounding", "thinking", "vision"], compatible_endpoint_ids: [1, 2] },
     { name: "deepseek-v4-flash", family: "deepseek", abilities: ["fc", "thinking"], compatible_endpoint_ids: [1] },
     { name: "deepseek-v4-pro", family: "deepseek", abilities: ["fc", "thinking"], compatible_endpoint_ids: [1] },
     { name: "gemini-3-pro-image", family: "gemini", abilities: ["image_gen"], compatible_endpoint_ids: [2] }
@@ -58,7 +75,7 @@ const MOCK_CATALOG = {
     { id: 3, name: "OpenRouter Gemini", provider: "openrouter", payload_format: "openai", cache_transport: "inline_chunk", attachment_transports: ["inline_text", "inline_image"], configured: true, enabled: true }
   ],
   roles: [
-    { role: "main", model: "deepseek-v4-pro", endpoint: 1 },
+    { role: "main", model: "gemini-3.6-flash", endpoint: 2 },
     { role: "general_sub_agent", model: "deepseek-v4-flash", endpoint: 1 },
     { role: "vision_helper", model: "gemini-2.5-flash-lite", endpoint: 2 },
     { role: "grounding", model: "gemini-2.5-flash", endpoint: 2 },
@@ -86,6 +103,40 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  const [temperature, setTemperature] = useState(1.0);
  const [catalog, setCatalog] = useState(null);
  const [sessionTarget, setSessionTarget] = useState({ model: "", endpoint: null });
+ const recorder = useAudioRecorder({ maxDurationMs: 60000 });
+ // P0-R6: 可恢复音频附件（conversation-bound、可渲染）——terminal success 前保留
+ // P0-R6: 可恢复音频附件（conversation-bound、可渲染、terminal-success 才清）
+ const [recovery, setRecovery] = useState(audioRecoveryInitial);
+ // P1-R12: 发送失败可见文案（非 raw），recovery item 内展示
+ const [sendError, setSendError] = useState(null);
+ // P0-R11: 会话 token——deferred upload 后 recheck，防止向旧会话提交 chat
+ const activeSessionIdRef = useRef(activeSessionId);
+ useEffect(() => { activeSessionIdRef.current = activeSessionId; }, [activeSessionId]);
+ // P0-R13: 服务端持久化的 failed user turn id（retry-in-place 用 edit_message_id 替换）
+ const failedUserMsgIdRef = useRef(null);
+ // P0-R14: 同步 ref（不经 state/effect）——refresh 回调可靠读到当前 recovery audio IDs
+ const recoveryIdsRef = useRef(null);
+ const canRecord = useMemo(
+  () => audioCapable(catalog, sessionTarget),
+  [catalog, sessionTarget]
+ );
+ // 竞态：录音中切换模型/端点 → 目标不再 eligible → 取消录音并提示
+ useEffect(() => {
+  if (recorder.status === 'recording' && !canRecord) {
+   recorder.fail('target_changed');
+  }
+ }, [recorder.status, canRecord, recorder]);
+ // P0: 会话切换时取消残留录音 + 清 recoverable（防 clip/attachment ID 跨会话带出）
+ const activeSessionRef = useRef(activeSessionId);
+ useEffect(() => {
+  if (activeSessionRef.current !== activeSessionId) {
+   recorder.cancel();
+   setRecovery(audioRecoverySessionSwitch());
+   failedUserMsgIdRef.current = null; // P0-R14: 会话切换清 stale edit 引用
+   recoveryIdsRef.current = null;
+   activeSessionRef.current = activeSessionId;
+  }
+ }, [activeSessionId, recorder]);
  const [sessionType, setSessionType] = useState(() =>
  activeSessionId
   ? (localStorage.getItem(`exo_session_type_${activeSessionId}`) || 'lite')
@@ -745,7 +796,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  const editMessageId = options.editMessageId ?? editingMessageId;
  const forceCacheRebuild = options.forceCacheRebuild || false;
 
-  if ((!inputValue.trim() && editMessageId == null && composeAttachments.length === 0) || isGenerating) return;
+  if ((!inputValue.trim() && editMessageId == null && composeAttachments.length === 0 && recorder.status !== 'recorded' && !recovery.item) || isGenerating) return;
 
   // Send guard: block if uploads pending or failed entries remain
   const uploadingEntries = composeAttachments.filter(e => e.uploading);
@@ -759,12 +810,89 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    return;
   }
 
+  const currentInput = inputValue;
+  const currentPending = [...pendingAttachments];
+  const sendSessionId = activeSessionId; // P0-R11: 发送时会话 token
+
+  // P0: 防重复 Send — 在 await upload 前即进入 generating，阻塞二次点击
+  setIsGenerating(true);
+  setSendError(null);
+  // P0-R6: optimistic 回滚快照（chat 失败时恢复，避免重复空气泡）
+  const preSendHistory = [...allHistoryRef.current];
+
+  // P0-R6: 统一 audio source 决策（new clip / recoverable IDs / none）——gate 对两种 source 一致
+  const audioPlan = resolveAudioForSend({
+   status: recorder.status,
+   canRecord,
+   recoverableAudio: recovery.item,
+   conversationId: activeSessionId,
+  });
+  if (audioPlan.gate === 'unsupported') {
+   setIsGenerating(false);
+   alert('当前模型/端点不支持语音，请切换到支持音频的 Gemini 目标');
+   return;
+  }
+  let audioPendingIds = [];
+  if (audioPlan.kind === 'upload') {
+   // P1-R5: 前端 10 MiB 同值预检（后端仍是最终事实源）
+   if (recorder.blob.size > MAX_AUDIO_BYTES) {
+    alert('语音超过 10 MiB 上限，请缩短录音后重试');
+    setIsGenerating(false);
+    return;
+   }
+   // 上传录音（需带 model/endpoint，后端 resolve_session_target）
+   const audioFile = new File([recorder.blob], `recording-${Date.now()}.webm`, { type: recorder.mimeType || 'audio/webm' });
+   try {
+    const up = await uploadFilesToAttachments(activeSessionId, [audioFile], {
+     model: sessionTarget.model,
+     endpoint: sessionTarget.endpoint,
+    });
+    if (up.attachments && up.attachments.length > 0) {
+     audioPendingIds = up.attachments.map(a => a.id);
+     // P0-R11: 上传期间切换会话 → 不提交 chat、不写旧 recovery
+     if (sendSessionId !== activeSessionIdRef.current) {
+      setIsGenerating(false);
+      return;
+     }
+     // P0-R6: 保留可恢复 pending（conversation-bound），terminal success 前不清
+     setRecovery(audioRecoveryUploadSuccess(recovery, sendSessionId, audioPendingIds));
+     recoveryIdsRef.current = { conversationId: sendSessionId, attachmentIds: [...audioPendingIds] };
+    } else {
+     alert('语音上传失败');
+     setIsGenerating(false);
+     return;
+    }
+   } catch (err) {
+    // P1-R5: 稳定用户文案，不暴露 raw backend code
+    alert(audioUploadErrorMessage(err));
+    setIsGenerating(false);
+    return;
+   }
+   recorder.cancel();
+  } else if (audioPlan.kind === 'reuse') {
+   // P0-R6: chat 失败重试时复用已上传的 attachment ID（不重复上传同一 clip）
+   audioPendingIds = audioPlan.attachmentIds;
+   // P0-R15: 重试尝试开始——重置 done/error（保留 item/IDs），
+   // 否则上次失败 error=true 残留 → retry 成功后 done+error 导致入口不消失
+   setRecovery(prev => audioRecoveryBeginAttempt(prev));
+  }
+
+  // optimistic history 仅在附件处理成功后才变更（P0: 失败恢复不丢 clip）
   let historyToKeep = [...allHistoryRef.current];
  let userMsg = null;
  let aiMsg = { id: Date.now(), role: 'assistant', content: '', reasoning_content: '', reasoning_steps: [], new_anchors: [] };
 
- if (editMessageId != null) {
-  const idx = historyToKeep.findIndex(m => m.id === editMessageId);
+ // P0-R14: 仅 reuse + 会话绑定匹配才 auto-edit（普通 edit 始终允许）
+ const failedRef = failedUserMsgIdRef.current;
+ const canAutoEdit = audioPlan.kind === 'reuse'
+  && failedRef && failedRef.conversationId === sendSessionId
+  && failedRef.attachmentIds.every(id => audioPlan.attachmentIds.includes(id));
+ const retryEditId = editMessageId ?? (canAutoEdit ? failedRef.messageId : null);
+
+ if (retryEditId != null) {
+  // P0-R13: retry-in-place —— 替换对应 turn，不新增 bubble
+  const replaceMsgId = retryEditId;
+  const idx = historyToKeep.findIndex(m => m.id === replaceMsgId);
   if (idx !== -1) {
   const existingMsg = historyToKeep[idx];
   historyToKeep = historyToKeep.slice(0, idx);
@@ -810,14 +938,10 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  const newStart = Math.max(0, historyToKeep.length - messages.length - (userMsg ? 2 : 1)); // Heuristic to keep view stable
  setMessages(historyToKeep.slice(visibleStartRef.current));
 
- const currentInput = inputValue;
- const currentPending = [...pendingAttachments];
-
  setInputValue("");
  // Clean up compose attachment blob URLs
  composeAttachments.forEach(e => { if (e.preview) URL.revokeObjectURL(e.preview); });
  setComposeAttachments([]);
- setIsGenerating(true);
  setEditingMessageId(null);
  userScrolledUpRef.current = false;
  setShowScrollBtn(false);
@@ -825,6 +949,12 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
  localStorage.removeItem(`exo_draft_${activeSessionId}`);
 
  abortControllerRef.current = new AbortController();
+
+ // P0-R11: chat 提交前最终 recheck（deferred upload 窗口已过）
+ if (sendSessionId !== activeSessionIdRef.current) {
+  setIsGenerating(false);
+  return;
+ }
 
  try {
   let response;
@@ -838,13 +968,15 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   temperature: temperature,
   cache_enabled: activeSessionId && localStorage.getItem(`exo_cache_enabled_${activeSessionId}`) !== 'false',
   ...(activeSessionId && { memory_injection_enabled: localStorage.getItem(`exo_mem_inject_${activeSessionId}`) !== 'false' }),
-  ...(currentPending.length > 0 || composeAttachments.some(e => e.attachmentId != null)
+  ...(currentPending.length > 0 || composeAttachments.some(e => e.attachmentId != null) || audioPendingIds.length > 0
    ? { pending_attachments: [
     ...currentPending.map(a => typeof a === 'object' ? a.id : a),
     ...composeAttachments.filter(e => e.attachmentId != null).map(e => e.attachmentId),
+    ...audioPendingIds,
    ]}
    : {}),
   ...(editMessageId != null && { edit_message_id: editMessageId }),
+  ...(editMessageId == null && canAutoEdit && { edit_message_id: failedRef.messageId }),
   };
 
   const fetchOptions = {
@@ -870,6 +1002,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    });
    if (!userScrolledUpRef.current && isNearBottom()) scrollToBottom(false);
   });
+  setRecovery(audioRecoveryInitial()); // terminal success（async 轮询完成）
   } else {
   response = await fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, fetchOptions);
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -877,6 +1010,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const reader = response.body.getReader();
   const decoder = new TextDecoder("utf-8");
   let buffer = "";
+  let streamDone = false;
+  let streamError = false;
 
   while (true) {
    const { done, value } = await reader.read();
@@ -885,13 +1020,19 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    const blocks = buffer.split('\n\n'); buffer = blocks.pop();
 
    for (const block of blocks) {
+   // P0-R10: terminal error 后停止处理失败 turn 的剩余内容
+   if (streamError) continue;
    const lines = block.split('\n');
    let eventType = 'message'; let dataStr = '';
    for (const line of lines) {
     if (line.startsWith('event:')) eventType = line.substring(6).trim();
     else if (line.startsWith('data:')) dataStr += line.substring(5).trim();
    }
-   if (!dataStr || eventType === 'done' || dataStr === '[DONE]') continue;
+   if (!dataStr || eventType === 'done' || dataStr === '[DONE]') {
+    // P0-R6-A: 显式记录 terminal done（EOF without done 不算 success）
+    if (eventType === 'done' || dataStr === '[DONE]') streamDone = true;
+    continue;
+   }
 
    if (eventType === 'telemetry') {
     try {
@@ -918,17 +1059,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    }
 
    if (eventType === 'error') {
-    let errorMsg = dataStr;
-    try { const e = JSON.parse(dataStr); errorMsg = e.message || dataStr; } catch(e) {}
-    setMessages(prev => {
-    const newMsgs = [...prev];
-    const lastMsg = { ...newMsgs[newMsgs.length - 1] };
-    lastMsg.status_text = null;
-    lastMsg.error = errorMsg;
-    newMsgs[newMsgs.length - 1] = lastMsg;
-    allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
-    return newMsgs;
-    });
+    streamError = true;
+    // P0-R10/R13: 失败过渡统一在流结束后处理（rollback + 可见文案），此处仅标记
     continue;
    }
 
@@ -949,6 +1081,23 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    }
    if (!userScrolledUpRef.current && isNearBottom()) scrollToBottom(false);
   }
+  // P0-R6-A + R9: 用 functional update 取最新 recovery（避免 fresh-upload 后 stale closure 覆盖新 IDs）
+  setRecovery(prev => audioRecoveryOnStreamEnd(
+   streamError ? audioRecoveryMarkError(prev)
+    : streamDone ? audioRecoveryMarkDone(prev)
+    : prev
+  ));
+  if (streamDone && !streamError) {
+   setSendError(null);
+   failedUserMsgIdRef.current = null; // turn 成功，无 failed user 可复用
+   recoveryIdsRef.current = null;
+  } else {
+   // P0-R13: 统一 failure transition（EOF without done / event:error 同路径）：
+   // 可见稳定文案 + 保留 IDs + optimistic rollback
+   setSendError(streamError ? '发送失败，附件已保留' : '连接中断，附件已保留');
+   allHistoryRef.current = preSendHistory;
+   setMessages(preSendHistory.slice(visibleStartRef.current));
+  }
   }
  } catch (err) {
   if (err.name === 'AbortError') {
@@ -960,7 +1109,12 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   }
   } else {
   console.error("Stream error:", err);
+  // P1-R12: transport failure 可见（非 console-only）
+  setSendError('网络错误，附件已保留');
   }
+  // P0-R6: 失败/中止回滚 optimistic turn（finally refresh 以服务端为准）
+  allHistoryRef.current = preSendHistory;
+  setMessages(preSendHistory.slice(visibleStartRef.current));
  } finally {
   setIsGenerating(false);
   abortControllerRef.current = null;
@@ -978,6 +1132,22 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    setMessages(enriched);
    setHasMore(data.has_more ?? false);
    shouldScrollRef.current = true;
+   // P0-R14: 调和服务端持久化的 failed user turn —— candidate 必须包含当前 recovery 的 audio IDs
+   const rr = recoveryIdsRef.current;
+   if (rr && rr.conversationId === activeSessionId) {
+    const candidate = [...enriched].reverse().find(m => {
+     if (m.role !== 'user') return false;
+     const metaIds = (m.attachments_meta || []).map(a => a.id);
+     const attIds = (m.attachments || []).map(a => a.id);
+     const ids = metaIds.length ? metaIds : attIds;
+     return ids.length > 0 && rr.attachmentIds.every(id => ids.includes(id));
+    });
+    failedUserMsgIdRef.current = candidate
+     ? { conversationId: activeSessionId, messageId: candidate.id, attachmentIds: [...rr.attachmentIds] }
+     : null;
+   } else {
+    failedUserMsgIdRef.current = null;
+   }
   })
   .catch(() => {});
   // Refresh attachments after every SSE completion
@@ -1476,6 +1646,21 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    style={{ minHeight: (inputFocused || inputValue) ? '4.5rem' : '2.5rem', fontFamily: 'var(--font-message)' }}
    disabled={isGenerating}
    />
+   {recorder.status !== 'idle' && (
+    <AudioComposeBar
+     recorder={recorder}
+     isGenerating={isGenerating}
+     onSend={() => handleSend()}
+    />
+   )}
+   {recovery.item && recovery.item.conversationId === activeSessionId && (
+    <RecoverableAudioItem
+     isGenerating={isGenerating}
+     onRetry={() => handleSend()}
+     onAbandon={() => { setRecovery(audioRecoveryAbandon()); setSendError(null); failedUserMsgIdRef.current = null; recoveryIdsRef.current = null; }}
+     errorText={sendError}
+    />
+   )}
    <div className="flex items-center justify-between px-3 pb-2.5">
    <div className="flex items-center gap-0.5">
     <button
@@ -1487,6 +1672,15 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     </button>
     <button onClick={() => imageInputRef.current?.click()} title="上传视讯数据" className="p-1 tx-message-mute opacity-20 hover:tx-message-mute opacity-50 transition-colors"><ImageIcon size={14} strokeWidth={1} /></button>
     <button onClick={() => fileInputRef.current?.click()} title="挂载文档区块" className="p-1 tx-message-mute opacity-20 hover:tx-message-mute opacity-50 transition-colors"><Paperclip size={14} strokeWidth={1} /></button>
+    {canRecord && recorder.status === 'idle' && !isGenerating && (
+     <button
+      onClick={() => { if (!isGenerating) recorder.start(); }}
+      title="录制语音"
+      className="p-1 tx-message-mute opacity-20 hover:tx-message-mute opacity-50 transition-colors"
+     >
+      <Mic size={14} strokeWidth={1} />
+     </button>
+    )}
     <input type="file" ref={imageInputRef} className="hidden" multiple accept="image/*" onChange={(e) => { handleFilesSelected(e.target.files); e.target.value = ''; }} />
     <input type="file" ref={fileInputRef} className="hidden" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.json,.zip,.py,.js,.ts,.jsx,.tsx,.html,.css,.xml,.yaml,.yml,.toml,.sh,.log" onChange={(e) => { handleFilesSelected(e.target.files); e.target.value = ''; }} />
     <span className="text-[0.625rem] tx-message-mute opacity-30 tracking-wider tabular-nums ml-1">
@@ -1496,7 +1690,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    <div className="flex items-center gap-2">
     {rightExtraButton}
     {/* 🧊 Cache Send button — visible when attachments exist */}
-    {!isGenerating && (composeAttachments.length > 0 || pendingAttachments.length > 0) && (
+    {!isGenerating && (composeAttachments.length > 0 || pendingAttachments.length > 0 || recorder.status === 'recorded') && (
      <button
       onClick={() => handleSend(editingMessageId ? { editMessageId: editingMessageId } : { forceCacheRebuild: true })}
       className="p-1.5 bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 rounded-[2px] hover:bg-cyan-500/25 hover:text-cyan-300 disabled:opacity-20 disabled:grayscale transition-colors"
@@ -1517,7 +1711,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     ) : (
     <button
      onClick={() => handleSend(editingMessageId ? { editMessageId: editingMessageId } : {})}
-     disabled={isGenerating || (!inputValue.trim() && composeAttachments.length === 0)}
+     disabled={isGenerating || (!inputValue.trim() && composeAttachments.length === 0 && recorder.status !== 'recorded')}
      className="p-1.5 bg-exo-accent text-exo-pure rounded-[2px] hover:shadow-glow-gold hover:bg-exo-accentGlow disabled:opacity-20 disabled:grayscale transition-colors"
     >
      <Send size={15} strokeWidth={1} />

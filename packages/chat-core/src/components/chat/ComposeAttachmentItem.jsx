@@ -1,5 +1,4 @@
-import React from 'react';
-import { FileText, X, AlertTriangle } from 'lucide-react';
+import { FileText, X, AlertTriangle, Check } from 'lucide-react';
 
 /**
  * Extract the user-visible label from a diagnostics array.
@@ -15,18 +14,19 @@ function firstDiagnosticLabel(diagnostics, level) {
  * Single compose attachment entry.
  *
  * Renders one of four visual states driven by entry.status:
- * - uploading:      spinner overlay
- * - ok:             image preview or file chip (no overlay)
+ * - uploading:      spinner overlay / spinner indicator
+ * - ok:             image preview with success badge or accent file chip
  * - ok_degraded:    amber overlay ("已使用原图" etc) + preview, attachmentId set
- * - failed:         red overlay + first error message, no attachmentId
+ * - failed:         red overlay + error message, no attachmentId
  *
  * Close button is always visible — no hover dependency for mobile.
  */
 export default function ComposeAttachmentItem({ entry, onRemove }) {
   const { clientId, preview, name, uploading, attachmentId, status, diagnostics } = entry;
 
-  const hasError = !uploading && !attachmentId && diagnostics && diagnostics.length > 0;
-  const isDegraded = !uploading && attachmentId && status === 'ok_degraded';
+  const isDegraded = !uploading && Boolean(attachmentId) && status === 'ok_degraded';
+  const isSuccess = !uploading && Boolean(attachmentId) && (status === 'ok' || status === 'ok_degraded');
+  const hasError = !uploading && (status === 'failed' || (!attachmentId && !isDegraded));
 
   const errorLabel = hasError
     ? firstDiagnosticLabel(diagnostics, 'error')
@@ -40,9 +40,17 @@ export default function ComposeAttachmentItem({ entry, onRemove }) {
   };
 
   if (preview) {
+    const borderStyle = hasError
+      ? 'border-red-500/30'
+      : isDegraded
+        ? 'border-amber-500/30'
+        : isSuccess
+          ? 'border-exo-accent/60'
+          : 'border-exo-mist-10';
+
     return (
       <div className="relative flex-shrink-0">
-        <div className="relative h-14 w-14 rounded-md overflow-hidden border border-exo-mist-10">
+        <div className={`relative h-14 w-14 rounded-md overflow-hidden border ${borderStyle}`}>
           <img src={preview} alt={name} className="w-full h-full object-cover" />
 
           {uploading && (
@@ -65,6 +73,12 @@ export default function ComposeAttachmentItem({ entry, onRemove }) {
               <span className="text-[0.6rem] text-amber-200 leading-tight text-center px-1">
                 {warningLabel || '已降级处理'}
               </span>
+            </div>
+          )}
+
+          {isSuccess && !isDegraded && (
+            <div className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-exo-accent text-exo-pure flex items-center justify-center shadow-sm" data-testid="attachment-success-badge">
+              <Check size={8} strokeWidth={2.5} />
             </div>
           )}
         </div>
@@ -96,6 +110,9 @@ export default function ComposeAttachmentItem({ entry, onRemove }) {
       <span className="max-w-[120px] truncate">{name}</span>
       {uploading && (
         <div className="w-2.5 h-2.5 border-2 border-exo-accent/50 border-t-exo-accent rounded-full animate-spin flex-shrink-0" />
+      )}
+      {isSuccess && !isDegraded && (
+        <Check size={10} strokeWidth={2.5} className="text-exo-accent flex-shrink-0 ml-0.5" data-testid="attachment-success-badge" />
       )}
       {hasError && (
         <span className="text-[0.6rem] text-red-400 flex-shrink-0 ml-1" data-testid="attachment-error-text">

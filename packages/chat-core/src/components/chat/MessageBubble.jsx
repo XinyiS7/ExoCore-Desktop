@@ -241,6 +241,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
  const isUser = msg.role === 'user';
  const { theme } = useTheme();
  const [copied, setCopied] = useState(false);
+ const [audioError, setAudioError] = useState(false);
  const [showBookmark, setShowBookmark] = useState(false);
  const [bookmarkText, setBookmarkText] = useState('');
  const [bookmarkStatus, setBookmarkStatus] = useState(null); // null | 'saving' | 'done' | 'error'
@@ -332,7 +333,19 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
   {isUser && msg.attachments?.length > 0 && (
    <div className="flex flex-wrap gap-2 justify-end">
    {msg.attachments.map((att, i) => (
-    att.preview
+    att.audioUrl
+    ? <div key={i} className="flex items-center gap-2">
+      {audioError
+       ? <span className="text-[0.625rem] text-red-400">音频加载/播放失败</span>
+       : <audio
+         controls
+         src={att.audioUrl}
+         onError={() => setAudioError(true)}
+         className="h-9 max-w-[240px] rounded-[4px]"
+         title={att.name}
+        />}
+     </div>
+    : att.preview
     ? <button
      key={i}
      onClick={() => setLightboxSrc(att.preview)}
@@ -373,13 +386,17 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
    </div>
   )}
   {isUser ? (
-   <div className={`max-w-[92%] bg-exo-pure/40 backdrop-blur-md border border-cinder-line rounded-[4px] rounded-tr-none p-4 text-sm transition-all hover:border-exo-mist-20 prose ${theme !== 'light' ? 'prose-invert' : ''} prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none tx-message-normal opacity-90`} style={{ fontFamily: 'var(--font-message)' }}>
-   <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
-   </div>
+   msg.content.trim() ? (
+    <div className={`max-w-[92%] bg-exo-pure/40 backdrop-blur-md border border-cinder-line rounded-[4px] rounded-tr-none p-4 text-sm transition-all hover:border-exo-mist-20 prose ${theme !== 'light' ? 'prose-invert' : ''} prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none tx-message-normal opacity-90`} style={{ fontFamily: 'var(--font-message)' }}>
+    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
+    </div>
+   ) : null
   ) : (
-   <div className={`w-full prose ${theme !== 'light' ? 'prose-invert' : ''} prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none`} style={{ fontFamily: 'var(--font-message)' }}>
-   <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
-   </div>
+   msg.content.trim() ? (
+    <div className={`w-full prose ${theme !== 'light' ? 'prose-invert' : ''} prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none`} style={{ fontFamily: 'var(--font-message)' }}>
+    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
+    </div>
+   ) : null
   )}
   </div>
 

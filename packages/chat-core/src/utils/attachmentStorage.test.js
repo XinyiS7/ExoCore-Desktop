@@ -6,7 +6,7 @@ vi.mock('exo-shared', () => ({
   getCsrfToken: vi.fn(() => 'mock-csrf'),
 }));
 
-import { uploadFilesToAttachments, AttachmentUploadError } from './attachmentStorage.js';
+import { uploadFilesToAttachments, AttachmentUploadError, enrichMessages, audioCapable, audioUploadErrorMessage, MAX_AUDIO_BYTES } from './attachmentStorage.js';
 
 const mockFetch = vi.fn();
 globalThis.fetch = mockFetch;
@@ -111,5 +111,104 @@ describe('uploadFilesToAttachments', () => {
       expect(e.status).toBe(500);
       expect(e.message).toContain('500');
     }
+  });
+});
+
+describe('uploadFilesToAttachments with audio target', () => {
+  it('appends model/endpoint to FormData when target provided', async () => {
+    mockResponse(201, { attachments: [{ id: 7, mime_type: 'audio/webm' }] });
+    const audioFile = new File(['audio'], 'rec.webm', { type: 'audio/webm;codecs=opus' });
+    await uploadFilesToAttachments(SESSION_ID, [audioFile], { model: 'gemini-2.5-flash', endpoint: 2 });
+
+    const [url, options] = mockFetch.mock.calls[0];
+    expect(url).toContain(`/conversations/${SESSION_ID}/attachments/`);
+    const body = options.body;
+    expect(body.get('model')).toBe('gemini-2.5-flash');
+    expect(body.get('endpoint')).toBe('2');
+    expect(body.getAll('files')).toHaveLength(1);
+  });
+
+  it('omits model/endpoint when target is null (legacy callers)', async () => {
+    mockResponse(201, {});
+    await uploadFilesToAttachments(SESSION_ID, [fakeFile()]);
+    const body = mockFetch.mock.calls[0][1].body;
+    expect(body.get('model')).toBeNull();
+    expect(body.get('endpoint')).toBeNull();
+  });
+});
+
+describe('enrichMessages audio content_url', () => {
+  it('maps audio attachments_meta to local audioUrl', () => {
+    const enriched = enrichMessages([{
+      role: 'user',
+      content: '',
+      attachments_meta: [{
+        id: 7, display_name: 'rec.webm', original_filename: 'rec.webm',
+        mime_type: 'audio/webm', file_size: 1024,
+        content_url: '/api/agents/conversations/9/attachments/7/content/',
+      }],
+    }]);
+    expect(enriched[0].attachments[0].audioUrl).toBe(
+      'http://localhost:8000/api/agents/conversations/9/attachments/7/content/'
+    );
+    expect(enriched[0].attachments[0].preview).toBeNull();
+  });
+
+  it('keeps audioUrl null for non-audio attachments', () => {
+    const enriched = enrichMessages([{
+      role: 'user', content: 'x',
+      attachments_meta: [{ id: 1, mime_type: 'image/png', file_uri: 'files/x.png' }],
+    }]);
+    expect(enriched[0].attachments[0].audioUrl).toBeNull();
+    expect(enriched[0].attachments[0].preview).toBe('files/x.png');
+  });
+});
+
+describe('audioCapable gate', () => {  const catalog = {
+    models: [
+      { name: 'gemini-2.5-flash', abilities: ['fc', 'audio'] },
+      { name: 'deepseek-v4-flash', abilities: ['fc'] },
+    ],
+    endpoints: [
+      { id: 2, attachment_transports: ['file_uri', 'inline_text'] },
+      { id: 1, attachment_transports: ['inline_text'] },
+    ],
+  };
+
+  it('true when model has audio ability and endpoint supports file_uri', () => {
+    expect(audioCapable(catalog, { model: 'gemini-2.5-flash', endpoint: 2 })).toBe(true);
+  });
+
+  it('false when model lacks audio ability', () => {
+    expect(audioCapable(catalog, { model: 'deepseek-v4-flash', endpoint: 2 })).toBe(false);
+  });
+
+  it('false when endpoint lacks file_uri transport', () => {
+    expect(audioCapable(catalog, { model: 'gemini-2.5-flash', endpoint: 1 })).toBe(false);
+  });
+
+  it('false when catalog or target missing', () => {
+    expect(audioCapable(null, { model: 'gemini-2.5-flash', endpoint: 2 })).toBe(false);
+    expect(audioCapable(catalog, null)).toBe(false);
+    expect(audioCapable(catalog, { model: '', endpoint: null })).toBe(false);
+  });
+});
+
+describe('audioUploadErrorMessage stable mapping (P1-R5)', () => {
+  it('maps structured diagnostics codes to stable user copy', () => {
+    expect(audioUploadErrorMessage({ failures: [{ code: 'audio_too_large' }] })).toBe('语音超过 10 MiB 上限');
+    expect(audioUploadErrorMessage({ failures: [{ code: 'audio_mime_unsupported' }] })).toBe('语音格式不被支持');
+    expect(audioUploadErrorMessage({ failures: [{ code: 'audio_model_unsupported' }] })).toBe('当前模型不支持语音');
+    expect(audioUploadErrorMessage({ failures: [{ code: 'audio_target_required' }] })).toBe('语音上传缺少目标配置');
+  });
+
+  it('falls back without leaking raw backend code', () => {
+    const msg = audioUploadErrorMessage({ status: 502, error: 'rate_limited_internal' });
+    expect(msg).not.toContain('rate_limited_internal');
+    expect(msg).toContain('502');
+  });
+
+  it('10 MiB frontend preflight constant matches backend cap', () => {
+    expect(MAX_AUDIO_BYTES).toBe(10 * 1024 * 1024);
   });
 });

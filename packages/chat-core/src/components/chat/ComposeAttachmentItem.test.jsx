@@ -217,4 +217,52 @@ describe('ComposeAttachmentItem', () => {
 
     expect(onRemove).toHaveBeenCalledWith(42);
   });
+
+  // ── Success Indicator ──
+  it('renders success checkmark badge for uploaded image attachment', () => {
+    render(
+      <ComposeAttachmentItem
+        entry={makeEntry({
+          preview: 'blob:test',
+          uploading: false,
+          attachmentId: 101,
+          status: 'ok',
+        })}
+        onRemove={vi.fn()}
+      />
+    );
+    expect(screen.getByTestId('attachment-success-badge')).toBeInTheDocument();
+  });
+
+  it('renders success checkmark badge for uploaded non-image file attachment', () => {
+    render(
+      <ComposeAttachmentItem
+        entry={makeEntry({
+          name: 'doc.pdf',
+          uploading: false,
+          attachmentId: 102,
+          status: 'ok',
+        })}
+        onRemove={vi.fn()}
+      />
+    );
+    expect(screen.getByTestId('attachment-success-badge')).toBeInTheDocument();
+  });
+
+  it('renders error state for failed status even with empty diagnostics array', () => {
+    render(
+      <ComposeAttachmentItem
+        entry={makeEntry({
+          name: 'doc.pdf',
+          uploading: false,
+          attachmentId: null,
+          status: 'failed',
+          diagnostics: [],
+        })}
+        onRemove={vi.fn()}
+      />
+    );
+    expect(screen.getByTestId('attachment-error-text')).toBeInTheDocument();
+    expect(screen.queryByTestId('attachment-success-badge')).toBeNull();
+  });
 });

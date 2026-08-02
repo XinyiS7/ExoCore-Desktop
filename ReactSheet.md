@@ -146,6 +146,21 @@ error payload (commit 6 shape):
 - 422 额外包含 `"error": "all attachments failed"`，同时保留完整
   `attachments: []`、`failures` 与 `results`
 
+**音频上传（PWA 录音）**：multipart 含 `audio/*` 时，请求必须携带 `model`（当前 main model name）与 `endpoint`（Endpoint ID），后端经 `resolve_session_target()` 校验 main target；缺失或无法解析返回 422 `audio_target_required`。audio preflight 稳定 diagnostics：
+
+- `audio_target_required` — 缺 model/endpoint 或 target 解析失败
+- `audio_model_unsupported` — target 缺 `audio` ability 或 `file_uri` transport
+- `audio_mime_unsupported` — MIME 不在 allowlist（`audio/webm;codecs=opus` / `audio/webm`）
+- `audio_too_large` — 超过 10 MiB
+
+成功/失败响应均不暴露 `storage_path`（HTTP formatter 仅输出前端契约字段，不输出 PC 路径）。
+
+**GET /api/agents/conversations/<pk>/attachments/<id>/content/** — 流式返回本地 audio 原件
+
+- 仅 `audio/*`；attachment 必须属于该 conversation；文件存在时 200（原 MIME + `inline` disposition + `Cache-Control: private`）
+- missing / 非 audio / 跨会话 → 稳定 404
+- `MessageSerializer.attachments_meta[].content_url`：audio 附件为上述同源 URL，其余附件为 `null`；前端播放使用 `content_url`，不使用 Gemini `file_uri`
+
 **DELETE /api/agents/conversations/<pk>/attachments/delete/** — 批量删除
 
 ### 1.6 Conversation Cache — 上下文缓存
