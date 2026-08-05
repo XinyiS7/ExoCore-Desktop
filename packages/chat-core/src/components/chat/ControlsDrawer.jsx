@@ -174,6 +174,7 @@ export default function ControlsDrawer({
    <option value="low" className="bg-exo-pure">Low</option>
    <option value="medium" className="bg-exo-pure">Med</option>
    <option value="high" className="bg-exo-pure">High</option>
+   <option value="max" className="bg-exo-pure">Max</option>
   </select>
 
   <span className="tx-system-mute opacity-12 text-[0.5625rem] select-none flex-shrink-0">|</span>
