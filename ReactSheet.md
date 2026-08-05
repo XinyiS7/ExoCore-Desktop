@@ -54,6 +54,8 @@
 
 **POST /api/agents/chat/<session_id>/** — SSE 流式响应
 
+请求体可选字段 `galatea_mcp`（bool，默认 false）：前端固定传 `true`（当前无 UI 开关）——superior 前台会话拼入 Galatea MCP 工具组；g045/standard 后端忽略该字段。
+
 event types: `delta` / `tool_call` / `tool_result` / `error` / `done`
 
 error payload (commit 6 shape):
