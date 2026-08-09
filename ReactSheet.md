@@ -266,9 +266,10 @@ Query: `preset_id`（必填），可选 `scope` / `source` / `is_processed`。`i
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | gemini_api_key / deepseek_api_key | string | masked or "" |
-| self_check_preset_ids / deep_org_preset_ids / heartbeat_preset_ids | [int] | |
+| self_check_preset_ids / deep_org_preset_ids | [int] | |
+| ~~heartbeat_preset_ids~~ | ~~[int]~~ | **已停用**：runtime auto eligibility 只读 `HeartbeatPolicy.enabled`（heartbeat app）；旧字段不再暴露 writable/response，DB 列暂留不读 |
 | active_start / active_end | time | "HH:MM" |
-| heartbeat_base_hours / heartbeat_random_hours / night_heartbeat_base_hours | int | |
+| ~~heartbeat_base_hours / heartbeat_random_hours / night_heartbeat_base_hours~~ | ~~int~~ | **已停用**：cadence 区间由 heartbeat policy 决定，旧字段不再暴露 |
 | deep_org_weekday | int | 0=Mon |
 | deep_org_hour | int | 0-23 |
 | model_generate_abstract | string | |

@@ -98,8 +98,7 @@ export default function RoutinePanel() {
  const clearFeedback = () => setFeedback(null);
 
  const [selfDeepOrgIds, setSelfDeepOrgIds] = useState([]);
- const [heartbeatIds, setHeartbeatIds] = useState([]);
- const [expandedAgents, setExpandedAgents] = useState({ scdo: false, hb: false });
+ const [expandedAgents, setExpandedAgents] = useState({ scdo: false });
 
  useEffect(() => {
  setLoading(true);
@@ -110,7 +109,6 @@ export default function RoutinePanel() {
   .then(([cfg, allPresets]) => {
   setConfig(cfg);
   setSelfDeepOrgIds(cfg.self_check_preset_ids || []);
-  setHeartbeatIds(cfg.heartbeat_preset_ids || []);
 
   const relevant = (Array.isArray(allPresets) ? allPresets : [])
    .filter(p => p.agent_type === 'g045' || p.agent_type === 'superior');
@@ -126,12 +124,6 @@ export default function RoutinePanel() {
  );
  };
 
- const toggleHeartbeat = (presetId) => {
- setHeartbeatIds(prev =>
-  prev.includes(presetId) ? prev.filter(id => id !== presetId) : [...prev, presetId]
- );
- };
-
  const toggleExpand = (key) => {
  setExpandedAgents(prev => ({ ...prev, [key]: !prev[key] }));
  };
@@ -143,7 +135,6 @@ export default function RoutinePanel() {
   await configApi.updateConfig({
   self_check_preset_ids: selfDeepOrgIds,
   deep_org_preset_ids: selfDeepOrgIds,
-  heartbeat_preset_ids: heartbeatIds,
   });
   setFeedback({ type: 'success', msg: '后台任务配置保存成功' });
  } catch (err) {
@@ -158,7 +149,6 @@ export default function RoutinePanel() {
  return (
   <span>
   Active: <span style={{color:'var(--tx-neutral-40)'}}>{c.active_start || '?'} – {c.active_end || '?'}</span>
-  {' · '}Heartbeat: <span style={{color:'var(--tx-neutral-40)'}}>{c.heartbeat_base_hours || '?'}–{(c.heartbeat_base_hours || 0) + (c.heartbeat_random_hours || 0)}h (day) / {c.night_heartbeat_base_hours || '?'}–{(c.night_heartbeat_base_hours || 0) + (c.heartbeat_random_hours || 0)}h (night)</span>
   {' · '}Deep Org: <span style={{color:'var(--tx-neutral-40)'}}>{day} {hour}</span>
   </span>
  );
@@ -207,37 +197,6 @@ export default function RoutinePanel() {
    checkedIds={selfDeepOrgIds}
    onToggle={toggleSelfDeepOrg}
    expanded={expandedAgents.scdo}
-   />
-  </div>
-
-  {/* ── Group B: Heartbeat ── */}
-  <div className="mb-5">
-   <div className="flex items-center justify-between">
-   <div className="flex items-center gap-2.5 min-w-0">
-    <span className="text-sm">💓</span>
-    <div className="min-w-0">
-         <span className="tx-system-normal font-medium">Heartbeat</span>
-         <span className="tx-system-mute ml-2 hidden sm:inline">主动互动 · 活跃窗口内定时发起对话</span>
-    </div>
-   </div>
-   <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-      <Button variant="ghost" size="sm">
-     <Clock size={10} /> 时间设置
-      </Button>
-     <Button variant="ghost" size="sm"
-     onClick={() => toggleExpand('hb')}
-      className={expandedAgents.hb ? 'border-exo-accent/15 bg-exo-accent/[0.04]' : ''}
-     >
-     <Users size={10} /> Agent 管理
-     {expandedAgents.hb ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
-     </Button>
-   </div>
-   </div>
-   <AgentCheckList
-   presets={presets}
-   checkedIds={heartbeatIds}
-   onToggle={toggleHeartbeat}
-   expanded={expandedAgents.hb}
    />
   </div>
 
