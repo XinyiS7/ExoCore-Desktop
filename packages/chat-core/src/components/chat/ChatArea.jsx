@@ -963,7 +963,6 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   model: sessionTarget.model,
   endpoint: sessionTarget.endpoint,
   session_type: sessionType,
-  galatea_mcp: true, // 固定传 true（无 UI 开关）：superior 前台会话拼 Galatea MCP 组；g045 后端忽略
   force_cache_rebuild: forceCacheRebuild,
   thinking_level: thinkingLevel,
   temperature: temperature,
@@ -1269,7 +1268,6 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    branch_from_message_id: branchingMessageId,
    name: newName.trim() || undefined,
    session_type: branchSessionType || 'lite',
-   galatea_mcp: true, // 与主发送点保持一致（后端默认 False，branch 端点当前不消费）
   }),
   });
   const data = await res.json();
