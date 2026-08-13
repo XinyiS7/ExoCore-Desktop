@@ -33,10 +33,12 @@ export default function McpAgentAccessTab({
       const list = Array.isArray(drawerData) ? drawerData : (drawerData?.drawers || []);
       setDrawers(list);
     } catch (err) {
-      console.warn('Preset drawers fetch failed:', err);
+      console.warn('Preset drawers fetch failed:', err.status, err.body?.code || err.message);
       const code = err.body?.code;
       if (code) {
         onNotify?.({ type: 'error', msg: `[${code}] ${err.body?.error || err.message}` });
+      } else if ((err.status === 404 || err.message?.includes('Failed to fetch')) && !backendPending) {
+        onNotify?.({ type: 'error', msg: '后端接口尚不可用 (Backend Pending: 404)' });
       }
       setDrawers([]);
     } finally {
@@ -58,10 +60,12 @@ export default function McpAgentAccessTab({
       });
       setBindingForms(forms);
     } catch (err) {
-      console.warn('Preset MCP credentials fetch failed:', err);
+      console.warn('Preset MCP credentials fetch failed:', err.status, err.body?.code || err.message);
       const code = err.body?.code;
       if (code) {
         onNotify?.({ type: 'error', msg: `[${code}] ${err.body?.error || err.message}` });
+      } else if ((err.status === 404 || err.message?.includes('Failed to fetch')) && !backendPending) {
+        onNotify?.({ type: 'error', msg: '后端接口尚不可用 (Backend Pending: 404)' });
       }
       setPresetMcpServers([]);
     } finally {

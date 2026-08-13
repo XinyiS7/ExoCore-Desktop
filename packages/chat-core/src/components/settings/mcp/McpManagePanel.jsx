@@ -20,7 +20,9 @@ export default function McpManagePanel() {
 
   // ── Status & Feedback ──
   const [feedback, setFeedback] = useState(null);
-  const [backendPending, setBackendPending] = useState(false);
+  // Per-source reachability flags; banner derived from them (avoids parallel-fetch race)
+  const [serversDown, setServersDown] = useState(false);
+  const [credentialsDown, setCredentialsDown] = useState(false);
 
   const clearFeedback = () => setFeedback(null);
   const handleNotify = useCallback((toast) => setFeedback(toast), []);
@@ -39,14 +41,18 @@ export default function McpManagePanel() {
       const data = await mcpApi.listMcpServers();
       const list = Array.isArray(data) ? data : (data?.servers || []);
       setServers(list);
-      setBackendPending(false);
+      setServersDown(false);
     } catch (err) {
-      console.warn('MCP Servers fetch failed:', err);
+      console.warn('MCP Servers fetch failed:', err.status, err.body?.code || err.message);
       const code = err.body?.code;
       if (code) {
+        // Backend reachable — business error, not "pending"
         setFeedback({ type: 'error', msg: `[${code}] ${err.body?.error || err.message}` });
+        setServersDown(false);
       } else if (err.status === 404 || err.message?.includes('Failed to fetch')) {
-        setBackendPending(true);
+        setServersDown(true);
+      } else {
+        setServersDown(false);
       }
       setServers([]);
     } finally {
@@ -61,14 +67,18 @@ export default function McpManagePanel() {
       const data = await mcpApi.listMcpCredentials();
       const list = Array.isArray(data) ? data : (data?.credentials || []);
       setCredentials(list);
-      setBackendPending(false);
+      setCredentialsDown(false);
     } catch (err) {
-      console.warn('MCP Credentials fetch failed:', err);
+      console.warn('MCP Credentials fetch failed:', err.status, err.body?.code || err.message);
       const code = err.body?.code;
       if (code) {
+        // Backend reachable — business error, not "pending"
         setFeedback({ type: 'error', msg: `[${code}] ${err.body?.error || err.message}` });
+        setCredentialsDown(false);
       } else if (err.status === 404 || err.message?.includes('Failed to fetch')) {
-        setBackendPending(true);
+        setCredentialsDown(true);
+      } else {
+        setCredentialsDown(false);
       }
       setCredentials([]);
     } finally {
@@ -106,7 +116,7 @@ export default function McpManagePanel() {
 
       setAssignedAgentsMap(mapping);
     } catch (err) {
-      console.warn('Failed to derive preset bindings mapping:', err);
+      console.warn('Failed to derive preset bindings mapping:', err.status, err.body?.code || err.message);
     }
   }, [presets]);
 
@@ -119,6 +129,9 @@ export default function McpManagePanel() {
   useEffect(() => {
     fetchAllPresetBindings();
   }, [fetchAllPresetBindings, credentials]);
+
+  // Backend reachability banner: derived from per-source flags (no parallel-fetch race)
+  const backendPending = serversDown || credentialsDown;
 
   const handleRefreshAll = useCallback(() => {
     fetchServers();

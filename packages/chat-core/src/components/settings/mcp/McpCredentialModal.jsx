@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { mcpApi } from 'exo-shared';
 import { Save, Shield, KeyRound, Edit2, AlertCircle } from 'lucide-react';
 import { ModalShell, Button, FIELD_INPUT } from '../../ui';
 
@@ -47,6 +48,10 @@ export default function McpCredentialModal({
     setErrorMsg('');
 
     if (mode === 'create') {
+      if (servers.length === 0) {
+        setErrorMsg('MCP Server 目录不可用（后端待施工），暂时无法新增凭证');
+        return;
+      }
       if (!alias.trim()) {
         setErrorMsg('请输入凭证别名 (Alias)');
         return;
@@ -85,8 +90,6 @@ export default function McpCredentialModal({
 
     setIsSaving(true);
     try {
-      const { mcpApi } = await import('exo-shared');
-
       if (mode === 'create') {
         await mcpApi.createMcpCredential({
           alias: alias.trim(),
@@ -105,7 +108,7 @@ export default function McpCredentialModal({
       onSaved();
       onClose();
     } catch (err) {
-      console.error('MCP Credential Save Failed:', err);
+      console.error('MCP Credential Save Failed:', err.status, err.body?.code || err.message);
       // Security: Clear sensitive input on error
       setCredentialValue('');
 
@@ -204,13 +207,9 @@ export default function McpCredentialModal({
                   ))}
                 </select>
               ) : (
-                <input
-                  className={FIELD_INPUT}
-                  placeholder="e.g. moonlight_garden"
-                  value={serverName}
-                  onChange={e => setServerName(e.target.value)}
-                  autoComplete="off"
-                />
+                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-mono">
+                  ⚠️ MCP Server 目录不可用（后端待施工 404/503）。接口就绪后方可新增凭证。
+                </div>
               )}
             </div>
 
