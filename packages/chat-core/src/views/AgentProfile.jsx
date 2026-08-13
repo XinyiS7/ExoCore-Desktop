@@ -456,7 +456,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
             </Button>
             {showMemoryBtn && (
               <Button variant="primary" className="!border-purple-400/25 !text-purple-300 hover:!bg-purple-400/5 hover:!border-purple-400/50" onClick={() => setView('agent_memory', { agentId: preset.id, agentName: preset.name })}>
-                <IconMemory size={14} /> Manage Memory
+                <IconMemory size={14} /> Heartbeat Ledger
               </Button>
             )}
           </section>

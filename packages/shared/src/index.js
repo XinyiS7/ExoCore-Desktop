@@ -24,6 +24,7 @@ export * as telemetryApi     from './endpoints/telemetry';
 export * as systemApi        from './endpoints/system';
 export * as pushApi          from './endpoints/push';
 export * as groupchatApi     from './endpoints/groupchat';
+export * as heartbeatApi     from './endpoints/heartbeat';
 
 // Profile — unified user identity (avatar, nickname, agent avatars)
 export { getUserAvatar, setUserAvatar, getUserNick, setUserNick, getAgentAvatar, setAgentAvatar, getAllAgentAvatars } from './profile';

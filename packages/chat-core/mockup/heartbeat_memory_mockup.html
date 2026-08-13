@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExoCore Heartbeat (心跳会话) Memory Ledger - Scrollbar Visible ECG Timeline</title>
+  <style>
+    /* ── ExoCore Cinder Theme Variables ── */
+    :root {
+      --cinder-base: #050505;
+      --cinder-surface: #0a0a0c;
+      --cinder-panel: rgba(255, 255, 255, 0.02);
+      --cinder-panel-hover: rgba(255, 255, 255, 0.04);
+      --cinder-ember: #c44d00;
+      --cinder-flame: #ff4a08;
+      --cinder-flame-dim: rgba(255, 74, 8, 0.15);
+      --cinder-line: rgba(139, 0, 0, 0.25);
+      --cinder-line-glow: rgba(255, 51, 51, 0.2);
+      --cinder-text: #cecdd6;
+      --cinder-text-dim: #9c9cae;
+      --cinder-text-faint: #61606e;
+
+      --status-succeeded: #10b981;
+      --status-succeeded-bg: rgba(16, 185, 129, 0.1);
+      --status-succeeded-border: rgba(16, 185, 129, 0.3);
+
+      --status-failed: #f43f5e;
+      --status-failed-bg: rgba(244, 63, 94, 0.1);
+      --status-failed-border: rgba(244, 63, 94, 0.3);
+
+      --status-running: #06b6d4;
+      --status-running-bg: rgba(6, 182, 212, 0.1);
+      --status-running-border: rgba(6, 182, 212, 0.3);
+
+      --status-pending: #8b5cf6;
+      --status-pending-bg: rgba(139, 92, 246, 0.1);
+      --status-pending-border: rgba(139, 92, 246, 0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background-color: var(--cinder-base);
+      color: var(--cinder-text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header Bar */
+    .header-bar {
+      height: 48px;
+      border-bottom: 1px solid var(--cinder-line);
+      background-color: var(--cinder-surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--cinder-line);
+      background: transparent;
+      color: var(--cinder-text-dim);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-back:hover {
+      color: var(--cinder-text);
+      border-color: var(--cinder-flame);
+      background: var(--cinder-flame-dim);
+    }
+
+    .agent-title-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .agent-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--cinder-text);
+    }
+
+    .subtitle-badge {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cinder-flame);
+      background: var(--cinder-flame-dim);
+      padding: 2px 8px;
+      border-radius: 3px;
+      border: 1px solid rgba(255, 74, 8, 0.3);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .readonly-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--cinder-text-dim);
+      background: rgba(255, 255, 255, 0.03);
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--cinder-line);
+    }
+    .readonly-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--cinder-ember);
+    }
+
+    /* ── EKG ECG Heartbeat Visual Banner Container ── */
+    .ecg-banner-wrapper {
+      position: relative;
+      height: 190px;
+      background: #020203;
+      border-bottom: 1px solid var(--cinder-line);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Scrollable Container with Highly Visible Cinder Scrollbar */
+    .ecg-scroll-container {
+      width: 100%;
+      height: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      position: relative;
+      scroll-behavior: smooth;
+      cursor: grab;
+    }
+    .ecg-scroll-container:active {
+      cursor: grabbing;
+    }
+
+    /* Highly Visible Ember Scrollbar Styling */
+    .ecg-scroll-container::-webkit-scrollbar {
+      height: 8px; /* Increased height so it is clearly visible and easy to grab */
+    }
+    .ecg-scroll-container::-webkit-scrollbar-track {
+      background: #07070a;
+      border-top: 1px solid rgba(255, 74, 8, 0.15);
+    }
+    .ecg-scroll-container::-webkit-scrollbar-thumb {
+      background: linear-gradient(90deg, #c44d00, #ff4a08);
+      border-radius: 4px;
+      box-shadow: 0 0 10px rgba(255, 74, 8, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .ecg-scroll-container::-webkit-scrollbar-thumb:hover {
+      background: #ff6a28;
+      box-shadow: 0 0 15px rgba(255, 74, 8, 0.9);
+    }
+
+    /* Fixed Tooltip Banner on Top Left */
+    .ecg-tooltip {
+      position: absolute;
+      top: 8px;
+      left: 24px;
+      background: rgba(10, 10, 12, 0.95);
+      border: 1px solid var(--cinder-flame);
+      backdrop-filter: blur(8px);
+      padding: 4px 14px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--cinder-text);
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+      pointer-events: none;
+    }
+
+    /* Scroll Hint Badge on Top Right */
+    .ecg-scroll-hint {
+      position: absolute;
+      top: 8px;
+      right: 24px;
+      background: rgba(255, 74, 8, 0.08);
+      border: 1px solid rgba(255, 74, 8, 0.3);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      color: #ff8a65;
+      z-index: 40;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Grid Canvas Track */
+    .ecg-track {
+      width: 1800px;
+      height: 100%;
+      position: relative;
+      background-image: 
+        linear-gradient(to right, rgba(255, 74, 8, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 74, 8, 0.05) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* SVG Wave Surface (Upper 140px) */
+    .ecg-svg {
+      width: 100%;
+      height: 135px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 5;
+    }
+
+    /* Solid Past ECG Path */
+    .ecg-line-past {
+      fill: none;
+      stroke: var(--cinder-flame);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 8px rgba(255, 74, 8, 0.8));
+    }
+
+    /* Muted Future ECG Path */
+    .ecg-line-future {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.15);
+      stroke-width: 1.5;
+      stroke-dasharray: 4 4;
+    }
+
+    /* Node circles */
+    .ecg-node-point {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .ecg-node-point:hover {
+      r: 8.5;
+      filter: drop-shadow(0 0 14px #ff4a08);
+    }
+
+    /* Pulsing Beacon Circle overlay on selected node */
+    .pulse-beacon {
+      pointer-events: none;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .pulse-beacon-inner {
+      animation: beacon-pulse 1.6s infinite;
+    }
+    @keyframes beacon-pulse {
+      0% { r: 6px; opacity: 1; stroke-width: 2px; }
+      100% { r: 24px; opacity: 0; stroke-width: 1px; }
+    }
+
+    /* Scanning Radar Line & Rightward Beam Effect */
+    .scanner-group {
+      pointer-events: none;
+    }
+    .scanner-line {
+      stroke: #ff4a08;
+      stroke-width: 1.5;
+      filter: drop-shadow(0 0 6px #ff4a08);
+    }
+    .scanner-beam {
+      fill: url(#scanGradient);
+      animation: pulse-beam 2s infinite alternate;
+    }
+    @keyframes pulse-beam {
+      0% { opacity: 0.3; }
+      100% { opacity: 0.7; }
+    }
+
+    /* Dedicated Bottom Time Axis Bar (Height: 38px, placed above scrollbar) */
+    .ecg-time-axis-bar {
+      position: absolute;
+      bottom: 8px; /* Elevated 8px to leave room for the glowing scrollbar below */
+      left: 0;
+      width: 1800px;
+      height: 38px;
+      background: rgba(4, 4, 6, 0.85);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      z-index: 10;
+    }
+
+    /* Default Clean Time Tick Label (Unselected) */
+    .time-tick-label {
+      position: absolute;
+      top: 8px;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--cinder-text-faint);
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .time-tick-label:hover {
+      color: var(--cinder-text);
+      background: rgba(255, 255, 255, 0.08);
+      z-index: 12;
+    }
+
+    .tick-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Active / Hover Expanded Details Badge on Time Axis (Shifted UPWARD by Y=-26px) */
+    .time-tick-label.active-expanded {
+      color: #ffffff;
+      background: rgba(15, 15, 22, 0.95);
+      border: 1px solid var(--cinder-flame);
+      box-shadow: 0 4px 14px rgba(255, 74, 8, 0.3);
+      padding: 3px 10px;
+      font-weight: 600;
+      z-index: 15;
+      transform: translateX(-50%) translateY(-26px);
+    }
+    .time-tick-label.active-expanded.failed-badge {
+      border-color: #f43f5e;
+      color: #fda4af;
+      box-shadow: 0 4px 14px rgba(244, 63, 94, 0.3);
+    }
+    .time-tick-label.active-expanded.succeeded-badge {
+      border-color: #10b981;
+      color: #6ee7b7;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Dense Retry Burst Bracket Tag (Top: 8px) */
+    .retry-cluster-bracket {
+      position: absolute;
+      top: 8px;
+      left: 980px;
+      font-size: 10px;
+      color: #fda4af;
+      background: rgba(244, 63, 94, 0.15);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      padding: 2px 8px;
+      border-radius: 4px;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* Main Container Layout */
+    .main-body {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .content-stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 32px;
+      overflow-y: auto;
+    }
+
+    /* Controls & Filter Toolbar */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--cinder-surface);
+      border: 1px solid var(--cinder-line);
+      border-radius: 6px;
+      padding: 10px 16px;
+      margin-bottom: 16px;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .control-label {
+      font-size: 12px;
+      color: var(--cinder-text-dim);
+    }
+
+    .select-input, .btn-action {
+      background: var(--cinder-base);
+      border: 1px solid var(--cinder-line);
+      color: var(--cinder-text);
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .select-input:hover, .btn-action:hover {
+      border-color: var(--cinder-flame);
+    }
+
+    .btn-toggle-demo {
+      background: rgba(255, 74, 8, 0.1);
+      border-color: rgba(255, 74, 8, 0.4);
+      color: #ff8a65;
+    }
+    .btn-toggle-demo:hover {
+      background: rgba(255, 74, 8, 0.2);
+    }
+
+    /* Event History List */
+    .events-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Visual Correlation Group for Retries */
+    .retry-group {
+      border-left: 2px dashed rgba(244, 63, 94, 0.4);
+      padding-left: 16px;
+      margin-left: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+    }
+    .retry-group-label {
+      font-size: 11px;
+      color: var(--cinder-text-faint);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+    .retry-badge-link {
+      background: rgba(244, 63, 94, 0.12);
+      color: #fda4af;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 10px;
+    }
+
+    .event-card {
+      background: var(--cinder-surface);
+      border: 1px solid var(--cinder-line);
+      border-radius: 6px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+
+    .event-card:hover {
+      border-color: rgba(255, 74, 8, 0.5);
+      background: var(--cinder-panel-hover);
+      transform: translateY(-1px);
+    }
+
+    .event-card.active-selected {
+      border-color: var(--cinder-flame);
+      box-shadow: 0 0 15px rgba(255, 74, 8, 0.15);
+      background: rgba(255, 74, 8, 0.03);
+    }
+
+    .event-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .badge-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .status-badge.succeeded {
+      background: var(--status-succeeded-bg);
+      color: var(--status-succeeded);
+      border: 1px solid var(--status-succeeded-border);
+    }
+
+    .status-badge.failed {
+      background: var(--status-failed-bg);
+      color: var(--status-failed);
+      border: 1px solid var(--status-failed-border);
+    }
+
+    .status-badge.running {
+      background: var(--status-running-bg);
+      color: var(--status-running);
+      border: 1px solid var(--status-running-border);
+    }
+
+    .source-tag {
+      font-size: 11px;
+      color: var(--cinder-text-dim);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .domain-tag {
+      font-size: 11px;
+      color: #93c5fd;
+      background: rgba(147, 197, 253, 0.08);
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(147, 197, 253, 0.2);
+    }
+
+    .time-info {
+      font-size: 11px;
+      color: var(--cinder-text-dim);
+      font-family: monospace;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tz-notice {
+      color: var(--cinder-text-faint);
+      font-size: 10px;
+    }
+
+    .event-content-preview {
+      font-size: 13px;
+      color: var(--cinder-text);
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      line-height: 1.6;
+      max-height: 72px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: pre-wrap;
+    }
+
+    .event-content-failed {
+      color: #fda4af;
+      font-style: italic;
+      font-size: 12px;
+      background: rgba(244, 63, 94, 0.05);
+      border-color: rgba(244, 63, 94, 0.15);
+    }
+
+    .event-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--cinder-text-faint);
+    }
+
+    .uuid-snippet {
+      font-family: monospace;
+      color: var(--cinder-text-dim);
+    }
+
+    /* Empty State Container */
+    .empty-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 64px 20px;
+      text-align: center;
+      background: var(--cinder-surface);
+      border: 1px dashed var(--cinder-line);
+      border-radius: 8px;
+    }
+    .empty-icon {
+      width: 48px;
+      height: 48px;
+      color: var(--cinder-text-faint);
+      margin-bottom: 16px;
+      opacity: 0.6;
+    }
+    .empty-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--cinder-text);
+      margin-bottom: 6px;
+    }
+    .empty-desc {
+      font-size: 12px;
+      color: var(--cinder-text-dim);
+      max-width: 360px;
+      line-height: 1.6;
+    }
+
+    /* Detail Drawer (Slide-over Inspector) */
+    .detail-drawer {
+      position: absolute;
+      top: 0;
+      right: -520px;
+      width: 500px;
+      height: 100%;
+      background: var(--cinder-surface);
+      border-left: 1px solid var(--cinder-line);
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.7);
+      transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .detail-drawer.open {
+      right: 0;
+    }
+
+    .drawer-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--cinder-line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .drawer-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--cinder-text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-close-drawer {
+      background: transparent;
+      border: 1px solid var(--cinder-line);
+      color: var(--cinder-text-dim);
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-close-drawer:hover {
+      color: var(--cinder-text);
+      border-color: var(--cinder-flame);
+    }
+
+    .drawer-body {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .detail-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--cinder-flame);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .kv-grid {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 8px 12px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 12px 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      font-size: 12px;
+    }
+
+    .kv-key {
+      color: var(--cinder-text-dim);
+    }
+
+    .kv-val {
+      color: var(--cinder-text);
+      font-family: monospace;
+      word-break: break-all;
+    }
+
+    .code-box {
+      background: #000;
+      border: 1px solid var(--cinder-line);
+      border-radius: 4px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #a5d6ff;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .error-box {
+      background: rgba(244, 63, 94, 0.08);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      border-radius: 4px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #fda4af;
+      white-space: pre-wrap;
+    }
+
+    /* Tool History Timeline */
+    .tool-history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tool-item {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .tool-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .tool-name {
+      font-family: monospace;
+      font-weight: 600;
+      color: #60a5fa;
+    }
+
+    .tool-status {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      background: rgba(16, 185, 129, 0.1);
+      color: #34d399;
+    }
+
+    .tool-meta {
+      font-size: 11px;
+      color: var(--cinder-text-faint);
+    }
+
+    /* Pagination Footer */
+    .pagination-bar {
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--cinder-surface);
+      border: 1px solid var(--cinder-line);
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-size: 12px;
+      color: var(--cinder-text-dim);
+    }
+
+    .page-btn {
+      background: var(--cinder-base);
+      border: 1px solid var(--cinder-line);
+      color: var(--cinder-text);
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .page-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header class="header-bar">
+    <div class="header-left">
+      <button class="btn-back" onclick="alert('返回 Agent Profile 主页')">
+        ← Agent Profile
+      </button>
+      <div class="agent-title-box">
+        <span class="agent-name">Alicia</span>
+        <span style="color: var(--cinder-text-faint); font-size: 12px;">(Preset ID: 1)</span>
+        <span class="subtitle-badge">Heartbeat Memory Ledger</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="readonly-pill">
+        <div class="readonly-dot"></div>
+        只读账本 (GET Only · 无写/删除 API)
+      </div>
+    </div>
+  </header>
+
+  <!-- Electrocardiogram (ECG / EKG) Banner Wrapper -->
+  <section class="ecg-banner-wrapper">
+    <!-- Floating Focus Tooltip Badge -->
+    <div class="ecg-tooltip" id="ecgTooltip">
+      <span style="color: var(--cinder-flame);">⚡ 心律波形聚焦:</span>
+      <span id="ecgFocusName">Attempt #3 (Succeeded)</span>
+      <span style="opacity: 0.4;">|</span>
+      <span id="ecgFocusTime" style="color: #60a5fa;">18:00:00 (本地 CST)</span>
+    </div>
+
+    <!-- Scroll Hint Badge on Top Right -->
+    <div class="ecg-scroll-hint">
+      <span>↔ 按住拖动或滑动滚动条 (Drag or Scroll)</span>
+    </div>
+
+    <!-- Scrollable Canvas Track (Drag/Scroll horizontally) -->
+    <div class="ecg-scroll-container" id="ecgScrollContainer">
+      <div class="ecg-track">
+        
+        <!-- SVG Wave Surface (Upper 140px, baseline at Y=58) -->
+        <svg class="ecg-svg" id="ecgSvg" viewBox="0 0 1800 140" preserveAspectRatio="none">
+          <defs>
+            <!-- Rightward Scanning Light Gradient -->
+            <linearGradient id="scanGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="rgba(255, 74, 8, 0.4)" />
+              <stop offset="100%" stop-color="rgba(255, 74, 8, 0)" />
+            </linearGradient>
+          </defs>
+
+          <!-- Solid Past Line (Up to NOW / 80% mark = X=1350) -->
+          <path class="ecg-line-past" id="ecgPathPast" d="" />
+
+          <!-- Muted Future Line (From NOW to future = X=1350 to 1800) -->
+          <path class="ecg-line-future" id="ecgPathFuture" d="" />
+
+          <!-- Scanning Radar Line & Rightward Beam Effect -->
+          <g class="scanner-group">
+            <line x1="1350" y1="0" x2="1350" y2="140" class="scanner-line" />
+            <rect x="1350" y="0" width="120" height="140" class="scanner-beam" />
+          </g>
+
+          <!-- Interactive Node Circles on Peaks (High Z-index, 100% clickable) -->
+          <g id="ecgNodesGroup"></g>
+
+          <!-- Glowing Pulsing Beacon Overlay for Selected Event -->
+          <g class="pulse-beacon" id="pulseBeaconGroup" transform="translate(0, 0)">
+            <circle cx="0" cy="0" r="8" fill="none" stroke="#ff4a08" stroke-width="2" class="pulse-beacon-inner" />
+            <circle cx="0" cy="0" r="3.5" fill="#ffffff" />
+          </g>
+        </svg>
+
+        <!-- Dense Retry Burst Bracket Tag (Moved Y-wise UPWARDS into top empty space: top: 8px) -->
+        <div class="retry-cluster-bracket">
+          ⚡ WakeUpTask #104 密集重试波群 (3次尝试)
+        </div>
+
+        <!-- Dedicated Time Axis Bar at Bottom -->
+        <div class="ecg-time-axis-bar" id="ecgTimeAxisBar">
+          <!-- Populated by JS -->
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Area -->
+  <main class="main-body">
+    <div class="content-stage">
+
+      <!-- Toolbar / Filter / Params bar -->
+      <section class="toolbar">
+        <div class="toolbar-group">
+          <!-- launch_source Filter Dropdown (From ReactSheet.md §9.1 launch_source field) -->
+          <span class="control-label">Launch Source (触发源过滤):</span>
+          <select class="select-input" id="sourceSelect" onchange="filterList()">
+            <option value="all" selected>全部触发源 (All Sources)</option>
+            <option value="auto">auto (系统定时/Cron ~2.5h)</option>
+            <option value="agent">agent (智能体自发发起)</option>
+            <option value="notification">notification (通知事件推送)</option>
+          </select>
+
+          <!-- Status Filter Dropdown -->
+          <span class="control-label" style="margin-left: 12px;">Status (状态过滤):</span>
+          <select class="select-input" id="statusSelect" onchange="filterList()">
+            <option value="all" selected>全部状态 (All Statuses)</option>
+            <option value="succeeded">succeeded (仅看成功)</option>
+            <option value="failed">failed (仅看失败重试向下峰)</option>
+          </select>
+        </div>
+
+        <div class="toolbar-group">
+          <button class="btn-action btn-toggle-demo" onclick="toggleEmptyState()">
+            ⚡ 切换空历史 (Empty State Demo)
+          </button>
+          <button class="btn-action" onclick="refreshList()">
+            🔄 刷新 (GET /api/heartbeat/events/?preset_id=1)
+          </button>
+        </div>
+      </section>
+
+      <!-- Event List (Normal populated view) -->
+      <section class="events-container" id="eventsContainer">
+
+        <!-- Succeeded Event Card -->
+        <article class="event-card active-selected" onclick="selectEvent('event-1')" id="card-event-1">
+          <div class="event-header">
+            <div class="badge-group">
+              <span class="status-badge succeeded">
+                ✓ Succeeded
+              </span>
+              <span class="source-tag">
+                🤖 launch_source: auto (~2.5h)
+              </span>
+              <span class="domain-tag">
+                domain: "workspace-analytics"
+              </span>
+            </div>
+            <div class="time-info">
+              <span class="local-time">2026-08-13 18:00:00 (本地 CST)</span>
+              <span class="tz-notice">(UTC 10:00:00 转换)</span>
+            </div>
+          </div>
+          <div class="event-content-preview">
+完成对项目依赖及数据结构的日常健康检查。本轮心跳分析了最近 24 小时的用户交互轨迹，确认包含 3 个高优先级的待办事件，并已生成上下文报告。系统状态良好，未发现资源异常。
+          </div>
+          <div class="event-footer">
+            <span class="uuid-snippet">UUID: 8f2a4c1e-9b3d-4a5e-8c7f-1d2e3f4a5b6c</span>
+            <span>Duration: 15m 0s · Attempt #3 (Succeeded upward peak ⬆️)</span>
+          </div>
+        </article>
+
+        <!-- Retry Visual Linkage Group: Failed Attempts before Succeeded -->
+        <div class="retry-group" id="retryGroupBlock">
+          <div class="retry-group-label">
+            <span>↳ 关联 WakeUpTask #104 的重试尝试记录 (Historical Retry Sequence)</span>
+            <span class="retry-badge-link">WakeUpTask ID: 104</span>
+          </div>
+
+          <!-- Failed Attempt #2 (Reboot interrupt -> Downward Peak ⬇️) -->
+          <article class="event-card" onclick="selectEvent('event-2')" id="card-event-2">
+            <div class="event-header">
+              <div class="badge-group">
+                <span class="status-badge failed">
+                  ✕ Failed (Attempt #2 重试失败)
+                </span>
+                <span class="source-tag">
+                  🤖 launch_source: auto
+                </span>
+              </div>
+              <div class="time-info">
+                <span class="local-time">2026-08-13 17:45:00 (本地 CST)</span>
+              </div>
+            </div>
+            <div class="event-content-preview event-content-failed">
+[心跳中断/失败] error_summary: System restarted unexpectedly during execution segment 2. Execution halted.
+            </div>
+            <div class="event-footer">
+              <span class="uuid-snippet">UUID: 3d1c4b2a-7e8f-9a0b-1c2d-3e4f5a6b7c8d</span>
+              <span>Attempt #2 · Downward Peak ⬇️ · Finalization: max_segments</span>
+            </div>
+          </article>
+
+          <!-- Failed Attempt #1 (Initial failure -> Downward Peak ⬇️) -->
+          <article class="event-card" onclick="selectEvent('event-3')" id="card-event-3">
+            <div class="event-header">
+              <div class="badge-group">
+                <span class="status-badge failed">
+                  ✕ Failed (Attempt #1 初始失败)
+                </span>
+                <span class="source-tag">
+                  🤖 launch_source: auto
+                </span>
+              </div>
+              <div class="time-info">
+                <span class="local-time">2026-08-13 17:30:00 (本地 CST)</span>
+              </div>
+            </div>
+            <div class="event-content-preview event-content-failed">
+[心跳失败] error_summary: Network request to remote provider timed out after 30000ms.
+            </div>
+            <div class="event-footer">
+              <span class="uuid-snippet">UUID: 1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d</span>
+              <span>Attempt #1 · Finalization: explicit</span>
+            </div>
+          </article>
+        </div>
+
+      </section>
+
+      <!-- Empty History View (Hidden by default, toggleable via demo button) -->
+      <section class="empty-state" id="emptyStateContainer">
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 8v4l3 3" />
+        </svg>
+        <div class="empty-title">暂无心跳历史记录 (No Heartbeat Events)</div>
+        <div class="empty-desc">
+          当前 Preset (Alicia / id=1) 尚未触发或记录任何 Heartbeat 会话。<br>
+          GET /api/heartbeat/events/?preset_id=1 返回了空数组 <code style="color:var(--cinder-flame);">events: []</code> (total_count=0)。
+        </div>
+      </section>
+
+      <!-- Pagination Footer -->
+      <footer class="pagination-bar" id="paginationBar">
+        <div>
+          显示第 <strong>1 - 3</strong> 条，共 <strong id="pag-total">3</strong> 条 (has_more: false)
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="page-btn" disabled>上一页</button>
+          <button class="page-btn" disabled>下一页</button>
+        </div>
+      </footer>
+
+    </div>
+
+    <!-- Detail Drawer (Slide-over) -->
+    <aside class="detail-drawer" id="detailDrawer">
+      <div class="drawer-header">
+        <div class="drawer-title">
+          🔍 Heartbeat Event 详情
+        </div>
+        <button class="btn-close-drawer" onclick="closeDrawer()">✕</button>
+      </div>
+
+      <div class="drawer-body" id="drawerBody">
+        <!-- Dynamic content filled via JS -->
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    // Mock Data representing Chapter 9 Heartbeat Event Specs
+    const mockEvents = {
+      'event-1': {
+        session_uuid: '8f2a4c1e-9b3d-4a5e-8c7f-1d2e3f4a5b6c',
+        preset_id: 1,
+        preset_name: 'Alicia',
+        launch_source: 'auto',
+        domain: 'workspace-analytics',
+        status: 'succeeded',
+        content: '完成对项目依赖及数据结构的日常健康检查。本轮心跳分析了最近 24 小时的用户交互轨迹，确认包含 3 个高优先级的待办事件，并已生成上下文报告。系统状态良好，未发现资源异常。',
+        started_at: '2026-08-13T10:00:00Z',
+        completed_at: '2026-08-13T10:15:00Z',
+        seed_message: '【系统定时心跳任务】请对当前工作区的最新数据及智能体索引状态进行健康度巡检，并总结关键待处理事项。',
+        tool_history: [
+          { tool_name: 'check_workspace_health', status: 'success', timestamp: '2026-08-13T10:01:12Z', summary: 'Scanned 14 files, 0 errors' },
+          { tool_name: 'fetch_user_tasks', status: 'success', timestamp: '2026-08-13T10:05:30Z', summary: 'Fetched 3 active tasks' }
+        ],
+        error_summary: '',
+        finalization_reason: 'explicit',
+        attempt_number: 3,
+        wake_up_task_id: 104,
+        source_conversation_id: 42,
+        acknowledged_at: null,
+        ecgX: 1110,
+        ecgY: 20,
+        isDownward: false,
+        ecgTitle: 'Attempt #3 (Succeeded 向上高峰 ⬆️)',
+        ecgTimeStr: '18:00:00 (本地 CST)',
+        shortLabel: '18:00',
+        expandedLabel: '18:00 [Att #3 ⬆️ 成功]'
+      },
+      'event-2': {
+        session_uuid: '3d1c4b2a-7e8f-9a0b-1c2d-3e4f5a6b7c8d',
+        preset_id: 1,
+        preset_name: 'Alicia',
+        launch_source: 'auto',
+        domain: '',
+        status: 'failed',
+        content: '',
+        started_at: '2026-08-13T09:45:00Z',
+        completed_at: '2026-08-13T09:48:12Z',
+        seed_message: '【系统定时心跳任务】请对当前工作区进行健康巡检（重试尝试 #2）。',
+        tool_history: [
+          { tool_name: 'check_workspace_health', status: 'success', timestamp: '2026-08-13T09:46:00Z', summary: 'Segment 1 completed' }
+        ],
+        error_summary: 'System restarted unexpectedly during execution segment 2. Execution halted automatically.',
+        finalization_reason: 'max_segments',
+        attempt_number: 2,
+        wake_up_task_id: 104,
+        source_conversation_id: null,
+        acknowledged_at: null,
+        ecgX: 1010,
+        ecgY: 96,
+        isDownward: true,
+        ecgTitle: 'Attempt #2 (Failed 重试向下大峰 ⬇️)',
+        ecgTimeStr: '17:45:00 (本地 CST)',
+        shortLabel: '17:45',
+        expandedLabel: '17:45 [Att #2 ⬇️ 失败]'
+      },
+      'event-3': {
+        session_uuid: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
+        preset_id: 1,
+        preset_name: 'Alicia',
+        launch_source: 'auto',
+        domain: '',
+        status: 'failed',
+        content: '',
+        started_at: '2026-08-13T09:30:00Z',
+        completed_at: '2026-08-13T09:30:45Z',
+        seed_message: '【系统定时心跳任务】请对当前工作区进行健康巡检（初始尝试 #1）。',
+        tool_history: [],
+        error_summary: 'Network request to remote provider timed out after 30000ms.',
+        finalization_reason: 'explicit',
+        attempt_number: 1,
+        wake_up_task_id: 104,
+        source_conversation_id: null,
+        acknowledged_at: null,
+        ecgX: 910,
+        ecgY: 92,
+        isDownward: true,
+        ecgTitle: 'Attempt #1 (Failed 初始向下大峰 ⬇️)',
+        ecgTimeStr: '17:30:00 (本地 CST)',
+        shortLabel: '17:30',
+        expandedLabel: '17:30 [Att #1 ⬇️ 失败]'
+      }
+    };
+
+    let isEmptyDemo = false;
+    let selectedEventId = 'event-1';
+    let hoveredEventId = null;
+
+    const nowX = 1350;
+    const baselineY = 58;
+
+    // Ticks configuration
+    const ticksData = [
+      { x: 120, label: '10:00', type: 'normal' },
+      { x: 340, label: '12:30', type: 'normal' },
+      { x: 560, label: '15:00', type: 'normal' },
+      { x: 910, label: '17:30', eventId: 'event-3', type: 'failed' },
+      { x: 1010, label: '17:45', eventId: 'event-2', type: 'failed' },
+      { x: 1110, label: '18:00', eventId: 'event-1', type: 'succeeded' },
+      { x: 1350, label: '📍 18:30 (NOW)', type: 'now' },
+      { x: 1570, label: '21:00', type: 'normal' }
+    ];
+
+    function renderEcgTimeline() {
+      let pastPathD = `M 0,${baselineY} `;
+      let futurePathD = `M ${nowX},${baselineY} `;
+
+      const eventsList = Object.values(mockEvents).sort((a, b) => a.ecgX - b.ecgX);
+      let curX = 0;
+
+      const drawGentleBaseline = (targetX) => {
+        while (curX < targetX - 50) {
+          curX += 40;
+          pastPathD += `L ${curX - 25},${baselineY} `;
+          pastPathD += `Q ${curX - 15},${baselineY - 2.5} ${curX - 10},${baselineY} Q ${curX - 5},${baselineY + 2.5} ${curX},${baselineY} `;
+        }
+        if (curX < targetX - 35) {
+          pastPathD += `L ${targetX - 35},${baselineY} `;
+          curX = targetX - 35;
+        }
+      };
+
+      eventsList.forEach(ev => {
+        drawGentleBaseline(ev.ecgX);
+
+        const x = ev.ecgX;
+        if (!ev.isDownward) {
+          pastPathD += `L ${x - 28},${baselineY} `;
+          pastPathD += `Q ${x - 20},${baselineY - 5} ${x - 12},${baselineY} `;
+          pastPathD += `L ${x - 6},${baselineY + 6} `;
+          pastPathD += `L ${x},${ev.ecgY} `;
+          pastPathD += `L ${x + 6},${baselineY + 12} `;
+          pastPathD += `Q ${x + 18},${baselineY - 6} ${x + 28},${baselineY} `;
+        } else {
+          pastPathD += `L ${x - 28},${baselineY} `;
+          pastPathD += `Q ${x - 20},${baselineY + 5} ${x - 12},${baselineY} `;
+          pastPathD += `L ${x - 6},${baselineY - 6} `;
+          pastPathD += `L ${x},${ev.ecgY} `;
+          pastPathD += `L ${x + 6},${baselineY - 10} `;
+          pastPathD += `Q ${x + 18},${baselineY + 6} ${x + 28},${baselineY} `;
+        }
+        curX = x + 28;
+      });
+
+      drawGentleBaseline(nowX);
+      pastPathD += `L ${nowX},${baselineY} `;
+      futurePathD += `L 1800,${baselineY} `;
+
+      document.getElementById('ecgPathPast').setAttribute('d', pastPathD);
+      document.getElementById('ecgPathFuture').setAttribute('d', futurePathD);
+
+      // Node circles
+      const nodesGroup = document.getElementById('ecgNodesGroup');
+      nodesGroup.innerHTML = eventsList.map(ev => {
+        const evId = Object.keys(mockEvents).find(k => mockEvents[k] === ev);
+        return `
+          <circle 
+            cx="${ev.ecgX}" 
+            cy="${ev.ecgY}" 
+            r="6" 
+            fill="${ev.isDownward ? '#f43f5e' : '#10b981'}" 
+            stroke="#ffffff" 
+            stroke-width="1.5" 
+            class="ecg-node-point" 
+            onmouseenter="hoverEvent('${evId}')"
+            onmouseleave="unhoverEvent()"
+            onclick="selectEvent('${evId}')"
+          />
+        `;
+      }).join('');
+
+      renderTimeTicks();
+    }
+
+    function renderTimeTicks() {
+      const timeAxisBar = document.getElementById('ecgTimeAxisBar');
+      
+      timeAxisBar.innerHTML = ticksData.map(t => {
+        const isEvent = !!t.eventId;
+        const isActive = isEvent && (t.eventId === selectedEventId || t.eventId === hoveredEventId);
+        const evData = isEvent ? mockEvents[t.eventId] : null;
+
+        let displayLabel = t.label;
+        let badgeClasses = 'time-tick-label';
+
+        if (t.type === 'now') {
+          badgeClasses += ' now-label';
+        } else if (isEvent) {
+          if (isActive) {
+            badgeClasses += ' active-expanded';
+            badgeClasses += evData.isDownward ? ' failed-badge' : ' succeeded-badge';
+            displayLabel = evData.expandedLabel;
+          } else {
+            const dotColor = evData.isDownward ? '#f43f5e' : '#10b981';
+            displayLabel = `<span class="tick-dot" style="background:${dotColor}"></span>${evData.shortLabel}`;
+          }
+        }
+
+        const clickAttr = isEvent ? `onclick="selectEvent('${t.eventId}')" onmouseenter="hoverEvent('${t.eventId}')" onmouseleave="unhoverEvent()"` : '';
+
+        return `
+          <div class="${badgeClasses}" style="left: ${t.x}px;" ${clickAttr}>
+            ${displayLabel}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function hoverEvent(eventId) {
+      hoveredEventId = eventId;
+      renderTimeTicks();
+    }
+
+    function unhoverEvent() {
+      hoveredEventId = null;
+      renderTimeTicks();
+    }
+
+    function formatToLocalTime(utcIso) {
+      if (!utcIso) return 'N/A';
+      const date = new Date(utcIso);
+      return date.toLocaleString() + ' (' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')';
+    }
+
+    function scrollToPeak(peakX) {
+      const container = document.getElementById('ecgScrollContainer');
+      const containerWidth = container.clientWidth;
+      const currentScroll = container.scrollLeft;
+
+      const isVisible = (peakX >= currentScroll + containerWidth * 0.2) && 
+                        (peakX <= currentScroll + containerWidth * 0.8);
+
+      if (!isVisible) {
+        const targetScroll = peakX - containerWidth / 2;
+        container.scrollTo({
+          left: Math.max(0, targetScroll),
+          behavior: 'smooth'
+        });
+      }
+    }
+
+    function moveEcgBeacon(x, y, title, timeStr) {
+      const beaconGroup = document.getElementById('pulseBeaconGroup');
+      beaconGroup.setAttribute('transform', `translate(${x}, ${y})`);
+      document.getElementById('ecgFocusName').innerText = title;
+      document.getElementById('ecgFocusTime').innerText = timeStr;
+    }
+
+    function selectEvent(eventId) {
+      selectedEventId = eventId;
+      const data = mockEvents[eventId];
+      if (!data) return;
+
+      renderTimeTicks();
+
+      // Highlight active card
+      document.querySelectorAll('.event-card').forEach(el => el.classList.remove('active-selected'));
+      const activeCard = document.getElementById(`card-${eventId}`);
+      if (activeCard) {
+        activeCard.classList.add('active-selected');
+        activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      // Move beacon & auto-center timeline if out of view
+      moveEcgBeacon(data.ecgX, data.ecgY, data.ecgTitle, data.ecgTimeStr);
+      scrollToPeak(data.ecgX);
+
+      // Render Drawer
+      renderDrawerContent(data);
+    }
+
+    function renderDrawerContent(data) {
+      const drawerBody = document.getElementById('drawerBody');
+      const localStarted = formatToLocalTime(data.started_at);
+      const localCompleted = formatToLocalTime(data.completed_at);
+      const localAck = data.acknowledged_at ? formatToLocalTime(data.acknowledged_at) : '未确认 (null)';
+      const isFailed = data.status === 'failed';
+
+      let toolHistoryHtml = '';
+      if (data.tool_history && data.tool_history.length > 0) {
+        toolHistoryHtml = data.tool_history.map(t => `
+          <div class="tool-item">
+            <div class="tool-item-header">
+              <span class="tool-name">🛠️ ${t.tool_name}</span>
+              <span class="tool-status">${t.status}</span>
+            </div>
+            <div class="tool-meta">Time: ${formatToLocalTime(t.timestamp)} | Result: ${t.summary}</div>
+          </div>
+        `).join('');
+      } else {
+        toolHistoryHtml = '<div style="font-size:12px; color:var(--cinder-text-faint); font-style:italic;">无工具执行记录 (Empty Tool History)</div>';
+      }
+
+      drawerBody.innerHTML = `
+        <div class="detail-section">
+          <span class="section-title">📌 基础元数据 (Metadata)</span>
+          <div class="kv-grid">
+            <span class="kv-key">Session UUID</span>
+            <span class="kv-val">${data.session_uuid}</span>
+
+            <span class="kv-key">Preset</span>
+            <span class="kv-val">ID: ${data.preset_id} (${data.preset_name})</span>
+
+            <span class="kv-key">Status</span>
+            <span class="kv-val" style="color: ${isFailed ? 'var(--status-failed)' : 'var(--status-succeeded)'}">
+              ${data.status.toUpperCase()}
+            </span>
+
+            <span class="kv-key">Launch Source</span>
+            <span class="kv-val">${data.launch_source}</span>
+
+            <span class="kv-key">Domain</span>
+            <span class="kv-val">${data.domain || '(空字符串)'}</span>
+
+            <span class="kv-key">Attempt Number</span>
+            <span class="kv-val">第 ${data.attempt_number} 次尝试 (${data.isDownward ? '向下失败峰 ⬇️' : '向上成功峰 ⬆️'})</span>
+
+            <span class="kv-key">WakeUpTask ID</span>
+            <span class="kv-val">${data.wake_up_task_id ?? 'null'}</span>
+
+            <span class="kv-key">Source Conversation</span>
+            <span class="kv-val">${data.source_conversation_id ?? 'null'}</span>
+
+            <span class="kv-key">Finalization Reason</span>
+            <span class="kv-val">${data.finalization_reason ?? 'null'}</span>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <span class="section-title">⏰ 时间与时区 (UTC 转换本地时区)</span>
+          <div class="kv-grid">
+            <span class="kv-key">Started At</span>
+            <span class="kv-val">${localStarted}<br><span style="font-size:10px; opacity:0.6;">UTC: ${data.started_at}</span></span>
+
+            <span class="kv-key">Completed At</span>
+            <span class="kv-val">${localCompleted}<br><span style="font-size:10px; opacity:0.6;">UTC: ${data.completed_at}</span></span>
+
+            <span class="kv-key">Acknowledged At</span>
+            <span class="kv-val">${localAck}</span>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <span class="section-title">🌱 Seed Message (种子消息)</span>
+          <div class="code-box">${data.seed_message}</div>
+        </div>
+
+        ${isFailed ? `
+          <div class="detail-section">
+            <span class="section-title" style="color:var(--status-failed)">⚠️ Error Summary (安全错误摘要)</span>
+            <div class="error-box">${data.error_summary || 'No error details provided.'}</div>
+          </div>
+        ` : `
+          <div class="detail-section">
+            <span class="section-title">📝 Final Summary (最终摘要正文)</span>
+            <div class="event-content-preview" style="max-height:none; background:rgba(0,0,0,0.5);">${data.content}</div>
+          </div>
+        `}
+
+        <div class="detail-section">
+          <span class="section-title">🧰 Safe Tool History (${data.tool_history?.length || 0} calls)</span>
+          <div class="tool-history-list">
+            ${toolHistoryHtml}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('detailDrawer').classList.add('open');
+    }
+
+    function openDrawer(eventId) {
+      selectEvent(eventId);
+    }
+
+    function closeDrawer() {
+      document.getElementById('detailDrawer').classList.remove('open');
+      document.querySelectorAll('.event-card').forEach(el => el.classList.remove('active-selected'));
+    }
+
+    function filterList() {
+      const source = document.getElementById('sourceSelect').value;
+      const status = document.getElementById('statusSelect').value;
+      alert(`前端客户端筛选: launch_source=${source}, status=${status}`);
+    }
+
+    function toggleEmptyState() {
+      isEmptyDemo = !isEmptyDemo;
+      const eventsContainer = document.getElementById('eventsContainer');
+      const emptyStateContainer = document.getElementById('emptyStateContainer');
+      const paginationBar = document.getElementById('paginationBar');
+      const ecgBanner = document.querySelector('.ecg-banner-wrapper');
+
+      if (isEmptyDemo) {
+        eventsContainer.style.display = 'none';
+        emptyStateContainer.style.display = 'flex';
+        ecgBanner.style.opacity = '0.3';
+        paginationBar.innerHTML = '<div>显示第 0 条，共 0 条 (has_more: false)</div>';
+        closeDrawer();
+      } else {
+        eventsContainer.style.display = 'flex';
+        emptyStateContainer.style.display = 'none';
+        ecgBanner.style.opacity = '1';
+        paginationBar.innerHTML = '<div>显示第 1 - 3 条，共 3 条 (has_more: false)</div><div style="display:flex;gap:8px;"><button class="page-btn" disabled>上一页</button><button class="page-btn" disabled>下一页</button></div>';
+        selectEvent('event-1');
+      }
+    }
+
+    function refreshList() {
+      alert('已重新请求 GET /api/heartbeat/events/?preset_id=1&limit=20&offset=0');
+    }
+
+    // Interactive Drag-to-Scroll implementation for ECG container
+    let isMouseDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+
+    const scrollContainer = document.getElementById('ecgScrollContainer');
+    scrollContainer.addEventListener('mousedown', (e) => {
+      // Allow circle clicks without triggering drag scroll jump
+      if (e.target.tagName === 'circle' || e.target.classList.contains('time-tick-label')) return;
+      isMouseDown = true;
+      startX = e.pageX - scrollContainer.offsetLeft;
+      scrollLeft = scrollContainer.scrollLeft;
+    });
+
+    scrollContainer.addEventListener('mouseleave', () => { isMouseDown = false; });
+    scrollContainer.addEventListener('mouseup', () => { isMouseDown = false; });
+    scrollContainer.addEventListener('mousemove', (e) => {
+      if (!isMouseDown) return;
+      e.preventDefault();
+      const x = e.pageX - scrollContainer.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      scrollContainer.scrollLeft = scrollLeft - walk;
+    });
+
+    // Initialize ECG Path and select default event
+    window.addEventListener('DOMContentLoaded', () => {
+      renderEcgTimeline();
+      selectEvent('event-1');
+    });
+  </script>
+</body>
+</html>

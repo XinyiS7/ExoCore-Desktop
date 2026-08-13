@@ -12,6 +12,7 @@ importScripts('./push-notification.js');
 import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { NetworkFirst, CacheFirst } from 'workbox-strategies';
+import { ExpirationPlugin } from 'workbox-expiration';
 
 precacheAndRoute(self.__WB_MANIFEST);
 
@@ -27,6 +28,13 @@ registerRoute(
   new NetworkFirst({
     cacheName: 'exo-api-cache',
     networkTimeoutSeconds: 10,
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 500,
+        maxAgeSeconds: 5 * 60,
+        purgeOnQuotaError: true,
+      }),
+    ],
   }),
 );
 
@@ -34,6 +42,13 @@ registerRoute(
   ({ url }) => url.pathname.startsWith('/media/'),
   new CacheFirst({
     cacheName: 'exo-media-cache',
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 200,
+        maxAgeSeconds: 30 * 24 * 60 * 60,
+        purgeOnQuotaError: true,
+      }),
+    ],
   }),
 );
 

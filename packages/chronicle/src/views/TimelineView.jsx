@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Send, Activity, CornerDownLeft } from 'lucide-react';
 import { tweetsApi, agentsApi } from 'exo-shared';
-import { getAgentAvatar } from 'exo-shared';
+import { getAgentAvatar, getUserAvatar } from 'exo-shared';
 
 const formatTime = (dateStr) => {
   if (!dateStr) return '';
@@ -37,7 +37,7 @@ export default function TimelineView() {
   const userNick = userPreset?.name || 'user';
   const userAvatarUrl = (() => {
     if (!userId) return '';
-    return localStorage.getItem(`exo_agent_avatar_${userId}`) || '';
+    return localStorage.getItem(`exo_agent_avatar_${userId}`) || getUserAvatar();
   })();
 
   // Fetch presets for agent name/avatar resolution
