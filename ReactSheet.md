@@ -506,6 +506,102 @@ key_value write-only，响应不返回。last_four 自动提取。
 
 ---
 
+## 第九篇  Heartbeat (心跳会话)
+
+### 9.1 Event 只读账本 — 列表
+
+**GET /api/heartbeat/events/?preset_id=<int>&limit=<int>&offset=<int>** — 按 preset 分页读取心跳 Event 列表
+
+Query 参数：
+
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| preset_id | int | 是 | 必须存在；缺失 / 非整数 / 不存在 → 400 |
+| limit | int | 否 | 默认 20，最大 50；越界或非整数 → 400 |
+| offset | int | 否 | 默认 0，非负；负数或非整数 → 400 |
+
+排序稳定为 `started_at DESC, session_uuid DESC`（session_uuid 决胜，构成全序）；
+`total_count` 是过滤后总数，`has_more` 与分页事实一致；只返回该 preset 的 Event，不泄漏其他 preset。
+
+成功响应（含空列表）恒为 200 + 固定 envelope：
+
+```json
+{
+  "events": [{
+    "session_uuid": "8f2a4c1e-9b3d-4a5e-8c7f-1d2e3f4a5b6c",
+    "preset_id": 1,
+    "preset_name": "Alicia",
+    "launch_source": "auto",
+    "domain": "",
+    "status": "succeeded",
+    "content": "…",
+    "started_at": "2026-08-13T10:00:00Z",
+    "completed_at": "2026-08-13T10:15:00Z"
+  }],
+  "total_count": 1,
+  "has_more": false
+}
+```
+
+无 Event 的合法 preset 返回 `events=[]`、`total_count=0`、`has_more=false`。
+
+列表项字段（精确 allowlist，不包含 seed_message / tool_history / error_summary 等详情字段）：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| session_uuid | string (uuid) | Event 唯一 ID |
+| preset_id | int | 归属 preset |
+| preset_name | string | 归属 preset 名称 |
+| launch_source | string | auto / agent / notification |
+| domain | string | trusted initial Drawer 域（可为空字符串） |
+| status | string | pending / running / succeeded / failed |
+| content | string | 最终摘要正文（失败时为空字符串） |
+| started_at | datetime | aware UTC ISO-8601；可为 null |
+| completed_at | datetime | aware UTC ISO-8601；可为 null |
+
+### 9.2 Event 只读账本 — 详情
+
+**GET /api/heartbeat/events/<session_uuid>/** — 读取单个 Event 详情
+
+详情在列表字段之外额外返回（精确 allowlist）：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| seed_message | string | 交给 Actor 的种子消息 |
+| tool_history | array | 安全 tool 执行记录（不含 raw 参数 / reasoning） |
+| error_summary | string | 安全错误摘要（≤500 字符，不含 traceback / raw payload） |
+| finalization_reason | string | explicit / max_segments；可为 null |
+| attempt_number | int | 重试次数（每次 retry 是独立新 Event 与新 UUID） |
+| wake_up_task_id | int | 关联 WakeUpTask；可为 null |
+| source_conversation_id | int | 可信来源会话；可为 null |
+| acknowledged_at | datetime | 用户确认时间；可为 null |
+
+非法 / 格式错误 UUID → 400；不存在 → 404。
+
+### 9.3 契约与责任
+
+- **无写方法**：本阶段没有 Event 的 POST / PATCH / DELETE 接口；其他方法一律 405。
+- **时间责任**：后端只返回 timezone-aware 的 UTC ISO-8601 时间；浏览器负责转换为用户本地时区（含 DST）。
+- **只读语义**：GET 不会 acknowledge，也不修改任何 Event 字段。
+- **历史完整性**：failed、中断收敛的 failed 与后续 succeeded 全部保留为独立 Event；前端不得按 WakeUpTask 去重或只显示最新成功。
+
+### 9.4 错误信封
+
+错误响应统一为 `{"error": <message>, "code": <code>}`（HTTP 4xx）：
+
+| 场景 | HTTP | code |
+|---|---|---|
+| preset_id 缺失 | 400 | preset_id_required |
+| preset_id 非整数 | 400 | invalid_preset_id |
+| preset_id 不存在 | 400 | preset_not_found |
+| limit 非法 | 400 | invalid_limit |
+| offset 非法 | 400 | invalid_offset |
+| session_uuid 非法 | 400 | invalid_event_uuid |
+| Event 不存在 | 404 | event_not_found |
+| 不支持的 HTTP 方法 | 405 | — |
+
+---
+
 ## 附录 A — Typed Error Shape (§P1-11 commit 6)
 
 SSE 和 async polling 共用的稳定 error payload：
