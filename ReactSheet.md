@@ -54,7 +54,7 @@
 
 **POST /api/agents/chat/<session_id>/** — SSE 流式响应
 
-请求体可选字段 `galatea_mcp`（bool，默认 false）：前端固定传 `true`（当前无 UI 开关）——superior 前台会话拼入 Galatea MCP 工具组；g045/standard 后端忽略该字段。
+`galatea_mcp` 已废弃：后端即使收到该旧字段也不得把 Galatea MCP declarations 拼入主会话。领域工具只能由当前 preset 获准的 Drawer 在 Heartbeat 中加载；前端应停止发送该字段。
 
 event types: `delta` / `tool_call` / `tool_result` / `error` / `done`
 
@@ -598,6 +598,229 @@ Query 参数：
 | offset 非法 | 400 | invalid_offset |
 | session_uuid 非法 | 400 | invalid_event_uuid |
 | Event 不存在 | 404 | event_not_found |
+
+### 9.5 `go_to` 前台提醒归属（冻结，后端待施工）
+
+`go_to` Event 的领取归属是 `AgentPreset`，不是发起 Conversation。任意属于同一
+preset 的 live main Conversation 都可显示和领取结果。最新 user 请求的
+`<ExoCore>` 顶部最多注入 5 个 `acknowledged_at=null` 的 `go_to` Event；更多旧项只显示
+剩余数量，并提示通过 `trace_self` 查找。
+
+- pending / running：`go_to(action="get")` 只返回状态，不 acknowledge；
+- succeeded / failed：成功读取后写 `acknowledged_at`；
+- Heartbeat Event API、`trace_self` 与前端 GET 永不 acknowledge；
+- 普通 auto / scheduled wakeup / notification Event 不进入该提醒。
+
+---
+
+## 第十篇  Tool Drawer 与 MCP 凭证管理（Frozen / Backend Pending）
+
+> 本篇是前后端施工契约，当前端点尚未实现。前端可以据此完成界面与 API wrapper，
+> 但在后端交付前必须正确展示 unavailable/error，不得伪造保存成功。
+
+### 10.1 Drawer Catalog
+
+**GET /api/agents/drawers/** — 返回本地代码登记的全部合法 Drawer；前端不能创建或提交任意名称。
+
+```json
+{
+  "drawers": [{
+    "name": "galatea_garden",
+    "display_name": "Galatea Garden",
+    "description": "Galatea 花园工具抽屉",
+    "server_name": "galatea_garden",
+    "available": true,
+    "credential_strategy": "per_preset",
+    "credential_required": true
+  }]
+}
+```
+
+`credential_strategy` 枚举：
+
+| 值 | 语义 |
+|---|---|
+| none | server 不使用凭证；不允许配置 alias |
+| shared | 只使用 server 公共 alias |
+| per_preset | 每个 visitor preset 必须配置自己的 alias；禁止公共 fallback |
+| shared_or_per_preset | preset 可显式继承公共 alias，或选择自己的 alias |
+
+`available=false` 表示后端 adapter/server 尚不可运行；它与 preset visitor 授权是两个事实。
+
+### 10.2 Preset Drawer visitor 授权
+
+**GET /api/agents/presets/<preset_id>/drawers/**
+
+```json
+{
+  "preset_id": 6,
+  "drawers": [{
+    "name": "galatea_garden",
+    "display_name": "Galatea Garden",
+    "server_name": "galatea_garden",
+    "available": true,
+    "enabled": true,
+    "credential_strategy": "per_preset",
+    "credential_required": true,
+    "credential_mode": "dedicated",
+    "credential_alias": "galatea-agent-6",
+    "credential_ready": true
+  }]
+}
+```
+
+**PUT /api/agents/presets/<preset_id>/drawers/<drawer_name>/**
+
+```json
+{"enabled": true}
+```
+
+成功返回更新后的单个 Drawer 配置对象。规则：
+
+- `enabled` 必须是 JSON boolean；
+- 未知 Drawer / preset 显式失败；
+- visitor 授权不创建、复制或删除凭证；
+- 取消 visitor 不删除已存 alias/binding；
+- 配置变化只影响后续 HeartbeatActor，运行中的 Actor 保留 run-scoped 快照；
+- 后端按 `合法 catalog ∩ 当前 preset enabled visitor` 组装唯一授权 Registry；
+  同一 Registry 同时约束 `go_to.domain` 与 Heartbeat `tool_activate`。
+
+### 10.3 MCP Credential alias CRUD
+
+MCP 凭证与现有 Provider API key 一样按 alias 管理，但使用独立资源；凭证值是 opaque
+key/token 字符串，不复用 `ApiKey.platform` 或 Endpoint 绑定。
+
+**GET /api/agents/mcp-credentials/?server_name=<name>**
+
+```json
+{
+  "credentials": [{
+    "alias": "galatea-agent-6",
+    "server_name": "galatea_garden",
+    "last_four": "a1b2",
+    "created_at": "2026-08-13T10:00:00Z",
+    "updated_at": "2026-08-13T10:00:00Z"
+  }]
+}
+```
+
+**POST /api/agents/mcp-credentials/**
+
+```json
+{
+  "alias": "galatea-agent-6",
+  "server_name": "galatea_garden",
+  "credential_value": "opaque-secret-value"
+}
+```
+
+**PATCH /api/agents/mcp-credentials/<alias>/** — 仅允许修改 alias。
+
+**PUT /api/agents/mcp-credentials/<alias>/overwrite/**
+
+```json
+{"credential_value": "replacement-secret-value"}
+```
+
+**DELETE /api/agents/mcp-credentials/<alias>/** — 被公共或 preset binding 引用时返回 409，
+不做隐式解绑。
+
+所有成功响应都不得返回 `credential_value`；前端不得缓存、回显、记录或尝试读取明文。
+`last_four` 仅是不可恢复的确认提示。alias 全局唯一且不得包含 `/`。
+
+### 10.4 MCP server 公共凭证绑定
+
+**GET /api/agents/mcp-servers/**
+
+```json
+{
+  "servers": [{
+    "name": "galatea_garden",
+    "display_name": "Galatea Garden",
+    "available": true,
+    "credential_strategy": "per_preset",
+    "credential_required": true,
+    "public_credential_alias": null,
+    "public_credential_configured": false
+  }]
+}
+```
+
+**PUT /api/agents/mcp-servers/<server_name>/credential/**
+
+```json
+{"credential_alias": "<same-server-alias-or-null>"}
+```
+
+`credential_alias=null` 清除公共绑定但不删除 alias。仅 `shared` /
+`shared_or_per_preset` server 接受公共绑定；alias 必须属于同一 server。当前 Galatea 是
+`per_preset`，因此对它调用本 PUT 必须返回 `credential_strategy_mismatch`；该接口为未来合法
+shared server 冻结，不代表 Moonlight 已接入。
+
+### 10.5 Preset MCP 凭证选择
+
+**GET /api/agents/presets/<preset_id>/mcp-credentials/**
+
+```json
+{
+  "preset_id": 6,
+  "servers": [{
+    "server_name": "galatea_garden",
+    "credential_strategy": "per_preset",
+    "credential_required": true,
+    "mode": "dedicated",
+    "credential_alias": "galatea-agent-6",
+    "resolved_source": "preset",
+    "resolved_alias": "galatea-agent-6",
+    "credential_ready": true
+  }]
+}
+```
+
+**PUT /api/agents/presets/<preset_id>/mcp-credentials/<server_name>/**
+
+继承公共凭证：
+
+```json
+{"mode": "inherit_public", "credential_alias": null}
+```
+
+使用一对一凭证：
+
+```json
+{"mode": "dedicated", "credential_alias": "galatea-agent-6"}
+```
+
+规则：
+
+- `mode` 仅为 `inherit_public | dedicated`；
+- `dedicated` 必须提交同 server 的 alias；`inherit_public` 必须提交 null；
+- `per_preset` server 只接受 `dedicated`；`shared` server 只接受 `inherit_public`；
+- `none` server 不接受 binding；
+- `resolved_source` 为 `public | preset | none`；
+- required server 无有效解析结果时 `credential_ready=false`，Drawer visitor 可以保存，
+  但 `go_to`/`tool_activate`/MCP dispatch 必须在网络调用前 fail closed；
+- resolver 只使用 server-owned caller preset identity，不接受 tool args 中的 preset、alias、token。
+
+### 10.6 稳定错误信封
+
+本篇端点错误统一为：
+
+```json
+{"error": "安全、可操作的说明", "code": "stable_code"}
+```
+
+| HTTP | code | 场景 |
+|---|---|---|
+| 400 | invalid_request | 字段类型、组合或 enum 非法 |
+| 400 | credential_strategy_mismatch | mode/公共绑定违反 server strategy |
+| 400 | credential_server_mismatch | alias 不属于目标 server |
+| 404 | preset_not_found | preset 不存在 |
+| 404 | drawer_not_found | Drawer 不在本地合法 catalog |
+| 404 | mcp_server_not_found | server 不在本地合法 catalog |
+| 404 | credential_alias_not_found | alias 不存在 |
+| 409 | credential_in_use | 删除仍被 binding 引用的 alias |
+| 503 | drawer_unavailable | Drawer/server adapter 当前不可用 |
 
 ---
 

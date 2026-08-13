@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Key, Clock, Bell, Palette, Database, Cpu, X } from 'lucide-react';
+import { Key, Clock, Bell, Palette, Database, Cpu, X, Shield } from 'lucide-react';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 const NAV_ITEMS = [
@@ -9,6 +9,13 @@ const NAV_ITEMS = [
 	label: 'Key Manage',
 	icon: Key,
 	route: '/settings/keys',
+	enabled: true,
+	},
+	{
+	id: 'mcp',
+	label: 'MCP & Drawers',
+	icon: Shield,
+	route: '/settings/mcp',
 	enabled: true,
 	},
 	{

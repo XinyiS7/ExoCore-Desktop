@@ -24,6 +24,7 @@ import ProjectDetail from './views/ProjectDetail';
 import UserProfile from './views/UserProfile';
 import SettingsView from './views/SettingsView';
 import KeyManagePanel from './components/settings/KeyManagePanel';
+import McpManagePanel from './components/settings/mcp/McpManagePanel';
 import ModelAssignPanel from './components/settings/ModelAssignPanel';
 import NotificationsPanel from './components/settings/NotificationsPanel';
 import AppearancePanel from './components/settings/AppearancePanel';
@@ -255,6 +256,7 @@ export default function App() {
         <Route path="settings" element={<SettingsRoute />}>
           <Route index element={<Navigate to="keys" replace />} />
           <Route path="keys" element={<KeyManageRoute />} />
+          <Route path="mcp" element={<McpManagePanel />} />
           <Route path="models" element={<ModelAssignRoute />} />
           <Route path="notifications" element={<NotificationsRoute />} />
           <Route path="appearance" element={<AppearancePanel />} />
