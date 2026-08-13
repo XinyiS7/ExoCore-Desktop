@@ -571,7 +571,7 @@ Query 参数：
 | tool_history | array | 安全 tool 执行记录（不含 raw 参数 / reasoning） |
 | error_summary | string | 安全错误摘要（≤500 字符，不含 traceback / raw payload） |
 | finalization_reason | string | explicit / max_segments；可为 null |
-| attempt_number | int | 重试次数（每次 retry 是独立新 Event 与新 UUID） |
+| attempt_number | int | 实际执行序号（首次 attempt=1，每次 retry 递增；每次 retry 是独立新 Event 与新 UUID） |
 | wake_up_task_id | int | 关联 WakeUpTask；可为 null |
 | source_conversation_id | int | 可信来源会话；可为 null |
 | acknowledged_at | datetime | 用户确认时间；可为 null |
@@ -587,7 +587,7 @@ Query 参数：
 
 ### 9.4 错误信封
 
-错误响应统一为 `{"error": <message>, "code": <code>}`（HTTP 4xx）：
+参数校验与查找失败统一为 `{"error": <message>, "code": <code>}` 信封（HTTP 400 / 404）：
 
 | 场景 | HTTP | code |
 |---|---|---|
@@ -598,7 +598,6 @@ Query 参数：
 | offset 非法 | 400 | invalid_offset |
 | session_uuid 非法 | 400 | invalid_event_uuid |
 | Event 不存在 | 404 | event_not_found |
-| 不支持的 HTTP 方法 | 405 | — |
 
 ---
 
