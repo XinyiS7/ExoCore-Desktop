@@ -10,12 +10,12 @@ vi.mock('exo-shared', () => ({
   useTheme: () => ({ theme: 'dark' }),
   configApi: {
     getModelCatalog: vi.fn().mockResolvedValue({
-      models: [{ name: 'gemini-3.6-flash', abilities: ['audio'], compatible_endpoint_ids: [2] }],
+      models: [{ name: 'gemini-3.7-flash', abilities: ['audio'], compatible_endpoint_ids: [2] }],
       endpoints: [{ id: 2, attachment_transports: ['file_uri'] }],
-      roles: [{ role: 'main', model: 'gemini-3.6-flash', endpoint: 2 }],
+      roles: [{ role: 'main', model: 'gemini-3.7-flash', endpoint: 2 }],
     }),
   },
-  resolveInitialSessionTarget: vi.fn(() => ({ model: 'gemini-3.6-flash', endpoint: 2 })),
+  resolveInitialSessionTarget: vi.fn(() => ({ model: 'gemini-3.7-flash', endpoint: 2 })),
 }));
 vi.mock('../../hooks/usePollingChat', () => ({
   usePollingChat: () => ({ sendMessageAsync: vi.fn(), resumePolling: vi.fn() }),

@@ -60,7 +60,7 @@ const applyDeltaToMessage = (msg, text, eventType) => {
 
 const MOCK_CATALOG = {
   models: [
-    { name: "gemini-3.6-flash", family: "gemini", abilities: ["audio", "context_cache", "fc", "grounding", "thinking", "vision"], compatible_endpoint_ids: [1, 2] },
+    { name: "gemini-3.7-flash", family: "gemini", abilities: ["audio", "context_cache", "fc", "grounding", "thinking", "vision"], compatible_endpoint_ids: [1, 2] },
     { name: "gemini-3-flash-preview", family: "gemini", abilities: ["audio", "context_cache", "fc", "grounding", "thinking", "vision"], compatible_endpoint_ids: [1, 2] },
     { name: "gemini-3.1-pro-preview", family: "gemini", abilities: ["audio", "context_cache", "fc", "grounding", "thinking", "vision"], compatible_endpoint_ids: [1, 2] },
     { name: "gemini-3.1-flash-lite", family: "gemini", abilities: ["audio", "context_cache", "fc", "grounding", "thinking", "vision"], compatible_endpoint_ids: [1, 2] },
@@ -75,7 +75,7 @@ const MOCK_CATALOG = {
     { id: 3, name: "OpenRouter Gemini", provider: "openrouter", payload_format: "openai", cache_transport: "inline_chunk", attachment_transports: ["inline_text", "inline_image"], configured: true, enabled: true }
   ],
   roles: [
-    { role: "main", model: "gemini-3.6-flash", endpoint: 2 },
+    { role: "main", model: "gemini-3.7-flash", endpoint: 2 },
     { role: "general_sub_agent", model: "deepseek-v4-flash", endpoint: 1 },
     { role: "vision_helper", model: "gemini-2.5-flash-lite", endpoint: 2 },
     { role: "grounding", model: "gemini-2.5-flash", endpoint: 2 },
