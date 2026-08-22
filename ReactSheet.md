@@ -6,7 +6,7 @@
 
 ## 第一篇  会话 & 聊天 (Agents)
 
-### 1.1 CRUD `/api/agents/presets/` — Agent 人设卡片
+### 1.1 Read/Update `/api/agents/presets/` — 固定 Agent 人设卡片
 
 **GET /api/agents/presets/**
 
@@ -18,17 +18,11 @@
 }]
 ```
 
-**POST /api/agents/presets/** — 同 shape（is_visible 创建时忽略，默认 true）
+**GET /api/agents/presets/<id>/** — 单条详情
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| name | string | yes | 唯一 |
-| description | string | no | |
-| agent_type | string | yes | standard / user / g045 / superior |
-| default_model | string | yes | 必须在 main pool 中 |
-| system_prompt | string | yes | |
+**PUT /api/agents/presets/<id>/** / **PATCH /api/agents/presets/<id>/** — 更新现有字段，response shape 同上。
 
-**PATCH /api/agents/presets/<id>/** / **DELETE**
+**POST /api/agents/presets/** / **DELETE /api/agents/presets/<id>/** — `405 Method Not Allowed`。生产与开发真实库的 preset 行集合固定；创建/删除只在 Django test DB fixture 中允许。
 
 ### 1.2 Conversation CRUD — 对话管理
 
