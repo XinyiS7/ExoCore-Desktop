@@ -11,7 +11,7 @@ vi.mock('exo-shared', () => ({
   configApi: {
     getModelCatalog: vi.fn().mockResolvedValue({
       models: [{ name: 'gemini-3.7-flash', abilities: ['audio'], compatible_endpoint_ids: [2] }],
-      endpoints: [{ id: 2, attachment_transports: ['file_uri'] }],
+      endpoints: [{ id: 2, attachment_transports: ['file_uri'], execution_type: 'direct_api', execution_adapter: 'internal_http' }],
       roles: [{ role: 'main', model: 'gemini-3.7-flash', endpoint: 2 }],
     }),
   },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { configApi } from 'exo-shared';
 import { RefreshCw, Plus, Edit2, Trash2, Key, Globe, Shield } from 'lucide-react';
 import KeyPoolSection from './KeyPoolSection';
@@ -16,6 +16,7 @@ export default function KeyManagePanel() {
   // API Key State
   const [keys, setKeys] = useState([]);
   const [keysLoading, setKeysLoading] = useState(true);
+  const [providers, setProviders] = useState([]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -41,6 +42,17 @@ export default function KeyManagePanel() {
       .finally(() => setEndpointsLoading(false));
   }, []);
 
+  const fetchProviders = useCallback(() => {
+    configApi.getModelCatalog()
+      .then(data => {
+        setProviders(Array.isArray(data?.providers) ? data.providers : []);
+      })
+      .catch(error => {
+        console.error("Provider templates 加载失败", error);
+        setProviders([]);
+      });
+  }, []);
+
   const fetchKeys = useCallback(() => {
     setKeysLoading(true);
     configApi.listApiKeys()
@@ -61,7 +73,8 @@ export default function KeyManagePanel() {
   useEffect(() => {
     fetchEndpoints();
     fetchKeys();
-  }, [fetchEndpoints, fetchKeys]);
+    fetchProviders();
+  }, [fetchEndpoints, fetchKeys, fetchProviders]);
 
   const handleEndpointSaveSuccess = () => {
     fetchEndpoints();
@@ -85,13 +98,8 @@ export default function KeyManagePanel() {
       setFeedback({ type: 'success', msg: '端点已删除' });
       fetchEndpoints();
     } catch (err) {
-      if (err.status === 404 || err.message?.includes('Failed to fetch')) {
-        // Mock fallback success
-        setFeedback({ type: 'success', msg: '端点已删除 (本地 Mock)' });
-        setEndpoints(prev => prev.filter(ep => ep.id !== id));
-      } else {
-        setFeedback({ type: 'error', msg: `删除失败: ${err.message}` });
-      }
+      const detail = err.body?.detail || err.message;
+      setFeedback({ type: 'error', msg: `删除失败: ${detail}` });
     }
   };
 
@@ -242,6 +250,7 @@ export default function KeyManagePanel() {
         onClose={() => setIsModalOpen(false)}
         endpoint={editingEndpoint}
         apiKeys={keys}
+        providers={providers}
         onSaved={handleEndpointSaveSuccess}
       />
 

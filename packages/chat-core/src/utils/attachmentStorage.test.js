@@ -170,8 +170,8 @@ describe('audioCapable gate', () => {  const catalog = {
       { name: 'deepseek-v4-flash', abilities: ['fc'] },
     ],
     endpoints: [
-      { id: 2, attachment_transports: ['file_uri', 'inline_text'] },
-      { id: 1, attachment_transports: ['inline_text'] },
+      { id: 2, attachment_transports: ['file_uri', 'inline_text'], execution_type: 'direct_api', execution_adapter: 'internal_http' },
+      { id: 1, attachment_transports: ['inline_text'], execution_type: 'direct_api', execution_adapter: 'internal_http' },
     ],
   };
 

@@ -142,7 +142,7 @@ error payload (commit 6 shape):
 - 422 额外包含 `"error": "all attachments failed"`，同时保留完整
   `attachments: []`、`failures` 与 `results`
 
-**音频上传（PWA 录音）**：multipart 含 `audio/*` 时，请求必须携带 `model`（当前 main model name）与 `endpoint`（Endpoint ID），后端经 `resolve_session_target()` 校验 main target；缺失或无法解析返回 422 `audio_target_required`。audio preflight 稳定 diagnostics：
+**音频上传（PWA 录音）**：multipart 含 `audio/*` 时，请求必须携带 `model`（当前 main model name）与 `endpoint`（Endpoint ID），后端经 direct-only `resolve_session_target()` 校验 main target；managed-runtime Endpoint 在该 resolver 内以 `managed_runtime_requires_chat_resolver` 拒绝，公共上传响应归一为 422 `audio_target_required`，因此订阅 Runtime Endpoint 不适用于 audio upload。audio preflight 稳定 diagnostics：
 
 - `audio_target_required` — 缺 model/endpoint 或 target 解析失败
 - `audio_model_unsupported` — target 缺 `audio` ability 或 `file_uri` transport
@@ -288,6 +288,7 @@ Query: `preset_id`（必填），可选 `scope` / `source` / `is_processed`。`i
   }],
   "endpoints": [{
     "id": 1, "name": "Gemini 官方", "provider": "gemini",
+    "execution_type": "direct_api", "execution_adapter": "internal_http",
     "payload_format": "gemini", "cache_transport": "remote_reference",
     "attachment_transports": ["file_uri", "inline_text", "inline_image"],
     "configured": true, "enabled": true
@@ -304,14 +305,30 @@ Query: `preset_id`（必填），可选 `scope` / `source` / `is_processed`。`i
       "image_gen":     {"model": "gemini-3-pro-image", "default_endpoint": 2}
     }
   },
-  "providers": [
-    {"id": "gemini", "display_name": "Gemini 官方"},
-    {"id": "deepseek", "display_name": "DeepSeek 官方"},
-    {"id": "openrouter", "display_name": "OpenRouter"},
-    {"id": "glm", "display_name": "GLM 官方"}
-  ]
+  "providers": [{
+    "id": "antigravity",
+    "display_name": "Antigravity Subscription",
+    "execution_type": "managed_runtime",
+    "execution_adapter": "subscription_runtime",
+    "requires_endpoint_api_key": false,
+    "base_url": "",
+    "payload_format": "runtime",
+    "cache_transport": "runtime_managed",
+    "attachment_transports": [],
+    "supported_families": [],
+    "supported_models": ["gemini-3.1-pro-preview"],
+    "model_name_overrides": {
+      "gemini-3.1-pro-preview": "gemini-3.1-pro-high"
+    }
+  }]
 }
 ```
+
+`compatible_endpoint_ids` 是 backend 逐个执行 `Endpoint.configured` 与
+`Endpoint.supports_model(model)` 得出的反向 projection；同一 logical model 可同时列出
+多个 direct/managed Endpoint。它不是 Model-owned 关系事实，前端提交 pair 后 backend
+仍会重新加载并验证。`providers` 是 Endpoint 配置 UI 的唯一 ProviderProfile 事实源，
+只含非敏感 metadata，不含 Endpoint API key 正文或 Subscription Runtime token。
 
 ### 3.4 CRUD `/api/core/model-entries/` — 模型条目
 
@@ -333,13 +350,21 @@ Query: `preset_id`（必填），可选 `scope` / `source` / `is_processed`。`i
 | 字段 | 类型 | 必填 |
 |---|---|---|
 | name | string | yes |
-| provider | string | yes | gemini / deepseek / openrouter / glm |
-| api_key_alias | string | no | ApiKey alias |
+| provider | string | yes | gemini / deepseek / openrouter / glm / antigravity |
+| api_key_alias | string/null | no | direct profile 使用匹配的 ApiKey alias；managed profile 必须为 null |
 | enabled | bool | no | default true |
 
 以下字段由 ProviderProfile 派生，**只读**：
 `base_url` / `payload_format` / `cache_transport` / `attachment_transports` /
-`supported_families` / `model_name_prefix` / `processor` 等
+`supported_families` / `supported_models` / `excluded_models` /
+`model_name_prefix` / `model_name_overrides` / `execution_type` /
+`execution_adapter` 等。Endpoint 的旧 `processor` 字段已删除；
+`engines.model_registry.ProviderConfig.processor` 仅表示 legacy CLI bridge route，属于另一命名空间。
+
+`configured` 只表示 Endpoint 本地完整性：`direct_api + internal_http` 必须有 Endpoint
+ApiKey；`antigravity + managed_runtime + subscription_runtime` 必须完整匹配 backend
+ProviderProfile 且不得有 Endpoint ApiKey。`enabled` 是独立开关；disabled Endpoint即使
+configured也不会被 resolver调用。
 
 provider change 触发事务校验：所有引用此 Endpoint 的 role binding + shadow model
 必须兼容新 profile；任一不兼容 → 400 回滚。
@@ -845,19 +870,23 @@ SSE 和 async polling 共用的稳定 error payload：
 
 `model_not_found` / `endpoint_not_found` / `model_disabled` / `endpoint_disabled` /
 `incompatible_pair` / `ambiguous_endpoint` / `model_not_in_main_pool` /
-`main_not_resolvable_here` / `alias_not_found` / `alias_provider_mismatch`
+`main_not_resolvable_here` / `alias_not_found` / `alias_provider_mismatch` /
+`managed_runtime_requires_chat_resolver` / `runtime_preset_not_allowed` /
+`runtime_rejects_api_key_alias` / `unknown_execution_pair`
 
 ## 附录 B — ProviderProfile 参考值
 
-| id | display_name | base_url | payload | cache | attachments |
-|---|---|---|---|---|---|
-| gemini | Gemini 官方 | "" | gemini | remote_reference | file_uri, inline_text, inline_image |
-| deepseek | DeepSeek 官方 | https://api.deepseek.com/v1 | openai | inline_chunk | file_id, inline_text |
-| openrouter | OpenRouter | https://openrouter.ai/api/v1 | openai | inline_chunk | inline_text, inline_image |
-| glm | GLM 官方 | https://open.bigmodel.cn/api/paas/v4 | openai | inline_chunk | inline_text |
+| id | display_name | base_url | payload | cache | attachments | execution_type | execution_adapter | requires_endpoint_api_key | supported_models / mapping |
+|---|---|---|---|---|---|---|---|---|---|
+| gemini | Gemini 官方 | "" | gemini | remote_reference | file_uri, inline_text, inline_image | direct_api | internal_http | true | preserve |
+| deepseek | DeepSeek 官方 | https://api.deepseek.com/v1 | openai | inline_chunk | inline_text, inline_image | direct_api | internal_http | true | preserve |
+| openrouter | OpenRouter | https://openrouter.ai/api/v1 | openai | inline_chunk | inline_text, inline_image | direct_api | internal_http | true | preserve |
+| glm | GLM 官方 | https://open.bigmodel.cn/api/paas/v4 | openai | inline_chunk | inline_text | direct_api | internal_http | true | preserve |
+| antigravity | Antigravity Subscription | "" | runtime | runtime_managed | — | managed_runtime | subscription_runtime | false | gemini-3.1-pro-preview → gemini-3.1-pro-high |
 
 supported_families:
 - gemini: (gemini)  
 - deepseek: (deepseek)  
 - openrouter: (openrouter, gemini, deepseek)  
 - glm: (glm)
+- antigravity: ()
