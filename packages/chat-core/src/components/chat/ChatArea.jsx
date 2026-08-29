@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../ui';
 import { baseUrl, getCsrfToken, MAIN_MODEL_IDS, useTheme, configApi, resolveInitialSessionTarget } from 'exo-shared';
 import { getAgentAvatarUrl, getUserAvatarUrl } from '../../utils/avatar';
+import { isG045Type } from '../../utils/presets';
 import { filesToAttachmentData, saveAttachments, enrichMessages, uploadFilesToAttachments, audioCapable, audioUploadErrorMessage, MAX_AUDIO_BYTES } from '../../utils/attachmentStorage';
 import ComposeAttachmentItem from './ComposeAttachmentItem';
 import AudioComposeBar from './AudioComposeBar';
@@ -95,6 +96,10 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    'Back';
  const [messages, setMessages] = useState([]);
  const [sessionInfo, setSessionInfo] = useState(null);
+ const activePreset = presets.find(
+  preset => preset.id === sessionInfo?.agent_preset_id
+ );
+ const isG045Session = isG045Type(activePreset?.agent_type);
  const [inputValue, setInputValue] = useState("");
  const [isGenerating, setIsGenerating] = useState(false);
  const [editingMessageId, setEditingMessageId] = useState(null);
@@ -967,7 +972,9 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   thinking_level: thinkingLevel,
   temperature: temperature,
   cache_enabled: activeSessionId && localStorage.getItem(`exo_cache_enabled_${activeSessionId}`) !== 'false',
-  ...(activeSessionId && { memory_injection_enabled: localStorage.getItem(`exo_mem_inject_${activeSessionId}`) !== 'false' }),
+  ...(isG045Session && activeSessionId && {
+   memory_injection_enabled: localStorage.getItem(`exo_mem_inject_${activeSessionId}`) !== 'false'
+  }),
   ...(currentPending.length > 0 || composeAttachments.some(e => e.attachmentId != null) || audioPendingIds.length > 0
    ? { pending_attachments: [
     ...currentPending.map(a => typeof a === 'object' ? a.id : a),
@@ -1506,6 +1513,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
    temperature={temperature}
    chatMode={chatMode}
    sessionId={activeSessionId}
+   showMemoryInjection={isG045Session}
    paletteId={paletteId}
    onPaletteChange={handlePaletteChange}
    lastTelemetry={lastTelemetry}

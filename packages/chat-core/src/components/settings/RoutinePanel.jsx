@@ -6,19 +6,13 @@ import { Button } from '../ui';
 
 const WEEKDAY_NAMES = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
-/** Sort presets: g045 first, then superior. Within each group, checked items first. */
+/** Sort eligible g045 presets with checked items first. */
 function sortPresets(presets, checkedIds) {
  const checkedSet = new Set(checkedIds);
  return [...presets].sort((a, b) => {
- // g045 before superior
- const aG045 = a.agent_type === 'g045' || a.agent_type === 'superior' ? 0 : 2;
- const bG045 = b.agent_type === 'g045' || b.agent_type === 'superior' ? 0 : 2;
- if (aG045 !== bG045) return aG045 - bG045;
-
- // Checked before unchecked
- const aChecked = checkedSet.has(a.id) ? 0 : 1;
- const bChecked = checkedSet.has(b.id) ? 0 : 1;
- return aChecked - bChecked;
+  const aChecked = checkedSet.has(a.id) ? 0 : 1;
+  const bChecked = checkedSet.has(b.id) ? 0 : 1;
+  return aChecked - bChecked;
  });
 }
 
@@ -26,9 +20,7 @@ function sortPresets(presets, checkedIds) {
 function AgentCheckList({ presets, checkedIds, onToggle, expanded }) {
  if (!expanded) return null;
 
- const sorted = sortPresets(presets, checkedIds);
- const g045List = sorted.filter(p => p.agent_type === 'g045');
- const superiorList = sorted.filter(p => p.agent_type !== 'g045');
+ const g045List = sortPresets(presets, checkedIds);
 
  return (
   <div className="mt-2 p-3 bg-chat-bg border border-cinder-line rounded">
@@ -57,32 +49,7 @@ function AgentCheckList({ presets, checkedIds, onToggle, expanded }) {
    ))}
   </>
   )}
-  {superiorList.length > 0 && (
-  <>
-    <div className="tx-decoration-mute mt-2 mb-1.5">Superior</div>
-   {superiorList.map(p => (
-   <label
-    key={p.id}
-     className="flex items-center gap-2 py-1 px-1 cursor-pointer tx-system-normal hover:tx-system-accent transition-colors"
-   >
-    <span
-    onClick={() => onToggle(p.id)}
-    className={`w-3 h-3 rounded-[2px] border flex items-center justify-center flex-shrink-0 transition-colors ${
-      checkedIds.includes(p.id) ? 'bg-chat-accent border-chat-accent' : 'border-cinder-line'
-    }`}
-    >
-    {checkedIds.includes(p.id) && (
-     <svg width="7" height="7" viewBox="0 0 8 8" fill="none">
-     <path d="M1.5 4L3.5 6L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-     </svg>
-    )}
-    </span>
-    <span onClick={() => onToggle(p.id)}>{p.name}</span>
-   </label>
-   ))}
-  </>
-  )}
-  {sorted.length === 0 && (
+  {g045List.length === 0 && (
    <p className="tx-decoration-mute text-center py-2">No agents available</p>
   )}
  </div>
@@ -111,7 +78,7 @@ export default function RoutinePanel() {
   setSelfDeepOrgIds(cfg.self_check_preset_ids || []);
 
   const relevant = (Array.isArray(allPresets) ? allPresets : [])
-   .filter(p => p.agent_type === 'g045' || p.agent_type === 'superior');
+   .filter(p => p.agent_type === 'g045');
   setPresets(relevant);
   })
   .catch(() => {})

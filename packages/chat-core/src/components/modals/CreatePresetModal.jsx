@@ -5,7 +5,6 @@ import { ModalShell, Button, FIELD_INPUT, FIELD_AREA } from '../ui';
 
 const AGENT_TYPES = [
   { value: 'standard', label: 'Standard', desc: '常规代理' },
-  { value: 'superior', label: 'Superior', desc: '高级代理 · 支持记忆/自检' },
 ];
 
 const CreatePresetModal = ({ isOpen, onClose, onCreated }) => {

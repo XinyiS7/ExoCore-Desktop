@@ -168,8 +168,7 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
   }
 
   const isG045 = preset.agent_type === 'g045';
-  const isSuperior = preset.agent_type === 'superior';
-  const showMemoryBtn = isG045 || isSuperior;
+  const showMemoryBtn = isG045;
 
   const patchPreset = async (fields) => {
     setSavingField(Object.keys(fields)[0]);
@@ -261,8 +260,6 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
 
   const typeBadgeStyle = isG045
     ? { background: 'rgba(255,74,8,0.12)', color: 'var(--cinder-flame)', border: '1px solid rgba(255,74,8,0.25)' }
-    : isSuperior
-    ? { background: 'rgba(168,122,255,0.08)', color: 'rgb(188,148,255)', border: '1px solid rgba(168,122,255,0.2)' }
     : { background: 'rgba(100,160,220,0.08)', color: 'rgb(130,180,230)', border: '1px solid rgba(100,160,220,0.2)' };
 
   return (
@@ -604,7 +601,6 @@ export default function AgentProfile({ appState, setView, goBack, viewParams }) 
                 }}
                 className="tx-decoration-normal outline-none cursor-pointer bg-transparent border-none p-0 text-[11px] text-orange-600/70 hover:text-orange-500"
               >
-                <option value="superior">Superior</option>
                 <option value="standard">Standard</option>
               </select>
             </div>

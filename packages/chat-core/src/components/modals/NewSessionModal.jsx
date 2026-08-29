@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Activity, Folder, Check, MessageSquare } from 'lucide-react';
 import { baseUrl, getCsrfToken } from 'exo-shared';
-import { sortPresets, isSuperiorType } from '../../utils/presets';
+import { sortPresets, isG045Type } from '../../utils/presets';
 import { ModalShell, Button, FIELD_INPUT } from '../ui';
 
 const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, onSuccess }) => {
@@ -29,7 +29,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
   }, [isOpen, initialContext, sortedPresets]);
 
   const currentPreset = sortedPresets.find(p => p.id === parseInt(selectedPresetId));
-  const isG045 = isSuperiorType(currentPreset?.agent_type);
+  const isG045 = isG045Type(currentPreset?.agent_type);
 
   const handleBelongingProject = (pid) => {
     setSelectedProjectId(prev => prev === String(pid) ? "" : String(pid));
@@ -48,7 +48,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
     const effectiveProjectId = selectedProjectId ||
       (initialContext?.projectId ? String(initialContext.projectId) : "");
     const projectId = effectiveProjectId ? Number(effectiveProjectId) : 0;
-    const isG045Preset = isSuperiorType(currentPreset?.agent_type);
+    const isG045Preset = isG045Type(currentPreset?.agent_type);
     const frozenIds = isG045Preset
       ? permissionProjectIds.filter(id => id !== Number(effectiveProjectId))
       : [];
@@ -124,22 +124,22 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
         <div className="grid grid-cols-1 gap-2">
           {sortedPresets.map(preset => {
             const isSelected = parseInt(selectedPresetId) === preset.id;
-            const superior = isSuperiorType(preset.agent_type);
+            const g045 = isG045Type(preset.agent_type);
             return (
               <div
                 key={preset.id}
                 onClick={() => {
                   setSelectedPresetId(String(preset.id));
-                  if (!superior) setPermissionProjectIds([]);
+                  if (!g045) setPermissionProjectIds([]);
                 }}
                 className={`${cardBase} ${isSelected ? cardSelected : cardIdle}`}
               >
                 <div className="flex flex-col gap-1">
-                  <span className={`text-[13px] font-bold tracking-tight ${isSelected && superior ? 'tx-system-accent' : 'tx-system-normal'}`}>{preset.name}</span>
+                  <span className={`text-[13px] font-bold tracking-tight ${isSelected && g045 ? 'tx-system-accent' : 'tx-system-normal'}`}>{preset.name}</span>
                   <span className="text-[0.625rem] opacity-40 font-mono tracking-widest">{preset.default_model}</span>
                 </div>
                 {isSelected ? (
-                  <div className={`p-1 rounded-full ${superior ? 'bg-exo-accent text-exo-pure' : 'bg-exo-mist-20 text-exo-pure'}`}>
+                  <div className={`p-1 rounded-full ${g045 ? 'bg-exo-accent text-exo-pure' : 'bg-exo-mist-20 text-exo-pure'}`}>
                     <Check size={12} strokeWidth={3} />
                   </div>
                 ) : (
@@ -151,13 +151,13 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
         </div>
       </div>
 
-      {/* Session Type — hidden for Superior/G045 */}
+      {/* Session Type — hidden for g045 */}
       {!isG045 && (
         <div className="space-y-3">
           <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">Protocol Mode / 会话模式</label>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { value: 'full', label: 'Full Protocol', icon: Activity, desc: 'Context cache + full memory injection' },
+              { value: 'full', label: 'Full Protocol', icon: Activity, desc: 'Context cache + full history context' },
               { value: 'lite', label: 'Lite Protocol', icon: MessageSquare, desc: 'Reduced overhead, lightweight' },
             ].map(({ value, label, icon: Icon, desc }) => (
               <div
@@ -211,7 +211,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
         <div className="flex justify-between items-center">
           <label className="text-[0.65rem] font-mono tracking-[0.15em] tx-system-mute uppercase">权限 Project / 权限项目</label>
           <span className={`text-[0.55rem] font-mono tracking-tighter ${isG045 ? 'tx-system-accent opacity-60' : 'tx-system-mute opacity-30'}`}>
-            {isG045 ? '[Multi-Select Enabled]' : '[Superior/G045 Only]'}
+            {isG045 ? '[Multi-Select Enabled]' : '[G045 Only]'}
           </span>
         </div>
         <div

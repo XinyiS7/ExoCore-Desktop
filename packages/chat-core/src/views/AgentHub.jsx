@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import { getAgentAvatarUrl } from '../utils/avatar';
 import { baseUrl, memoryApi } from 'exo-shared';
-import { getAgentHubOrder, isSuperiorType } from '../utils/presets';
+import { getAgentHubOrder, isG045Type } from '../utils/presets';
 import MarqueeArea from '../components/agent/MarqueeArea';
 import BackToUpper from '../components/layout/BackButton';
 import { useModalContext } from '../contexts/ModalContext';
@@ -62,12 +62,6 @@ const IconPrime = ({ size = 14 }) => (
   </svg>
 );
 
-const IconSuperior = ({ size = 14 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.7">
-    <polygon points="13,3 10,11 14,11 11,21 17,11 13,11 16,3" strokeLinejoin="round" />
-  </svg>
-);
-
 const IconStandard = ({ size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.7">
     <rect x="5" y="5" width="14" height="14" rx="1" />
@@ -106,14 +100,14 @@ export default function AgentHub({ appState, setView, goBack }) {
   const [hoveredCard, setHoveredCard] = useState(null);
   const draggingRef = useRef(null);
 
-  /* ── Fetch plasmids for G045 & Superior agents ── */
-  const superiorPresetIds = useMemo(
-    () => presets.filter((p) => isSuperiorType(p.agent_type)).map((p) => p.id).join(','),
+  /* ── Fetch plasmids for g045 only ── */
+  const g045PresetIds = useMemo(
+    () => presets.filter((p) => isG045Type(p.agent_type)).map((p) => p.id).join(','),
     [presets],
   );
 
   useEffect(() => {
-    const ids = superiorPresetIds ? superiorPresetIds.split(',') : [];
+    const ids = g045PresetIds ? g045PresetIds.split(',') : [];
     if (ids.length === 0) return;
 
     let cancelled = false;
@@ -135,7 +129,7 @@ export default function AgentHub({ appState, setView, goBack }) {
 
     fetchPlasmids();
     return () => { cancelled = true; };
-  }, [superiorPresetIds]);
+  }, [g045PresetIds]);
 
   /* ── Ordering ── */
   const applyOrder = (list) => {
@@ -151,9 +145,8 @@ export default function AgentHub({ appState, setView, goBack }) {
   };
 
   const g045Presets = applyOrder(presets.filter((p) => p.agent_type === 'g045'));
-  const superiorPresets = applyOrder(presets.filter((p) => p.agent_type === 'superior'));
   const standardPresets = applyOrder(
-    presets.filter((p) => p.agent_type !== 'g045' && p.agent_type !== 'superior' && p.agent_type !== 'user'),
+    presets.filter((p) => p.agent_type === 'standard'),
   );
 
   /* ── Drag handlers ── */
@@ -203,11 +196,6 @@ export default function AgentHub({ appState, setView, goBack }) {
       background: 'rgba(255,74,8,0.12)',
       color: 'var(--cinder-flame)',
       border: '1px solid rgba(255,74,8,0.25)',
-    };
-    if (type === 'superior') return {
-      background: 'rgba(168,122,255,0.08)',
-      color: 'rgb(188,148,255)',
-      border: '1px solid rgba(168,122,255,0.2)',
     };
     return {
       background: 'rgba(100,160,220,0.08)',
@@ -373,7 +361,7 @@ export default function AgentHub({ appState, setView, goBack }) {
                         )}
 
                         {/* Divider + Plasmid marquee */}
-                        {isSuperiorType(p.agent_type) && (
+                        {isG045Type(p.agent_type) && (
                           <div
                             style={{
                               borderTop: '1px solid var(--cinder-line)',
@@ -384,123 +372,6 @@ export default function AgentHub({ appState, setView, goBack }) {
                             <MarqueeArea plasmids={plasmids || []} />
                           </div>
                         )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* ═══ Superior Agents ═══ */}
-          {superiorPresets.length > 0 && (
-            <section style={fadeUp(0.12)}>
-              <NavHead label="SUPERIOR" />
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {superiorPresets.map((p, i) => {
-                  const plasmids = plasmidMap[p.id];
-                  const avatarUrl = getAgentAvatarUrl(p.id, p.name);
-                  const isHovered = hoveredCard === `sup-${p.id}`;
-                  const isDragging = dragging === p.id;
-                  const isDragOver = dragOver === p.id;
-
-                  return (
-                    <div
-                      key={p.id}
-                      draggable
-                      onDragStart={() => handleDragStart(p.id)}
-                      onDragEnd={handleDragEnd}
-                      onDragOver={(e) => { e.preventDefault(); handleDragOver(p.id); }}
-                      onDrop={() => handleDrop(p.id, superiorPresets)}
-                      onClick={() => handleAgentClick(p)}
-                      className="relative cursor-pointer transition-all duration-400 select-none tx-card-sm"
-                      style={{
-                        ...(isDragging
-                          ? { opacity: 0.3 }
-                          : { opacity: 1 }),
-                        padding: '16px 20px',
-                        background: isHovered ? 'var(--cinder-panel)' : 'var(--cinder-surface)',
-                        border: `1px solid ${isDragOver ? 'rgba(255,74,8,0.35)' : isHovered ? 'var(--cinder-line-glow)' : 'var(--cinder-line)'}`,
-                        borderRadius: '6px',
-                        boxShadow: isHovered ? '0 8px 32px rgba(0,0,0,0.06)' : 'none',
-                        transform: isHovered ? 'translateY(-1px)' : 'none',
-                        marginLeft: i % 2 === 1 ? '16px' : '0',
-                      }}
-                      onMouseEnter={() => setHoveredCard(`sup-${p.id}`)}
-                      onMouseLeave={() => setHoveredCard(null)}
-                    >
-                      {/* Hover glow */}
-                      <span
-                        className="absolute inset-0 pointer-events-none transition-opacity duration-500 rounded-[6px]"
-                        style={{
-                          opacity: isHovered ? 1 : 0,
-                          background: 'radial-gradient(ellipse at 30% 50%, rgba(196,77,0,0.06) 0%, transparent 70%)',
-                        }}
-                      />
-
-                      <CornerGlyph hovered={isHovered} />
-
-                      {/* Drag handle */}
-                      <div
-                        className="hidden sm:block absolute top-2 right-2 p-1 cursor-grab active:cursor-grabbing transition-opacity duration-300 z-[2] rounded"
-                        style={{ opacity: isHovered ? 0.4 : 0, color: 'var(--cinder-text-faint)' }}
-                        onClick={(e) => e.stopPropagation()}
-                        onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; e.currentTarget.style.color = 'var(--cinder-flame)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.opacity = String(isHovered ? 0.4 : 0); e.currentTarget.style.color = 'var(--cinder-text-faint)'; }}
-                      >
-                        <IconDrag size={13} />
-                      </div>
-
-                      <div className="relative z-[1]">
-                        {/* Avatar + Name + Badge */}
-                        <div className="flex items-center gap-2.5 mb-2 pr-5 sm:pr-0">
-                          <img
-                            src={avatarUrl}
-                            alt={p.name}
-                            className="w-9 h-9 shrink-0 object-cover"
-                            style={{
-                              borderRadius: '2px',
-                              border: '1px solid rgba(255,255,255,0.06)',
-                              background: 'var(--cinder-base)',
-                            }}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="tx-section-normal font-light truncate">
-                                {p.name}
-                              </span>
-                              <span
-                                className="tracking-wider whitespace-nowrap"
-                                style={{
-                                  fontSize: '8px',
-                                  padding: '1px 5px',
-                                  borderRadius: '2px',
-                                  ...typeBadgeStyle(p.agent_type),
-                                }}
-                              >
-                                superior
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Description */}
-                        {p.description && (
-                          <p className="tx-subtitle-mute italic line-clamp-2 mb-2">
-                            {p.description}
-                          </p>
-                        )}
-
-                        {/* Plasmid marquee */}
-                        <div
-                          style={{
-                            borderTop: '1px solid var(--cinder-line)',
-                            marginTop: '6px',
-                            paddingTop: '2px',
-                          }}
-                        >
-                          <MarqueeArea plasmids={plasmids || []} />
-                        </div>
                       </div>
                     </div>
                   );

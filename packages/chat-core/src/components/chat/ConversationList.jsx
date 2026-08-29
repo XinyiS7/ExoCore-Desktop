@@ -171,7 +171,7 @@ const ConversationList = ({
     {g045Sessions.length > 0 && (
     <div className="flex flex-col shrink-0">
      <div className="text-[0.5625rem] font-mono font-bold tx-system-accent opacity-60 flex items-center gap-2 tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
-     <Sparkles size={12} /> Superior Cognitive
+     <Sparkles size={12} /> G045 Cognitive
      </div>
      <div className="grid gap-1 pb-4">
      {g045Sessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Cpu} />)}

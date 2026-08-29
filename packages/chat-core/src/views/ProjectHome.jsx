@@ -77,8 +77,6 @@ export default function ProjectHome({ appState, setView }) {
       <span className={`ml-1.5 px-1 py-0.5 rounded-[1px] text-[7px] font-mono ${
       s.agent_type === 'g045'
        ? 'bg-exo-accent/10 tx-system-accent'
-       : s.agent_type === 'superior'
-       ? 'bg-purple-500/10 text-purple-400'
        : 'bg-blue-500/10 text-blue-400'
       }`}>{s.agent_type}</span>
      )}

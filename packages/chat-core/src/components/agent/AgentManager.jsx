@@ -9,7 +9,7 @@ import EditPresetModal from '../modals/EditPresetModal';
 import { Button } from '../ui';
 import AvatarCropModal from '../modals/AvatarCropModal';
 import MarqueeArea from './MarqueeArea';
-import { getAgentHubOrder, isSuperiorType } from '../../utils/presets';
+import { getAgentHubOrder, isG045Type } from '../../utils/presets';
 
 const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, refreshPresets }) => {
   const [editTarget, setEditTarget] = useState(null);
@@ -25,8 +25,8 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
       return orderA - orderB;
     });
 
-  const g045Presets = applyOrder(presets.filter(p => isSuperiorType(p.agent_type)));
-  const standardPresets = applyOrder(presets.filter(p => !isSuperiorType(p.agent_type) && p.agent_type !== 'user'));
+  const g045Presets = applyOrder(presets.filter(p => isG045Type(p.agent_type)));
+  const standardPresets = applyOrder(presets.filter(p => !isG045Type(p.agent_type) && p.agent_type !== 'user'));
 
   const handleDrop = (srcId, dstId, list) => {
     if (srcId === dstId) return;
@@ -200,7 +200,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
               <div className="p-1.5 bg-exo-accent/10 border border-exo-accent/30 rounded-[2px]">
                 <Cpu size={16} className="tx-system-accent" />
               </div>
-              <h3 className="text-[12px] font-bold tx-system-normal tracking-[0.3em]">Superior Neural Cores (G045)</h3>
+              <h3 className="text-[12px] font-bold tx-system-normal tracking-[0.3em]">G045 Neural Core</h3>
               <div className="h-px flex-1 bg-gradient-to-r from-exo-accent/20 to-transparent" />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

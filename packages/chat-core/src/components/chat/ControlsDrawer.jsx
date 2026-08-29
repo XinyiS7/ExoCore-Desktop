@@ -13,6 +13,7 @@ export default function ControlsDrawer({
  temperature,
  chatMode,
  sessionId,
+ showMemoryInjection = false,
  paletteId,
  onPaletteChange,
  lastTelemetry,
@@ -268,37 +269,41 @@ export default function ControlsDrawer({
    </span>
   )}
 
-  <span className="tx-system-mute opacity-12 text-[0.5625rem] select-none flex-shrink-0">|</span>
+  {showMemoryInjection && (
+   <>
+    <span className="tx-system-mute opacity-12 text-[0.5625rem] select-none flex-shrink-0">|</span>
 
-  <span className="text-[0.625rem] tx-system-mute opacity-40 flex-shrink-0">
-   Mem
-  </span>
-  <label className="flex items-center gap-1.5 cursor-pointer select-none">
-   <input
-   type="checkbox"
-   checked={memInjectEnabled}
-   onChange={() => {
-    const next = !memInjectEnabled;
-    setMemInjectEnabled(next);
-    localStorage.setItem(`exo_mem_inject_${sessionId}`, String(next));
-   }}
-   className="sr-only"
-   />
-   <span
-   className={`w-7 h-4 rounded-full transition-colors flex items-center px-[2px] ${
-    memInjectEnabled ? 'bg-exo-accent/60' : 'bg-exo-mist-10'
-   }`}
-   >
-   <span
-    className={`w-3 h-3 rounded-full bg-white transition-transform ${
-    memInjectEnabled ? 'translate-x-3' : 'translate-x-0'
-    }`}
-   />
-   </span>
-   <span className="text-[0.625rem] font-sans tx-system-mute opacity-40">
-   {memInjectEnabled ? 'On' : 'Off'}
-   </span>
-  </label>
+    <span className="text-[0.625rem] tx-system-mute opacity-40 flex-shrink-0">
+     Mem
+    </span>
+    <label className="flex items-center gap-1.5 cursor-pointer select-none">
+     <input
+     type="checkbox"
+     checked={memInjectEnabled}
+     onChange={() => {
+      const next = !memInjectEnabled;
+      setMemInjectEnabled(next);
+      localStorage.setItem(`exo_mem_inject_${sessionId}`, String(next));
+     }}
+     className="sr-only"
+     />
+     <span
+     className={`w-7 h-4 rounded-full transition-colors flex items-center px-[2px] ${
+      memInjectEnabled ? 'bg-exo-accent/60' : 'bg-exo-mist-10'
+     }`}
+     >
+     <span
+      className={`w-3 h-3 rounded-full bg-white transition-transform ${
+      memInjectEnabled ? 'translate-x-3' : 'translate-x-0'
+      }`}
+     />
+     </span>
+     <span className="text-[0.625rem] font-sans tx-system-mute opacity-40">
+     {memInjectEnabled ? 'On' : 'Off'}
+     </span>
+    </label>
+   </>
+  )}
   </div>
 
   {/* Row 3: Color Scheme */}
