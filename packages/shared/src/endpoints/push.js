@@ -3,7 +3,7 @@
  *
  * Uses the Push API (PushManager) to subscribe the browser to push notifications
  * from the ExoCore server. The subscription is sent to the Django backend for
- * storage / later use by the `send_physical_notification` tool.
+ * storage / later use by the `send_message` tool.
  */
 
 import { apiFetch } from '../api';
