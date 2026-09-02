@@ -13,7 +13,7 @@
 ```json
 [{
   "id": 1, "name": "Alicia", "description": "主助手",
-  "agent_type": "superior", "default_model": "deepseek-v4-pro",
+  "agent_type": "g045", "default_model": "deepseek-v4-pro",
   "system_prompt": "You are...", "is_visible": true
 }]
 ```
@@ -32,7 +32,7 @@
 [{
   "id": 1, "name": "Chat with Alicia",
   "project": 1, "project_name": "My Project",
-  "agent_preset_id": 1, "agent_type": "superior",
+  "agent_preset_id": 1, "agent_type": "g045",
   "temperature": 1.0, "thinking_level": "medium",
   "frozen_project_ids": [1], "created_at": "2026-01-01T00:00:00Z"
 }]
