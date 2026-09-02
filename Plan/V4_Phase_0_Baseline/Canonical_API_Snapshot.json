@@ -1,0 +1,1411 @@
+{
+  "snapshot_version": "1.0",
+  "as_of": "2026-09-02T20:30:00+02:00",
+  "source_commits": {
+    "frontend_repo": "ExoCore-Desktop @ 6b0948e06221fe49ebefa1658825c7e400f7f241 (main)",
+    "backend_repo": "ExoCore @ 21f2a8f7aab6d475692af7716924571542040b8f (clean worktree)"
+  },
+  "product_authority": [
+    "Plan/V4_Spec_Freeze_Index.md",
+    "Plan/V4_River_Collection_Memory_Interaction_Spec.md",
+    "Plan/ExoCore_V4_Single_SPA_Architecture_Spec.md",
+    "Plan/V4_Page_Skeleton.md",
+    "Plan/V4_Frontend_Refactor_Decision_Questionnaire.md"
+  ],
+  "implementation_authority": [
+    "mounted Django URL configuration (ExoCore/urls.py + per-app urls.py)",
+    "active view/service and serializer/model behavior",
+    "accepted backend tests",
+    "active frontend consumer/wrapper behavior",
+    "ReactSheet.md wording (corrected in this P0)"
+  ],
+  "transport_defaults": {
+    "api_base": "same-origin relative '/api/*' (dev: Vite proxy to 127.0.0.1:8000; prod: nginx /api/ proxy to Django :8000, proxy_buffering off for SSE)",
+    "credentials": "cookies, credentials:'include' on all fetches",
+    "csrf": "non-GET requests attach header 'X-CSRFToken' read from 'csrftoken' cookie (shared apiFetch and raw fetches)",
+    "media_base": "same-origin '/media/*' proxied to backend",
+    "error_normalization_shared": "apiFetch throws Error with .status and parsed .body (json or text)",
+    "sse_content_type": "text/event-stream; frames 'event: <name>\\ndata: <json>\\n\\n'",
+    "auth_model": "DRF defaults (settings has no REST_FRAMEWORK dict): AllowAny permission; SessionAuthentication present but no login flows; endpoints are not user-account gated. Recorded as source fact, not a recommendation."
+  },
+  "resources": [
+    {
+      "id": "conversation.create.init",
+      "domain": "conversation",
+      "method": "POST",
+      "path": "/api/agents/sessions/init/",
+      "purpose": "Canonical ordinary Conversation creation for Standard and Superior (g045) agents; project optional (0 = Drift).",
+      "auth_csrf": "cookie credentials; CSRF header on POST",
+      "path_params": {},
+      "query": {},
+      "request": {
+        "name": "string, optional, default '新会话 <date>'",
+        "preset_id": "int, required; must reference existing AgentPreset",
+        "project_id": "int, optional, default 0; 0 maps to DB NULL; nonzero must exist (400 if not)",
+        "frozen_project_ids": "list[int], optional; g045-only extension list; when omitted defaults to [project_id] or [] for project_id=0; ignored (forced []) for non-g045",
+        "thinking_level": "string max 10, optional, default 'auto'"
+      },
+      "success": {
+        "http": 201,
+        "content_type": "application/json",
+        "envelope": "{\"msg\": \"会话已建立，权限已锁定。\", \"data\": {\"session_id\": int, \"session_name\": string}}",
+        "fields": ["msg", "data.session_id", "data.session_name"]
+      },
+      "errors": {
+        "400": "serializer field errors (e.g. preset_id 指定的预设ID不存在。; project_id 指定的项目ID不存在。)",
+        "stable": false
+      },
+      "semantics": {
+        "drift": "project_id 0 -> DB project NULL; DB NULL project is represented as project:0 in list/detail serializers",
+        "identity": "returns session_id == Conversation.id; conversation created with agent_preset, frozen_project_ids (g045), thinking_level, last_platform=preset.default_model",
+        "lifecycle": "no message is created by init"
+      },
+      "backend_sources": [
+        "agents/urls.py: sessions/init/ -> SuperiorSessionCreateView",
+        "agents/views.py SuperiorSessionCreateView.post (201 {msg,data})",
+        "agents/serializers.py SuperiorSessionInitSerializer (write-only name/preset_id/project_id/frozen_project_ids/thinking_level; read session_id/session_name)"
+      ],
+      "frontend_consumers": [
+        "packages/chat-core/src/components/modals/NewSessionModal.jsx (raw fetch; payload {preset_id, name?, project_id, frozen_project_ids, thinking_level:'auto', temperature:1.0}; reads data.data.session_id)"
+      ],
+      "evidence": {
+        "source_verified": true,
+        "test_verified": true,
+        "runtime_read_verified": false
+      },
+      "mismatch_refs": ["MM-01", "MM-07"],
+      "status": "canonical"
+    },
+    {
+      "id": "conversation.stale.create_wrapper",
+      "domain": "conversation",
+      "method": "POST",
+      "path": "/api/agents/conversations/ (wrapper target)",
+      "purpose": "Shared wrapper createConversation() targets POST /api/agents/conversations/ which is a ListAPIView (GET only) -> no create is mounted there. Wrapper has zero SPA callers.",
+      "auth_csrf": "n/a (no mounted create)",
+      "path_params": {},
+      "query": {},
+      "request": {},
+      "success": {},
+      "errors": {
+        "405": "POST /api/agents/conversations/ is not implemented (ListAPIView)"
+      },
+      "semantics": {
+        "consumer_mismatch": "packages/shared/src/endpoints/conversations.js createConversation() must not be assumed valid; canonical creation is conversation.create.init",
+        "do_not_fix_in_p0": true
+      },
+      "backend_sources": ["agents/views.py ConversationListView (generics.ListAPIView)", "agents/urls.py conversations/ -> ConversationListView"],
+      "frontend_consumers": ["packages/shared/src/endpoints/conversations.js createConversation (exported, zero callers)"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": ["MM-01"],
+      "status": "consumer_mismatch"
+    },
+    {
+      "id": "conversation.list",
+      "domain": "conversation",
+      "method": "GET",
+      "path": "/api/agents/conversations/",
+      "purpose": "Ordinary Conversation list for Recent view.",
+      "auth_csrf": "cookie credentials",
+      "path_params": {},
+      "query": {},
+      "request": {},
+      "success": {
+        "http": 200,
+        "envelope": "bare JSON array (no pagination envelope)",
+        "fields_allowlist": ["id", "name", "created_at", "frozen_project_ids", "project (0 when DB NULL)", "project_name (null when no project)", "agent_type", "agent_preset_id", "last_message_at", "thinking_level", "memory_injection_enabled"],
+        "note": "no temperature, no is_prime in this serializer"
+      },
+      "errors": {},
+      "semantics": {
+        "ordering": "last activity desc: Coalesce(Max(messages.created_at), updated_at)",
+        "filters": "agent_preset__is_visible=True; excludes is_bridge=True and council participant/synthesis conversations",
+        "pagination": "none; no server-side Agent x Project combined filter (frontend filters client-side; R2 scale trigger not met)",
+        "drift": "DB NULL project serialized as project:0 sentinel; project_name null"
+      },
+      "backend_sources": [
+        "agents/urls.py conversations/ -> ConversationListView",
+        "agents/views.py ConversationListView.get_queryset",
+        "agents/serializers.py ConversationSerializer (SerializerMethodField project = obj.project_id or 0; last_message_at = last assistant message time or created_at)"
+      ],
+      "frontend_consumers": ["packages/shared/src/endpoints/conversations.js listConversations", "packages/chat-core views (Dashboard/Recent)"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": ["MM-02"],
+      "status": "canonical"
+    },
+    {
+      "id": "conversation.detail",
+      "domain": "conversation",
+      "method": "GET/PATCH/DELETE",
+      "path": "/api/agents/conversations/<pk>/",
+      "purpose": "Single conversation detail, rename/preference update, delete.",
+      "auth_csrf": "cookie credentials; CSRF on PATCH/DELETE",
+      "path_params": {"pk": "int (conversation id)"},
+      "query": {},
+      "request": {
+        "PATCH_writable": ["name", "thinking_level", "memory_injection_enabled (bool or null; null inherits preset)"],
+        "not_writable": ["project (SerializerMethodField)", "project_name", "agent_type", "agent_preset_id", "frozen_project_ids", "created_at", "last_message_at"]
+      },
+      "success": {
+        "GET/PATCH": "200 with conversation.list fields allowlist",
+        "DELETE": "204 No Content"
+      },
+      "errors": {
+        "404": "DRF detail {'detail': 'Not found.'}"
+      },
+      "semantics": {
+        "delete": "physical delete (messages/history chunks cascade); spawns subprocess manage.py compact_conversations --prune --yes for orphan history cleanup",
+        "is_prime": "perform_update reads is_prime but serializer does not expose it -> no-op today",
+        "queryset": "excludes is_bridge only"
+      },
+      "backend_sources": ["agents/views.py ConversationDetailView (RetrieveUpdateDestroyAPIView)", "agents/serializers.py ConversationSerializer"],
+      "frontend_consumers": ["packages/shared/src/endpoints/conversations.js get/update/delete Conversation", "chat-core ChatShell/rename flows"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": ["MM-02"],
+      "status": "canonical"
+    },
+    {
+      "id": "conversation.messages.list",
+      "domain": "conversation",
+      "method": "GET",
+      "path": "/api/agents/chat/<session_id>/",
+      "purpose": "Message history of a conversation (session_id == conversation id).",
+      "auth_csrf": "cookie credentials",
+      "path_params": {"session_id": "int"},
+      "query": {
+        "limit": "int optional; default 50",
+        "offset": "int optional; default 0 meaning 'from the newest end'"
+      },
+      "request": {},
+      "success": {
+        "http": 200,
+        "no_params_mode": "bare array of MessageSerializer rows (legacy full-download)",
+        "paginated_mode": "{\"messages\": [...], \"total_count\": int, \"has_more\": bool}",
+        "row_fields_allowlist": ["id", "role", "content", "reasoning_content", "platform", "model_version", "token_count", "index_in_session", "attachment_ids", "attachments_meta", "created_at"],
+        "attachments_meta_item": {"id": "int", "display_name": "string", "original_filename": "string", "mime_type": "string", "file_size": "int", "file_uri": "string|null (Gemini Files URI)", "content_url": "string|null; only for audio/*: /api/agents/conversations/<conv>/attachments/<id>/content/"}
+      },
+      "errors": {
+        "404": "{\"error\": \"会话不存在\"} when conversation missing"
+      },
+      "semantics": {
+        "ordering": "messages ordered by index_in_session ascending",
+        "offset_semantics": "offset counts back from newest (offset=0 -> last `limit` messages); has_more = older messages exist",
+        "roles": "user | assistant | system | developer"
+      },
+      "backend_sources": ["agents/views.py AgentChatView.get", "memory/serializers.py MessageSerializer (+get_attachments_meta)"],
+      "frontend_consumers": ["packages/shared/src/endpoints/conversations.js getConversationMessages", "ChatArea refetch after send/stop; history paging with limit=50/offset"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "groupchat.list_create",
+      "domain": "groupchat",
+      "method": "GET/POST",
+      "path": "/api/groupchat/",
+      "purpose": "GroupChat list and creation; separate runtime/domain identity from ordinary Conversation.",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {},
+      "query": {"participant_id": "int optional; filters groups whose participant_ids contain the id"},
+      "request": {
+        "POST_body": {"name": "string required max 200", "prompt": "string optional default ''", "participant_ids": "list[int] optional default [] (preset ids; 2 = user)"}
+      },
+      "success": {
+        "GET": "200 bare array ordered -created_at; row fields [id, name, prompt, participant_ids, created_at]",
+        "POST": "201 same row fields"
+      },
+      "errors": {
+        "400": "serializer errors; {\"error\": \"participant_id 必须为整数\"}"
+      },
+      "semantics": {
+        "participants": "JSON array of AgentPreset ids, no FK, no membership validation",
+        "identity": "GroupChat is NOT an ordinary Conversation; no agent_type/project semantics"
+      },
+      "backend_sources": ["groupchat/urls.py '' -> GroupChatListCreateView", "groupchat/views.py GroupChatListCreateView", "groupchat/serializers.py GroupChatSerializer/GroupChatCreateSerializer", "groupchat/models.py GroupChat"],
+      "frontend_consumers": ["packages/shared/src/endpoints/groupchat.js listGroupchats/createGroupchat", "packages/chat-core/src/views/GroupchatList.jsx (+CreateGroupchatModal)"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "groupchat.detail",
+      "domain": "groupchat",
+      "method": "GET/PATCH/DELETE",
+      "path": "/api/groupchat/<pk>/",
+      "purpose": "Group detail/update/delete.",
+      "auth_csrf": "cookie credentials; CSRF on PATCH/DELETE",
+      "path_params": {"pk": "int"},
+      "query": {},
+      "request": {
+        "PATCH_writable": ["name", "prompt", "participant_ids (whole-list replace)"]
+      },
+      "success": {
+        "GET/PATCH": "200 row fields [id, name, prompt, participant_ids, created_at]; GET does NOT nest messages",
+        "DELETE": "204 No Content; messages CASCADE"
+      },
+      "errors": {
+        "404": "{\"error\": \"群聊不存在\"}",
+        "400": "serializer errors"
+      },
+      "semantics": {
+        "no_messages_nesting": "GET returns only group fields; messages live under /messages/",
+        "participant_ids_patch": "PATCH replaces the whole participant_ids list (not a merge)",
+        "delete_cascade": "DELETE removes the group and CASCADE-deletes its messages; 204"
+      },
+      "backend_sources": ["groupchat/views.py GroupChatDetailView", "groupchat/serializers.py GroupChatUpdateSerializer"],
+      "frontend_consumers": ["packages/shared/src/endpoints/groupchat.js get/update/delete Groupchat"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "groupchat.messages",
+      "domain": "groupchat",
+      "method": "GET/POST",
+      "path": "/api/groupchat/<pk>/messages/",
+      "purpose": "Message list and send inside a group; the only message-write surface (no /send/ exists).",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {"pk": "int"},
+      "query": {},
+      "request": {
+        "POST_body": {"group": "overwritten from URL pk", "sender_id": "int required (plain int; unknown id accepted - no membership validation)", "content": "string required", "mention_ids": "list[int] optional", "reasoning_content": "string optional"}
+      },
+      "success": {
+        "GET": "200 bare array ascending created_at, no pagination; row fields [id, group, sender_id, content, mention_ids, reasoning_content, created_at] (read_by model field NOT exposed)",
+        "POST": "201 serialized message row; user-sender messages register a global-activity on-commit hook"
+      },
+      "errors": {
+        "404": "{\"error\": \"群聊不存在\"}",
+        "400": "serializer errors"
+      },
+      "semantics": {
+        "no_send_endpoint": "the stale /send/ route from ReactSheet does not exist and no consumer calls it",
+        "pagination": "none; frontend slices locally (MSGS_PER_PAGE 40)"
+      },
+      "backend_sources": ["groupchat/urls.py '<pk>/messages/'", "groupchat/views.py GroupChatMessageListCreateView", "groupchat/serializers.py GroupChatMessageSerializer/GroupChatMessageCreateSerializer"],
+      "frontend_consumers": ["packages/shared/src/endpoints/groupchat.js getMessages/sendMessage", "packages/chat-core/src/views/GroupchatRoom.jsx"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": ["MM-04"],
+      "status": "canonical"
+    },
+    {
+      "id": "groupchat.broadcast",
+      "domain": "groupchat",
+      "method": "POST",
+      "path": "/api/groupchat/<pk>/broadcast/",
+      "purpose": "Ask every non-user agent participant to reply to the current discussion in one round.",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {"pk": "int"},
+      "query": {},
+      "request": {
+        "POST_body_canonical": {"message_id": "int optional (default 0); when truthy must exist and belong to the group and be sender user"}
+      },
+      "success": {
+        "http": 202,
+        "envelope": "{\"participants\": [int preset ids], \"message_id\": int, \"errors\": [{\"preset_id\": int, \"error\": string <=200}]}",
+        "empty_group": "202 with participants:[] (not an error)"
+      },
+      "errors": {
+        "400": "{\"error\": \"message_id 不存在\"} | {\"error\": \"message_id 不属于此群聊\"}",
+        "500": "{\"error\": \"系统中未找到 user preset (agent_type='user')\"}"
+      },
+      "semantics": {
+        "consumer_mismatch": "GroupchatRoom.jsx sends {user_message_id} but the backend reads message_id -> today's live broadcast degrades to unanchored dispatch (message_id=0) and validation never fires",
+        "sync_model": "backend awaits agent workers with 240s budget then returns 202; errors per participant collected"
+      },
+      "backend_sources": ["groupchat/urls.py '<pk>/broadcast/'", "groupchat/views.py GroupChatBroadcastView", "groupchat/services.py (worker pool, 240s timeout)"],
+      "frontend_consumers": ["packages/shared/src/endpoints/groupchat.js broadcast", "packages/chat-core/src/views/GroupchatRoom.jsx (sends {user_message_id: userMsg.id})"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": ["MM-05"],
+      "status": "canonical"
+    },
+    {
+      "id": "attachment.list",
+      "domain": "attachment",
+      "method": "GET",
+      "path": "/api/agents/conversations/<pk>/attachments/",
+      "purpose": "List user attachments and tool-collection entries of a conversation.",
+      "auth_csrf": "cookie credentials",
+      "path_params": {"pk": "int"},
+      "query": {},
+      "request": {},
+      "success": {
+        "http": 200,
+        "envelope": "bare array; user rows first then tool_collection rows",
+        "user_row_fields": ["source: 'user'", "id", "display_name", "original_filename", "storage_path (null ONLY for audio/* rows; exposed for non-audio rows)", "mime_type", "file_size", "created_at"],
+        "tool_collection_row_fields": ["source: 'tool_collection'", "id", "display_name", "char_count", "is_summary", "is_expired", "created_at"],
+        "note": "anchored tool-collection entries are skipped; ordered by created_at (user rows)"
+      },
+      "errors": {
+        "404": "{\"error\": \"会话不存在\"}"
+      },
+      "semantics": {
+        "privacy_fact": "GET list exposes storage_path (PC path) for non-audio rows; upload/read paths strip it. B1 provenance scope input.",
+        "serializer": "no envelope; built by hand in view"
+      },
+      "backend_sources": ["agents/views.py SessionAttachmentView.get", "memory/models.py SessionAttachment (ordering created_at)"],
+      "frontend_consumers": ["packages/shared/src/endpoints/conversations.js listAttachments (unused wrapper; ChatArea raw-fetches)"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "attachment.upload",
+      "domain": "attachment",
+      "method": "POST",
+      "path": "/api/agents/conversations/<pk>/attachments/",
+      "purpose": "Upload files/images/audio for later attach to a chat turn (multipart), or legacy JSON mount by storage_path.",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {"pk": "int"},
+      "query": {},
+      "request": {
+        "multipart_key": "files (one entry per file)",
+        "audio_form_fields": "model (current main model name, non-empty) and endpoint (Endpoint id int) required when any file content_type starts with audio/",
+        "legacy_json": "{\"storage_path\": string, \"display_name\"?: string} (mount path; validated file readability)"
+      },
+      "success": {
+        "http_201": "partial or full success (any result ok/ok_degraded)",
+        "http_422": "all inputs failed; body adds \"error\": \"all attachments failed\"",
+        "envelope": "{\"attachments\": [attachment dicts], \"failures\": [failure dicts], \"results\": [one per input in original order], \"error\"?: string}",
+        "result_item": {"input_index": "int", "status": "ok | ok_degraded | failed", "attachment": "{\"id\": int, \"display_name\", \"original_filename\", \"mime_type\", \"file_size\"} | null", "diagnostics": "[{\"stage\", \"code\", \"level\", \"message\", \"input_variant\"}]"},
+        "failure_item_fields": "input_index, display_name, mime_type, stage, code, message, reason, diagnostics",
+        "stripping": "storage_path / platform_files / part / platform_entry NEVER serialized on POST; diagnostic 'detail' never leaves server"
+      },
+      "errors": {
+        "400": "{\"error\": \"至少需要一个文件\"} | legacy: {\"error\": \"storage_path 不能为空\"} / {\"error\": \"文件不存在或不可读: ...\"}",
+        "404": "{\"error\": \"会话不存在\"}",
+        "422_audio_target": "{\"attachments\": [], \"results\": [...all failed], \"failures\": [...], \"error\": message} code audio_target_required (missing model/endpoint, non-int endpoint, unresolved target)",
+        "audio_preflight_codes": ["audio_target_required", "audio_model_unsupported (target lacks audio ability or file_uri transport)", "audio_mime_unsupported (MIME not in allowlist)", "audio_too_large (>10 MiB)"],
+        "per_file_diagnostics_stages": ["preflight", "upload", "resolve", "process"]
+      },
+      "semantics": {
+        "audio_allowlist": "audio/webm;codecs=opus | audio/webm (engines/attachment_manager.py)",
+        "audio_size": "10 * 1024 * 1024 bytes hard bound",
+        "target_resolution": "audio uses resolve_session_target(preset, model_override, endpoint_override) direct-only; managed-runtime endpoints rejected (managed_runtime_requires_chat_resolver) -> 422 audio_target_required",
+        "no_audio": "non-audio files target resolve_role('vision_helper')",
+        "order": "results/failures preserve input order by input_index; preflight-failed items get status failed + diagnostic stage 'preflight'",
+        "partial": "audio failures do not block other valid files in the same batch"
+      },
+      "backend_sources": ["agents/views.py SessionAttachmentView.post + formatters (886-1230)", "engines/attachment_manager.py (_AUDIO_MIME_ALLOWLIST, _MAX_AUDIO_BYTES, _MAX_INLINE_BYTES 20MiB, image dimension 1536/jpeg85)"],
+      "frontend_consumers": ["packages/chat-core/src/utils/attachmentStorage.js uploadFilesToAttachments (multipart 'files', audio adds model+endpoint form fields; AttachmentUploadError with .status/.failures/.results)", "ChatArea audio send flow", "shared endpoints conversations.js uploadAttachment (unused)"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "attachment.content",
+      "domain": "attachment",
+      "method": "GET",
+      "path": "/api/agents/conversations/<pk>/attachments/<attachment_id>/content/",
+      "purpose": "Stream a local audio original for playback (same-conversation scoped).",
+      "auth_csrf": "cookie credentials",
+      "path_params": {"pk": "int", "attachment_id": "int"},
+      "query": {},
+      "request": {},
+      "success": {
+        "http": 200,
+        "headers": "original audio MIME; Content-Disposition inline filename=original; Cache-Control private, max-age=0",
+        "body": "raw file stream"
+      },
+      "errors": {
+        "404_unified": "{\"error\": \"附件不存在\"} for every failure (conversation missing, attachment not in conversation, non-audio mime, no storage_path, unreadable file) - no record-existence leak"
+      },
+      "semantics": {
+        "mime_gate": "only mime_type startswith audio/; content_url in MessageSerializer.attachments_meta points here for audio rows only",
+        "playback": "frontend plays content_url, never Gemini file_uri"
+      },
+      "backend_sources": ["agents/views.py SessionAttachmentContentView (1232-1267)"],
+      "frontend_consumers": ["MessageBubble audio player via attachments_meta content_url (enrichMessages)", "shared endpoints conversations.js (no wrapper; direct URL)"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "attachment.delete",
+      "domain": "attachment",
+      "method": "DELETE",
+      "path": "/api/agents/conversations/<pk>/attachments/delete/",
+      "purpose": "Remove one attachment association (user or tool_collection source) from a conversation.",
+      "auth_csrf": "cookie credentials; CSRF on DELETE",
+      "path_params": {"pk": "int"},
+      "query": {},
+      "request": {
+        "DELETE_body": {"source": "'user' | 'tool_collection'", "id": "int or str"}
+      },
+      "success": {
+        "user_source": "204 No Content; SessionAttachment deleted and its id stripped from every Message.attachment_ids of the conversation",
+        "tool_collection_source": "204 No Content when ToolCollectionCache.remove_entry succeeds"
+      },
+      "errors": {
+        "400": "{\"error\": \"source 须为 'user' 或 'tool_collection'\"} | {\"error\": \"id 不能为空\"} (tool_collection)",
+        "404": "{\"error\": \"附件不存在\"} (unknown user id / non-int) | {\"error\": \"未找到该工具缓存条目\"}",
+        "409": "{\"error\": \"此附件已冻结在远端缓存中，无法删除。\", \"detail\": ..., \"frozen_in_cache\": true, \"cache_name\": ...} when attachment file_uri is frozen in a remote context cache snapshot"
+      },
+      "semantics": {
+        "single_item": "one source+id per request; no batch delete exists",
+        "semantic": "detaches association; actual file bytes GC is separate (legacy storage has no reference-safe GC today - B1 scope)"
+      },
+      "backend_sources": ["agents/views.py SessionAttachmentDeleteView (1289-1377)", "agents/urls.py '<pk>/attachments/delete/'"],
+      "frontend_consumers": ["packages/shared/src/endpoints/conversations.js deleteAttachment {source, id}", "ChatArea remove-attachment (409 -> shows data.detail)"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": ["MM-06"],
+      "status": "canonical"
+    },
+    {
+      "id": "runtime.chat.sse",
+      "domain": "runtime",
+      "method": "POST",
+      "path": "/api/agents/chat/<session_id>/ (mode=sse default)",
+      "purpose": "Send one chat turn and stream the answer as typed SSE events.",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {"session_id": "int (conversation id)"},
+      "query": {"mode": "'sse' (default) | 'async'"},
+      "request": {
+        "body_fields": {"content": "string (may be empty for pure regenerate)", "pending_attachments": "list[int] attachment ids", "files": "multipart files", "thinking_level": "string default 'medium'", "model": "string|null", "endpoint": "int|null (invalid -> 400 invalid_endpoint)", "api_key_alias": "string|null", "memory_injection_enabled": "bool default false", "cache_enabled": "bool default false", "session_type": "'full'|'lite' default 'lite'", "galatea_mcp": "bool default false (deprecated field; backend must not splice Galatea MCP declarations)", "force_cache_rebuild": "bool default false", "edit_message_id": "int|null"},
+        "note": "galatea_mcp legacy field tolerated but inert for standard live chat (constant use_drawer proxy + per-request manifest)"
+      },
+      "success": {
+        "http": 200,
+        "content_type": "text/event-stream",
+        "headers": "X-Accel-Buffering: no; Cache-Control: no-cache",
+        "event_schema": "frames 'event: <name>\\ndata: <json>\\n\\n'",
+        "canonical_events": {
+          "status": "string (phase message; also used for tool progress with {message, args...} shape before blocking tools)",
+          "thinking": "string chunk (reasoning text)",
+          "content": "string chunk (answer text)",
+          "telemetry": "{\"platform\", \"model_name\", \"input_chars\", \"output_chars\", \"tool_calls\", \"cached_input_chars\"} (emitted once before terminal)",
+          "done": "'[DONE]' (JSON string literal)",
+          "stopped": "{\"partial\": true}",
+          "error": "typed dict or legacy dict or bare 'internal_error'",
+          "cache_skipped": "{\"reason\": 'platform_not_supported' | 'remote_cache_unavailable'}"
+        },
+        "non_events": "delta / tool_call / tool_result / reasoning / reference / anchor_created are NOT emitted by agents/services.py (stale doc names); tool visibility flows as status + telemetry.tool_calls"
+      },
+      "errors": {
+        "400": "{\"error\": \"你还没输入内容，西娅。\"} (empty content, no edit, no attachments) | {\"error\": \"用户身份预设不能用于 Agent 对话\"} | {\"error\": \"不支持的 Agent 类型：...\"} | {\"code\": \"invalid_endpoint\", \"error\": \"endpoint must be an integer\"}",
+        "404": "{\"error\": \"找不到该会话\"} | synchronous ValueError -> {\"error\": str} 404 (generator-path ValueErrors surface as SSE error instead)",
+        "sse_error_payloads": {
+          "typed": "{\"code\", \"message\", \"provider\", \"model\", \"endpoint_id\", \"retryable\"} (GatewayError categories auth_error/rate_limited/service_unavailable/protocol_error; TargetResolutionError code target_resolution_error retryable false)",
+          "legacy": "{\"code\", \"message\"} with codes rate_limited | service_unavailable | auth_error | stream_error",
+          "tool_loop": "codes content_filtered | stream_interrupted | empty_response | cold_finalizer_tool_call | cold_finalizer_empty",
+          "preflight": "audio_model_unsupported / attachment_failed / runtime preflight {code,message} / runtime_history_unfinalized",
+          "internal": "bare string 'internal_error' (generator crash fallback -> guard emits {\"code\": \"stream_crashed\", ...})"
+        }
+      },
+      "semantics": {
+        "terminal_exclusivity": "exactly one terminal per run: done XOR stopped XOR error; partial content persisted as assistant message before stopped/error",
+        "preference_persist": "conversation.thinking_level saved from request unless edit_message_id present",
+        "edit_regenerate": "see runtime.edit_regenerate",
+        "history_separate": "message history is a separate GET (conversation.messages.list); this POST never returns history"
+      },
+      "backend_sources": ["agents/views.py AgentChatView.post (124-307)", "agents/services.py (_format_sse, process_chat streams)", "agents/streaming_buffer.py (registry)", "telemetry/services.py log_llm_turn"],
+      "frontend_consumers": ["ChatArea.jsx raw fetch (no mode param -> sse), manual ReadableStream parse; consumes done/telemetry/cache_skipped/error/thinking/reasoning/status; any other event type appends text to content", "shared endpoints agents.js chatWithAgent/chatWithAgentStream (?mode=sse; unused wrappers)"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": ["MM-03"],
+      "status": "canonical"
+    },
+    {
+      "id": "runtime.chat.poll",
+      "domain": "runtime",
+      "method": "GET",
+      "path": "/api/agents/chat/<session_id>/status/",
+      "purpose": "Poll buffered typed events of an async chat turn (disconnect-safe recovery).",
+      "auth_csrf": "cookie credentials",
+      "path_params": {"session_id": "int"},
+      "query": {
+        "message_id": "string required (async token, first 8 chars of uuid4)",
+        "cursor": "int optional default 0 (event index)"
+      },
+      "request": {},
+      "success": {
+        "http": 200,
+        "envelope": "{\"status\": string, \"events\": [{\"event_type\": string, \"delta\": string}], \"cursor\": int, \"error_message\": dict|string|null}",
+        "status_values": ["processing", "done", "stopped", "error", "not_found"],
+        "terminal": "done/stopped/error end the poll; error_message carries the typed error dict when available",
+        "buffer_ttl": "300s process-level singleton (StreamingBufferManager); not_found after expiry"
+      },
+      "errors": {
+        "400": "{\"error\": \"message_id is required\"}"
+      },
+      "semantics": {
+        "delta_polling": "cursor is the event index for the next poll; events[from cursor] returned",
+        "async_ack": "async POST returns {message_id, status:'processing'}; frontend persists exo_async_<sessionId> localStorage for crash re-entry and replays statusData.events"
+      },
+      "backend_sources": ["agents/views.py ChatStreamStatusView (309-327)", "agents/streaming_buffer.py StreamingBufferManager.get_delta"],
+      "frontend_consumers": ["packages/chat-core/src/hooks/usePollingChat.js (500ms interval, terminal handling, abort -> stop with message_id)", "shared endpoints agents.js pollChatStatus (unused wrapper)", "ChatArea re-entry resume (600-730)"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "runtime.chat.stop",
+      "domain": "runtime",
+      "method": "POST",
+      "path": "/api/agents/chat/<session_id>/stop/",
+      "purpose": "Cooperatively stop an in-flight generation (partial content is persisted).",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {"session_id": "int"},
+      "query": {"message_id": "string optional; present -> async buffer stop; absent -> SSE session registry stop"},
+      "request": {},
+      "success": {
+        "http": 200,
+        "envelope": "{\"status\": \"stop_requested\"}"
+      },
+      "errors": {
+        "404": "{\"error\": \"no active generation found for this session\"}"
+      },
+      "semantics": {
+        "both_modes": "async stop requires message_id; SSE stop fires session-level registry event; stop_event popped after signal"
+      },
+      "backend_sources": ["agents/views.py ChatStreamStopView (329-365)", "agents/streaming_buffer.py StreamingBufferManager.request_stop + SSESessionRegistry"],
+      "frontend_consumers": ["ChatArea stop button (SSE bare; async with ?message_id=)", "usePollingChat abortPolling"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "runtime.edit_regenerate",
+      "domain": "runtime",
+      "method": "POST",
+      "path": "/api/agents/chat/<session_id>/ (edit_message_id body field)",
+      "purpose": "Edit an earlier user message or regenerate (redo) it; unified entry point.",
+      "auth_csrf": "same as runtime.chat.sse",
+      "path_params": {},
+      "query": {},
+      "request": {
+        "edit": "edit_message_id + non-empty content -> overwrite message content, truncate everything after it, re-stream",
+        "regenerate": "edit_message_id + empty/whitespace content -> keep original content, truncate after, re-stream",
+        "identity": "edit_message_id must reference a message with role='user' IN THE SAME conversation; any earlier user message allowed (not only last)"
+      },
+      "success": {
+        "http": 200,
+        "body": "SSE stream identical to runtime.chat.sse"
+      },
+      "errors": {
+        "not_found": "ValueError('找不到指定的用户消息') inside generator -> SSE error event data 'internal_error' (NOT a synchronous 404)",
+        "runtime_lock": "completed-but-unfinalized Runtime turn refuses edit: SSE error code runtime_history_unfinalized"
+      },
+      "semantics": {
+        "truncation": "messages with index >= edit target index+1 deleted; last_summarized_index and cache_end_index rewound",
+        "no_new_user_message": "regenerate never creates a duplicate user message; preferences not re-persisted on edit/redo",
+        "note": "ReactSheet's separate 'regenerate' endpoint does not exist"
+      },
+      "backend_sources": ["agents/views.py AgentChatView.post (edit_message_id)", "memory/services.py ConversationService.prepare_chat_session / truncate_from"],
+      "frontend_consumers": ["ChatArea handleSend({editMessageId}) / onRegenerate", "MessageBubble message actions"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": ["MM-03"],
+      "status": "canonical"
+    },
+    {
+      "id": "conversation.branch",
+      "domain": "conversation",
+      "method": "POST",
+      "path": "/api/agents/conversations/<pk>/branch/",
+      "purpose": "Fork a new independent conversation from an assistant message.",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {"pk": "int"},
+      "query": {},
+      "request": {"branch_from_message_id": "int required; must be an assistant message in this conversation"},
+      "success": {
+        "http": 201,
+        "envelope": "{\"session_id\": int, \"conversation_id\": int, \"name\": 'Branch from <original name>'}"
+      },
+      "errors": {
+        "400": "{\"error\": \"branch_from_message_id 不能为空\"} | ValueError maps -> {\"error\": \"会话不存在\" / \"找不到指定的 AI 消息\" / \"没有可复制的有效消息\"}",
+        "500": "{\"error\": \"分支失败: ...\"}"
+      },
+      "semantics": {
+        "copy_rule": "copies messages with index_in_session <= branch index, keeps newest 21, strips leading non-user messages",
+        "new_conversation": "parent_conversation set; last_summarized_index=0; cache_end_index=None; messages re-indexed sequentially",
+        "transactional": "partial copy failure rolls back the new conversation"
+      },
+      "backend_sources": ["agents/views.py ConversationBranchView (1410-1435)", "memory/services.py ConversationService.branch_conversation"],
+      "frontend_consumers": ["ChatArea branch flow (posts {branch_from_message_id, name?, session_type}; response conversation_id)"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "conversation.cache",
+      "domain": "conversation",
+      "method": "GET/DELETE",
+      "path": "/api/agents/conversations/<pk>/cache/",
+      "purpose": "Inspect or invalidate the conversation's remote context cache.",
+      "auth_csrf": "cookie credentials; CSRF on DELETE",
+      "path_params": {"pk": "int"},
+      "query": {},
+      "request": {},
+      "success": {
+        "GET_inactive": "{\"active\": false, \"platform\": string, \"has_snapshot\": bool[, \"snapshot_cache_end_idx\": int]}",
+        "GET_active": "{\"active\": true, \"platform\", \"cache_name\", \"model\", \"created_at\", \"expires_at\", \"remaining_seconds\": int, \"renewals\": int, \"ttl_seconds\": int, \"has_snapshot\": bool[, \"snapshot_cache_end_idx\": int]}",
+        "DELETE": "204 No Content (invalidates remote cache + unlinks local cache_chunk_<pk>.json; async snapshot rebuild may spawn)"
+      },
+      "errors": {
+        "404": "{\"error\": \"会话不存在\"} (GET/DELETE)",
+        "DELETE_404": "{\"error\": \"当前无活跃缓存或快照\"}"
+      },
+      "semantics": {
+        "delete_behavior": "DELETE invalidates the remote cache via ContextCacheFacade and unlinks the local cache_chunk_<pk>.json snapshot; when conversation.cache_end_index is set an async snapshot rebuild thread may spawn after deletion",
+        "state_source": "GET mixes facade remote state and local snapshot file; snapshot reflects one platform at a time (platform key)",
+        "no_auto_renew": "GET never renews; renewal is only the explicit /renew/ action"
+      },
+      "backend_sources": ["agents/views.py ConversationCacheView (1437-1576)", "engines/context_cache*"],
+      "frontend_consumers": ["ContextCacheIndicator (raw GET/DELETE)", "shared conversations.js getCacheStatus/deleteCache (unused)"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "conversation.cache.renew",
+      "domain": "conversation",
+      "method": "POST",
+      "path": "/api/agents/conversations/<pk>/cache/renew/",
+      "purpose": "Renew the conversation's remote cache (30 minutes).",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {"pk": "int"},
+      "query": {},
+      "request": {},
+      "success": {
+        "http": 200,
+        "envelope": "{\"ok\": true, \"expires_at\": iso, \"renewals\": int}"
+      },
+      "errors": {
+        "404": "{\"error\": \"会话不存在\"}",
+        "409": "{\"error\": reason} (no active cache / Endpoint API key not configured)"
+      },
+      "semantics": {
+        "no_request_body": "POST takes no body; forces ContextCacheManager.force_renew (30 min TTL extension)",
+        "renewals_counter": "each successful renew increments the renewals counter returned in the envelope",
+        "conflict_reasons": "409 error string carries the service reason (e.g. no active cache / Endpoint API key not configured)"
+      },
+      "backend_sources": ["agents/views.py CacheRenewView (1633-1649)"],
+      "frontend_consumers": ["ContextCacheIndicator renew action"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "runtime.cache.invalidate",
+      "domain": "conversation",
+      "method": "POST",
+      "path": "/api/agents/cache/invalidate/",
+      "purpose": "Manually release Gemini context cache for a WezTerm bridge agent session.",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {},
+      "query": {},
+      "request": {"agent": "string required (preset name)"},
+      "success": {
+        "http": 200,
+        "envelope": "{\"ok\": true, \"message\": string, \"conv_id\"?: int}"
+      },
+      "errors": {
+        "400": "{\"error\": \"Missing 'agent' field\"}",
+        "404": "{\"error\": \"Agent preset not found: <name>\"}"
+      },
+      "semantics": {
+        "target": "looks up the preset's WezTerm bridge conversation (agent_preset + is_bridge=True + name 'WezTerm Bridge (<preset name>)'); no per-conversation cache targeting",
+        "no_bridge_noop": "a preset without a bridge session returns 200 {ok: true, message: no-op} rather than an error",
+        "surface_scope": "CLI/wez_bridge maintenance surface, not the SPA cache control"
+      },
+      "backend_sources": ["agents/views.py CacheInvalidateView (1651-1689)"],
+      "frontend_consumers": ["wez_bridge extension (CLI-side)"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "task.entry.list_create",
+      "domain": "task",
+      "method": "GET/POST",
+      "path": "/api/tasks/entries/",
+      "purpose": "ScheduleEntry list and creation (todo | periodic | goal).",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {},
+      "query": {
+        "status": "string optional ('active'|'suspended'|'escalated'|'archived')",
+        "entry_type": "string optional ('todo'|'periodic'|'goal')",
+        "is_pinned": "'true'|other optional (case-insensitive true)"
+      },
+      "request": {
+        "POST_writable": ["title (required)", "description", "entry_type ('todo'|'periodic'|'goal')", "status (default active)", "is_pinned", "start_date", "tags (list[str])", "due_date (todo)", "interval_unit ('day'|'week'|'month') + interval_value (periodic)", "end_type ('count'|'date'|'never') + end_count + end_date (periodic)", "goal_count + goal_period ('week'|'month') + cycle_start + cycle_due (goal)"],
+        "read_only_on_create": ["id", "occurrences_done", "gcal_event_id", "gcal_event_link", "created_at", "updated_at", "current_cycle_completions", "next_periodic_due"]
+      },
+      "success": {
+        "GET": "200 bare array (no pagination); model ordering [-is_pinned, due_date, cycle_due, start_date]",
+        "POST": "201 ScheduleEntrySerializer row"
+      },
+      "errors": {
+        "400": "serializer errors"
+      },
+      "semantics": {
+        "no_legacy_fields": "the legacy type/recurrence/priority/one_time/memo/appointment schema does not exist; entry_type is the source field",
+        "entry_type_immutable": "entry_type cannot be changed after creation (serializer-level 400)",
+        "anomaly_pending": "no REST-level tests pin entry create (tasks/tests/test_tasks.py unit-tests only CalendarToolHandler); a create anomaly remains a reported-but-undiagnosed pending item (KF-07)"
+      },
+      "backend_sources": ["tasks/urls.py entries/", "tasks/views.py ScheduleEntryListCreateView", "tasks/serializers.py ScheduleEntrySerializer", "tasks/models.py ScheduleEntry"],
+      "frontend_consumers": ["packages/shared/src/endpoints/tasks.js listTasks/createTask", "chronicle TaskCreateModal (modern entry_type payload)", "TaskPanel/TaskListView/CalendarWidget"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": ["MM-08"],
+      "status": "canonical"
+    },
+    {
+      "id": "task.entry.detail",
+      "domain": "task",
+      "method": "GET/PATCH/DELETE",
+      "path": "/api/tasks/entries/<pk>/",
+      "purpose": "ScheduleEntry read/update/delete (delete is soft archive).",
+      "auth_csrf": "cookie credentials; CSRF on PATCH/DELETE",
+      "path_params": {"pk": "int"},
+      "query": {},
+      "request": {
+        "PATCH_writable": "same writable set as create (entry_type immutable)",
+        "note": "PATCH on a gcal-linked entry triggers best-effort GCal auto-sync (failure logged, request still succeeds)"
+      },
+      "success": {
+        "GET/PATCH": "200 ScheduleEntrySerializer row",
+        "DELETE": "204; row status -> 'archived' (never physically deleted); GCal unlinked if linked"
+      },
+      "errors": {
+        "404": "DRF detail Not found"
+      },
+      "semantics": {
+        "soft_delete": "DELETE sets status='archived' and unlinks GCal; the row is never physically removed (204)",
+        "patch_gcal_autosync": "PATCH on a gcal-linked entry triggers a best-effort GCal update; failure is only logged and the request still succeeds",
+        "immutability": "entry_type cannot be changed after creation (serializer-level 400)"
+      },
+      "backend_sources": ["tasks/views.py ScheduleEntryDetailView", "tasks/serializers.py ScheduleEntrySerializer"],
+      "frontend_consumers": ["chronicle TaskRow edit/pin/archive (updateTask/deleteTask)"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "task.entry.complete",
+      "domain": "task",
+      "method": "POST",
+      "path": "/api/tasks/entries/<pk>/complete/",
+      "purpose": "Check in one completion for an entry.",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {"pk": "int"},
+      "query": {},
+      "request": {"note": "string optional"},
+      "success": {
+        "http": 201,
+        "envelope": "CompletionRecordSerializer row {id, entry, completed_at, cycle_start, note}"
+      },
+      "errors": {
+        "404": "{\"detail\": \"Not found.\"}",
+        "400": "{\"detail\": \"Cannot check in on a '<status>' entry.\"} when status not active/escalated"
+      },
+      "semantics": {
+        "per_type": "todo -> auto-archives (status archived); periodic -> occurrences_done += 1 (+archive when end condition met); goal -> record only",
+        "record_source": "CompletionRecord is the single source of all completion states"
+      },
+      "backend_sources": ["tasks/views.py CompleteEntryView"],
+      "frontend_consumers": ["chronicle TaskPanel/TaskListView/TaskRow/CalendarWidget complete flows"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "task.entry.suspend_resume",
+      "domain": "task",
+      "method": "POST",
+      "path": "/api/tasks/entries/<pk>/suspend/ | /resume/",
+      "purpose": "Toggle suspension of an entry.",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {"pk": "int"},
+      "query": {},
+      "request": {},
+      "success": {
+        "http": 200,
+        "body": "full ScheduleEntrySerializer row; suspend also clears is_pinned"
+      },
+      "errors": {"404": "DRF detail"},
+      "semantics": {
+        "no_guard": "both verbs switch status unconditionally (unlike complete's active/escalated guard)",
+        "suspend_side_effect": "suspend also clears is_pinned",
+        "response": "200 + full ScheduleEntrySerializer row for both actions"
+      },
+      "backend_sources": ["tasks/views.py SuspendEntryView/ResumeEntryView"],
+      "frontend_consumers": ["chronicle TaskPanel/TaskRow"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "task.entry.gcal",
+      "domain": "task",
+      "method": "POST/DELETE",
+      "path": "/api/tasks/entries/<pk>/gcal/",
+      "purpose": "Push an entry to Google Calendar or unlink it.",
+      "auth_csrf": "cookie credentials; CSRF on POST/DELETE",
+      "path_params": {"pk": "int"},
+      "query": {},
+      "request": {},
+      "success": {
+        "POST": "200 {\"gcal_synced\": true, \"gcal_event_id\": ..., \"gcal_event_link\": ...}",
+        "DELETE": "204 No Content"
+      },
+      "errors": {
+        "400": "{\"detail\": \"Entry is not linked to GCal.\"} (DELETE without event)",
+        "404": "{\"detail\": \"Not found.\"}",
+        "502": "{\"detail\": \"GCal sync failed: ...\", \"gcal_synced\": false}"
+      },
+      "semantics": {
+        "push": "POST creates or updates the linked GCal event through GCalSyncService; success returns event id + web link",
+        "unlink": "DELETE requires an existing gcal_event_id (400 otherwise) and clears event id/link without deleting the entry row",
+        "failure": "service exception -> 502 with {gcal_synced: false}"
+      },
+      "backend_sources": ["tasks/views.py GCalSyncView", "tasks/calendar_handler.py"],
+      "frontend_consumers": ["chronicle TaskRow/TaskPanel sync/unlink actions (branch on gcal_event_id)"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "task.calendar.snapshot",
+      "domain": "task",
+      "method": "GET",
+      "path": "/api/tasks/calendar/ | /api/tasks/calendar/today/",
+      "purpose": "Merged GCal + schedule calendar snapshots (90-day / 48h), file-backed.",
+      "auth_csrf": "cookie credentials",
+      "path_params": {},
+      "query": {},
+      "request": {},
+      "success": {
+        "http": 200,
+        "body": "arbitrary stored JSON from LOCAL_DATA_DIR Schedules/*.json (no fixed schema; today snapshot is a 48h subset)"
+      },
+      "errors": {
+        "503": "{\"detail\": \"Calendar snapshot not yet available. Please retry shortly.\"} when snapshot file missing"
+      },
+      "semantics": {"backend_generated": "snapshots are produced by backend maintenance, not by this GET"},
+      "backend_sources": ["tasks/views.py CalendarSnapshotView/TodaySnapshotView"],
+      "frontend_consumers": ["chronicle CalendarWidget (getCalendarSnapshot -> calData.events)", "CalendarView (getTodaySnapshot)"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "task.completions.list",
+      "domain": "task",
+      "method": "GET",
+      "path": "/api/tasks/completions/",
+      "purpose": "Completion history of entries.",
+      "auth_csrf": "cookie credentials",
+      "path_params": {},
+      "query": {"entry": "int optional filter"},
+      "request": {},
+      "success": {
+        "http": 200,
+        "body": "bare array of CompletionRecordSerializer rows ordered -completed_at"
+      },
+      "errors": {
+        "endpoint_specific": "none - no parameter validation beyond transport/DRF defaults; a non-int entry filter simply matches no rows"
+      },
+      "semantics": {
+        "filter": "entry=<pk> optional; bare array ordered -completed_at",
+        "record_source": "CompletionRecord is the single source of all completion states"
+      },
+      "backend_sources": ["tasks/views.py CompletionRecordListView"],
+      "frontend_consumers": ["chronicle TaskRow fetchCompletions(entry)"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "memory.plasmid.list",
+      "domain": "memory",
+      "method": "GET",
+      "path": "/api/memory/plasmids/",
+      "purpose": "MemoryPlasmid list for one preset (always unions global preset 2 rows).",
+      "auth_csrf": "cookie credentials",
+      "path_params": {},
+      "query": {
+        "preset_id": "int REQUIRED (400 if missing)",
+        "scope": "string optional exact",
+        "source": "string optional exact",
+        "is_processed": "'true' optional; true -> processing_status=ready, false -> not ready (compat filter)"
+      },
+      "request": {},
+      "success": {
+        "http": 200,
+        "body": "bare JSON array ordered -created_at; row fields [id, preset, conversation, message, source, content, scope, tags, trigger_keywords, weight, processing_status, processing_error, processing_attempts, last_processed_at, is_processed, created_at, updated_at]",
+        "hidden_internals": "embedding and indexed_content_hash never serialized"
+      },
+      "errors": {
+        "400": "{\"error\": \"preset_id 为必填参数\"}"
+      },
+      "semantics": {
+        "global_union": "rows always include preset 2 (global) in addition to requested preset",
+        "filters": "server filters: scope/source/is_processed only; no q/full-text, no combined tag filter (B3 pending_backend)",
+        "pagination": "none today (bare array)"
+      },
+      "backend_sources": ["memory/views.py MemoryPlasmidListView", "memory/serializers.py MemoryPlasmidSerializer", "memory/models.py MemoryPlasmid"],
+      "frontend_consumers": ["AgentHub.jsx / agent/AgentManager.jsx (listPlasmids preset_id; g045 presets only; marquee display)", "shared endpoints memory.js listPlasmids"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "memory.plasmid.create",
+      "domain": "memory",
+      "method": "POST",
+      "path": "/api/memory/plasmids/",
+      "purpose": "Two paths: preset_id -> user_manual MemoryPlasmid; message_id -> highlight ChronicleEntry.",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {},
+      "query": {},
+      "request": {
+        "plasmid_path": {"preset_id": "int", "content": "string required", "scope": "string|null optional (validated)", "tags": "list[str] optional", "trigger_keywords": "list[str] optional", "weight": "number optional"},
+        "highlight_path": {"message_id": "int (mutually exclusive with preset_id)", "content": "string required"},
+        "mutual_exclusion": "message_id and preset_id both present -> 400"
+      },
+      "success": {
+        "plasmid_path": "201 MemoryPlasmidSerializer row (starts pending; embedding must succeed before ready)",
+        "highlight_path": "201 ChronicleEntrySerializer row (kind='highlight', scope='里'); NOT a MemoryPlasmid"
+      },
+      "errors": {
+        "400": "{\"error\": \"content 不能为空\"} | {\"error\": \"message_id 与 preset_id 互斥，只能传其一\"} | {\"error\": \"tags 必须是数组\"} | scope invalid | {\"error\": \"message_id 或 preset_id 至少提供一个\"}",
+        "404": "{\"error\": \"AgentPreset 不存在\"} | {\"error\": \"消息不存在\"} | {\"error\": \"该消息所属会话未绑定 AgentPreset，无法创建记忆条目\"}"
+      },
+      "semantics": {
+        "frontend_bookmark": "MessageBubble bookmark posts {message_id, content} -> today this creates a ChronicleEntry highlight (V3 highlight path), NOT a plasmid; Collection promotion candidates come from these highlights (R6)",
+        "processing": "plasmid creation enqueues async embedding (pending -> ready); embedding failure -> failed with retry scheduling"
+      },
+      "backend_sources": ["memory/views.py MemoryPlasmidListView.post (225-312)", "memory/plasmid_service.py MemoryPlasmidService.create", "memory/entry_processor.py"],
+      "frontend_consumers": ["MessageBubble.jsx bookmark raw POST {message_id, content}", "shared endpoints memory.js createPlasmid (unused)"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "memory.plasmid.detail",
+      "domain": "memory",
+      "method": "GET/PATCH/DELETE",
+      "path": "/api/memory/plasmids/<pk>/",
+      "purpose": "Single plasmid read/edit/delete with permission and processing rules.",
+      "auth_csrf": "cookie credentials; CSRF on PATCH/DELETE",
+      "path_params": {"pk": "int"},
+      "query": {},
+      "request": {
+        "PATCH_mutable": ["content (ONLY preset_id=2 global rows; others 403)", "scope", "tags", "trigger_keywords", "weight"],
+        "read_only": ["preset", "conversation", "message", "source", "processing_status", "processing_error", "processing_attempts", "last_processed_at", "is_processed", "created_at", "updated_at"]
+      },
+      "success": {
+        "GET/PATCH": "200 MemoryPlasmidSerializer row",
+        "DELETE": "204 No Content"
+      },
+      "errors": {
+        "403": "{\"error\": \"仅全局记忆条目（preset_id=2）可修改 content\"} | {\"error\": \"仅条目所属 preset 可删除\"} (when X-Preset-ID header set and mismatched)",
+        "400": "empty content / tags not array / scope too long or invalid",
+        "404": "{\"error\": \"条目不存在\"}"
+      },
+      "semantics": {
+        "content_edit_reprocessing": "content edit resets index (indexed_content_hash='') and re-enqueues async embedding -> processing_status pending until ready; metadata edits keep ready state",
+        "delete_guard": "optional X-Preset-ID caller header; absent header leaves delete unrestricted (source fact)",
+        "embedding_hidden": "never exposed"
+      },
+      "backend_sources": ["memory/views.py MemoryPlasmidDetailView (314-425)", "memory/plasmid_service.py MemoryPlasmidService.update"],
+      "frontend_consumers": ["shared endpoints memory.js updatePlasmid/deletePlasmid (both unused in SPAs today)"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "memory.plasmid.tags",
+      "domain": "memory",
+      "method": "GET",
+      "path": "/api/memory/plasmids/tags/",
+      "purpose": "Distinct tag strings of one preset for autocomplete.",
+      "auth_csrf": "cookie credentials",
+      "path_params": {},
+      "query": {"preset_id": "int REQUIRED"},
+      "request": {},
+      "success": {
+        "http": 200,
+        "body": "bare sorted array of strings (no preset-2 union, no envelope)"
+      },
+      "errors": {"400": "{\"error\": \"preset_id 为必填参数\"}"},
+      "semantics": {
+        "preset_scoped_only": "tags are per-requested preset - NO preset-2 union (contrast with plasmid list GET)",
+        "shape": "bare sorted list of strings, no envelope; built from values_list('tags', flat=True)",
+        "purpose": "autocomplete aid for the requesting preset"
+      },
+      "backend_sources": ["memory/views.py MemoryPlasmidTagsView", "memory/urls.py (tags BEFORE <pk>)"],
+      "frontend_consumers": ["none in SPAs (wrapper listPlasmidTags unused) - V3 gap"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "memory.history_chunk.list_detail",
+      "domain": "memory",
+      "method": "GET",
+      "path": "/api/memory/history_chunks/ | /api/memory/history_chunks/<pk>/",
+      "purpose": "HistoryChunk parent list per conversation and single chunk detail/keywords edit.",
+      "auth_csrf": "cookie credentials",
+      "path_params": {"pk": "int (detail)"},
+      "query": {"conversation_id": "int REQUIRED (list; 400 if missing)"},
+      "request": {
+        "PATCH_detail": "only keywords (list[str]) accepted; other fields ignored"
+      },
+      "success": {
+        "list": "200 envelope {\"conversation_id\": int, \"session_name\": string, \"history_chunks\": [rows]}",
+        "list_rows": "parent chunks only (is_subchunk=False), ordered created_at; row fields [id, conversation, session_name, start_index, end_index, content, keywords, created_at]",
+        "detail_GET": "200 row",
+        "detail_PATCH": "200 {\"msg\": \"已保存。\", \"updated\": {...}}"
+      },
+      "errors": {
+        "400": "{\"error\": \"conversation_id 为必填参数\"} | {\"error\": \"keywords 必须是数组\"}",
+        "404": "{\"error\": \"会话不存在\"} | {\"error\": \"HistoryChunk 不存在\"}"
+      },
+      "semantics": {
+        "parents_only": "list returns only parent chunks (is_subchunk=False): created_at order here, start_index order on the agents twin endpoint /api/agents/conversations/<pk>/history_chunks/",
+        "patch_semantics": "detail PATCH accepts only keywords; other body fields are silently ignored",
+        "per_conversation_identity": "list is scoped by required conversation_id; session_name echoed from the conversation"
+      },
+      "backend_sources": ["memory/views.py HistoryChunkListView/HistoryChunkDetailView", "memory/serializers.py HistoryChunkSerializer"],
+      "frontend_consumers": ["MemoryConsole.jsx (listHistoryChunks via conversations/{id}/history_chunks/ + updateHistoryChunk PATCH)", "shared endpoints memory.js (unused) + conversations.js getHistoryChunk/updateHistoryChunk (PATCH body {topic_label, keywords, unresolved} - only keywords accepted by backend)"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": ["MM-09"],
+      "status": "canonical"
+    },
+    {
+      "id": "memory.knowledge",
+      "domain": "memory",
+      "method": "GET/PATCH",
+      "path": "/api/memory/knowledge/ | /api/memory/knowledge/<pk>/",
+      "purpose": "Project KnowledgeFragment browse and keywords/abstract editing.",
+      "auth_csrf": "cookie credentials",
+      "path_params": {"pk": "int"},
+      "query": {"topic": "string optional (iexact)", "project": "int optional"},
+      "request": {
+        "PATCH_mutable": ["keywords (list[str])", "abstract (string; change triggers background re-embed)"],
+        "read_only": ["uid", "title", "content", "project", "topic", "status", "source_type", "source_path"]
+      },
+      "success": {
+        "list": "200 DRF paginated envelope (page_size 50), ordered -updated_at",
+        "detail_GET": "200 row",
+        "detail_PATCH": "200 {\"msg\": \"已保存。\" | \"已保存，摘要重向量化已在后台启动。\", \"updated\": {...}}"
+      },
+      "errors": {"400": "{\"error\": \"keywords 必须是数组\"}", "404": "{\"error\": \"KnowledgeFragment 不存在\"}"},
+      "semantics": {
+        "separate_domain": "KnowledgeFragment (Project Knowledge) is distinct from MemoryPlasmid and HistoryChunk (Arch#6.2)",
+        "consumers": "no SPA consumer today (wrappers unused) - surfaced via Project Knowledge UI elsewhere or pending"
+      },
+      "backend_sources": ["memory/views.py KnowledgeFragmentListView/KnowledgeFragmentDetailView", "memory/serializers.py KnowledgeFragmentSerializer"],
+      "frontend_consumers": ["none active in SPAs (memory.js listKnowledge/getKnowledge/updateKnowledge unused)"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "memory.compact",
+      "domain": "memory",
+      "method": "POST",
+      "path": "/api/memory/compact/<session_id>/",
+      "purpose": "Manually trigger conversation memory compaction.",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {"session_id": "int"},
+      "query": {},
+      "request": {},
+      "success": {
+        "http": 200,
+        "body": "{\"msg\": \"记忆压实已完成，长期记忆已更新。\"} or {\"msg\": \"当前记忆量不足以生成摘要，或已是最新的。\"}"
+      },
+      "errors": {
+        "404": "{\"error\": \"会话不存在\"}",
+        "500": "{\"error\": \"记忆压实失败: ...\"}"
+      },
+      "semantics": {
+        "force": "compaction runs via MemoryCompactor.check_and_compact(force=True)",
+        "messages": "two 200 variants distinguish did-compact vs nothing-to-do; internal failure -> 500",
+        "async_work": "compaction may enqueue embedding work; the response returns before background completion"
+      },
+      "backend_sources": ["memory/views.py CompactMemoryView"],
+      "frontend_consumers": ["chat-core MemoryConsole compaction trigger"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "memory.scope_keywords",
+      "domain": "memory",
+      "method": "GET/PUT",
+      "path": "/api/memory/scope-keywords/",
+      "purpose": "Read/replace the scope-keywords definition file (RAG scopes).",
+      "auth_csrf": "cookie credentials; CSRF on PUT",
+      "path_params": {},
+      "query": {},
+      "request": {
+        "PUT_body": "object keyed by scope name (<=50 chars); values are list[str] (normalized) or {description: str, keywords: list[str], status_tags: list[str]}"
+      },
+      "success": {
+        "GET": "200 JSON object from scope_keywords.json",
+        "PUT": "200 {\"msg\": \"已保存。\"}"
+      },
+      "semantics": {
+        "side_effects": "single-key rename cascades MemoryPlasmid.scope updates; removals mark reclassification; matcher cache invalidated",
+        "editable": "frontend-visible scope taxonomy management (V3 MemoryConsole surface)"
+      },
+      "errors": {
+        "400": "请求体必须是 JSON 对象 | scope 名称必须是有效字符串: <key> | scope 名称不能超过 50 字符: <key> | description 必须是字符串: <key> | keywords 必须是字符串数组: <key> | status_tags 必须是字符串数组: <key> | scope 值必须是数组或对象: <key>",
+        "stable": false
+      },
+      "backend_sources": ["memory/views.py ScopeKeywordsView (468-561)"],
+      "frontend_consumers": ["shared endpoints memory.js getScopeKeywords/updateScopeKeywords (unused in SPAs today)"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "memory.stop_words",
+      "domain": "memory",
+      "method": "GET/PUT",
+      "path": "/api/memory/stop-words/",
+      "purpose": "Read/replace global and noise stop-word lists.",
+      "auth_csrf": "cookie credentials; CSRF on PUT",
+      "path_params": {},
+      "query": {},
+      "request": {"PUT_body": "{\"global\": list[str], \"noise\": list[str]}"},
+      "success": {
+        "GET": "200 JSON object from stop_words.json",
+        "PUT": "200 {\"msg\": \"已保存。\"}"
+      },
+      "errors": {
+        "400": "请求体必须是 JSON 对象 | 缺少必要字段: global | 缺少必要字段: noise | <global|noise> 必须是字符串数组",
+        "stable": false
+      },
+      "semantics": {
+        "persistence": "PUT persists ONLY the global+noise keys to stop_words.json (unknown keys dropped) and resets the KeywordMatcher singleton",
+        "file_backed": "GET returns {} when the backing file is missing"
+      },
+      "backend_sources": ["memory/views.py StopWordsView"],
+      "frontend_consumers": ["none active (V3 management surface)"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "notification.push.subscribe",
+      "domain": "notification",
+      "method": "POST",
+      "path": "/api/push/subscribe/",
+      "purpose": "Register (upsert) a browser Web Push subscription.",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {},
+      "query": {},
+      "request": {
+        "body": "{\"subscription\": {endpoint (required), expirationTime?, keys: {p256dh (required), auth (required)}}, \"device_name\": string optional (max 200)}",
+        "upsert_key": "endpoint unique"
+      },
+      "success": {
+        "http": 201,
+        "body": "{\"id\", \"endpoint\", \"p256dh\", \"auth\", \"user_agent\", \"device_name\", \"is_active\", \"created_at\", \"updated_at\"} (201 for both create and update)"
+      },
+      "errors": {
+        "400": "serializer field errors"
+      },
+      "semantics": {
+        "device_name_reset": "resubscribe without device_name resets it to ''",
+        "no_auth": "no endpoint auth (DRF defaults AllowAny)"
+      },
+      "backend_sources": ["push/urls.py subscribe/", "push/views.py SubscribeView", "push/serializers.py SubscribeSerializer", "push/models.py PushSubscription"],
+      "frontend_consumers": ["shared endpoints push.js subscribeToPush (pushManager.subscribe with hardcoded VAPID + apiFetch)", "chat-core settings NotificationsPanel (user-click only)", "sw.js pushsubscriptionchange auto-resubscribe"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "notification.push.unsubscribe",
+      "domain": "notification",
+      "method": "POST",
+      "path": "/api/push/unsubscribe/",
+      "purpose": "Remove a Web Push subscription.",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {},
+      "query": {},
+      "request": {"body": "{\"endpoint\": string required}"},
+      "success": {
+        "http": 204,
+        "body": "empty; idempotent (204 whether or not a row existed)"
+      },
+      "errors": {"400": "serializer field errors"},
+      "semantics": {
+        "idempotent": "204 whether or not a subscription row existed - no existence check (documented idempotency)",
+        "delete_only": "removes the row keyed by endpoint; does not touch other subscriptions or is_active soft-deactivation"
+      },
+      "backend_sources": ["push/views.py UnsubscribeView", "push/serializers.py UnsubscribeSerializer"],
+      "frontend_consumers": ["shared endpoints push.js unsubscribeFromPush", "chat-core settings NotificationsPanel"],
+      "evidence": {"source_verified": true, "test_verified": false, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    },
+    {
+      "id": "notification.register.ack",
+      "domain": "notification",
+      "method": "POST",
+      "path": "/api/agents/registers/<pk>/ack/",
+      "purpose": "Acknowledge a Register notification (navigate/dismiss) so Superior can digest the user action.",
+      "auth_csrf": "cookie credentials; CSRF on POST",
+      "path_params": {"pk": "int (Register id)"},
+      "query": {"preset_id": "int REQUIRED"},
+      "request": {
+        "body": "{\"action\": 'navigate'|'dismiss' (default navigate), \"subscription_endpoint\": string optional}"
+      },
+      "success": {
+        "http": 200,
+        "body": "{\"id\": int, \"content\": string (prefix rewritten to user-handled form)}"
+      },
+      "errors": {
+        "400": "{\"error\": \"preset_id query param is required\"} | {\"error\": \"preset_id must be an integer\"} | {\"error\": \"action must be 'navigate' or 'dismiss'\"}",
+        "404": "{\"error\": \"Register id=<pk> not found for preset <id>\"}"
+      },
+      "semantics": {
+        "expiry": "acknowledged registers get expires_at extended to +1h",
+        "content_mutation": "ack rewrites content prefix ([推送通知] -> viewed/ignored) - it is NOT a pure read",
+        "devices": "device_name resolved from subscription_endpoint via PushSubscription when present"
+      },
+      "backend_sources": ["agents/views.py RegisterAckView (722-820)", "agents/models.py Register"],
+      "frontend_consumers": ["service worker push-notification.js notificationclick/notificationclose (direct fetch)", "main.jsx PushNavigateListener (3 SPAs)", "NotificationContext dismiss/navigateTo (3 SPAs)"],
+      "evidence": {"source_verified": true, "test_verified": true, "runtime_read_verified": false},
+      "mismatch_refs": [],
+      "status": "canonical"
+    }
+  ],
+  "mismatches": [
+    {
+      "id": "MM-01",
+      "surface": "conversation",
+      "product_expectation": "one canonical Conversation create path usable by the V4 chat slice",
+      "source_fact": "POST /api/agents/sessions/init/ is the only mounted create; POST /api/agents/conversations/ is a GET-only ListAPIView",
+      "consumer_fact": "shared wrapper createConversation() targets the unmounted POST and has zero callers; NewSessionModal raw-fetches sessions/init/",
+      "old_doc_claim": "ReactSheet §1.2 describes POST /api/agents/conversations/ with name+project(required)/agent_preset(optional)",
+      "resolution": "canonical = sessions/init/; ReactSheet §1.2 corrected; wrapper stays untouched (V3 debt) until its owning phase",
+      "reactsheet_section": "第一篇 §1.2",
+      "future_owner": "P1A canonical create uses sessions/init/; wrapper cleanup with P1A/P8",
+      "status": "resolved_in_snapshot"
+    },
+    {
+      "id": "MM-02",
+      "surface": "conversation",
+      "product_expectation": "Conversation row shape must show Drift (no project) and no invented fields",
+      "source_fact": "agents.ConversationSerializer fields: id/name/created_at/frozen_project_ids/project/project_name/agent_type/agent_preset_id/last_message_at/thinking_level/memory_injection_enabled; project = obj.project_id or 0",
+      "consumer_fact": "frontend groups by project 0 as unassigned",
+      "old_doc_claim": "ReactSheet §1.2 sample includes temperature and describes PATCH project/archive",
+      "resolution": "ReactSheet §1.2 corrected to actual field allowlist and writable set (project not writable via serializer)",
+      "reactsheet_section": "第一篇 §1.2",
+      "future_owner": "P1A",
+      "status": "resolved_in_snapshot"
+    },
+    {
+      "id": "MM-03",
+      "surface": "runtime",
+      "product_expectation": "SSE contract list must match the real stream for P1B planning",
+      "source_fact": "services.py emits only: status/thinking/content/telemetry/done/stopped/error/cache_skipped; tool progress arrives as status; telemetry carries tool_calls count",
+      "consumer_fact": "ChatArea consumes exactly these names (unknown types append text to content)",
+      "old_doc_claim": "ReactSheet §1.3 lists event types delta/tool_call/tool_result/error/done",
+      "resolution": "ReactSheet §1.3 corrected to canonical event set + async polling + edit/regenerate semantics",
+      "reactsheet_section": "第一篇 §1.3",
+      "future_owner": "P1B",
+      "status": "resolved_in_snapshot"
+    },
+    {
+      "id": "MM-04",
+      "surface": "groupchat",
+      "product_expectation": "group message write surface is /messages/, broadcast is separate",
+      "source_fact": "groupchat/urls.py mounts only '', '<pk>/', '<pk>/messages/', '<pk>/broadcast/'",
+      "consumer_fact": "shared wrappers + GroupchatRoom use messages/ and broadcast/",
+      "old_doc_claim": "ReactSheet §7.2 documents POST /api/groupchat/<pk>/send/",
+      "resolution": "ReactSheet §7.2 corrected; /send/ recorded as nonexistent",
+      "reactsheet_section": "第七篇 §7.2",
+      "future_owner": "P2",
+      "status": "resolved_in_snapshot"
+    },
+    {
+      "id": "MM-05",
+      "surface": "groupchat",
+      "product_expectation": "broadcast carries the triggering user message identity",
+      "source_fact": "GroupChatBroadcastView reads request.data 'message_id' (default 0); validation only when truthy",
+      "consumer_fact": "GroupchatRoom.jsx:441 sends {user_message_id: userMsg.id}",
+      "old_doc_claim": "none",
+      "resolution": "canonical key = message_id; live consumer sends wrong key -> broadcast runs unanchored (message_id=0). Recorded; repair belongs to a later bugfix/GC migration task, NOT P0",
+      "reactsheet_section": "第七篇 §7.2 (documented as canonical + mismatch note)",
+      "future_owner": "separate bugfix or P2 GC migration",
+      "status": "consumer_mismatch_kept"
+    },
+    {
+      "id": "MM-06",
+      "surface": "attachment",
+      "product_expectation": "batch delete surface",
+      "source_fact": "DELETE /api/agents/conversations/<pk>/attachments/delete/ handles one {source, id} per request (view docstring says /attachments/ but the mounted route ends /delete/)",
+      "consumer_fact": "wrapper deleteAttachment sends {source, id}; ChatArea removes one at a time",
+      "old_doc_claim": "ReactSheet §1.5 labels the endpoint '批量删除'",
+      "resolution": "ReactSheet wording corrected to single-item delete with source/id; 409 frozen-in-cache documented",
+      "reactsheet_section": "第一篇 §1.5",
+      "future_owner": "P1C",
+      "status": "resolved_in_snapshot"
+    },
+    {
+      "id": "MM-07",
+      "surface": "conversation",
+      "product_expectation": "init request fields frozen for P1A",
+      "source_fact": "SuperiorSessionInitSerializer accepts name/preset_id/project_id/frozen_project_ids/thinking_level (write-only); temperature is NOT accepted",
+      "consumer_fact": "NewSessionModal additionally sends temperature: 1.0 (ignored by serializer - no error, field dropped)",
+      "old_doc_claim": "ReactSheet §1.4 labels sessions/init/ as 'Superior 后台 session' only",
+      "resolution": "ReactSheet §1.4 corrected: init is the unified Standard & Superior Conversation create; temperature sent by frontend is dropped silently (minor consumer fact)",
+      "reactsheet_section": "第一篇 §1.4",
+      "future_owner": "P1A",
+      "status": "resolved_in_snapshot"
+    },
+    {
+      "id": "MM-08",
+      "surface": "task",
+      "product_expectation": "Task create schema matches ScheduleEntry serializer",
+      "source_fact": "ScheduleEntrySerializer fields use entry_type/status/is_pinned/start_date/tags + type-specific fields; enums: entry_type todo|periodic|goal; status active|suspended|escalated|archived",
+      "consumer_fact": "chronicle TaskCreateModal submits modern entry_type payload; wrappers pass entry_type params",
+      "old_doc_claim": "ReactSheet §4.1 documents legacy type (task/habit/memo/appointment/one_time/deadline) + recurrence + priority",
+      "resolution": "ReactSheet §4.1 corrected to ScheduleEntrySerializer schema",
+      "reactsheet_section": "第四篇 §4.1",
+      "future_owner": "P3 (Calendar/Tasks companion)",
+      "status": "resolved_in_snapshot"
+    },
+    {
+      "id": "MM-09",
+      "surface": "memory",
+      "product_expectation": "HistoryChunk patch surface",
+      "source_fact": "PATCH /api/memory/history_chunks/<pk>/ accepts ONLY keywords; detail PATCH response {\"msg\", \"updated\"}",
+      "consumer_fact": "shared conversations.js updateHistoryChunk sends {topic_label, keywords, unresolved} - topic_label/unresolved silently ignored; MemoryConsole sends {keywords: array}",
+      "old_doc_claim": "ReactSheet §2.3 says PATCH (unspecified fields)",
+      "resolution": "ReactSheet §2.3 wording kept generic but snapshot freezes keywords-only; consumer wrapper noted as partially-stale",
+      "reactsheet_section": "第二篇 §2.3",
+      "future_owner": "P5",
+      "status": "consumer_mismatch_kept"
+    },
+    {
+      "id": "MM-10",
+      "surface": "notification",
+      "product_expectation": "in-app notification read surface",
+      "source_fact": "push/urls.py mounts ONLY subscribe/ and unsubscribe/; no GET /api/push/notifications/ exists",
+      "consumer_fact": "no SPA/SW code fetches /api/push/notifications/; delivery is server->SW push + postMessage + in-memory store (cap 20)",
+      "old_doc_claim": "ReactSheet §8.2 documents GET /api/push/notifications/ 待处理通知列表",
+      "resolution": "ReactSheet §8.2 replaced with the real three-surface contract (subscribe/unsubscribe, SW delivery, register ack)",
+      "reactsheet_section": "第八篇 §8.2",
+      "future_owner": "P2 single shell owner",
+      "status": "resolved_in_snapshot"
+    }
+  ],
+  "unavailable_or_deferred": [
+    {"item": "push.notifications.get", "fact": "GET /api/push/notifications/ is not mounted anywhere; must never be documented as current", "maps_to": "MM-10"},
+    {"item": "conversation.server_filter_pagination", "fact": "no server-side Agent x Project combined filter or pagination exists; frontend filters client-side at current scale (R2)", "maps_to": "P2 scale-triggered handoff (not B1-B4)"},
+    {"item": "memory.plasmid.server_search", "fact": "no q/full-text body search, combined tag filters, or deterministic cursor pagination for plasmids", "maps_to": "B3 (pending_backend)"},
+    {"item": "memory.history_grep", "fact": "no grep-like exact History lookup with total hit count/context/source expansion", "maps_to": "B3 (pending_backend)"},
+    {"item": "collection.backend", "fact": "no CollectionItem/StoredAsset managed storage, provenance identity, preview/typed derivation, or g045 agent-type authorization exists", "maps_to": "B1 (pending_backend)"},
+    {"item": "river.aggregation", "fact": "no canonical heterogeneous River projection API with occurred_at/global cursor exists", "maps_to": "B2 (pending_backend)"},
+    {"item": "recall.observability", "fact": "no durable generation-attempt identity, candidate/injected records, hit path, rejection reason, or feedback persistence exists", "maps_to": "B4 (pending_backend)"},
+    {"item": "attachment.mount_legacy_json", "fact": "legacy JSON mount by storage_path still exists on POST attachments/; V3-only path, no provenance value", "maps_to": "B1 non-goal"},
+    {"item": "agentpreset.create_delete", "fact": "AgentPreset create/delete is permanently disabled (DB trigger + no router actions); presets are reference data", "maps_to": "none (invariant)"}
+  ]
+}

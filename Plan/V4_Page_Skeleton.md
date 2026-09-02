@@ -1,18 +1,18 @@
 # ExoCore V4 — 页面骨架与 Mockup 契约
 
 > 用途：作为 V4 前端视觉 mockup 的输入契约（供 Gemini App 端生成完整视觉稿）。
-> 状态：Draft — 页面骨架，非施工计划。
+> 状态：IA 已收口；供 App Shell / 页面 Mockup 与 Master Roadmap 使用，非施工计划。
 > 定位：只约束「有哪些页面 / 导航层级 / 每个页面装什么」；不约束像素与具体视觉。
 > 关联：承接 `ExoCore_V4_Single_SPA_Architecture_Spec.md` 的信息架构，按 Alicia 重排后的四大板块落地。
-> 日期：2026-08-26 | 整理：Ecki / deepseek-v4
+> 初稿：2026-08-26 | IA 收口：2026-09-02 | 整理：Ecki / deepseek-v4，Solaire / gpt-5.6-sol
 
 ---
 
 ## 0. 一句话总览
 
-一个应用壳 + 四大板块（实时聊天 / 群聊 / 异步时间线 / 设置）。导航层级统一为 **3 级**：`板块` → `列表/枢纽页` → `详情页`。
+一个应用壳 + 四大产品区域：**Chat / Groups / River / Library**。Settings 从头像 / More 稳定可达但不占一级产品槽位。三级结构是复杂对象路径的上限与常用模式，不要求所有板块机械凑满三级。
 
-**推荐 mockup 绘制顺序：先画 ① App Shell → ② Chat 首页 → ③ 异步中轴线时间线** 这三张决定性稿，它们定调整体骨架与风格，其余页面跟着走。
+**推荐 mockup 绘制顺序：先画 ① App Shell → ② Chat 首页 → ③ River 中轴时间线 → ④ Library 首页/切换关系**。前两张决定迁移起点，后两张决定新产品区的长期 IA。
 
 ---
 
@@ -39,7 +39,7 @@
 
 **关键设计点：**
 - Agent × Project 是**组合筛选维度，不是两套会话树**——同一会话只存一份；从 Agent 进突出 Project 标签，从 Project 进突出 Agent 标签。
-- 无 Project 的对话称 **Drift**（命名待定；影响 mockup 是否画「漂浮」标签）。
+- 无 Project 的对话称 **Drift**（名称已冻结）。
 - Agent Profile 内嵌 **Memory 摘要 + 管理入口**（深链）。
 - Chat 页承载聊天流、模型控制、附件、音频等能力，但界面应让**模型控制等浮层不挤压消息区**。
 
@@ -56,31 +56,41 @@
 
 ---
 
-## 板块三：异步板块（Async）— 亮点，pendo 式中轴线
+## 板块三：River — 异步生活时间轴
 
-> 把 `chronicle` / `timeline` / `task` / 日记 全部并回来，以**一条完整纵向时间线**为统一主轴——**待办 / 随笔 / 日记都是缀在这条线上的珠子**，靠形状、颜色、图标区分类型。轻量、可爱、可玩。
+> River 是统一的时间阅读面，不是统一业务表。Memo / Heartbeat / Diary / Task / legacy Chronicle event 作为不同 source 缀在同一主轴上。
 
-| 层级 | 页面 | 现路由 | 说明 |
+| 层级 | 页面 | 来源 / 旧页面 | 说明 |
 |---|---|---|---|
-| 板块首页 | **时间线（主视图）** | TimelineView | 🔑 中轴线主视图，所有异步信息统一入口 |
-| 第2级 | **单项详情 / 编辑** | (合并自 TaskList/Chronicle) | 点开时间线上某条展开 |
-| 第2级 | **日历视图**（可选陪伴视图） | CalendarView | 时间线外的第二种时空表达 |
+| 板块首页 | **River 主视图** | TimelineView + 多 source | 🔑 `River flows in you.` 固定在顶部；Open Tasks shelf + 中轴时间流 |
+| 第2级 | **单项详情 / 编辑** | Task / Memo / legacy event | 按 source capability 展开 |
+| 第2级 | **日历视图**（陪伴视图） | CalendarView | 时间轴外的第二种时间表达 |
 
-**关键设计点（pendo 灵感）：**
-- **一条中轴线 + 缀饰**：待办 / 随笔 / 日记 / 历史事件都是线上「珠子」，按类型视觉区分，不各自开标签页。
-- 时间线自带「按类型筛选 / 按时间段框选」能力，无需复杂 Dashboard。
-- 现有 `chronicle` / `task` / `timeline` **不再有独立一级入口**，全并进这条线。
-- ⚠️ 三种「珠子」交互质感不同，mockup 需区分：**待办**可完成勾选；**随笔/日记**是已存在文本（可展开阅读）；**历史事件**是已发生回放。
+**关键设计点：**
+- 主轴只排序 thread root；Memo 自身可带 reply tree，回复不进入全局排序。
+- Diary 珠子只显示当天日记 preview，点击阅读全文；popup / drawer / inline 后置到 mockup。
+- Task 顶部另有 Open Tasks shelf，防止未完成事项被时间冲走；主轴仍保留原事件。
+- Chronicle 不再作为 V4 新产品入口：旧 milestone/moment 可成为 legacy event，旧 highlight 归 Collection promotion 候选，其他历史保留 archive。
+- River 支持按类型与时间缩小范围，但各 source 的编辑/完成/展开行为仍由自身 capability 决定。
 
 ---
 
-## 板块四：设置（Settings）— 严肃管理区
+## 板块四：Library — 长期留下的内容与记忆管理
 
-| 层级 | 页面 | 现路由 |
+| 层级 | 页面 | 说明 |
 |---|---|---|
-| 板块首页 | **设置中心** | `settings`（keys / mcp / models / notifications / appearance / routine） |
+| 板块首页 | **Library** | Collection / Memory 两个平级业务入口 |
+| 第2级 | **Collection Browser** | 文字 / 图片 / 语音 / 文档；Tags、搜索、最近收藏 |
+| 第3级 | **Collection Item Detail** | 原件、canonical semantic material、来源、收藏情境、带去聊天 |
+| 第2级 | **Memory / Plasmid Library** | Agent、scope、Tags、source、trigger、status、正文搜索 |
+| 第3级 | **MemoryPlasmid Detail** | 正文、触发词、Tags、weight、来源与处理状态 |
+| 第2级 | **Recall Lab** | Plasmid 检索检查 + History grep-like 精确查找 |
 
-> 分组清晰即可，不做过多视觉发挥。mockup 只需给一个结构清晰的设置中心。
+**关键设计点：**
+- Collection 是“主动留下来回味的藏品”；Memory 是“为了会话连续性而可查看、可修正的 recall substrate”。
+- 两者可共享搜索壳和 Tags 视觉，但不能共享含混的数据模型或 CRUD。
+- Collection 首期必须有稳定展示面；随机翻看后置。
+- Settings 不再是一级板块，从头像 / More 进入现有设置中心。
 
 ---
 
@@ -101,25 +111,33 @@
 - [ ] 群聊列表
 - [ ] 群聊房间
 
-**Async 板块**
-- [ ] 🎯 中轴线时间线（主视图，多类型缀饰）
+**River 板块**
+- [ ] 🎯 River 主视图（主题句 + Open Tasks shelf + 多 source 中轴线）
+- [ ] Memo thread 展开态
+- [ ] Diary preview → 阅读全文
 - [ ] 单项详情 / 编辑
-- [ ] （可选）日历视图
+- [ ] 日历陪伴视图
 
-**Settings 板块**
-- [ ] 设置中心（分组清晰）
+**Library 板块**
+- [ ] Library 首页 / Collection-Memory 切换关系
+- [ ] Collection Browser + Item Detail
+- [ ] MemoryPlasmid Library + Detail
+- [ ] Recall Lab（Plasmid + History grep-like）
+
+**低频系统入口**
+- [ ] 头像 / More → Settings 中心
 
 ---
 
-## 遗留 / 待定决策（凝练自 V4 Spec）
+## Mockup 阶段后置决策
 
 | 决策 | 冻结时点 |
 |---|---|
-| 移动端底栏最终四项与 More 交互 | 应用壳原型验收前 |
-| `Drift` 最终中英文命名 | Conversation 列表施工前 |
-| 异步板块产品名（Async / Today / Life…） | 该板块施工前 |
-| Task 是否未来独立成另一产品 | 推送与 Android 设计前 |
-| Agent × Project 服务端筛选接口需求 | Conversation 施工计划前 |
+| 移动端底栏最终四项与 More 交互 | App Shell 原型验收前 |
+| Memo thread 在小屏使用 inline / drawer / detail 哪种展开 | River mockup 前 |
+| Diary 全文使用 popup / drawer / inline | River mockup 前；不影响 API 契约 |
+| Library 首页是 split landing 还是默认进入 Collection | Library mockup 前 |
+| Collection Item Detail 的 desktop/mobile 信息密度 | Collection mockup 前 |
 
 ---
 

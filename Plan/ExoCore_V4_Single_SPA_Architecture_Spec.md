@@ -1,9 +1,9 @@
 # ExoCore V4 单 SPA 前端架构规格
 
 > 文档类型：产品与前端架构规格（Spec），不是施工计划。
-> 状态：Draft，供 Alicia 评审。
+> 状态：核心架构已冻结，可作为 Master Roadmap 输入；阶段性开放项见第 14 节。
 > 适用仓库：`ExoCore-Desktop`。
-> 日期：2026-08-02。
+> 初稿：2026-08-02；架构收口：2026-09-02。
 
 ## 1. 本质问题
 
@@ -36,16 +36,16 @@ V4 的目标不是把 Django app 逐一做成前端入口，而是以 Alicia 的
 - `MemoryPlasmid` 归属 Agent preset，并可追溯到 Conversation / Message。
 - Project、Conversation、Agent、MemoryPlasmid 具有真实跨模块关系。
 
-### 2.3 当前契约缺口
+### 2.3 Conversation 契约已核对
 
-当前 `ReactSheet.md` 将 Conversation 创建描述为 `project` 必填、`agent_preset` 可选；目标信息架构则需要支持“某 Agent 的无 Project / Drift 对话”。实施前必须通过源码与真实接口确认以下事项，并在必要时交由后端仓库单独变更：
+2026-09-02 只读调研确认：
 
-- 创建普通 Agent Conversation 时，`agent_preset` 是否应成为必需业务字段；
-- `project = null` 是否受创建接口支持；
-- 旧数据中缺少 Agent 或 Project 的 Conversation 如何展示；
-- Conversation 列表是否需要服务端 Agent / Project 组合筛选。
+- 普通 Conversation 创建走 `POST /api/agents/sessions/init/`，`preset_id` 创建时必填；
+- `project = null` 正式支持，当前序列化层使用 `project: 0` 作为前端 sentinel；
+- 当前真实数据中没有缺失 `agent_preset` 的普通会话，存在无 Project 的 Drift 会话；
+- Conversation list 当前无服务端 Agent / Project 组合筛选与分页，现量级可继续前端过滤；服务端组合筛选属于可顺路补齐的扩展，不是 V4 Chat 首期 blocker。
 
-本 Spec 不擅自修改后端契约。
+因此 `Conversation = Agent × Optional Project` 可直接作为 V4 产品契约；若未来扩展列表规模，再单独引入服务端 filter/pagination。
 
 ## 3. 目标与非目标
 
@@ -55,8 +55,8 @@ V4 的目标不是把 Django app 逐一做成前端入口，而是以 Alicia 的
 - 首页优先呈现最近会话。
 - Agent 和 Project 成为同一批 Conversation 的两个索引入口。
 - GroupChat 在产品上属于交流，在代码与数据上保持独立。
-- Memory 使用统一底层管理器，并提供全局与 Agent 内两种入口。
-- Task / Calendar / Chronicle 作为边界清楚的伴随模块，不侵入聊天核心。
+- Library 统一承载 Collection 与 Memory 两个平级业务区；Memory 使用统一底层管理器，并提供全局与 Agent 内深链入口。
+- River 统一承载异步时间阅读；Task / Calendar / Diary / legacy Chronicle source 保持各自业务与存储边界，不侵入聊天核心。
 - 为后续 Android Capacitor 容器保留稳定的平台适配边界。
 - 旧前端在迁移期间继续作为可运行参照和行为基线。
 
@@ -81,7 +81,7 @@ Conversation = Agent × Optional Project
 
 - Agent 表示主要交流对象。
 - Project 表示可选工作上下文。
-- 没有 Project 的普通对话在用户界面中暂称 `Drift`；最终中文命名待定。
+- 没有 Project 的普通对话在用户界面中称 `Drift`；名称已冻结。
 - 同一个 Conversation 只保存一份，不因入口不同复制。
 
 示例：
@@ -106,23 +106,25 @@ Conversation = Agent × Optional Project
 
 ### 5.1 一级产品区域
 
-V4 逻辑区域为：
+V4 一级产品区域冻结为：
 
 ```text
-Home
-Agents
-Projects
-Groups
-Memory
-Today / Chronicle
-Settings
+Chat / Groups / River / Library
 ```
 
-这不是对移动端底栏数量的要求。移动端与桌面端可使用不同的导航呈现，但必须进入同一组 canonical routes。
+其中：
 
-### 5.2 Home：继续工作页
+- Chat 内包含最近会话、Agent Hub、Project Hub 与 canonical Conversation；
+- Groups 保持独立消息领域；
+- River 是统一异步时间阅读面；
+- Library 内包含平级的 Collection 与 Memory；
+- Settings 属低频系统管理，从头像 / More 稳定可达，但不占一级产品槽位。
 
-首页的第一目标是让 Alicia 以最少操作继续最近交流，不建设泛化 Dashboard。
+这不是对移动端底栏具体四项呈现的机械要求。移动端与桌面端可使用不同的导航控件，但必须进入同一组 canonical routes。
+
+### 5.2 Chat 首页：继续工作页
+
+Chat 首页的第一目标是让 Alicia 以最少操作继续最近交流，不建设泛化 Dashboard。
 
 展示顺序：
 
@@ -177,7 +179,7 @@ Project 页面已知当前 Project，因此 Conversation 条目优先突出 Agen
 /chat/:conversationId
 ```
 
-聊天页同时展示 Agent 与 Project / Drift 上下文。从列表进入时，浏览器历史负责返回来源；直接打开链接时，默认返回 Home。
+聊天页同时展示 Agent 与 Project / Drift 上下文。从列表进入时，浏览器历史负责返回来源；直接打开链接时，默认返回 Chat 首页。
 
 GroupChat 使用独立 canonical route，例如：
 
@@ -187,18 +189,23 @@ GroupChat 使用独立 canonical route，例如：
 
 最终 route 名称可在施工计划阶段统一，但“同一实体只有一个详情实现”是固定约束。
 
-## 6. Memory 架构
+## 6. Library 架构
 
-### 6.1 一个管理器，多个入口
+### 6.1 Collection 与 Memory 平级
 
-Memory 使用同一底层页面与筛选模型：
+Library 共享应用壳，但不把所有长期内容塞进同一张 Memory 列表：
 
-- Agent Workspace 显示摘要，并深链到预设该 Agent 筛选条件的管理页；
-- 全局 Memory 入口支持跨 Agent 搜索、状态筛选与整理。
+```text
+Library
+├── Collection   主动决定留下、翻看与再次使用的藏品
+└── Memory       Agent 可召回的长期记忆及其质量管理
+```
 
-**核心决策：Agent 内入口和全局入口不得发展成两套 Memory 实现。** [gpt-5.6-sol / Solaire，Alicia approved]
+Memory 使用同一底层页面与筛选模型：Agent Workspace 只提供摘要和带 Agent filter 的深链；Library → Memory 提供跨 Agent 搜索、状态筛选与整理。二者不得发展成两套 Memory 实现。
 
-### 6.2 用户概念分离
+Collection 与 Memory 可以共享搜索壳、Tags 视觉和深链设施，但不共享含混的数据模型或 CRUD。
+
+### 6.2 Memory 内部概念分离
 
 界面必须明确区分：
 
@@ -206,33 +213,31 @@ Memory 使用同一底层页面与筛选模型：
 2. 对话摘要：HistoryChunk；
 3. Project 知识：KnowledgeFragment 与 Project files。
 
-这些对象可以在搜索体验中关联，但不得以一个含混的“Memory”列表混合呈现所有状态和操作。
+History 精确查找首期采用 grep-like 心智模型；这些对象可以在搜索体验中关联，但不得以一个含混的“Memory”列表混合呈现所有状态和操作。
 
-## 7. Task、Calendar 与 Chronicle
+## 7. River 与异步领域边界
 
-### 7.1 边界
+### 7.1 River 是 read model，不是统一业务表
 
-Task / Calendar / Chronicle 与聊天核心在代码和业务规则上分离，但初始 V4 仍共享一个应用壳和安装包。
+Task / Diary / Heartbeat / Memo / legacy Chronicle source 与聊天核心在代码和业务规则上分离，但共享一个应用壳，并通过 River 形成统一时间阅读面。River 不要求这些 source 写入同一 source-of-truth 表。
 
-原因：
+后端目标是提供 canonical River projection / aggregation API，使 heterogeneous source 在统一 `occurred_at` 语义下稳定分页；各 source 的 CRUD 仍由原业务领域拥有。
 
-- Task 推送与 Agent 推送可以共享设备注册和通知路由；
-- 聊天创建或引用 Task 时可在同一应用内深链；
-- 避免重新产生两套 PWA、Service Worker、主题、导航和 Android 安装包。
+### 7.2 Chronicle 退役方向
 
-**决策：先拆业务边界，不先拆用户应用。是否独立为另一产品保留为未来决策。** [gpt-5.6-sol / Solaire，Alicia provisional approval]
+旧 Chronicle 混合了用户 bookmark/highlight 与 Agent milestone/moment。V4 不继续把这种混合语义扩张成新产品领域：
 
-### 7.2 目标区域
+- highlight → Collection migration / promotion 候选；
+- milestone / moment → 可作为 River legacy event source；
+- 语义不可靠历史数据保留为 legacy archive；
+- 不 destructive migration，不要求一次性人工清洗全部历史条目。
 
-暂用 `Today / Chronicle` 表示该区域，最终名称待定。内部可包含：
+### 7.3 Task、Calendar、Memo 与 Diary
 
-- 今日概览；
-- Tasks；
-- Calendar；
-- Timeline / Activity；
-- Chronicle / 大事记。
-
-该区域不默认占据移动端底栏；是否升级为高频一级入口由真实使用频率决定。
+- 未完成 Task 在 River 顶部 Open Tasks shelf 持续可见，同时保留主时间轴原事件；
+- Calendar 是 Task 等时间数据的陪伴视图，不复制 source；
+- Memo 优先由现 Timeline/Tweet 领域演化，并保留其局部 reply thread；
+- Diary 在 River 中展示短 preview，点击阅读全文；popup / drawer / inline 属 UI 呈现，不改变 API 核心契约。
 
 ## 8. Council 与 Settings
 
@@ -252,26 +257,16 @@ Task / Calendar / Chronicle 与聊天核心在代码和业务规则上分离，�
 
 ### 9.1 已冻结原则
 
-- Home、Agents、Projects、Groups 是当前最高频入口。
+- 产品一级区域是 `Chat / Groups / River / Library`；Agent / Project 是 Chat 内的高频索引入口。
 - 进入具体聊天后，应允许隐藏移动端底栏，给消息区域完整空间。
-- Memory 与 Settings 必须可达，但不要求进入高频底栏。
+- Settings 必须稳定可达，但不占高频一级产品槽位。
 - 桌面与移动端共享路由和领域页面，不维护两套业务实现。
 
 ### 9.2 待比较方案
 
-移动端底部导航最终形式需经过低保真原型比较，候选包括：
+移动端底栏不在 Spec 阶段机械等同于四个产品区域。App Shell 低保真原型应比较：直接展示 `Chat / Groups / River / Library`，或在小屏用其中一项换成 More / 对象快捷入口。
 
-```text
-Home | Agents | Projects | Groups
-```
-
-或在 Task 成为每日高频功能后：
-
-```text
-Home | Agents | Projects | Today
-```
-
-第二种情况下 Groups 需从 Home 或交流区域稳定可达。Spec 不提前冻结该选择。
+无论视觉呈现如何变化，canonical product areas 与 routes 不因移动端底栏限制而改变。
 
 ## 10. 前端技术边界
 
@@ -286,6 +281,10 @@ V4 推荐使用：
 - React Hook Form 管理复杂表单。
 
 不因重写默认引入 SSR 框架。
+
+V4 默认继续位于现有 `ExoCore-Desktop` 仓库，新建独立主 SPA package，而不是直接在旧 `chat-core` 上原地堆叠。旧 `chat-core`、`chronicle`、`council` 在迁移期间继续作为可运行行为基线。
+
+不开新 repo 是当前默认，而不是永久禁令。只有当独立构建、部署、权限或发布生命周期形成无法在 monorepo 内合理隔离的硬约束时，才升级为 repo split 决策；“前端可以重写”本身不足以成为再搬仓理由。
 
 ### 10.2 状态所有权
 
@@ -333,24 +332,24 @@ Capacitor 是当前首选 Android 容器，但不属于单 SPA 首期验收。[G
 
 ## 12. 迁移与兼容原则
 
-- V4 采用新应用骨架，但不一次性删除 V3。
+- V4 在 `ExoCore-Desktop` 内采用独立新应用 package，但不一次性删除 V3。
 - 旧前端是迁移期间的可运行行为参照。
 - 按完整用户路径纵向迁移，不按“先建完所有 API 层、再建所有 UI 层”横向堆积。
 - 每个迁移切片必须可独立验证，并保留回退到 V3 的能力。
 - 音频、附件、regenerate、branch、cache、tool events 等复杂聊天能力必须逐项建立行为清单，不因界面重写而静默丢失。
-- V4 开工前，当前音频工作必须先验收并形成明确 commit/checkpoint。
+- V4 开工前必须冻结 V3 capability matrix 与可运行 baseline/checkpoint；之后每个 phase 独立维护自己的 entry gate、exit acceptance 与 rollback point。
 
 ## 13. 架构验收标准
 
 后续 Implementation Plan 必须覆盖以下可验证目标；本 Spec 不冻结测试实现细节：
 
 1. 单次构建产生一个主要 Web/PWA 应用，不再要求用户在 chat-core 与 chronicle SPA 间切换。
-2. Home 首屏可进入最近普通 Conversation 和最近 GroupChat，并能辨识两者类型。
+2. Chat 首页可进入最近普通 Conversation 和最近 GroupChat，并能辨识两者类型。
 3. 同一 Conversation 可从 Agent 和 Project 两种入口打开，最终进入同一个 canonical chat 实现。
 4. Agent 页面支持按 Project / Drift 缩小会话范围；Project 页面支持按 Agent 缩小范围。
 5. 列表筛选不复制或生成第二份 Conversation。
 6. GroupChat 不调用普通 Conversation 专属接口。
-7. Agent Memory 入口和全局 Memory 入口进入同一管理实现，并正确应用 Agent 筛选。
+7. Agent Memory 深链和 Library 内 Memory 入口进入同一管理实现，并正确应用 Agent 筛选。
 8. MemoryPlasmid、HistoryChunk、Project Knowledge 在名称、状态和可用操作上可区分。
 9. Task 模块故障不得阻断聊天核心启动与使用。
 10. Settings 保持可达，现有对接在未获单独批准前不被改写。
@@ -358,6 +357,8 @@ Capacitor 是当前首选 Android 容器，但不属于单 SPA 首期验收。[G
 12. SSE 运行、停止、恢复、终态与错误展示具有明确控制边界，不再由巨型页面组件直接承担。
 13. Web 平台能力与未来 Capacitor 平台能力通过接口隔离。
 14. V3 尚未迁移的能力有显式清单，不得以“重写”为由被默认视为废弃。
+15. River 与 Library 均使用单 SPA canonical routes，不重新形成独立 chronicle/memory SPA。
+16. Collection 与 Memory 在 Library 中可导航关联但业务模型分离；旧 Chronicle 不作为 V4 新数据的默认写入领域。
 
 ## 14. 开放决策
 
@@ -365,25 +366,22 @@ Capacitor 是当前首选 Android 容器，但不属于单 SPA 首期验收。[G
 
 | 决策 | 冻结时点 |
 |---|---|
-| 移动端底栏最终四项与 More 交互 | 应用壳原型验收前 |
-| `Drift` 的最终中英文名称 | Conversation 列表施工前 |
-| Today / Life / Chronicle 的产品名称 | 该模块迁移前 |
-| Task 是否未来独立成另一产品 | 推送与 Android 方案设计前 |
-| Conversation 创建时 Agent / Project 的真实必填规则 | Conversation 施工计划前 |
-| Agent × Project 服务端筛选接口需求 | Conversation 施工计划前 |
+| 移动端底栏最终四项与 More 交互 | App Shell 原型验收前 |
+| Memo 最终直接演化现 Timeline/Tweet 还是建立兼容层后替换 | River detailed plan 前 |
+| River heterogeneous sources 的 canonical `occurred_at` / cursor 契约 | River backend contract plan 前 |
+| Recall run identity / RecallReceipt 的后端数据模型 | Recall Observability detailed plan 前 |
+| Collection managed storage 的物理生命周期与 GC 细节 | Collection backend contract plan 前 |
 | Capacitor 使用内置静态资源或 `server.url` | Android 施工计划前 |
 | Council 后端是否退役 | V4 稳定后单独决策 |
 
 ## 15. 后续文档边界
 
-本 Spec 获 Alicia 批准后，再在前端仓库创建独立 Implementation Plan。Implementation Plan 负责：
+本 Spec 收口后，规划必须分成两个层级，禁止一次性预测整个 V4 的源码级施工细节：
 
-- 源码级文件与组件定位；
-- 分阶段迁移顺序；
-- API 缺口和跨仓移交；
-- 每阶段验收命令与预期结果；
-- V3 能力迁移矩阵；
-- commit/checkpoint 边界。
+1. **Master Roadmap**：只冻结 phase 边界、依赖、backend handoff、entry/exit gate、rollback/checkpoint 与 V3 capability matrix；
+2. **Per-Phase Detailed Plan**：仅在对应 phase 即将开工时，根据当时真实源码写文件、组件、API 与测试级施工清单。
+
+Master Roadmap 不负责 Phase 1 之后的源码级文件预测；每个 phase 验收后再起草下一阶段 detailed plan。
 
 本 Spec 不直接充当施工清单。
 

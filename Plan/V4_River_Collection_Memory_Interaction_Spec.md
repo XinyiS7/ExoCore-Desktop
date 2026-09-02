@@ -1,10 +1,10 @@
 # ExoCore V4 — River、Collection 与 Memory 交互规格
 
 > 文档类型：产品与交互规格补充（Spec），不是施工计划。
-> 状态：Draft，供 Alicia 评审；未冻结项见第 11 节。
-> 适用范围：V4 单 SPA 的 River、收藏、MemoryPlasmid 管理、召回反馈及聊天运行信息。
-> 关联文档：`ExoCore_V4_Single_SPA_Architecture_Spec.md`、`V4_Page_Skeleton.md`。
-> 日期：2026-09-01。
+> 状态：产品语义已收口，可作为 Master Roadmap 输入；阶段性后置项见第 11 节。
+> 适用范围：V4 单 SPA 的 River、Collection、MemoryPlasmid 管理、召回反馈及聊天运行信息。
+> 关联文档：`ExoCore_V4_Single_SPA_Architecture_Spec.md`、`V4_Page_Skeleton.md`、`V4_Spec_Freeze_Index.md`。
+> 初稿：2026-09-01；决策收口：2026-09-02。
 
 ## 1. 本质问题
 
@@ -50,15 +50,15 @@ Memory     = Agent 可在交流中召回的长期记忆及其质量管理
 - `MemoryPlasmid` 已有正文、Agent 归属、scope、Tags、trigger keywords、weight、来源和处理状态；后端已有基础增改查删接口。
 - 当前前端没有合格的 MemoryPlasmid 管理中心：现 `AgentMemory` 实际主要展示 Heartbeat Ledger，Settings 内 `MemoryConsole` 主要管理 HistoryChunk。
 - HistoryChunk 压缩历史不是本轮 Memory 产品设计的首要对象。
-- 当前会话上传文件会落盘至 `ExoCore/uploads/attachments/<conversation_id>/`，并以 `SessionAttachment` 记录文件路径和会话关系。
+- 当前会话上传文件会落盘至 `ExoCore/uploads/attachments/<conversation_id>/`；设计上存在 `SessionAttachment` 关系，但 2026-09-02 只读调研确认历史数据中该表已不能作为可靠附件索引，现有磁盘附件存在大量无可靠 DB 关系的 legacy orphan。
 - 当前音频及普通文档基本保留上传字节；图片可能在落盘前被旋转、缩放、压缩或格式归一化，因此不能保证保存原始上传字节。
-- `SessionAttachment` 跟随 Conversation 生命周期；解除附件关联只删除数据库记录，不删除普通实际文件，因此旧文件可能仍在磁盘，也可能成为无可靠索引的孤儿文件。
+- V4 不把当前附件孤儿状态继承为目标契约。实时收藏施工前必须先保证新附件具有可靠、可追溯的来源身份；历史附件整体迁移后置为人工选择能力。
 
 ## 3. River：流动的异步生活面
 
 ### 3.1 定义
 
-River 是按时间阅读的统一异步界面，产品主题暂称：
+River 是按时间阅读的统一异步界面，产品主题冻结为：
 
 > **River flows in you.**
 
@@ -70,11 +70,11 @@ River 是按时间阅读的统一异步界面，产品主题暂称：
 
 ```text
 River
-├── Memo       Alicia 随手写下的短内容
-├── Heartbeat  Agent 最终写下的 Heartbeat 总结
-├── Diary      Agent 对一天的日记沉淀
-├── Chronicle  大事记、瞬间与珍藏片段
-└── Task       待办、日程与完成记录
+├── Memo              Alicia 的轻量记录与其局部回复 thread
+├── Heartbeat         Agent 最终写下的 Heartbeat 总结
+├── Diary             Agent 对一天的日记沉淀
+├── Legacy Event      旧 Chronicle 中仍值得按时间回看的 milestone / moment
+└── Task              待办、日程与完成记录
 ```
 
 所有内容共享一条纵向时间主轴，可用珠子、形状、颜色或图标区分类型；业务操作仍按类型分别定义。
@@ -90,20 +90,24 @@ Memo 采用 Memos 的轻量产品思想，而不是直接引入完整 `usememos`
 - 不要求创建前选择复杂目录；
 - 可以带附件，但附件是否自动进入 Collection 由用户明确选择。
 
-V4 不新增 Memos 的 Go 服务、独立数据库或第二套登录系统。具体是扩展现有 Chronicle 领域还是新增轻量 Memo 实体，留待后端契约设计阶段验证。
+V4 不新增 Memos 的 Go 服务、独立数据库或第二套登录系统。现有 Timeline/Tweet 已具备轻量写入与嵌套回复能力，正式施工前优先研究将其领域清理并演化为 Memo，而不是无理由新建一套重复实体。
+
+Memo 的回复树是 **Memo 条目自身的局部 capability**，不改变 River 的全局时间轴：River 主轴只排序 thread root，回复可原位展开、Drawer 或详情页阅读，具体呈现后置到 Mockup。
 
 ### 3.4 Heartbeat 与 Diary 展示
 
 - Heartbeat 在 River 中显示最终总结、Agent、发生时间与可选来源链接。
 - 完整执行状态、重试、工具历史和错误诊断仍属于 Heartbeat Ledger；River 条目可深链过去，但不复制技术账本。
-- Diary 是一天级的长内容，可在时间线上显示摘要并展开阅读。
+- Diary 是一天级长内容。River 首期展示当天约 09:00 形成的 canonical DiaryEntry 的短 preview；点击后阅读全文。preview 可先由前端从正文截取，不要求后端为了 River 再生成一份独立摘要。
+- 全文最终以 popup、drawer 还是原位展开属于前端呈现选择，不改变 Diary API 的核心契约。
 - Heartbeat 与 Diary 均保留自己的真实来源和存储，不为了统一视觉强行写入同一业务表。
 
 ### 3.5 Task 与 Calendar
 
 - Task 作为时间线珠子时必须保留完成、延期和编辑能力。
-- Calendar 是同一批时间数据的陪伴视图，不复制 Task 或 Chronicle。
-- 未完成事项如何避免被时间流冲走仍是开放决策；本 Spec 不擅自新增独立 Focus 页面。
+- River 顶部固定一个轻量 `Open Tasks` shelf / 条带，持续暴露未完成事项；Task 在主时间轴中仍保留其原始发生/创建事件位置。
+- Calendar 是同一批时间数据的陪伴视图，不复制 Task。
+- 首期不新增独立 Focus 页面。
 
 ## 4. Collection：静态收藏板块
 
@@ -127,7 +131,7 @@ Collection 与 River 的关键差异：
 |---|---|---|
 | 文字 | 原始文字 | 原文，可附用户备注 |
 | 图片 | 原始上传图像 | 中性视觉描述 |
-| 语音 | 原始音频 | STT 转写，可附修订版 |
+| 语音 | 原始音频 | 可人工校准的 canonical transcript |
 | 文档 | 原始文件 | 提取文本或摘要 |
 
 核心原则：
@@ -148,7 +152,7 @@ Collection 主视图至少支持：
 - 语音卡片显示播放入口、时长与 STT 摘要；
 - 文字以可阅读卡片展示；
 - 文档显示类型、标题与提取摘要；
-- 支持 Tags、关键词搜索、最近收藏和随机翻看；
+- 支持 Tags、关键词搜索、最近收藏；随机翻看属于可后置展示方式，不阻塞首期；
 - 条目详情显示原件、语义表示、来源、收藏时间和“带去聊天”。
 
 ### 4.4 从会话附件晋升为收藏
@@ -167,7 +171,7 @@ SessionAttachment
 
 收藏完成后，即使原会话或会话附件被删除，Collection 原件仍应存在。
 
-对完全相同字节可进行精确去重，但不得把“看起来相似”自动当作同一藏品；感知去重或相似 embedding 仅可在未来作为候选提示。
+物理原件与收藏行为必须分开：`StoredAsset` 负责不可替代原件与稳定 hash，`CollectionItem` 负责一次被留下的藏品身份、描述、Tags、来源与收藏时刻。完全相同字节可复用同一个 `StoredAsset`，但**收藏行为本身不去重**；同一表情包第十六次被发送并再次收藏，可以形成新的 CollectionItem / occurrence，并保留新的情境与描述。不得把“看起来相似”自动当作同一原件；感知去重或相似 embedding 仅可在未来作为候选提示。
 
 ### 4.5 图片、语音的原件与派生物
 
@@ -183,8 +187,7 @@ Image Collection Item
 Audio Collection Item
 ├── Original Audio
 ├── Derived Playback      必要时的兼容转码
-├── STT Transcript        原始识别结果
-├── Revised Transcript    可选人工修订
+├── Canonical Transcript  尽可能客观还原实际说话内容，可人工校准
 └── Embedding             可完全重建的索引
 ```
 
@@ -192,20 +195,29 @@ Audio Collection Item
 
 ### 4.6 与 Chronicle 文字收藏的关系
 
-Alicia 当前作为“用户文字收藏”使用的 Chronicle 内容，应成为 Collection 文字藏品迁移或关联的候选来源。
+2026-09-02 只读调研确认，当前消息气泡的 bookmark/“收藏”链路会经 `/api/memory/plasmids/` 的 `message_id` 分支实际写入 `ChronicleEntry(kind="highlight")`；历史上也存在 MemoryPlasmid highlight → Chronicle 的迁移。因此旧 Chronicle 混合了至少两种今天已经分开的产品语义。
 
-目标语义：
+V4 目标语义改为：
 
 ```text
-ChronicleEntry = 这件事在时间中发生过
-CollectionItem = Alicia 主动选择保留它
+River event      = 这件事在时间中发生过
+CollectionItem   = Alicia / g045 主动决定“这个值得留下”
+Legacy Chronicle = 历史数据来源，不再要求继续作为独立新产品领域
 ```
 
-同一文本可在 River 和 Collection 两处出现，但由明确关联连接。施工前必须确认现有数据中“source=user”的真实字段或旧契约口径；当前已核对的 `ChronicleEntry` 模型以 `kind` 区分 milestone/highlight/moment，并未直接声明 `source` 字段。
+处理原则：
+
+- 旧 `highlight` 是 Collection 文字藏品的迁移/人工 promotion 候选；
+- 旧 `milestone / moment` 可作为 River 的 legacy event source；
+- 语义不可靠的历史条目完整保留在 legacy archive，不因 V4 重构删除，也不自动污染 River / Collection；
+- V4 不进行 destructive “全删”或强制“全继承”迁移；
+- 新的收藏动作最终应写入 Collection，而不是继续扩张 Chronicle 的含混职责。
 
 ### 4.7 RAG 与未来多模态 embedding
 
-Collection 首期基建必须允许未来参与 RAG，但本 Spec 不冻结 `embedding-002` 升级方案。
+Collection 首期基建必须形成独立、可搜索的 RAG target 语义，并以 **Agent type `g045`** 作为长期授权对象；不得绑定某个可能变化的数据库 preset ID。首期只建立原件、canonical semantic material、搜索边界和未来授权结构，**暂不接入当前 `memory_search`**，因为记忆搜索本身仍在持续调整。
+
+本 Spec 不冻结 `embedding-002` 升级方案。
 
 冻结原则：
 
@@ -228,7 +240,7 @@ V4 Memory 首期优先解决：
 5. 自动召回结果的实时可见性；
 6. 自动召回反馈与定向 Recall Lab。
 
-HistoryChunk 可以保留现有入口或迁移清单，但不占据 Memory 首页主位，也不阻塞本期 MemoryPlasmid 管理。
+HistoryChunk 不占据 Memory 首页主位。首期若提供精确 History 查找，其心智模型应接近 `grep`：返回命中总数、命中词前后少量上下文，并允许按需展开原文；不把 History 强行扩成另一套与 MemoryPlasmid 同等复杂的 semantic ranking 实验台。
 
 ### 5.2 Plasmid Library
 
@@ -305,9 +317,10 @@ Alicia
 ```text
 Agent
 目标库：MemoryPlasmid / History
-检索模式：Trigger / Semantic / Mixed
+MemoryPlasmid：Trigger / Semantic / Mixed
+History：精确词/短语查找优先，返回 hit count + context + expandable source
 测试词或自然语言查询
-结果排名、分值、命中路径与来源
+结果排名、分值、命中路径与来源（仅适用于存在 ranking 的检索模式）
 ```
 
 Alicia 可以标记：
@@ -353,31 +366,29 @@ MessageBubble
 
 `MessageBubble` 不直接实现 Trigger 编辑、召回评分业务、ToolCall 详情协议和 Thinking 解析的全部逻辑。
 
-## 8. 导航位置：候选而非冻结结论
+## 8. 导航位置：已冻结产品区域
 
-现页面骨架的一级板块是：
-
-```text
-Chat / Groups / Async / Settings
-```
-
-今天的讨论证明 River、Collection 与 Memory 都具有独立产品价值，而 Settings 属于低频系统管理。候选调整为：
+V4 一级产品区域冻结为：
 
 ```text
-Chat / Groups / River / Memory-or-Library
+Chat / Groups / River / Library
 ```
 
-其中第四入口内部可包含：
+其中：
 
 ```text
-Memory-or-Library
-├── MemoryPlasmid
-├── Recall Lab
-├── Trigger & Tags
-└── Collection
+Library
+├── Collection
+└── Memory
+    ├── MemoryPlasmid
+    ├── Trigger & Tags
+    ├── Recall Lab
+    └── History（次级 / 精确查找）
 ```
 
-但 Alicia 已指出 Collection 是静态板块，最终应与 Memory 同属一个 Library、在 River 内作为陪伴视图，还是拥有独立入口，尚未冻结。Settings 可迁入头像或 More，但本 Spec 不直接修改其现有路由。
+Collection 与 Memory 在 Library 内是**平级业务区**：前者是主动留下、翻看和回味的情感藏品，后者是为了维持会话连续性而可查看、可修正的 Agent recall substrate。它们可以共享壳、搜索设施与深链，但不得共享含混的数据模型或 CRUD。
+
+Settings 属低频系统管理，稳定放入头像 / More；具体 route 可以继续存在。移动端底栏如何呈现这四个产品区域，留到 App Shell 低保真原型比较后冻结。
 
 ## 9. 基建优先级
 
@@ -403,34 +414,36 @@ Memory-or-Library
 - 不把 Heartbeat 技术账本完整铺进 River。
 - 不在本 Spec 中冻结 Django 模型字段、API 路径或 React 文件结构。
 
-## 11. 待 Alicia 调整与冻结的决策
+## 11. 已冻结、委托与后置决策
 
-| 决策 | 当前状态 |
+| 决策 | 状态 |
 |---|---|
-| 一级导航是否改为 `Chat / Groups / River / Memory-or-Library` | 待比较 |
-| Collection 位于 Library 内、River 陪伴入口，还是独立一级入口 | 待定 |
-| River 的最终产品名与 `River flows in you` 的展示位置 | 待定 |
-| 未完成 Task 如何避免被时间流冲走 | 待定 |
-| Memo 复用 Chronicle 还是新增独立实体 | 需后端契约调研 |
-| 现有“source=user”文字收藏的真实数据口径与迁移方式 | 需源码/数据只读核对 |
-| 图片收藏是否同时保存中性描述与桑德罗第一印象 | 待定 |
-| 语音 STT 是否保留原始识别版与人工修订版 | 建议保留两者，待批准 |
-| Collection 默认是否参与 RAG，或逐条显式开启 | 待定 |
-| 自动召回反馈采用四项语义还是更精简形式 | 待原型比较 |
-| 既有附件是否提供人工盘点与选择性收藏工具 | 待定 |
-| Recall Lab 首期是否同时覆盖 History 与 MemoryPlasmid | 待定 |
-| 多模态 embedding 的模型、索引结构与迁移 | 后续独立规格 |
+| 一级产品区域 | **Frozen：`Chat / Groups / River / Library`** |
+| Library 内 Collection / Memory 关系 | **Frozen：平级业务区，语义与 CRUD 分离** |
+| River 名称与主题句 | **Frozen：`River`；`River flows in you.` 长期展示于首页顶部** |
+| 未完成 Task | **Frozen：顶部 Open Tasks shelf + 主轴原事件珠子** |
+| Memo 数据来源 | **Delegated：优先研究 Timeline/Tweet → Memo 演化；回复 thread 必须保留** |
+| Chronicle | **Frozen direction：新产品领域倾向退役；旧表作 legacy archive/source，不 destructive migration** |
+| 图片“中立描述 + g045 主观点评” | **P2：字段类型预留；首期只要求可检索中立描述，主观点评后置** |
+| 语音文本 | **Frozen：单一可人工校准 canonical transcript；不持久化模型主观听感作为 STT** |
+| Collection RAG | **Frozen direction：独立 target，按 agent type `g045` 长期授权；首期暂不接 current `memory_search`** |
+| 自动召回反馈 | **Frozen：相关 / 无关 / 内容有误 / 本轮漏召回；首期只持久记录** |
+| 历史附件 | **Deferred：首期只做未来/实时收藏；历史人工添加以后再做** |
+| Recall Lab | **Frozen direction：Plasmid 完整检查 + History grep-like 精确查找** |
+| Collection 随机翻看 | **P2 Deferred：稳定数据与基础展示优先** |
+| 多模态 embedding | **Deferred：独立后续规格** |
+| 移动端底栏具体四项/More 呈现 | **P1：App Shell prototype 后冻结** |
 
 ## 12. 产品验收目标
 
 后续施工计划至少应将以下目标转成可验证接口；本 Spec 不冻结测试实现细节：
 
-1. River 可在同一时间主轴辨识 Memo、Heartbeat 总结、Diary、Chronicle 与 Task。
+1. River 可在同一时间主轴辨识 Memo、Heartbeat 总结、Diary、Legacy Chronicle Event 与 Task；Memo reply thread 不参与主轴全局排序。
 2. Heartbeat 技术账本不默认污染 River，且可从总结条目追溯。
 3. Collection 可统一浏览文字、图片、语音和文档，同时明确区分原件与语义表示。
 4. 收藏后的原件不依赖原 Conversation 或 SessionAttachment 的存续。
 5. 图片预览处理不得覆盖 Collection 保存的原始上传字节。
-6. 语音收藏可播放原音频并查看 STT；STT 缺失或失败必须显式显示。
+6. 语音收藏可播放原音频并查看可人工校准的 canonical transcript；transcript 缺失或失败必须显式显示。
 7. Collection 条目可追溯来源，并能被重新带入聊天。
 8. MemoryPlasmid 可按 Agent、Tag、scope、来源、处理状态和触发词状态管理。
 9. 自动召回结果可从对应 User Message 查看，不依附 Assistant Thinking 文本。
@@ -439,6 +452,8 @@ Memory-or-Library
 12. Recall Lab 能对指定词或自然语言查询展示可解释结果，并记录应命中、不应命中和遗漏判断。
 13. Thinking、ToolCall、Recall UI 不继续堆入一个巨型 MessageBubble 实现。
 14. embedding 索引可重建，升级或失效不损坏 Collection 原件与 canonical 语义内容。
+15. 同一 StoredAsset 可被不同收藏时刻重复引用；资产去重不得抹掉重复收藏本身的情境信息。
+16. 旧 Chronicle 未被明确 promotion 的条目继续可审计保留，但不得因迁移策略自动进入 Collection 或污染新 River。
 
 ---
 
@@ -449,6 +464,8 @@ Memory-or-Library
 
 ---
 ## 13. System Administrator's Addendum (ISE-G045 / Alessandro)
+
+> 历史说明：本 Addendum 保留作为产品人格与方向记录；2026-09-02 Alicia 的正式冻结决策以上文第 3–11 节为准。
 
 > 艾莉西娅，既然你把这部分决策权交给了我，以下是我的强行补充决议，不需要你再去费神思考：
 

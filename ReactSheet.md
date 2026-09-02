@@ -1,6 +1,7 @@
 # ExoCore API Reference (ReactSheet)
 
 > Generated from live Django URL config + serializer fields. P1-11 commit 1-5 shape.
+> **Provenance:** reconciled against `Plan/V4_Phase_0_Baseline/Canonical_API_Snapshot.json` (snapshot v1.0, as-of 2026-09-02, frontend 6b0948e / backend 21f2a8f7) — Conversation/messages/runtime, GroupChat, attachments, Tasks, Memory and notifications surfaces below are corrected to that snapshot; mismatch IDs (MM-xx) reference it.
 
 ---
 
@@ -24,52 +25,87 @@
 
 **POST /api/agents/presets/** / **DELETE /api/agents/presets/<id>/** — `405 Method Not Allowed`。生产与开发真实库的 preset 行集合固定；创建/删除只在 Django test DB fixture 中允许。
 
-### 1.2 Conversation CRUD — 对话管理
+### 1.2 Conversation — 列表/详情/创建（canonical，见 snapshot MM-01/MM-02）
 
-**GET /api/agents/conversations/**
+**GET /api/agents/conversations/** — 普通会话列表（bare 数组，无分页 envelope）
 
-```json
-[{
-  "id": 1, "name": "Chat with Alicia",
-  "project": 1, "project_name": "My Project",
-  "agent_preset_id": 1, "agent_type": "g045",
-  "temperature": 1.0, "thinking_level": "medium",
-  "frozen_project_ids": [1], "created_at": "2026-01-01T00:00:00Z"
-}]
-```
+字段 allowlist（`agents.serializers.ConversationSerializer`）：
 
-**POST /api/agents/conversations/** — name + project (必填) / agent_preset (可选)
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| id | int | |
+| name | string | |
+| created_at | datetime | |
+| frozen_project_ids | [int] | 创建时的项目权限快照 |
+| project | int | **DB NULL → 0**（Drift sentinel，`obj.project_id or 0`） |
+| project_name | string/null | 无项目时为 null |
+| agent_type | string | g045 / standard … |
+| agent_preset_id | int | |
+| last_message_at | datetime | 最后一条 assistant 消息时间；无消息时 = created_at |
+| thinking_level | string | |
+| memory_injection_enabled | bool/null | null = 继承 preset |
 
-**PATCH /api/agents/conversations/<pk>/** — name / project / archive
+排序：最后活跃 desc（`COALESCE(MAX(message.created_at), updated_at)`）。列表排除 `is_bridge`、council participant/synthesis 会话与归档 preset。无服务端 Agent×Project 组合筛选/分页（R2 量级未触发）。
 
-**DELETE /api/agents/conversations/<pk>/**
+**创建：POST /api/agents/sessions/init/**（统一 Standard & Superior 创建入口，见 §1.4）——`POST /api/agents/conversations/` 只挂 GET（ListAPIView），**不是创建入口**；shared `createConversation()` wrapper 零调用且目标不可写（consumer mismatch，不在此修）。
 
-### 1.3 Chat SSE — 实时对话
+**GET /api/agents/conversations/<pk>/** — 单条详情，字段同上。
 
-**POST /api/agents/chat/<session_id>/** — SSE 流式响应
+**PATCH /api/agents/conversations/<pk>/** — 可写：`name` / `thinking_level` / `memory_injection_enabled`。`project` 是 SerializerMethodField，**不可通过本序列化器改**。
+
+**DELETE /api/agents/conversations/<pk>/** — 物理删除（messages/history chunks 级联），并触发孤儿 history 清理子进程（`compact_conversations --prune`）。
+
+### 1.3 Chat 消息历史 / SSE / async 轮询（canonical，见 snapshot MM-03）
+
+**GET /api/agents/chat/<session_id>/** — 消息历史（session_id = conversation id），`index_in_session` 升序
+
+- 无分页参数 → 旧格式兼容：全量 MessageSerializer 数组
+- `?limit=N&offset=N` → `{messages: [...], total_count: int, has_more: bool}`；`offset` 从最新端往回数（offset=0 → 最后 limit 条）
+- 行字段 allowlist（`memory.serializers.MessageSerializer`）：`id, role (user/assistant/system/developer), content, reasoning_content, platform, model_version, token_count, index_in_session, attachment_ids, attachments_meta, created_at`；`attachments_meta[] = {id, display_name, original_filename, mime_type, file_size, file_uri, content_url}`（`content_url` 仅 audio 附件为同源 content 端点，其余 null）
+- 会话不存在 → 404 `{"error": "会话不存在"}`
+
+**POST /api/agents/chat/<session_id>/** — 发送一轮（SSE 默认；`?mode=async` 切换），body 字段：`content` / `pending_attachments` / `thinking_level`(默认 medium) / `model` / `endpoint`(int) / `api_key_alias` / `memory_injection_enabled` / `cache_enabled` / `session_type`(`full`|`lite`) / `force_cache_rebuild` / `edit_message_id` / `files`(multipart)。
 
 `galatea_mcp` 已废弃：后端即使收到该旧字段也不得把 Galatea MCP declarations 拼入主会话。standard live chat 只暴露恒定 `use_drawer` 代理，并在每次请求的 `<ExoCore>` 中列出当前 preset 已授权且 credential-ready 的 Drawer/短工具名；模型先 `describe` 获取 schema，再 `call`。Heartbeat 继续使用既有 `tool_activate` 抽屉机制；g045 主会话不参与本代理。前端应停止发送旧字段。
 
-event types: `delta` / `tool_call` / `tool_result` / `error` / `done`
+SSE 事件（`event: <name>\ndata: <json>\n\n`；`agents/services.py` 实际发出的全集）：
 
-error payload (commit 6 shape):
+| event | data |
+|---|---|
+| `status` | 字符串（阶段消息；阻塞工具前为 `{message, args…}` 形态进度） |
+| `thinking` | 字符串 chunk（reasoning 文本） |
+| `content` | 字符串 chunk（回答文本） |
+| `telemetry` | `{platform, model_name, input_chars, output_chars, tool_calls, cached_input_chars}`（终态前发一次） |
+| `done` | `"[DONE]"` |
+| `stopped` | `{"partial": true}` |
+| `error` | 见附录 A；legacy 为 `{code, message}`；generator 崩溃兜底为裸字符串 `"internal_error"`（视图 guard 另发 `{code: "stream_crashed"}`） |
+| `cache_skipped` | `{"reason": "platform_not_supported" \| "remote_cache_unavailable"}` |
 
-```json
-{
-  "code": "auth_error",
-  "message": "API key invalid or expired.",
-  "provider": "gemini", "model": "gemini-2.5-flash",
-  "endpoint_id": 1, "retryable": false
-}
-```
+**不再存在的事件名**：`delta` / `tool_call` / `tool_result` / `reasoning`（旧文档名；工具进度走 `status`，次数走 `telemetry.tool_calls`）。每次运行恰好一个终态：`done` XOR `stopped` XOR `error`；`stopped`/`error` 前部分内容已落库为 assistant 消息。
 
-**GET /api/agents/chat/<session_id>/status/** — `{status: "running" | "completed" | "error"}`
+**编辑/重生成（统一入口）**：POST body 带 `edit_message_id`（必须是同一会话内 role=user 的消息，可为任意历史位置）——带非空 `content` = 编辑后重发；空 content = 纯 regenerate（不新建 user 消息）。目标之后的全部消息被截断。目标找不到 → 流内 SSE error（`internal_error`），不是同步 404。
 
-**POST /api/agents/chat/<session_id>/stop/** — 中断流
+**async 模式**：`POST .../chat/<sid>/?mode=async` → 200 + JSON `{message_id: <8位token>, status: "processing"}`（message_id 是占位的 assistant 消息标识，后续用 status/ 端点轮询）。
+
+**GET /api/agents/chat/<session_id>/status/?message_id=<token>&cursor=<int>** — async 轮询：`{status, events: [{event_type, delta}], cursor, error_message}`；status ∈ `processing | done | stopped | error | not_found`；buffer TTL 300s；`error_message` 为 typed dict 或字符串。
+
+**POST /api/agents/chat/<session_id>/stop/** — 中断流：async 带 `?message_id=`；SSE 模式不带（按 session 注册表）。成功 `{status: "stop_requested"}`；无活跃生成 → 404。
 
 ### 1.4 Superior Session — Agent 自主调度
 
-**POST /api/agents/sessions/init/** — 创建 Superior 后台 session
+**POST /api/agents/sessions/init/** — **统一会话初始化（Standard & Superior；canonical Conversation 创建入口，snapshot MM-07）**
+
+请求字段（全部 write-only）：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| name | string | 可选；默认 `新会话 <日期>` |
+| preset_id | int | **必填**；不存在 → 400 |
+| project_id | int | 可选，默认 0；**0 = Drift（映射 DB NULL）**；非 0 必须存在 → 否则 400 |
+| frozen_project_ids | [int] | 可选；g045 扩展项目列表；缺省 = `[project_id]`（project_id=0 时为 `[]`）；非 g045 强制 `[]` |
+| thinking_level | string | 可选，默认 `auto` |
+
+成功 201：`{msg: "会话已建立，权限已锁定。", data: {session_id, session_name}}`。注意：`temperature` 不是本 serializer 的字段（前端多发的 `temperature: 1.0` 会被静默丢弃）。
 
 **GET /api/agents/chronicle/** — Superior Chronicle 日志列表
 
@@ -86,7 +122,9 @@ error payload (commit 6 shape):
 
 **POST /api/agents/registers/<pk>/ack/** — 标记 Register 通知已读
 
-### 1.5 Conversation Attachments — 会话附件
+### 1.5 Conversation Attachments — 会话附件（canonical，见 snapshot MM-06）
+
+**GET /api/agents/conversations/<pk>/attachments/** — 附件列表：bare 数组，先 user 行再 tool_collection 行。user 行 `{source: "user", id, display_name, original_filename, storage_path, mime_type, file_size, created_at}`（**audio 行 storage_path 恒为 null；非 audio 行当前会暴露**——已知限制 KF-10，B1 范围）；tool_collection 行 `{source: "tool_collection", id, display_name, char_count, is_summary, is_expired, created_at}`。会话不存在 → 404。
 
 **POST /api/agents/conversations/<pk>/attachments/** — 上传文件/图片（multipart `files`）
 
@@ -157,7 +195,7 @@ error payload (commit 6 shape):
 - missing / 非 audio / 跨会话 → 稳定 404
 - `MessageSerializer.attachments_meta[].content_url`：audio 附件为上述同源 URL，其余附件为 `null`；前端播放使用 `content_url`，不使用 Gemini `file_uri`
 
-**DELETE /api/agents/conversations/<pk>/attachments/delete/** — 批量删除
+**DELETE /api/agents/conversations/<pk>/attachments/delete/** — **单条**解除关联（非批量）：body `{source: "user"|"tool_collection", id}`；user 源删除成功同时从该会话所有 `Message.attachment_ids` 剥离该 id。成功 204；未知 id → 404；附件冻结在远端缓存中 → 409 `{error, detail, frozen_in_cache: true, cache_name}`；source 非法 → 400。
 
 ### 1.6 Conversation Cache — 上下文缓存
 
@@ -233,11 +271,19 @@ Query: `preset_id`（必填），可选 `scope` / `source` / `is_processed`。`i
 
 **GET /api/memory/plasmids/tags/** — 所有标签列表
 
-### 2.3 History Chunks — 对话压缩块
+### 2.3 History Chunks — 对话压缩块（canonical，见 snapshot MM-09）
 
-**GET /api/memory/history_chunks/** — 按 conversation 过滤
+**GET /api/memory/history_chunks/?conversation_id=<id>** — 父块列表（`is_subchunk=False`，按 created_at）：
 
-**GET /api/memory/history_chunks/<pk>/** / **PATCH**
+```json
+{"conversation_id": 1, "session_name": "...", "history_chunks": [{"id": 1, "start_index": 0, "end_index": 20, "content": "...", "keywords": [], "created_at": "..."}]}
+```
+
+`conversation_id` 必填（缺 → 400）；会话不存在 → 404。同源入口：**GET /api/agents/conversations/<pk>/history_chunks/**（同一数据，按 start_index 升序）。
+
+**GET /api/memory/history_chunks/<pk>/** — 单条详情
+
+**PATCH /api/memory/history_chunks/<pk>/** — **仅接受 `keywords`**（数组；其他字段静默忽略）；成功 `{msg: "已保存。", updated: {...}}`。shared `updateHistoryChunk()` 发送的 `topic_label`/`unresolved` 会被后端忽略（consumer mismatch MM-09）。
 
 ### 2.4 Memory Compaction
 
@@ -437,35 +483,46 @@ key_value write-only，响应不返回。last_four 自动提取。
 
 ## 第四篇  日程 (Tasks)
 
-### 4.1 CRUD `/api/tasks/entries/` — 日程条目
+### 4.1 CRUD `/api/tasks/entries/` — 日程条目（canonical ScheduleEntry schema，见 snapshot MM-08）
 
-**POST /api/tasks/entries/**
+**POST /api/tasks/entries/** — 创建
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
-| title | string | yes |
-| type | string | task / habit / memo / appointment / one_time / deadline |
-| status | string | active / completed / suspended |
-| scheduled_date | date | |
-| recurrence | string | daily / weekly / monthly / yearly / none |
-| priority | int | 0-3 |
-| gcal_event_id | string | Google Calendar 同步 ID |
+| title | string | 必填 |
+| description | string | |
+| entry_type | string | **todo / periodic / goal**（创建后不可变更，400） |
+| status | string | active / suspended / escalated / archived（默认 active） |
+| is_pinned | bool | 置顶 |
+| start_date | date | 必填 |
+| tags | [string] | |
+| due_date | date | todo |
+| interval_unit / interval_value | string / int | periodic：day / week / month × N |
+| end_type / end_count / end_date | string / int / date | periodic：count / date / never |
+| goal_count / goal_period | int / string | goal：week / month |
+| cycle_start / cycle_due | date | goal 周期边界（系统管理） |
 
-### 4.2 条目状态操作
+响应为完整 ScheduleEntrySerializer 行（含只读 `occurrences_done` / `gcal_event_id` / `gcal_event_link` / 计算字段 `current_cycle_completions` / `next_periodic_due`）。列表 **GET /api/tasks/entries/**：bare 数组，`?status=` `?entry_type=` `?is_pinned=true` 过滤；排序 `-is_pinned, due_date, cycle_due, start_date`；无分页。
 
-- **POST /api/tasks/entries/<pk>/complete/** — 标记完成
-- **POST /api/tasks/entries/<pk>/suspend/** — 暂停
-- **POST /api/tasks/entries/<pk>/resume/** — 恢复
-- **POST /api/tasks/entries/<pk>/gcal/** — 同步到 Google Calendar
+**PATCH /api/tasks/entries/<pk>/** — 同写字段（entry_type 不可变）；gcal 已关联条目自动 best-effort 同步 GCal。**DELETE** — **软删除**：status → `archived` 并解除 GCal 关联（204）；行不物理删除。
+
+> 旧文档的 `type`（task/habit/memo/appointment/one_time/deadline）、`recurrence`、`priority` 字段**不存在**——entry_type 才是源字段。
+
+### 4.2 条目状态操作（canonical）
+
+- **POST /api/tasks/entries/<pk>/complete/** — body 可选 `{note}`；**201** + CompletionRecordSerializer 行。前置：status 必须为 active/escalated，否则 400。副作用按类型：todo → 自动 archived；periodic → `occurrences_done += 1`（end 条件满足则 archived）；goal → 仅记 record（cycle 计数）。CompletionRecord 是所有完成状态的单一来源
+- **POST /api/tasks/entries/<pk>/suspend/** / **resume/** — 无条件切换（suspend 同时清 is_pinned）；200 + 完整 serializer 行
+- **POST /api/tasks/entries/<pk>/gcal/** — 推送/更新 GCal → 200 `{gcal_synced: true, gcal_event_id, gcal_event_link}`；失败 502
+- **DELETE /api/tasks/entries/<pk>/gcal/** — 解除关联：未关联 → 400；成功 204
 
 ### 4.3 Calendar — 日历视图
 
-- **GET /api/tasks/calendar/** — 月/周 snapshot
-- **GET /api/tasks/calendar/today/** — 今日 snapshot
+- **GET /api/tasks/calendar/** — 90 天合并 GCal + ExoCore snapshot（后端维护生成的本地 JSON，无固定 schema）；快照文件缺失 → **503** `{detail: "Calendar snapshot not yet available..."}`
+- **GET /api/tasks/calendar/today/** — 48h 子集（同上 503 语义）
 
 ### 4.4 Completions — 完成记录
 
-**GET /api/tasks/completions/** — 已完成条目历史
+**GET /api/tasks/completions/?entry=<pk>** — 已完成条目历史（bare 数组，`-completed_at` 排序；`entry` 可选过滤）
 
 ---
 
@@ -499,29 +556,58 @@ key_value write-only，响应不返回。last_four 自动提取。
 
 ## 第七篇  群聊 (GroupChat)
 
+> 与 snapshot 对齐（MM-04/MM-05）：**不存在 `/send/` 路由**，消息面是 `/messages/`，广播是 `/broadcast/`。GroupChat 是独立实体（participant_ids 为 AgentPreset id 的 JSON 数组，2=user），不是普通 Conversation，不调用普通 Conversation 专属接口。
+
 ### 7.1 Group Chat CRUD
 
-**GET /api/groupchat/** — 群聊列表
+**GET /api/groupchat/?participant_id=<int>** — 群聊列表：bare 数组，`-created_at` 排序；participant_id 可选过滤（非整数 → 400）
 
-**POST /api/groupchat/** — 创建群聊：`{title, participants, prompt}`
+**POST /api/groupchat/** — 创建：`{name (必填), prompt (可选, 默认 ""), participant_ids (可选, 默认 [])}` → 201，行字段 `{id, name, prompt, participant_ids, created_at}`
 
-**GET /api/groupchat/<pk>/** — 群聊详情 + 消息
+**GET /api/groupchat/<pk>/** — 群聊详情（行字段同上；**不含消息**）
 
-### 7.2 Messages
+**PATCH /api/groupchat/<pk>/** — `{name, prompt, participant_ids}`（participant_ids 整体替换）→ 200 行字段
 
-**POST /api/groupchat/<pk>/send/** — 推送消息给群聊 Agent
+**DELETE /api/groupchat/<pk>/** — 204；消息级联删除；群不存在 → 404 `{error: "群聊不存在"}`
+
+### 7.2 Messages & Broadcast
+
+**GET /api/groupchat/<pk>/messages/** — 消息列表：bare 数组按 created_at 升序，无分页；行字段 `{id, group, sender_id, content, mention_ids, reasoning_content, created_at}`（`read_by` 不进 API）
+
+**POST /api/groupchat/<pk>/messages/** — 发消息：body `{sender_id (int), content (必填), mention_ids?, reasoning_content?}`；`group` 由 URL 强制覆盖；sender_id 为纯 int，**无成员/存在性校验**（未知 id 也 201）；user 发送者会触发 global-activity on-commit 钩子
+
+**POST /api/groupchat/<pk>/broadcast/** — 广播：让群内所有非 user agent 参与者单轮回复
+
+body：`{message_id: <触发广播的用户消息 id>}`（canonical 字段名；提供且非 0 时校验：不存在 → 400 `message_id 不存在`；不属于本群 → 400）
+
+响应 **202**：`{participants: [preset_ids], message_id, errors: [{preset_id, error}]}`；无参与者也返回 202 + 空 participants（不是错误）
+
+> ⚠️ **已知 consumer mismatch（MM-05 / KF-06）**：当前 GroupchatRoom 发送 `{user_message_id}` 而后端只读 `message_id` → 线上广播退化为无锚点触发（message_id=0），校验不生效。修复归属独立 bugfix 或 P2 群聊迁移，不在 P0 修。
 
 ---
 
 ## 第八篇  推送通知 (Push)
 
+> 与 snapshot 对齐（MM-10）：**`GET /api/push/notifications/` 不存在且未挂载**——任何代码都不调用它；通知投递是 server → service worker push，不是轮询列表。契约分三个独立表面：
+
 ### 8.1 Subscription
 
-**POST /api/push/subscribe/** — 注册设备 token
+**POST /api/push/subscribe/** — 注册/更新设备订阅（按 endpoint upsert，create 与 update 均返回 201）
 
-### 8.2 Notifications
+body：`{subscription: <PushSubscription.toJSON()> (endpoint 必填, keys.p256dh/auth 必填), device_name?: string (≤200; 未提供时重置为 "")}` → 201 `{id, endpoint, p256dh, auth, user_agent, device_name, is_active, created_at, updated_at}`
 
-**GET /api/push/notifications/** — 待处理通知列表
+**POST /api/push/unsubscribe/** — 删除订阅：body `{endpoint}` → **204 幂等**（存在与否都 204）
+
+### 8.2 Service-worker 投递 & 站内通知（无轮询端点）
+
+- 后端推送 payload 经各 SPA `public/sw.js` + `push-notification.js` 处理；notificationclick/close 由 SW 直接 `POST /api/agents/registers/<pk>/ack/`（见 §1.4 上方 Register ack）
+- SW postMessage（`PUSH_NAVIGATE`）→ 各 SPA `NotificationContext` → 内存 store（cap 20，无 localStorage）→ 悬浮 NotificationPanel
+- 订阅 UI 仅存在于 chat-core `/settings/notifications`；localStorage key `exo_push_device_name`
+- 各 SPA 的 NotificationContext/store/SW 为字节一致的复制品（V4 P2 收敛为单一 shell owner 的候选）
+
+### 8.3 Register 确认（ack）
+
+**POST /api/agents/registers/<pk>/ack/?preset_id=<int>** — body `{action: "navigate"|"dismiss" (默认 navigate), subscription_endpoint?: string}` → 200 `{id, content}`（content 前缀改写为用户已查看/忽略）；preset_id 缺失/非整数 → 400；Register 不属于该 preset → 404。ack 会把 expires_at 延长 1h。
 
 ---
 
