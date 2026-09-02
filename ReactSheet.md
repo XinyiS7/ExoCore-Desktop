@@ -48,7 +48,7 @@
 
 **POST /api/agents/chat/<session_id>/** — SSE 流式响应
 
-`galatea_mcp` 已废弃：后端即使收到该旧字段也不得把 Galatea MCP declarations 拼入主会话。领域工具只能由当前 preset 获准的 Drawer 在 Heartbeat 中加载；前端应停止发送该字段。
+`galatea_mcp` 已废弃：后端即使收到该旧字段也不得把 Galatea MCP declarations 拼入主会话。standard live chat 只暴露恒定 `use_drawer` 代理，并在每次请求的 `<ExoCore>` 中列出当前 preset 已授权且 credential-ready 的 Drawer/短工具名；模型先 `describe` 获取 schema，再 `call`。Heartbeat 继续使用既有 `tool_activate` 抽屉机制；g045 主会话不参与本代理。前端应停止发送旧字段。
 
 event types: `delta` / `tool_call` / `tool_result` / `error` / `done`
 
@@ -700,9 +700,9 @@ preset 的 live main Conversation 都可显示和领取结果。最新 user 请�
 - 未知 Drawer / preset 显式失败；
 - visitor 授权不创建、复制或删除凭证；
 - 取消 visitor 不删除已存 alias/binding；
-- 配置变化只影响后续 HeartbeatActor，运行中的 Actor 保留 run-scoped 快照；
-- 后端按 `合法 catalog ∩ 当前 preset enabled visitor` 组装唯一授权 Registry；
-  同一 Registry 同时约束 `go_to.domain` 与 Heartbeat `tool_activate`。
+- 配置变化只影响后续 standard live-chat 请求与后续 HeartbeatActor；已开始的请求/Actor 保留 run-scoped 快照；
+- `合法 catalog ∩ 当前 preset enabled visitor` 是 visitor 授权事实：`go_to.domain` 直接使用该集合；Heartbeat `tool_activate` 与 standard `use_drawer` runtime 再交集 credential-ready scope；
+- standard 的真实 `mcp_*` declarations 不进入模型工具面；恒定 `use_drawer` + 当轮 manifest 保持 context-cache tools hash 不随 Drawer 授权变化。
 
 ### 10.3 MCP Credential alias CRUD
 
