@@ -20,7 +20,7 @@ export default function McpManagePanel() {
 
   // ── Status & Feedback ──
   const [feedback, setFeedback] = useState(null);
-  // Per-source reachability flags; banner derived from them (avoids parallel-fetch race)
+  // Per-source reachability flags; banner derived from them
   const [serversDown, setServersDown] = useState(false);
   const [credentialsDown, setCredentialsDown] = useState(false);
 
@@ -46,7 +46,6 @@ export default function McpManagePanel() {
       console.warn('MCP Servers fetch failed:', err.status, err.body?.code || err.message);
       const code = err.body?.code;
       if (code) {
-        // Backend reachable — business error, not "pending"
         setFeedback({ type: 'error', msg: `[${code}] ${err.body?.error || err.message}` });
         setServersDown(false);
       } else if (err.status === 404 || err.message?.includes('Failed to fetch')) {
@@ -72,7 +71,6 @@ export default function McpManagePanel() {
       console.warn('MCP Credentials fetch failed:', err.status, err.body?.code || err.message);
       const code = err.body?.code;
       if (code) {
-        // Backend reachable — business error, not "pending"
         setFeedback({ type: 'error', msg: `[${code}] ${err.body?.error || err.message}` });
         setCredentialsDown(false);
       } else if (err.status === 404 || err.message?.includes('Failed to fetch')) {
@@ -130,7 +128,7 @@ export default function McpManagePanel() {
     fetchAllPresetBindings();
   }, [fetchAllPresetBindings, credentials]);
 
-  // Backend reachability banner: derived from per-source flags (no parallel-fetch race)
+  // Backend reachability banner
   const backendPending = serversDown || credentialsDown;
 
   const handleRefreshAll = useCallback(() => {
@@ -140,48 +138,55 @@ export default function McpManagePanel() {
   }, [fetchServers, fetchCredentials, fetchAllPresetBindings]);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Backend Pending Top Notice Banner */}
       {backendPending && (
-        <div className="bg-amber-500/10 border-b border-amber-500/20 px-8 py-2.5 text-xs font-mono text-amber-400 flex items-center justify-between shrink-0">
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 sm:px-6 sm:py-2.5 text-[11px] font-mono text-amber-400 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
-            <AlertTriangle size={15} className="shrink-0" />
-            <span>
-              <strong>Backend Pending (后端待施工)</strong>: 当前 Django 接口 <code>/api/agents/mcp-credentials/</code> 尚未上线，前端呈现为 404 / 503 保护态。
+            <AlertTriangle size={14} className="shrink-0 text-amber-500" />
+            <span className="leading-tight">
+              <strong>后端待施工 (404/503)</strong>: MCP 接口尚未就绪，已进入只读保护态。
             </span>
           </div>
-          <span className="text-[10px] tx-system-mute font-mono">ReactSheet §10</span>
+          <span className="text-[10px] tx-system-mute font-mono hidden sm:inline">ReactSheet §10</span>
         </div>
       )}
 
-      {/* Top navigation tabs (2-Tab Structure) */}
-      <div className="flex gap-4 border-b border-cinder-line px-8 pt-4 shrink-0 bg-exo-pure/5">
-        <button
-          onClick={() => setActiveTab('credentials')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono tracking-wider transition-all border-b-2 -mb-[1px] ${
-            activeTab === 'credentials'
-              ? 'border-chat-accent tx-system-accent font-bold bg-chat-accent/[0.03]'
-              : 'tx-system-mute border-transparent hover:tx-system-normal'
-          }`}
-        >
-          <Key size={14} />
-          CREDENTIAL POOL & PUBLIC BINDINGS / 凭证池与公共绑定
-        </button>
-        <button
-          onClick={() => setActiveTab('agents')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono tracking-wider transition-all border-b-2 -mb-[1px] ${
-            activeTab === 'agents'
-              ? 'border-chat-accent tx-system-accent font-bold bg-chat-accent/[0.03]'
-              : 'tx-system-mute border-transparent hover:tx-system-normal'
-          }`}
-        >
-          <UserCheck size={14} />
-          AGENT VISITOR ACCESS / AGENT 授权与绑定
-        </button>
+      {/* Top Navigation Tabs (PWA-first sleek segmented control) */}
+      <div className="border-b border-cinder-line px-3.5 pt-3 sm:px-6 sm:pt-4 shrink-0 bg-exo-pure/5">
+        <div className="flex gap-2 max-w-full overflow-x-auto no-scrollbar">
+          <button
+            onClick={() => setActiveTab('credentials')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-t-lg text-xs font-mono tracking-wider transition-all border-b-2 whitespace-nowrap ${
+              activeTab === 'credentials'
+                ? 'border-chat-accent tx-system-accent font-bold bg-chat-accent/[0.06]'
+                : 'tx-system-mute border-transparent hover:tx-system-normal hover:bg-white/[0.02]'
+            }`}
+          >
+            <Key size={14} className="shrink-0" />
+            <span>凭证池与公共绑定</span>
+            {credentials.length > 0 && (
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-chat-accent/15 text-chat-accent font-bold">
+                {credentials.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('agents')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-t-lg text-xs font-mono tracking-wider transition-all border-b-2 whitespace-nowrap ${
+              activeTab === 'agents'
+                ? 'border-chat-accent tx-system-accent font-bold bg-chat-accent/[0.06]'
+                : 'tx-system-mute border-transparent hover:tx-system-normal hover:bg-white/[0.02]'
+            }`}
+          >
+            <UserCheck size={14} className="shrink-0" />
+            <span>Agent 授权与绑定</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto px-8 py-6">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-3.5 py-4 sm:px-6 sm:py-6">
         {activeTab === 'credentials' ? (
           <McpCredentialPoolTab
             servers={servers}

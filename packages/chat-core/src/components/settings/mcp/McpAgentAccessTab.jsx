@@ -71,7 +71,7 @@ export default function McpAgentAccessTab({
     } finally {
       setMcpLoading(false);
     }
-  }, [onNotify]);
+  }, [onNotify, backendPending]);
 
   useEffect(() => {
     if (selectedPresetId) {
@@ -79,7 +79,7 @@ export default function McpAgentAccessTab({
     }
   }, [selectedPresetId, fetchPresetData]);
 
-  // Drawer Toggle with optimistic update & rollback on error (REQ 4.1)
+  // Drawer Toggle with optimistic update & rollback on error
   const handleToggleDrawer = async (drawerName, currentEnabled) => {
     if (!selectedPresetId) return;
     const newEnabled = !currentEnabled;
@@ -118,7 +118,7 @@ export default function McpAgentAccessTab({
     let payload;
     if (strategy === 'per_preset') {
       if (!form.credential_alias) {
-        onNotify?.({ type: 'error', msg: `该服务要求专属凭证 (per_preset)，请先在下拉列表中选择一个凭证别名。` });
+        onNotify?.({ type: 'error', msg: `该服务要求专属凭证，请先在下拉列表中选择一个凭证别名。` });
         return;
       }
       payload = { mode: 'dedicated', credential_alias: form.credential_alias };
@@ -161,23 +161,23 @@ export default function McpAgentAccessTab({
   const selectedPreset = presets.find(p => p.id === selectedPresetId);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* ── Preset Selector Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cinder-line">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-cinder-line">
         <div>
-          <h2 className="text-sm font-bold tx-system-normal font-mono tracking-wider flex items-center gap-2">
-            <UserCheck size={16} className="tx-system-accent" />
-            Agent 访问授权与凭证绑定 (Preset Access & Bindings)
+          <h2 className="text-xs sm:text-sm font-bold tx-system-normal font-mono tracking-wider flex items-center gap-1.5">
+            <UserCheck size={15} className="tx-system-accent" />
+            Agent 访问授权与凭证绑定
           </h2>
-          <p className="text-[11px] tx-system-mute mt-1 font-mono">
-            选择目标 Agent 人设，管理其 Tool Drawer 授权以及在各 MCP 服务下的凭证配置（唯一写入入口）。
+          <p className="text-[10px] sm:text-[11px] tx-system-mute mt-0.5 font-mono">
+            选择目标 Agent 人设，管理其 Tool Drawer 授权以及在各 MCP 服务下的凭证。
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <label className="text-xs font-mono tx-system-mute uppercase shrink-0">SELECT PRESET:</label>
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-mono tx-system-mute uppercase shrink-0">目标 Agent:</label>
           <select
-            className="bg-black/10 dark:bg-white/10 border border-cinder-line rounded-lg px-3 py-1.5 text-xs font-mono tx-system-normal focus:outline-none min-w-[200px]"
+            className="bg-black/10 dark:bg-white/10 border border-cinder-line rounded-lg px-2.5 py-1.5 text-xs font-mono tx-system-normal focus:outline-none min-w-[160px] sm:min-w-[200px]"
             value={selectedPresetId || ''}
             onChange={e => onSelectPresetId?.(Number(e.target.value))}
           >
@@ -190,60 +190,60 @@ export default function McpAgentAccessTab({
         </div>
       </div>
 
-      {/* ── Section 1: Preset Tool Drawer Visitor Access (Checkboxes) ── */}
-      <div className="border border-cinder-line rounded-xl p-5 bg-black/[0.01] dark:bg-white/[0.01] space-y-4">
+      {/* ── Section 1: Preset Tool Drawer Visitor Access ── */}
+      <div className="space-y-2.5">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold font-mono tracking-wider tx-system-normal flex items-center gap-2 uppercase">
-            <Layers size={14} className="tx-system-accent" />
-            1. Tool Drawer Visitor 授权 ({selectedPreset?.name || 'Agent'})
+          <h3 className="text-xs font-bold font-mono tracking-wider tx-system-normal flex items-center gap-1.5 uppercase">
+            <Layers size={13} className="tx-system-accent" />
+            1. Tool Drawer 授权 ({selectedPreset?.name || 'Agent'})
           </h3>
-          <span className="text-[10px] font-mono tx-system-mute">
-            勾选决定该 Agent 是否具有对应 Tool Drawer 的调用权限
+          <span className="text-[10px] font-mono tx-system-mute hidden sm:inline">
+            开启后允许该 Agent 调用对应工具抽屉
           </span>
         </div>
 
         {drawersLoading ? (
-          <div className="flex items-center justify-center h-24">
+          <div className="flex items-center justify-center h-20">
             <RefreshCw size={16} className="animate-spin tx-system-mute opacity-60" />
           </div>
         ) : drawers.length === 0 ? (
-          <div className="text-xs font-mono tx-system-mute p-6 text-center border border-cinder-line rounded-lg">
+          <div className="text-xs font-mono tx-system-mute p-4 text-center border border-cinder-line rounded-xl">
             {backendPending
               ? '后端接口待施工 (GET /api/agents/presets/<id>/drawers/ 404/503)'
               : '暂无可用 Tool Drawer 登记。'}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             {drawers.map(drawer => (
               <div
                 key={drawer.name}
-                className={`border rounded-lg p-4 transition-all flex items-start justify-between gap-3 ${
+                className={`border rounded-xl p-3 sm:p-3.5 transition-all flex items-center justify-between gap-2.5 ${
                   drawer.enabled
-                    ? 'border-chat-accent/40 bg-chat-accent/[0.02]'
+                    ? 'border-chat-accent/40 bg-chat-accent/[0.03]'
                     : 'border-cinder-line opacity-75'
                 }`}
               >
-                <div className="space-y-1.5 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-mono font-bold tx-system-normal">
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-mono font-bold tx-system-normal truncate">
                       {drawer.display_name || drawer.name}
                     </span>
                     <span className="text-[9px] font-mono tx-system-mute">({drawer.name})</span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 items-center">
+                  <div className="flex flex-wrap gap-1 items-center">
                     {drawer.available ? (
                       <span className="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
                         <CheckCircle2 size={9} /> Available
                       </span>
                     ) : (
                       <span className="text-[9px] font-mono text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
-                        <XCircle size={9} /> Backend Unavailable
+                        <XCircle size={9} /> Unavailable
                       </span>
                     )}
 
                     {!drawer.credential_ready && (
-                      <span className="text-[9px] font-mono text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20 flex items-center gap-1" title="凭证未就绪：Heartbeat 与 go_to 调用将在网络层 Fail Closed">
-                        <AlertTriangle size={9} /> Credential Not Ready
+                      <span className="text-[9px] font-mono text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20 flex items-center gap-1" title="凭证未就绪">
+                        <AlertTriangle size={9} /> 凭证未就绪
                       </span>
                     )}
                   </div>
@@ -265,29 +265,29 @@ export default function McpAgentAccessTab({
       </div>
 
       {/* ── Section 2: Preset MCP Server Credential Bindings ── */}
-      <div className="border border-cinder-line rounded-xl p-5 bg-black/[0.01] dark:bg-white/[0.01] space-y-4">
+      <div className="space-y-2.5">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold font-mono tracking-wider tx-system-normal flex items-center gap-2 uppercase">
-            <Key size={14} className="tx-system-accent" />
-            2. MCP Server 凭证绑定配置 ({selectedPreset?.name || 'Agent'})
+          <h3 className="text-xs font-bold font-mono tracking-wider tx-system-normal flex items-center gap-1.5 uppercase">
+            <Key size={13} className="tx-system-accent" />
+            2. MCP Server 凭证绑定 ({selectedPreset?.name || 'Agent'})
           </h3>
-          <span className="text-[10px] font-mono tx-system-mute">
-            配置该 Agent 调用具体 MCP Server 时的凭证解析来源
+          <span className="text-[10px] font-mono tx-system-mute hidden sm:inline">
+            配置该 Agent 调用具体 MCP Server 时的凭证来源
           </span>
         </div>
 
         {mcpLoading ? (
-          <div className="flex items-center justify-center h-24">
+          <div className="flex items-center justify-center h-20">
             <RefreshCw size={16} className="animate-spin tx-system-mute opacity-60" />
           </div>
         ) : presetMcpServers.length === 0 ? (
-          <div className="text-xs font-mono tx-system-mute p-6 text-center border border-cinder-line rounded-lg">
+          <div className="text-xs font-mono tx-system-mute p-4 text-center border border-cinder-line rounded-xl">
             {backendPending
               ? '后端接口待施工 (GET /api/agents/presets/<id>/mcp-credentials/ 404/503)'
               : '暂无可配置的 MCP Server。'}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2.5">
             {presetMcpServers.map(item => {
               const form = bindingForms[item.server_name] || { mode: 'inherit_public', credential_alias: '' };
               const matchedCreds = credentials.filter(c => c.server_name === item.server_name);
@@ -299,39 +299,39 @@ export default function McpAgentAccessTab({
               return (
                 <div
                   key={item.server_name}
-                  className="border border-cinder-line rounded-lg p-4 bg-black/5 dark:bg-white/5 space-y-3"
+                  className="border border-cinder-line rounded-xl p-3 sm:p-3.5 bg-black/[0.01] dark:bg-white/[0.01] space-y-2.5"
                 >
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between flex-wrap gap-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs font-mono font-bold tx-system-normal">
                         {item.server_name}
                       </span>
                       {item.resolved_source && (
-                        <span className="text-[9px] font-mono text-chat-accent bg-chat-accent/10 px-2 py-0.5 rounded border border-chat-accent/20">
-                          RESOLVED: {item.resolved_source.toUpperCase()} ({item.resolved_alias || 'NONE'})
+                        <span className="text-[9px] font-mono text-chat-accent bg-chat-accent/10 px-1.5 py-0.5 rounded border border-chat-accent/20">
+                          {item.resolved_source.toUpperCase()}: {item.resolved_alias || 'NONE'}
                         </span>
                       )}
                     </div>
                     <div>
                       {item.credential_ready ? (
                         <span className="flex items-center gap-1 text-[9px] font-mono text-emerald-400">
-                          <CheckCircle2 size={11} /> READY
+                          <CheckCircle2 size={10} /> READY
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 text-[9px] font-mono text-rose-400">
-                          <AlertTriangle size={11} /> NOT READY
+                          <AlertTriangle size={10} /> NOT READY
                         </span>
                       )}
                     </div>
                   </div>
 
                   {!isNone ? (
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                      {/* Mode Selection with Per-Strategy Lock */}
-                      <div className="md:col-span-5 space-y-1">
-                        <label className="text-[9px] font-mono tx-system-mute">MODE / 凭证模式</label>
+                    <div className="flex flex-col sm:flex-row sm:items-end gap-2.5">
+                      {/* Mode Selection */}
+                      <div className="flex-1 space-y-1">
+                        <label className="text-[9px] font-mono tx-system-mute">凭证模式 (MODE)</label>
                         <select
-                          className="w-full bg-black/10 dark:bg-white/10 border border-cinder-line rounded-lg px-3 py-1.5 text-xs font-mono tx-system-normal focus:outline-none disabled:opacity-60"
+                          className="w-full bg-black/10 dark:bg-white/10 border border-cinder-line rounded-lg px-2.5 py-1.5 text-xs font-mono tx-system-normal focus:outline-none disabled:opacity-60"
                           value={form.mode}
                           disabled={isPerPresetOnly || isSharedOnly}
                           onChange={e => {
@@ -347,32 +347,22 @@ export default function McpAgentAccessTab({
                         >
                           {!isPerPresetOnly && (
                             <option value="inherit_public" className="bg-exo-pure">
-                              inherit_public (继承公共凭证)
+                              继承公共凭证 (inherit_public)
                             </option>
                           )}
                           {!isSharedOnly && (
                             <option value="dedicated" className="bg-exo-pure">
-                              dedicated (专属凭证)
+                              专属凭证 (dedicated)
                             </option>
                           )}
                         </select>
-                        {isPerPresetOnly && (
-                          <p className="text-[9px] font-mono tx-system-mute">
-                            🔒 策略要求 Per-Preset 专属凭证
-                          </p>
-                        )}
-                        {isSharedOnly && (
-                          <p className="text-[9px] font-mono tx-system-mute">
-                            🌐 策略仅支持继承公共凭证
-                          </p>
-                        )}
                       </div>
 
-                      {/* Alias Selection (disabled when inherit_public) */}
-                      <div className="md:col-span-5 space-y-1">
-                        <label className="text-[9px] font-mono tx-system-mute">DEDICATED ALIAS / 专属凭证</label>
+                      {/* Alias Selection */}
+                      <div className="flex-1 space-y-1">
+                        <label className="text-[9px] font-mono tx-system-mute">专属凭证别名</label>
                         <select
-                          className="w-full bg-black/10 dark:bg-white/10 border border-cinder-line rounded-lg px-3 py-1.5 text-xs font-mono tx-system-normal focus:outline-none disabled:opacity-40"
+                          className="w-full bg-black/10 dark:bg-white/10 border border-cinder-line rounded-lg px-2.5 py-1.5 text-xs font-mono tx-system-normal focus:outline-none disabled:opacity-40"
                           value={form.credential_alias}
                           disabled={form.mode !== 'dedicated'}
                           onChange={e => setBindingForms(p => ({
@@ -381,7 +371,7 @@ export default function McpAgentAccessTab({
                           }))}
                         >
                           <option value="" className="bg-exo-pure">
-                            {form.mode === 'dedicated' ? '— 选择专属凭证 (Dedicated Alias) —' : '— 自动继承公共凭证 (null) —'}
+                            {form.mode === 'dedicated' ? '— 选择专属凭证 —' : '— 继承公共凭证 (null) —'}
                           </option>
                           {matchedCreds.map(c => (
                             <option key={c.alias} value={c.alias} className="bg-exo-pure">
@@ -392,21 +382,19 @@ export default function McpAgentAccessTab({
                       </div>
 
                       {/* Save Button */}
-                      <div className="md:col-span-2">
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          className="w-full"
-                          disabled={isSaving}
-                          onClick={() => handleSavePresetBinding(item.server_name, item.credential_strategy)}
-                        >
-                          {isSaving ? 'SAVING...' : 'SAVE'}
-                        </Button>
-                      </div>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="shrink-0 text-xs py-1.5"
+                        disabled={isSaving}
+                        onClick={() => handleSavePresetBinding(item.server_name, item.credential_strategy)}
+                      >
+                        {isSaving ? '保存中...' : '保存'}
+                      </Button>
                     </div>
                   ) : (
                     <div className="text-xs font-mono tx-system-mute">
-                      ⚪ 当前 Server 策略为 none，无凭证绑定需求。
+                      ⚪ 该服务无需凭证绑定。
                     </div>
                   )}
                 </div>

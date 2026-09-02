@@ -20,7 +20,7 @@ export default function Toast({ type, message, onClose, duration = 2500 }) {
   if (!message) return null;
 
   return (
-    <div className={`fixed bottom-6 right-6 z-[9999] px-5 py-3 rounded-lg shadow-2xl border flex items-center gap-3 animate-fade-in min-w-[260px] ${
+    <div className={`fixed bottom-20 md:bottom-6 right-4 md:right-6 z-[9999] px-4 py-2.5 sm:px-5 sm:py-3 rounded-lg shadow-2xl border flex items-center gap-3 animate-fade-in max-w-[calc(100vw-2rem)] min-w-[240px] sm:min-w-[260px] ${
       type === 'success'
         ? 'bg-green-900/90 border-green-500/30 text-green-200'
         : 'bg-red-900/90 border-red-500/30 text-red-200'

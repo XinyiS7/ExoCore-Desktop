@@ -135,7 +135,7 @@ export default function CreateGroupchatModal({ isOpen, onClose, onSaved, presets
             className={FIELD_AREA}
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
-            placeholder="Background prompt for Superior agents..."
+            placeholder="Background prompt for AI agents..."
           />
         </div>
 

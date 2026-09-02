@@ -2,13 +2,38 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { heartbeatApi, useTheme } from 'exo-shared';
 import BackToUpper from '../components/layout/BackButton';
 
-/* ── UTC to Local Time Helper ── */
+/* ── Time Helpers ── */
 function formatToLocalTime(utcIso) {
   if (!utcIso) return 'N/A';
   try {
     const date = new Date(utcIso);
     if (isNaN(date.getTime())) return utcIso;
-    return date.toLocaleString() + ' (' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')';
+    return date.toLocaleString();
+  } catch (e) {
+    return utcIso;
+  }
+}
+
+function formatTimeOnly(utcIso) {
+  if (!utcIso) return 'N/A';
+  try {
+    const date = new Date(utcIso);
+    if (isNaN(date.getTime())) return utcIso;
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  } catch (e) {
+    return utcIso;
+  }
+}
+
+function formatShortDateTime(utcIso) {
+  if (!utcIso) return 'N/A';
+  try {
+    const date = new Date(utcIso);
+    if (isNaN(date.getTime())) return utcIso;
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `${m}/${d} ${time}`;
   } catch (e) {
     return utcIso;
   }
@@ -75,7 +100,7 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
     } finally {
       setLoading(false);
     }
-  }, [presetId, limit, offset]);
+  }, [presetId, limit, offset, selectedUuid]);
 
   useEffect(() => {
     fetchEvents();
@@ -173,7 +198,7 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
 
   // ── 6. ECG Wave Generator Data ──
   const nowX = 1400; // NOW mark at ~80% of 1800px track
-  const baselineY = 58;
+  const baselineY = 48;
 
   const sortedChronologicalEvents = [...filteredEvents].sort((a, b) => {
     const tA = new Date(a.started_at || a.completed_at || 0).getTime();
@@ -185,7 +210,7 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
     const isFailed = ev.status === 'failed';
     const step = sortedChronologicalEvents.length > 1 ? 1050 / (sortedChronologicalEvents.length - 1) : 0;
     const ecgX = sortedChronologicalEvents.length === 1 ? 750 : 200 + index * step;
-    const ecgY = isFailed ? 94 : 18;
+    const ecgY = isFailed ? 78 : 16;
     return { ...ev, ecgX, ecgY, isDownward: isFailed };
   });
 
@@ -235,36 +260,38 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
   return (
     <div className="flex-1 h-full flex flex-col overflow-hidden" style={{ background: 'var(--cinder-base)', color: 'var(--cinder-text)' }}>
 
-      {/* Header Bar */}
+      {/* ── Top Header Bar (Mobile-first responsive) ── */}
       <div
-        className="flex-shrink-0 flex items-center justify-between px-6 py-3"
+        className="flex-shrink-0 flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 sm:px-6 sm:py-3"
         style={{
           borderBottom: '1px solid var(--cinder-line)',
           background: isLight ? '#ffffff' : '#0a0a0d',
         }}
       >
-        <div className="flex items-center gap-3">
-          <BackToUpper label={backLabel} onClick={() => goBack()} />
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <span className="hidden md:inline-flex">
+            <BackToUpper label={backLabel} onClick={() => goBack()} />
+          </span>
 
-          <span className="text-[12px] opacity-70 font-mono" style={{ color: 'var(--cinder-text-dim)' }}>
-            (Preset ID: {presetId})
+          <span className="text-[11px] sm:text-xs opacity-70 font-mono" style={{ color: 'var(--cinder-text-dim)' }}>
+            #{presetId}
           </span>
 
           <span
-            className="text-[10px] tracking-wider uppercase px-2 py-0.5 rounded font-semibold"
+            className="text-[10px] tracking-wider uppercase px-2 py-0.5 rounded font-semibold whitespace-nowrap"
             style={{
               color: 'var(--cinder-flame)',
               background: 'var(--cinder-flame-dim)',
               border: '1px solid rgba(255, 74, 8, 0.3)',
             }}
           >
-            Heartbeat Memory Ledger
+            Heartbeat Ledger
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div
-            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full border"
+            className="flex items-center gap-1.5 text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border whitespace-nowrap"
             style={{
               background: isLight ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
               borderColor: 'var(--cinder-line)',
@@ -272,59 +299,63 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
             }}
           >
             <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--cinder-ember)' }} />
-            只读账本 (GET Only · 无写/删除 API)
+            只读账本 (GET Only)
           </div>
         </div>
       </div>
 
-      {/* Electrocardiogram (ECG / EKG) Visual Banner Wrapper */}
+      {/* ── Electrocardiogram (ECG / EKG) Visual Banner ── */}
       <section
-        className="relative h-[185px] border-b flex flex-col shrink-0 transition-colors duration-200"
+        className="relative h-[130px] sm:h-[155px] md:h-[175px] border-b flex flex-col shrink-0 transition-colors duration-200"
         style={{
           background: isLight ? '#f4f1ea' : '#020203',
           borderColor: 'var(--cinder-line)',
         }}
       >
-        {/* Floating Focus Tooltip Badge */}
-        <div
-          className="absolute top-2 left-6 px-3.5 py-1 rounded-full text-[11px] font-mono flex items-center gap-2.5 z-40 pointer-events-none shadow-md"
-          style={{
-            background: isLight ? '#ffffff' : 'rgba(10, 10, 12, 0.95)',
-            border: '1px solid var(--cinder-flame)',
-            backdropFilter: 'blur(8px)',
-            color: 'var(--cinder-text)',
-          }}
-        >
-          <span style={{ color: 'var(--cinder-flame)' }}>⚡ 心律波形聚焦:</span>
-          <span>
-            {activeFocusEvent ? `Attempt #${activeFocusEvent.attempt_number || 1} (${activeFocusEvent.status})` : '暂无节点'}
-          </span>
-          <span style={{ opacity: 0.4 }}>|</span>
-          <span style={{ color: isLight ? '#1d4ed8' : '#60a5fa' }}>
-            {activeFocusEvent ? formatToLocalTime(activeFocusEvent.started_at || activeFocusEvent.completed_at) : 'N/A'}
-          </span>
+        {/* Top Indicators Bar (Responsive, no overlap) */}
+        <div className="absolute top-1.5 sm:top-2 inset-x-3 sm:inset-x-6 flex items-center justify-between pointer-events-none z-30">
+          {/* Floating Focus Tooltip Badge */}
+          <div
+            className="px-2.5 py-0.5 sm:px-3.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-mono flex items-center gap-1.5 sm:gap-2 shadow-sm max-w-[80vw] truncate"
+            style={{
+              background: isLight ? 'rgba(255, 255, 255, 0.95)' : 'rgba(10, 10, 12, 0.92)',
+              border: '1px solid var(--cinder-flame)',
+              backdropFilter: 'blur(8px)',
+              color: 'var(--cinder-text)',
+            }}
+          >
+            <span style={{ color: 'var(--cinder-flame)' }}>⚡ 波形:</span>
+            <span className="font-semibold">
+              {activeFocusEvent ? `Att #${activeFocusEvent.attempt_number || 1} (${activeFocusEvent.status})` : '暂无节点'}
+            </span>
+            <span className="opacity-40 hidden sm:inline">|</span>
+            <span className="hidden sm:inline" style={{ color: isLight ? '#1d4ed8' : '#60a5fa' }}>
+              {activeFocusEvent ? formatTimeOnly(activeFocusEvent.started_at || activeFocusEvent.completed_at) : 'N/A'}
+            </span>
+          </div>
+
+          {/* Scroll Hint Badge (hidden on extra small screens) */}
+          <div
+            className="hidden sm:flex px-2.5 py-0.5 rounded-full text-[10px] items-center gap-1"
+            style={{
+              background: isLight ? 'rgba(223, 62, 0, 0.08)' : 'rgba(255, 74, 8, 0.12)',
+              border: '1px solid rgba(255, 74, 8, 0.3)',
+              color: 'var(--cinder-flame)',
+            }}
+          >
+            <span>↔ 滑动查看波形 (Drag / Swipe)</span>
+          </div>
         </div>
 
-        {/* Scroll Hint Badge */}
-        <div
-          className="absolute top-2 right-6 px-3 py-1 rounded-full text-[11px] flex items-center gap-1.5 z-40 pointer-events-none"
-          style={{
-            background: isLight ? 'rgba(223, 62, 0, 0.08)' : 'rgba(255, 74, 8, 0.12)',
-            border: '1px solid rgba(255, 74, 8, 0.3)',
-            color: 'var(--cinder-flame)',
-          }}
-        >
-          <span>↔ 按住拖动或滑动滚动条 (Drag or Scroll)</span>
-        </div>
-
-        {/* Scrollable Canvas Track */}
+        {/* Scrollable Canvas Track with Touch Support */}
         <div
           ref={scrollContainerRef}
-          className="w-full h-full overflow-x-auto overflow-y-hidden relative smooth-scroll cursor-grab active:cursor-grabbing"
+          className="w-full h-full overflow-x-auto overflow-y-hidden relative smooth-scroll cursor-grab active:cursor-grabbing touch-pan-x"
           onMouseDown={handleMouseDown}
           onMouseLeave={handleMouseLeave}
           onMouseUp={handleMouseUp}
           onMouseMove={handleMouseMove}
+          style={{ WebkitOverflowScrolling: 'touch' }}
         >
           <div
             className="w-[1800px] h-full relative"
@@ -336,7 +367,7 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
             }}
           >
             {/* SVG Wave Surface */}
-            <svg className="w-full h-[140px] absolute top-0 left-0 z-10" viewBox="0 0 1800 140" preserveAspectRatio="none">
+            <svg className="w-full h-[100px] sm:h-[120px] absolute top-0 left-0 z-10" viewBox="0 0 1800 120" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="scanGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor={isLight ? 'rgba(223, 62, 0, 0.35)' : 'rgba(255, 74, 8, 0.4)'} />
@@ -352,7 +383,7 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
                 strokeWidth="2.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                style={{ filter: isLight ? 'drop-shadow(0 0 4px rgba(223, 62, 0, 0.4))' : 'drop-shadow(0 0 8px rgba(255, 74, 8, 0.8))' }}
+                style={{ filter: isLight ? 'drop-shadow(0 0 3px rgba(223, 62, 0, 0.4))' : 'drop-shadow(0 0 6px rgba(255, 74, 8, 0.8))' }}
               />
 
               {/* Future Muted Line */}
@@ -366,8 +397,8 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
 
               {/* Scanning Radar Line */}
               <g className="pointer-events-none">
-                <line x1={nowX} y1="0" x2={nowX} y2="140" stroke="var(--cinder-flame)" strokeWidth="1.5" style={{ filter: 'drop-shadow(0 0 6px var(--cinder-flame))' }} />
-                <rect x={nowX} y="0" width="120" height="140" fill="url(#scanGradient)" className="animate-pulse" />
+                <line x1={nowX} y1="0" x2={nowX} y2="120" stroke="var(--cinder-flame)" strokeWidth="1.5" style={{ filter: 'drop-shadow(0 0 6px var(--cinder-flame))' }} />
+                <rect x={nowX} y="0" width="100" height="120" fill="url(#scanGradient)" className="animate-pulse" />
               </g>
 
               {/* Peak Node Circles */}
@@ -379,7 +410,7 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
                       key={ev.session_uuid}
                       cx={ev.ecgX}
                       cy={ev.ecgY}
-                      r={isSelected ? 7.5 : 5.5}
+                      r={isSelected ? 7 : 5}
                       fill={ev.isDownward ? '#f43f5e' : '#10b981'}
                       stroke={isLight ? '#ffffff' : '#ffffff'}
                       strokeWidth="1.5"
@@ -400,16 +431,16 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
                   className="pointer-events-none transition-transform duration-300"
                   transform={`translate(${activeFocusEvent.ecgX}, ${activeFocusEvent.ecgY})`}
                 >
-                  <circle cx="0" cy="0" r="8" fill="none" stroke="var(--cinder-flame)" strokeWidth="2" className="animate-ping opacity-75" />
-                  <circle cx="0" cy="0" r="3.5" fill={isLight ? 'var(--cinder-flame)' : '#ffffff'} />
+                  <circle cx="0" cy="0" r="7" fill="none" stroke="var(--cinder-flame)" strokeWidth="2" className="animate-ping opacity-75" />
+                  <circle cx="0" cy="0" r="3" fill={isLight ? 'var(--cinder-flame)' : '#ffffff'} />
                 </g>
               )}
             </svg>
 
-            {/* Dense Retry Burst Bracket Tag */}
+            {/* Dense Retry Burst Tag */}
             {Object.keys(retryGroups).length > 0 && (
               <div
-                className="absolute top-2 text-[10px] px-2 py-0.5 rounded pointer-events-none z-0 whitespace-nowrap font-medium"
+                className="absolute top-2 text-[9px] sm:text-[10px] px-2 py-0.5 rounded pointer-events-none z-0 whitespace-nowrap font-medium"
                 style={{
                   left: '980px',
                   transform: 'translateX(-50%)',
@@ -424,7 +455,7 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
 
             {/* Dedicated Bottom Time Axis Bar */}
             <div
-              className="absolute bottom-0 left-0 w-[1800px] h-[42px] z-10"
+              className="absolute bottom-0 left-0 w-[1800px] h-[34px] sm:h-[38px] z-10"
               style={{
                 background: isLight ? 'rgba(235, 230, 220, 0.95)' : 'rgba(4, 4, 6, 0.85)',
                 borderTop: isLight ? '1px solid rgba(0, 0, 0, 0.08)' : '1px solid rgba(255, 255, 255, 0.06)',
@@ -437,8 +468,8 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
                 return (
                   <div
                     key={ev.session_uuid}
-                    className={`absolute top-2 font-mono text-[11px] px-1.5 py-0.5 rounded cursor-pointer transition-all duration-200 flex items-center gap-1 -translate-x-1/2 ${
-                      isActive ? 'z-30 font-semibold text-white -translate-y-6 shadow-md' : 'z-10 text-gray-500 hover:text-black'
+                    className={`absolute top-1.5 font-mono text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded cursor-pointer transition-all duration-200 flex items-center gap-1 -translate-x-1/2 ${
+                      isActive ? 'z-30 font-semibold text-white -translate-y-4 sm:-translate-y-5 shadow-sm' : 'z-10 text-gray-500 hover:text-black'
                     }`}
                     style={{
                       left: `${ev.ecgX}px`,
@@ -446,29 +477,29 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
                       background: isActive
                         ? (isFailed ? 'rgba(244, 63, 94, 0.95)' : 'rgba(16, 185, 129, 0.95)')
                         : 'transparent',
-                      border: isActive
-                        ? '1px solid #ffffff'
-                        : '1px solid transparent',
+                      border: isActive ? '1px solid #ffffff' : '1px solid transparent',
                     }}
                     onMouseEnter={() => setHoveredUuid(ev.session_uuid)}
                     onMouseLeave={() => setHoveredUuid(null)}
                     onClick={() => handleSelectEvent(ev.session_uuid, ev.ecgX)}
                   >
                     <span
-                      className="w-1.5 h-1.5 rounded-full"
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
                       style={{ background: isFailed ? '#f43f5e' : '#10b981' }}
                     />
-                    {isActive
-                      ? `${formatToLocalTime(ev.started_at || ev.completed_at).split(' ')[1] || ''} [Att #${ev.attempt_number || 1} ${isFailed ? '⬇️ 失败' : '⬆️ 成功'}]`
-                      : (ev.started_at ? new Date(ev.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Event')
-                    }
+                    <span>
+                      {isActive
+                        ? `${formatTimeOnly(ev.started_at || ev.completed_at)} (#${ev.attempt_number || 1})`
+                        : formatTimeOnly(ev.started_at || ev.completed_at)
+                      }
+                    </span>
                   </div>
                 );
               })}
 
               {/* NOW Tick Label */}
               <div
-                className="absolute top-2 font-mono text-[11px] px-2 py-0.5 rounded font-bold -translate-x-1/2 z-10"
+                className="absolute top-1.5 font-mono text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded font-bold -translate-x-1/2 z-10"
                 style={{
                   left: `${nowX}px`,
                   color: 'var(--cinder-flame)',
@@ -476,7 +507,7 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
                   border: '1px solid rgba(255, 74, 8, 0.4)',
                 }}
               >
-                📍 NOW (当前时间点)
+                📍 NOW
               </div>
             </div>
 
@@ -484,81 +515,81 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
         </div>
       </section>
 
-      {/* Main Content Area — Theme-aware styling */}
+      {/* ── Main Content Area (Mobile First) ── */}
       <main className="flex-1 flex relative overflow-hidden">
-        <div className="flex-1 flex flex-col p-6 md:p-8 overflow-y-auto">
+        <div className="flex-1 flex flex-col p-3.5 sm:p-5 md:p-6 overflow-y-auto overscroll-contain">
 
-          {/* Controls & Filter Toolbar */}
+          {/* Controls & Filter Toolbar (Responsive Flexbox) */}
           <section
-            className="flex items-center justify-between p-3.5 mb-4 rounded-md border"
+            className="flex flex-wrap items-center justify-between gap-2.5 p-2.5 sm:p-3.5 mb-3 sm:mb-4 rounded-xl border"
             style={{
               background: isLight ? '#ffffff' : '#0a0a0d',
               borderColor: 'var(--cinder-line)',
             }}
           >
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs" style={{ color: 'var(--cinder-text-dim)' }}>触发源:</span>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-1 min-w-[200px]">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] sm:text-xs shrink-0" style={{ color: 'var(--cinder-text-dim)' }}>源:</span>
                 <select
                   value={sourceFilter}
                   onChange={(e) => setSourceFilter(e.target.value)}
-                  className="px-2.5 py-1 text-xs rounded border outline-none cursor-pointer"
+                  className="px-2 py-1 text-xs rounded-lg border outline-none cursor-pointer"
                   style={{
                     background: isLight ? '#f4f1ea' : 'var(--cinder-base)',
                     borderColor: 'var(--cinder-line)',
                     color: 'var(--cinder-text)',
                   }}
                 >
-                  <option value="all">全部触发源 (All Sources)</option>
-                  <option value="auto">auto (系统定时/Cron ~2.5h)</option>
-                  <option value="agent">agent (智能体自发发起)</option>
-                  <option value="notification">notification (通知推送)</option>
+                  <option value="all">全部源 (All)</option>
+                  <option value="auto">auto (定时/Cron)</option>
+                  <option value="agent">agent (智能体自发)</option>
+                  <option value="notification">notification (通知)</option>
                 </select>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs" style={{ color: 'var(--cinder-text-dim)' }}>状态过滤:</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] sm:text-xs shrink-0" style={{ color: 'var(--cinder-text-dim)' }}>状态:</span>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-2.5 py-1 text-xs rounded border outline-none cursor-pointer"
+                  className="px-2 py-1 text-xs rounded-lg border outline-none cursor-pointer"
                   style={{
                     background: isLight ? '#f4f1ea' : 'var(--cinder-base)',
                     borderColor: 'var(--cinder-line)',
                     color: 'var(--cinder-text)',
                   }}
                 >
-                  <option value="all">全部状态 (All Statuses)</option>
-                  <option value="succeeded">succeeded (仅成功)</option>
-                  <option value="failed">failed (仅失败/重试)</option>
+                  <option value="all">全部状态 (All)</option>
+                  <option value="succeeded">成功 (succeeded)</option>
+                  <option value="failed">失败/重试 (failed)</option>
                 </select>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={fetchEvents}
-                className="px-3 py-1 text-xs rounded border transition-colors hover:border-orange-500"
-                style={{
-                  background: isLight ? '#ffffff' : 'var(--cinder-base)',
-                  borderColor: 'var(--cinder-line)',
-                  color: 'var(--cinder-text)',
-                }}
-              >
-                🔄 刷新 (GET /api/heartbeat/events/)
-              </button>
-            </div>
+            <button
+              onClick={fetchEvents}
+              className="px-3 py-1 text-xs rounded-lg border transition-colors hover:border-orange-500 flex items-center gap-1.5 shrink-0"
+              style={{
+                background: isLight ? '#ffffff' : 'var(--cinder-base)',
+                borderColor: 'var(--cinder-line)',
+                color: 'var(--cinder-text)',
+              }}
+            >
+              <span>🔄</span>
+              <span className="hidden sm:inline">刷新列表</span>
+            </button>
           </section>
 
-          {/* Loading & Error States */}
+          {/* Loading State */}
           {loading && (
-            <div className="py-16 text-center text-xs opacity-60 animate-pulse" style={{ color: 'var(--cinder-text-dim)' }}>
-              正在加载心跳只读账本 (Loading Heartbeat Events)...
+            <div className="py-12 text-center text-xs opacity-60 animate-pulse font-mono" style={{ color: 'var(--cinder-text-dim)' }}>
+              正在加载心跳记录 (Loading Heartbeat Events)...
             </div>
           )}
 
+          {/* Error State */}
           {error && (
-            <div className="p-4 mb-4 rounded border text-xs font-mono" style={{ background: 'rgba(244, 63, 94, 0.08)', borderColor: 'rgba(244, 63, 94, 0.3)', color: '#fda4af' }}>
+            <div className="p-3.5 mb-4 rounded-xl border text-xs font-mono" style={{ background: 'rgba(244, 63, 94, 0.08)', borderColor: 'rgba(244, 63, 94, 0.3)', color: '#fda4af' }}>
               ⚠️ 发生错误: {error}
             </div>
           )}
@@ -566,29 +597,28 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
           {/* Empty State */}
           {!loading && !error && filteredEvents.length === 0 && (
             <div
-              className="flex-1 flex flex-col items-center justify-center p-12 text-center rounded border border-dashed"
+              className="flex-1 flex flex-col items-center justify-center p-8 sm:p-12 text-center rounded-xl border border-dashed"
               style={{
                 background: isLight ? '#ffffff' : '#0a0a0d',
                 borderColor: 'var(--cinder-line)',
               }}
             >
-              <svg className="w-12 h-12 mb-4 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg className="w-10 h-10 mb-3 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="12" cy="12" r="9" />
                 <path d="M12 8v4l3 3" />
               </svg>
-              <div className="text-base font-medium mb-1" style={{ color: 'var(--cinder-text)' }}>
-                暂无心跳历史记录 (No Heartbeat Events)
+              <div className="text-sm font-semibold mb-1" style={{ color: 'var(--cinder-text)' }}>
+                暂无心跳历史记录
               </div>
               <div className="text-xs max-w-sm leading-relaxed" style={{ color: 'var(--cinder-text-dim)' }}>
-                当前 Preset (id={presetId}) 尚未触发或记录任何 Heartbeat 会话。<br />
-                GET /api/heartbeat/events/?preset_id={presetId} 返回了空数组 <code style={{ color: 'var(--cinder-flame)' }}>events: []</code>。
+                当前 Preset (id={presetId}) 尚未触发或记录任何 Heartbeat 会话。
               </div>
             </div>
           )}
 
           {/* Event History Cards List */}
           {!loading && !error && filteredEvents.length > 0 && (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2.5 sm:gap-3">
               {filteredEvents.map((ev) => {
                 const isSelected = ev.session_uuid === selectedUuid;
                 const isFailed = ev.status === 'failed';
@@ -598,51 +628,52 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
                   <article
                     key={ev.session_uuid}
                     onClick={() => handleSelectEvent(ev.session_uuid, ecgObj?.ecgX)}
-                    className={`p-4 rounded-md border transition-all duration-200 cursor-pointer flex flex-col gap-3 relative ${
+                    className={`p-3.5 sm:p-4 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col gap-2.5 relative active:scale-[0.99] ${
                       isSelected
-                        ? 'border-orange-500 shadow-[0_0_15px_rgba(255,74,8,0.15)]'
-                        : 'hover:border-orange-500/50'
+                        ? 'border-orange-500 shadow-[0_0_12px_rgba(255,74,8,0.12)]'
+                        : 'hover:border-orange-500/40'
                     }`}
                     style={{
                       background: isSelected
-                        ? (isLight ? 'rgba(223, 62, 0, 0.05)' : 'rgba(255, 74, 8, 0.04)')
+                        ? (isLight ? 'rgba(223, 62, 0, 0.04)' : 'rgba(255, 74, 8, 0.04)')
                         : (isLight ? '#ffffff' : '#0a0a0d'),
                       borderColor: isSelected ? 'var(--cinder-flame)' : 'var(--cinder-line)',
                     }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                    {/* Header Row: Badges on left, clean timestamp on right */}
+                    <div className="flex flex-wrap items-center justify-between gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span
-                          className={`text-[11px] font-semibold uppercase px-2 py-0.5 rounded flex items-center gap-1.5 ${
-                            isFailed ? 'bg-rose-500/10 text-rose-500 border border-rose-500/30' : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'
+                          className={`text-[10px] sm:text-[11px] font-semibold uppercase px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                            isFailed ? 'bg-rose-500/10 text-rose-500 border border-rose-500/25' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
                           }`}
                         >
-                          {isFailed ? '✕ Failed' : '✓ Succeeded'}
+                          {isFailed ? '✕ 失败' : '✓ 成功'}
                         </span>
-                        <span className="text-[11px] px-2 py-0.5 rounded border" style={{ background: isLight ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--cinder-line)', color: 'var(--cinder-text-dim)' }}>
-                          🤖 launch_source: {ev.launch_source}
+                        <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md border font-mono" style={{ background: isLight ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.04)', borderColor: 'var(--cinder-line)', color: 'var(--cinder-text-dim)' }}>
+                          {ev.launch_source}
                         </span>
                         {ev.domain && (
-                          <span className="text-[11px] px-2 py-0.5 rounded border bg-blue-500/10 text-blue-600 border-blue-500/20">
-                            domain: "{ev.domain}"
+                          <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md border bg-blue-500/10 text-blue-500 border-blue-500/20 truncate max-w-[140px]">
+                            {ev.domain}
                           </span>
                         )}
                       </div>
-                      <div className="font-mono text-[11px]" style={{ color: 'var(--cinder-text-dim)' }}>
-                        {formatToLocalTime(ev.started_at || ev.completed_at)}
+                      <div className="font-mono text-[10px] sm:text-[11px]" style={{ color: 'var(--cinder-text-dim)' }}>
+                        {formatShortDateTime(ev.started_at || ev.completed_at)}
                       </div>
                     </div>
 
                     {/* Content / Error preview */}
                     {isFailed ? (
-                      <div className="text-xs italic p-2.5 rounded border bg-rose-500/5 border-rose-500/15 text-rose-500">
-                        [心跳中断/失败] {ev.content || '详情请在侧边栏查看 error_summary'}
+                      <div className="text-xs italic p-2.5 rounded-lg border bg-rose-500/5 border-rose-500/15 text-rose-400 leading-relaxed">
+                        [心跳中断/失败] {ev.content || '详情请点击查看 error_summary'}
                       </div>
                     ) : (
                       <div
-                        className="text-xs p-2.5 rounded border leading-relaxed line-clamp-3"
+                        className="text-xs p-2.5 rounded-lg border leading-relaxed line-clamp-3"
                         style={{
-                          background: isLight ? '#f7f4ef' : 'rgba(0, 0, 0, 0.4)',
+                          background: isLight ? '#f7f4ef' : 'rgba(0, 0, 0, 0.3)',
                           borderColor: 'var(--cinder-line)',
                           color: 'var(--cinder-text)',
                         }}
@@ -651,12 +682,13 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between text-[11px]" style={{ color: 'var(--cinder-text-faint)' }}>
-                      <span className="font-mono" style={{ color: 'var(--cinder-text-dim)' }}>
-                        UUID: {ev.session_uuid}
+                    {/* Footer Row */}
+                    <div className="flex items-center justify-between text-[10px] sm:text-[11px] pt-1 border-t" style={{ borderColor: 'var(--cinder-line)', color: 'var(--cinder-text-faint)' }}>
+                      <span className="font-mono truncate max-w-[180px] sm:max-w-none" style={{ color: 'var(--cinder-text-dim)' }}>
+                        UUID: {ev.session_uuid?.slice(0, 8)}...{ev.session_uuid?.slice(-4)}
                       </span>
-                      <span>
-                        Attempt #{ev.attempt_number || 1} {isFailed ? '(向下失败峰 ⬇️)' : '(向上成功峰 ⬆️)'}
+                      <span className="font-mono">
+                        Attempt #{ev.attempt_number || 1} {isFailed ? '⬇️' : '⬆️'}
                       </span>
                     </div>
                   </article>
@@ -666,9 +698,9 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
           )}
 
           {/* Pagination Bar */}
-          {!loading && !error && (
+          {!loading && !error && events.length > 0 && (
             <footer
-              className="mt-4 flex items-center justify-between p-3 rounded-md border text-xs"
+              className="mt-4 flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl border text-xs"
               style={{
                 background: isLight ? '#ffffff' : '#0a0a0d',
                 borderColor: 'var(--cinder-line)',
@@ -676,13 +708,13 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
               }}
             >
               <div>
-                显示第 <strong>{events.length > 0 ? offset + 1 : 0} - {offset + events.length}</strong> 条，共 <strong>{totalCount}</strong> 条 (has_more: {hasMore ? 'true' : 'false'})
+                共 <strong>{totalCount}</strong> 条
               </div>
               <div className="flex items-center gap-2">
                 <button
                   disabled={offset === 0}
                   onClick={() => setOffset(Math.max(0, offset - limit))}
-                  className="px-2.5 py-1 rounded border disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="px-2.5 py-1 rounded-lg border disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{ background: isLight ? '#ffffff' : 'var(--cinder-base)', borderColor: 'var(--cinder-line)', color: 'var(--cinder-text)' }}
                 >
                   上一页
@@ -690,7 +722,7 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
                 <button
                   disabled={!hasMore}
                   onClick={() => setOffset(offset + limit)}
-                  className="px-2.5 py-1 rounded border disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="px-2.5 py-1 rounded-lg border disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{ background: isLight ? '#ffffff' : 'var(--cinder-base)', borderColor: 'var(--cinder-line)', color: 'var(--cinder-text)' }}
                 >
                   下一页
@@ -701,119 +733,148 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
 
         </div>
 
-        {/* Slide-over Detail Drawer Inspector — Solid Opaque Dark/Light Surface */}
+        {/* ── Mobile Backdrop for Detail Drawer ── */}
+        {drawerOpen && (
+          <div
+            className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-fade-in"
+            onClick={() => setDrawerOpen(false)}
+          />
+        )}
+
+        {/* ── Detail Drawer Inspector (Full responsive: Sheet on Mobile, Drawer on Desktop) ── */}
         <aside
-          className={`absolute top-0 right-0 w-[500px] h-full shadow-2xl transition-all duration-300 z-50 flex flex-col ${
-            drawerOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
+          className={`
+            fixed inset-y-0 right-0 z-50 w-full max-w-full sm:w-[480px] md:w-[480px]
+            md:absolute md:top-0 md:h-full shadow-2xl transition-transform duration-300 flex flex-col
+            ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}
+          `}
           style={{
             background: isLight ? '#ffffff' : '#0e0e12',
             borderLeft: '1px solid var(--cinder-line)',
-            boxShadow: '-10px 0 40px rgba(0, 0, 0, 0.8)',
+            boxShadow: '-10px 0 40px rgba(0, 0, 0, 0.6)',
           }}
         >
-          <div className="p-4 border-b flex items-center justify-between shrink-0" style={{ borderColor: 'var(--cinder-line)', background: isLight ? '#f4f1ea' : 'rgba(0, 0, 0, 0.4)' }}>
-            <div className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--cinder-text)' }}>
-              🔍 Heartbeat Event 详情
+          {/* Drawer Header */}
+          <div
+            className="p-3.5 sm:p-4 border-b flex items-center justify-between shrink-0"
+            style={{
+              borderColor: 'var(--cinder-line)',
+              background: isLight ? '#f4f1ea' : 'rgba(0, 0, 0, 0.4)',
+            }}
+          >
+            <div className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--cinder-text)' }}>
+              🔍 Heartbeat 详情
             </div>
             <button
               onClick={() => setDrawerOpen(false)}
-              className="w-7 h-7 rounded flex items-center justify-center border transition-colors hover:border-orange-500"
+              className="w-8 h-8 rounded-lg flex items-center justify-center border transition-colors hover:border-orange-500 text-sm font-bold"
               style={{ borderColor: 'var(--cinder-line)', color: 'var(--cinder-text-dim)' }}
+              aria-label="关闭详情"
             >
               ✕
             </button>
           </div>
 
-          <div className="flex-1 p-6 overflow-y-auto flex flex-col gap-5">
+          {/* Drawer Body with smooth overscroll */}
+          <div
+            className="flex-1 p-4 sm:p-6 overflow-y-auto overscroll-contain flex flex-col gap-4 sm:gap-5 pb-24 md:pb-8"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             {detailLoading ? (
-              <div className="py-12 text-center text-xs opacity-60 animate-pulse" style={{ color: 'var(--cinder-text-dim)' }}>
+              <div className="py-12 text-center text-xs opacity-60 animate-pulse font-mono" style={{ color: 'var(--cinder-text-dim)' }}>
                 加载详情中 (Loading Event Detail)...
               </div>
             ) : eventDetail ? (
               <>
-                {/* Metadata Grid */}
-                <div className="flex flex-col gap-2">
+                {/* Metadata Stack / Grid */}
+                <div className="flex flex-col gap-1.5">
                   <span className="text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--cinder-flame)' }}>
                     📌 基础元数据 (Metadata)
                   </span>
                   <div
-                    className="grid grid-cols-[140px_1fr] gap-2 p-3 rounded border text-xs"
+                    className="flex flex-col gap-2 p-3 sm:p-3.5 rounded-xl border text-xs"
                     style={{
-                      background: isLight ? '#f7f4ef' : 'rgba(0,0,0,0.5)',
+                      background: isLight ? '#f7f4ef' : 'rgba(0,0,0,0.4)',
                       borderColor: 'var(--cinder-line)',
                     }}
                   >
-                    <span style={{ color: 'var(--cinder-text-dim)' }}>Session UUID</span>
-                    <span className="font-mono break-all" style={{ color: 'var(--cinder-text)' }}>{eventDetail.session_uuid}</span>
+                    <div className="flex flex-col sm:grid sm:grid-cols-[120px_1fr] gap-0.5 sm:gap-2">
+                      <span className="opacity-60" style={{ color: 'var(--cinder-text-dim)' }}>Session UUID:</span>
+                      <span className="font-mono break-all font-semibold" style={{ color: 'var(--cinder-text)' }}>{eventDetail.session_uuid}</span>
+                    </div>
 
-                    <span style={{ color: 'var(--cinder-text-dim)' }}>Preset</span>
-                    <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>ID: {eventDetail.preset_id} ({eventDetail.preset_name})</span>
+                    <div className="flex flex-col sm:grid sm:grid-cols-[120px_1fr] gap-0.5 sm:gap-2">
+                      <span className="opacity-60" style={{ color: 'var(--cinder-text-dim)' }}>Preset:</span>
+                      <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>ID {eventDetail.preset_id} ({eventDetail.preset_name})</span>
+                    </div>
 
-                    <span style={{ color: 'var(--cinder-text-dim)' }}>Status</span>
-                    <span className="font-mono uppercase font-semibold" style={{ color: eventDetail.status === 'failed' ? '#f43f5e' : '#10b981' }}>
-                      {eventDetail.status}
-                    </span>
+                    <div className="flex flex-col sm:grid sm:grid-cols-[120px_1fr] gap-0.5 sm:gap-2">
+                      <span className="opacity-60" style={{ color: 'var(--cinder-text-dim)' }}>Status:</span>
+                      <span className="font-mono uppercase font-bold" style={{ color: eventDetail.status === 'failed' ? '#f43f5e' : '#10b981' }}>
+                        {eventDetail.status}
+                      </span>
+                    </div>
 
-                    <span style={{ color: 'var(--cinder-text-dim)' }}>Launch Source</span>
-                    <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>{eventDetail.launch_source}</span>
+                    <div className="flex flex-col sm:grid sm:grid-cols-[120px_1fr] gap-0.5 sm:gap-2">
+                      <span className="opacity-60" style={{ color: 'var(--cinder-text-dim)' }}>Launch Source:</span>
+                      <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>{eventDetail.launch_source}</span>
+                    </div>
 
-                    <span style={{ color: 'var(--cinder-text-dim)' }}>Domain</span>
-                    <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>{eventDetail.domain || '(空)'}</span>
+                    <div className="flex flex-col sm:grid sm:grid-cols-[120px_1fr] gap-0.5 sm:gap-2">
+                      <span className="opacity-60" style={{ color: 'var(--cinder-text-dim)' }}>Domain:</span>
+                      <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>{eventDetail.domain || '(空)'}</span>
+                    </div>
 
-                    <span style={{ color: 'var(--cinder-text-dim)' }}>Attempt Number</span>
-                    <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>第 {eventDetail.attempt_number || 1} 次尝试</span>
+                    <div className="flex flex-col sm:grid sm:grid-cols-[120px_1fr] gap-0.5 sm:gap-2">
+                      <span className="opacity-60" style={{ color: 'var(--cinder-text-dim)' }}>Attempt Number:</span>
+                      <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>第 {eventDetail.attempt_number || 1} 次尝试</span>
+                    </div>
 
-                    <span style={{ color: 'var(--cinder-text-dim)' }}>WakeUpTask ID</span>
-                    <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>{eventDetail.wake_up_task_id ?? 'null'}</span>
-
-                    <span style={{ color: 'var(--cinder-text-dim)' }}>Source Conversation</span>
-                    <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>{eventDetail.source_conversation_id ?? 'null'}</span>
-
-                    <span style={{ color: 'var(--cinder-text-dim)' }}>Finalization Reason</span>
-                    <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>{eventDetail.finalization_reason ?? 'null'}</span>
+                    {eventDetail.wake_up_task_id && (
+                      <div className="flex flex-col sm:grid sm:grid-cols-[120px_1fr] gap-0.5 sm:gap-2">
+                        <span className="opacity-60" style={{ color: 'var(--cinder-text-dim)' }}>WakeUpTask ID:</span>
+                        <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>{eventDetail.wake_up_task_id}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Timestamps */}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1.5">
                   <span className="text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--cinder-flame)' }}>
-                    ⏰ 时间与时区 (UTC 转换本地时区)
+                    ⏰ 时间记录 (Timestamps)
                   </span>
                   <div
-                    className="grid grid-cols-[140px_1fr] gap-2 p-3 rounded border text-xs"
+                    className="flex flex-col gap-2 p-3 sm:p-3.5 rounded-xl border text-xs"
                     style={{
-                      background: isLight ? '#f7f4ef' : 'rgba(0,0,0,0.5)',
+                      background: isLight ? '#f7f4ef' : 'rgba(0,0,0,0.4)',
                       borderColor: 'var(--cinder-line)',
                     }}
                   >
-                    <span style={{ color: 'var(--cinder-text-dim)' }}>Started At</span>
-                    <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>
-                      {formatToLocalTime(eventDetail.started_at)}
-                      <br /><span className="text-[10px] opacity-60">UTC: {eventDetail.started_at}</span>
-                    </span>
+                    <div className="flex flex-col sm:grid sm:grid-cols-[120px_1fr] gap-0.5 sm:gap-2">
+                      <span className="opacity-60" style={{ color: 'var(--cinder-text-dim)' }}>Started At:</span>
+                      <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>
+                        {formatToLocalTime(eventDetail.started_at)}
+                      </span>
+                    </div>
 
-                    <span style={{ color: 'var(--cinder-text-dim)' }}>Completed At</span>
-                    <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>
-                      {formatToLocalTime(eventDetail.completed_at)}
-                      <br /><span className="text-[10px] opacity-60">UTC: {eventDetail.completed_at}</span>
-                    </span>
-
-                    <span style={{ color: 'var(--cinder-text-dim)' }}>Acknowledged At</span>
-                    <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>
-                      {eventDetail.acknowledged_at ? formatToLocalTime(eventDetail.acknowledged_at) : '未确认 (null)'}
-                    </span>
+                    <div className="flex flex-col sm:grid sm:grid-cols-[120px_1fr] gap-0.5 sm:gap-2">
+                      <span className="opacity-60" style={{ color: 'var(--cinder-text-dim)' }}>Completed At:</span>
+                      <span className="font-mono" style={{ color: 'var(--cinder-text)' }}>
+                        {formatToLocalTime(eventDetail.completed_at)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Seed Message */}
                 {eventDetail.seed_message && (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1.5">
                     <span className="text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--cinder-flame)' }}>
                       🌱 Seed Message (种子消息)
                     </span>
                     <div
-                      className="p-3 rounded border font-mono text-xs whitespace-pre-wrap max-h-48 overflow-y-auto"
+                      className="p-3 rounded-xl border font-mono text-xs whitespace-pre-wrap max-h-40 overflow-y-auto break-all"
                       style={{
                         background: isLight ? '#f4f1ea' : '#000000',
                         borderColor: 'var(--cinder-line)',
@@ -825,25 +886,25 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
                   </div>
                 )}
 
-                {/* Error summary or Content */}
+                {/* Error Summary or Content */}
                 {eventDetail.status === 'failed' ? (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1.5">
                     <span className="text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5 text-rose-500">
-                      ⚠️ Error Summary (安全错误摘要)
+                      ⚠️ Error Summary (错误摘要)
                     </span>
-                    <div className="p-3 rounded border font-mono text-xs whitespace-pre-wrap text-rose-500 bg-rose-500/10 border-rose-500/30">
+                    <div className="p-3 rounded-xl border font-mono text-xs whitespace-pre-wrap text-rose-400 bg-rose-500/10 border-rose-500/30 break-all">
                       {eventDetail.error_summary || 'No error details provided.'}
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1.5">
                     <span className="text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--cinder-flame)' }}>
                       📝 Final Summary (最终摘要正文)
                     </span>
                     <div
-                      className="p-3 rounded border text-xs leading-relaxed whitespace-pre-wrap"
+                      className="p-3 rounded-xl border text-xs leading-relaxed whitespace-pre-wrap break-words"
                       style={{
-                        background: isLight ? '#f7f4ef' : 'rgba(0,0,0,0.6)',
+                        background: isLight ? '#f7f4ef' : 'rgba(0,0,0,0.5)',
                         borderColor: 'var(--cinder-line)',
                         color: 'var(--cinder-text)',
                       }}
@@ -854,7 +915,7 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
                 )}
 
                 {/* Safe Tool History */}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1.5">
                   <span className="text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--cinder-flame)' }}>
                     🧰 Safe Tool History ({eventDetail.tool_history?.length || 0} calls)
                   </span>
@@ -863,7 +924,7 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
                       eventDetail.tool_history.map((t, idx) => (
                         <div
                           key={idx}
-                          className="p-2.5 rounded border flex flex-col gap-1 text-xs"
+                          className="p-2.5 rounded-xl border flex flex-col gap-1 text-xs"
                           style={{
                             background: isLight ? '#f7f4ef' : 'rgba(0,0,0,0.4)',
                             borderColor: 'var(--cinder-line)',
@@ -871,16 +932,16 @@ export default function AgentMemory({ appState, setView, goBack, viewParams }) {
                         >
                           <div className="flex items-center justify-between">
                             <span className="font-mono font-semibold text-blue-500">🛠️ {t.tool_name}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded uppercase bg-emerald-500/10 text-emerald-500">{t.status || 'success'}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-md uppercase bg-emerald-500/10 text-emerald-500">{t.status || 'success'}</span>
                           </div>
-                          <div className="text-[11px]" style={{ color: 'var(--cinder-text-faint)' }}>
-                            Time: {formatToLocalTime(t.timestamp)} | Result: {t.summary || JSON.stringify(t)}
+                          <div className="text-[11px] break-all" style={{ color: 'var(--cinder-text-faint)' }}>
+                            {t.summary || JSON.stringify(t)}
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="text-xs italic" style={{ color: 'var(--cinder-text-faint)' }}>
-                        无工具执行记录 (Empty Tool History)
+                      <div className="text-xs italic p-3 rounded-xl border" style={{ borderColor: 'var(--cinder-line)', color: 'var(--cinder-text-faint)' }}>
+                        无工具执行记录
                       </div>
                     )}
                   </div>

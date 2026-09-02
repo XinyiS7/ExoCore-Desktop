@@ -41,34 +41,34 @@ export default function GroupchatList({ appState, viewParams, goBack }) {
   navigate(`/groupchat/${gc.id}`);
   };
 
- const handleManage = () => {
- if (selected) {
-  setEditingGroupchat(selected);
-  setShowCreateModal(true);
- }
- };
+  const handleManage = () => {
+    if (selected) {
+      setEditingGroupchat(selected);
+      setShowCreateModal(true);
+    }
+  };
 
- const handleModalClose = () => {
- setShowCreateModal(false);
- setEditingGroupchat(null);
- };
+  const handleModalClose = () => {
+    setShowCreateModal(false);
+    setEditingGroupchat(null);
+  };
 
- const handleSaved = () => {
- fetchGroupchats();
- };
+  const handleSaved = () => {
+    fetchGroupchats();
+  };
 
- const sortedGroupchats = [...groupchats].sort(
- (a, b) => new Date(b.created_at) - new Date(a.created_at)
- );
+  const sortedGroupchats = [...groupchats].sort(
+    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+  );
 
- const isMobileRoom = selectedId && selected;
+  const isMobileRoom = selectedId && selected;
 
-return (
-  <div className="flex-1 h-full flex flex-col bg-exo-bg overflow-hidden">
-   {/* Desktop back header */}
-   <div className="hidden md:flex items-center h-12 px-4 flex-shrink-0">
-    <BackToUpper label="Home" onClick={() => navigate('/')} />
-   </div>
+  return (
+    <div className="flex-1 h-full flex flex-col bg-exo-bg overflow-hidden">
+      {/* Desktop back header */}
+      <div className="hidden md:flex items-center h-12 px-4 flex-shrink-0">
+        <BackToUpper label="Home" onClick={() => navigate('/')} />
+      </div>
 
    {/* Split view */}
    <div className="flex-1 h-full flex bg-exo-bg overflow-hidden">
@@ -133,10 +133,11 @@ return (
   <div className={`${isMobileRoom ? 'flex' : 'hidden md:flex'} md:flex flex-1 min-w-0 h-full flex-col`}>
   {selected ? (
    <GroupchatRoom
-   groupchat={selected}
-   presets={presets}
+    key={selected.id}
+    groupchat={selected}
+    presets={presets}
     onBack={() => navigate('/groupchat')}
-   onManage={handleManage}
+    onManage={handleManage}
    />
   ) : (
    <div className="flex-1 flex items-center justify-center">
@@ -153,7 +154,7 @@ return (
   )}
   </div>
 
-{/* Create / Edit Modal */}
+  {/* Create / Edit Modal */}
   <CreateGroupchatModal
    isOpen={showCreateModal}
    onClose={handleModalClose}

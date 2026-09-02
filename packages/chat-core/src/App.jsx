@@ -68,6 +68,9 @@ function AppLayout() {
 
   const appStateForModals = { projects, setProjects, presets, setPresets, activeSessionId, setActiveSessionId };
 
+  const location = useLocation();
+  const hideBottomBar = location.pathname.startsWith('/chat/') || location.pathname.startsWith('/groupchat/');
+
   return (
     <ModalProvider appState={appStateForModals} setView={setView}>
       <NotificationProvider>
@@ -81,7 +84,7 @@ function AppLayout() {
           <MobileHeader />
 
           {/* Page content — overflow-hidden: each view handles its own scrolling */}
-          <main className="flex-1 overflow-hidden flex flex-col relative z-[1]">
+          <main className={`flex-1 overflow-hidden flex flex-col relative z-[1] ${hideBottomBar ? '' : 'pb-[60px] md:pb-0'}`}>
             <ErrorBoundary>
               <Outlet />
             </ErrorBoundary>
