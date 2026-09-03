@@ -1,0 +1,645 @@
+/* ExoCore V4 — App Shell layout & navigation (D1 = D-A + M1 + X1 + C1) */
+
+/* ── Shell frame ─────────────────────────────────────────────────────────── */
+
+.app-shell {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Desktop fixed sidebar (D-A) */
+.app-sidebar {
+  display: none;
+  flex-direction: column;
+  width: 216px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--v4-line);
+  background: var(--v4-panel);
+  padding: 12px 10px 14px;
+  gap: 4px;
+}
+
+@media (min-width: 768px) {
+  .app-sidebar {
+    display: flex;
+  }
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 14px;
+}
+
+.app-brand-mark {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--v4-accent);
+  border-radius: 3px;
+  transform: rotate(45deg);
+}
+
+.app-brand-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* Main column: single scroll owner per page (pages scroll internally) */
+.app-main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Mobile bottom bar offset (M1) — sized by the shared --v4-bb-offset token
+   (C1A-R2-02): the offset must never lag the actual bar height. */
+.app-main--bb {
+  padding-bottom: calc(var(--v4-bb-offset) + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
+  .app-main--bb {
+    padding-bottom: 0;
+  }
+}
+
+/* ── Navigation data projection (sidebar & bottom bar) ───────────────────── */
+
+.app-nav {
+  display: flex;
+}
+
+.app-nav--sidebar {
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-nav--bottom {
+  width: 100%;
+  justify-content: space-around;
+  align-items: stretch;
+}
+
+.app-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid transparent;
+  background: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--v4-text-dim);
+  text-decoration: none;
+  min-width: 0;
+}
+
+.app-nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--v4-text);
+}
+
+.app-nav-item--active {
+  background: var(--v4-accent-soft);
+  color: var(--v4-text);
+}
+
+.app-nav-item--active .app-nav-label {
+  color: var(--v4-text);
+}
+
+.app-nav-item--disabled {
+  color: var(--v4-text-mute);
+  cursor: not-allowed;
+}
+
+.app-nav-item--disabled .app-nav-label {
+  opacity: 0.75;
+}
+
+.app-nav-item--disabled .app-phase-chip {
+  margin-left: auto;
+}
+
+.app-nav--bottom .app-nav-item {
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 0;
+  /* C1A-R3-01: drop the shared 1px transparent border (a sidebar-era metric
+     guard) — its top+bottom borders added 2px of intrinsic content and grew
+     the bar past the contract. Bottom projection is border-free by design. */
+  border: 0;
+  /* Pinned metrics so the bar height equals the --v4-bb-offset contract:
+     icon 18 + label 14 + badge 14 + gaps 6 + padding 12 = 64px. */
+  padding: 6px 4px;
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+  min-width: 0;
+}
+
+.app-nav--bottom .app-nav-label {
+  line-height: 14px;
+}
+
+.app-nav--bottom .app-phase-chip {
+  /* C1A-R1-02/R2-02: phase badges stay visible on mobile M1 with a compact
+     deterministic size (border-box 14px incl. 1px border) so all four slots
+     fit inside 320px without wrapping and the bar height stays exact. */
+  margin: 0 auto;
+  height: 14px;
+  line-height: 12px;
+  padding: 0 3px;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Mobile bottom bar (M1) ── */
+.app-bottombar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  display: flex;
+  border-top: 1px solid var(--v4-line);
+  background: rgba(12, 12, 15, 0.94);
+  backdrop-filter: blur(8px);
+  /* C1A-R3-01: LOCKED height (not min-height) = --v4-bb-offset (content 64px
+     incl. the 1px top border) + safe area. Content is exactly 64px because
+     bottom nav items are border-free with pinned metrics — the bar can no
+     longer grow intrinsically and drift from the reserved offset. */
+  box-sizing: border-box;
+  height: calc(var(--v4-bb-offset) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (min-width: 768px) {
+  .app-bottombar {
+    display: none;
+  }
+}
+
+/* ── More (X1 avatar overflow menu) ── */
+.app-more {
+  position: relative;
+  display: inline-flex;
+}
+
+.app-more--top {
+  display: inline-flex;
+}
+
+@media (min-width: 768px) {
+  .app-more--top {
+    display: none;
+  }
+}
+
+.app-more--sidebar {
+  display: none;
+  margin-top: auto;
+  padding: 10px 10px 0;
+}
+
+@media (min-width: 768px) {
+  .app-more--sidebar {
+    display: flex;
+  }
+}
+
+.app-avatar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--v4-line-strong);
+  background: var(--v4-panel-2);
+  color: var(--v4-text-dim);
+}
+
+.app-avatar-btn:hover {
+  color: var(--v4-text);
+  border-color: var(--v4-accent);
+}
+
+.app-more-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 120;
+  min-width: 190px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--v4-panel-2);
+  border: 1px solid var(--v4-line-strong);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.app-more--sidebar .app-more-menu {
+  bottom: calc(100% + 6px);
+  top: auto;
+}
+
+.app-more-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  padding: 8px 9px;
+  font-size: 13px;
+  color: var(--v4-text-mute);
+  text-align: left;
+  cursor: not-allowed;
+}
+
+.app-more-item .app-phase-chip {
+  margin-left: auto;
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────────────── */
+
+.app-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.app-page--center {
+  justify-content: center;
+  align-items: center;
+}
+
+.app-topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  border-bottom: 1px solid var(--v4-line);
+  flex-shrink: 0;
+}
+
+.app-topbar-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-topbar-title--detail {
+  flex: 1;
+}
+
+.app-topbar-sub {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--v4-text-mute);
+}
+
+.app-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.app-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--v4-text-dim);
+  text-decoration: none;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.app-back-link:hover {
+  color: var(--v4-text);
+}
+
+/* ── Scroll containers (single scroll owner per page) ───────────────────── */
+
+.app-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Recent list ─────────────────────────────────────────────────────────── */
+
+.app-recent-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 880px;
+  align-self: center;
+}
+
+.app-recent-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  padding: 11px 14px;
+  border: 1px solid var(--v4-line);
+  border-radius: var(--v4-radius);
+  background: var(--v4-panel);
+  color: var(--v4-text);
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.app-recent-row:hover {
+  border-color: var(--v4-line-strong);
+  background: var(--v4-panel-2);
+}
+
+.app-recent-name {
+  font-size: 13.5px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-recent-time {
+  font-size: 11px;
+  color: var(--v4-text-mute);
+  align-self: center;
+}
+
+.app-recent-meta {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ── Dialog ──────────────────────────────────────────────────────────────── */
+
+.app-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.62);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(8vh + env(safe-area-inset-top)) 16px 16px;
+  overflow-y: auto;
+}
+
+.app-dialog {
+  width: min(540px, 100%);
+  max-height: calc(84vh - env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+  background: var(--v4-panel);
+  border: 1px solid var(--v4-line-strong);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+}
+
+.app-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--v4-line);
+  flex-shrink: 0;
+}
+
+.app-dialog-body {
+  padding: 16px 18px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.app-field-label {
+  font-size: 12px;
+  color: var(--v4-text-dim);
+}
+
+.app-required {
+  color: var(--v4-danger);
+}
+
+.app-field-error {
+  font-size: 12px;
+  color: var(--v4-danger);
+}
+
+.app-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.app-radio-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--v4-line);
+  border-radius: var(--v4-radius);
+  padding: 9px 11px;
+  cursor: pointer;
+  background: var(--v4-panel-2);
+}
+
+.app-radio-card:has(input:checked) {
+  border-color: var(--v4-accent);
+  box-shadow: 0 0 0 1px var(--v4-accent-soft);
+}
+
+.app-radio-card input {
+  margin-top: 3px;
+  accent-color: var(--v4-accent);
+}
+
+.app-radio-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-radio-card-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.app-radio-card-desc {
+  font-size: 11.5px;
+  color: var(--v4-text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.app-check-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.app-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 3px 0;
+}
+
+.app-check-row input {
+  accent-color: var(--v4-accent);
+}
+
+.app-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+/* ── Conversation detail ─────────────────────────────────────────────────── */
+
+.app-msg {
+  margin: 0 auto 18px;
+  width: 100%;
+  max-width: 880px;
+}
+
+.app-msg-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.app-msg-role {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--v4-accent);
+}
+
+.app-msg--user .app-msg-role {
+  color: var(--v4-warn);
+}
+
+.app-msg--system .app-msg-role,
+.app-msg--developer .app-msg-role {
+  color: var(--v4-text-mute);
+}
+
+.app-msg-time {
+  font-size: 10.5px;
+  color: var(--v4-text-mute);
+}
+
+.app-msg-model {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--v4-text-mute);
+  font-family: var(--v4-mono);
+}
+
+.app-msg-body {
+  font-size: 13.5px;
+}
+
+.app-msg--user .app-msg-body {
+  margin-left: auto;
+  max-width: 88%;
+  background: var(--v4-panel);
+  border: 1px solid var(--v4-line);
+  border-radius: 10px 10px 3px 10px;
+  padding: 10px 13px;
+}
+
+.app-msg--assistant .app-msg-body {
+  padding: 0 2px;
+}
+
+.app-msg--system .app-msg-body,
+.app-msg--developer .app-msg-body {
+  background: var(--v4-panel);
+  border: 1px dashed var(--v4-line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--v4-text-dim);
+  font-size: 12.5px;
+}
+
+.app-deferred-chip {
+  display: inline-flex;
+  margin-top: 8px;
+  margin-right: 8px;
+  border: 1px dashed var(--v4-line-strong);
+  border-radius: 999px;
+  padding: 1px 9px;
+  font-size: 10.5px;
+  color: var(--v4-text-mute);
+}
+
+.app-timeline {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 880px;
+  align-self: center;
+}
+
+.app-timeline-more {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 14px;
+}

@@ -8,6 +8,7 @@
     "dev:chat": "pnpm --filter exo-chat-core dev",
     "dev:chronicle": "pnpm --filter exo-chronicle dev",
     "dev:council": "pnpm --filter exo-council dev",
+    "dev:app": "pnpm --filter exo-app dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "convert-icons": "node scripts/convert-icons.mjs"

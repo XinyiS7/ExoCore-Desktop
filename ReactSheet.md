@@ -105,7 +105,15 @@ SSE 事件（`event: <name>\ndata: <json>\n\n`；`agents/services.py` 实际发�
 | frozen_project_ids | [int] | 可选；g045 扩展项目列表；缺省 = `[project_id]`（project_id=0 时为 `[]`）；非 g045 强制 `[]` |
 | thinking_level | string | 可选，默认 `auto` |
 
-成功 201：`{msg: "会话已建立，权限已锁定。", data: {session_id, session_name}}`。注意：`temperature` 不是本 serializer 的字段（前端多发的 `temperature: 1.0` 会被静默丢弃）。
+成功 201：`{msg: "会话已建立，权限已锁定。", data: {conversation_id, session_id, session_name}}`。
+
+| 响应字段 | 类型 | 说明 |
+|---|---|---|
+| conversation_id | int | **canonical**：本次创建的持久化 Conversation 身份；新消费端必须使用 |
+| session_id | int | **deprecated compatibility alias**：恒等于 `conversation_id`，仅为既有 V3 创建后导航保留，无独立持久语义 |
+| session_name | string | Conversation 名称 |
+
+注意：`temperature` 不是本 serializer 的字段（前端多发的 `temperature: 1.0` 会被静默丢弃）。契约修正在 backend checkpoint `29368bbf` 落地；`/api/agents/sessions/init/` 路径暂时保留。
 
 **GET /api/agents/chronicle/** — Superior Chronicle 日志列表
 
@@ -461,7 +469,14 @@ key_value write-only，响应不返回。last_four 自动提取。
 
 ### 3.8 Projects — 项目管理
 
-**GET /api/core/projects/** — 列表，title/description/work_dir
+**GET /api/core/projects/** — 列表（source: `core/serializers.py` ProjectSerializer）
+
+```json
+[{"id": 1, "name": "My Note", "description": null, "prompt": null, "work_dir": null, "created_at": "..."}]
+```
+
+- 字段集：`id / name / description / prompt / work_dir / created_at`（无 `title`；V3 文档旧称 `title` 已废止）
+- `ProjectViewSet` 排除 `name="Archived Project"` 的归档项目
 
 **POST /api/core/projects/** / **PATCH** / **DELETE** — 删除触发 archive
 

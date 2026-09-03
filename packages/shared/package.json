@@ -6,7 +6,10 @@
   "main": "./src/index.js",
   "exports": {
     ".": "./src/index.js",
-    "./api": "./src/api.js",
+    "./api": {
+      "types": "./src/api.d.ts",
+      "default": "./src/api.js"
+    },
     "./auth": "./src/auth.js",
     "./models": "./src/models.js",
     "./endpoints/*": "./src/endpoints/*",

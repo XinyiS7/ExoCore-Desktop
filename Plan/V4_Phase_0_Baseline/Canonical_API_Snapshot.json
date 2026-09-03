@@ -1,6 +1,16 @@
 {
-  "snapshot_version": "1.0",
+  "snapshot_version": "1.1",
   "as_of": "2026-09-02T20:30:00+02:00",
+  "contract_amendments": [
+    {
+      "id": "P1A-B0",
+      "resource": "conversation.create.init",
+      "accepted_at": "2026-09-03T00:33:03+02:00",
+      "backend_commit": "ExoCore @ 29368bbfcf31f64f3baa5c6ba3fec79662d6fb8a",
+      "authority": "Alicia domain clarification + Ecki read-only archaeology + Solaire independent acceptance",
+      "summary": "conversation_id is canonical Conversation identity; session_id is an equal deprecated V3 compatibility alias"
+    }
+  ],
   "source_commits": {
     "frontend_repo": "ExoCore-Desktop @ 6b0948e06221fe49ebefa1658825c7e400f7f241 (main)",
     "backend_repo": "ExoCore @ 21f2a8f7aab6d475692af7716924571542040b8f (clean worktree)"
@@ -48,8 +58,8 @@
       "success": {
         "http": 201,
         "content_type": "application/json",
-        "envelope": "{\"msg\": \"会话已建立，权限已锁定。\", \"data\": {\"session_id\": int, \"session_name\": string}}",
-        "fields": ["msg", "data.session_id", "data.session_name"]
+        "envelope": "{\"msg\": \"会话已建立，权限已锁定。\", \"data\": {\"conversation_id\": int, \"session_id\": int, \"session_name\": string}}",
+        "fields": ["msg", "data.conversation_id", "data.session_id", "data.session_name"]
       },
       "errors": {
         "400": "serializer field errors (e.g. preset_id 指定的预设ID不存在。; project_id 指定的项目ID不存在。)",
@@ -57,16 +67,17 @@
       },
       "semantics": {
         "drift": "project_id 0 -> DB project NULL; DB NULL project is represented as project:0 in list/detail serializers",
-        "identity": "returns session_id == Conversation.id; conversation created with agent_preset, frozen_project_ids (g045), thinking_level, last_platform=preset.default_model",
+        "identity": "returns canonical conversation_id == created Conversation.id; deprecated V3 compatibility alias session_id == conversation_id; conversation created with agent_preset, frozen_project_ids (g045), thinking_level, last_platform=preset.default_model",
         "lifecycle": "no message is created by init"
       },
       "backend_sources": [
         "agents/urls.py: sessions/init/ -> SuperiorSessionCreateView",
         "agents/views.py SuperiorSessionCreateView.post (201 {msg,data})",
-        "agents/serializers.py SuperiorSessionInitSerializer (write-only name/preset_id/project_id/frozen_project_ids/thinking_level; read session_id/session_name)"
+        "agents/serializers.py SuperiorSessionInitSerializer (write-only name/preset_id/project_id/frozen_project_ids/thinking_level; read canonical conversation_id, deprecated session_id alias, session_name)"
       ],
       "frontend_consumers": [
-        "packages/chat-core/src/components/modals/NewSessionModal.jsx (raw fetch; payload {preset_id, name?, project_id, frozen_project_ids, thinking_level:'auto', temperature:1.0}; reads data.data.session_id)"
+        "packages/app P1A create flow (canonical data.conversation_id; name/max-id identity inference prohibited)",
+        "packages/chat-core/src/components/modals/NewSessionModal.jsx (raw fetch; payload {preset_id, name?, project_id, frozen_project_ids, thinking_level:'auto', temperature:1.0}; reads deprecated data.data.session_id compatibility alias)"
       ],
       "evidence": {
         "source_verified": true,

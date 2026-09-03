@@ -27,19 +27,22 @@ If a task requires backend or extension changes:
 - **Check the API contract first.** `ReactSheet.md` defines the data shapes. If a proposed change doesn't match the spec, discuss before coding.
 - **Respect existing patterns.** This monorepo has established conventions — match them. Don't introduce new patterns without a reason.
 
-# V3 Frontend Split
+# V3 Frontend Split (+ V4 side-by-side)
 
-ExoCore-Desktop is a **monorepo** containing three independent SPAs. Each runs on its own port as a standalone PWA, sharing a single Django backend (port 8000).
+ExoCore-Desktop is a **monorepo** containing three independent V3 SPAs and the **temporary V4 package** `exo-app`. Each runs on its own port as a standalone PWA, sharing a single Django backend (port 8000).
+
+> **Migration state (V4 P1A):** `packages/app` (`exo-app`, port **5176**, production `/app/`) is a side-by-side V4 preview shell — V3 remains production-primary until unified C1. During this window the repo hosts **four SPA/PWA packages**; `dev:app` is additive and independent from V3 dev commands. V4 never imports V3 page/components.
 
 ## Architecture
 
-### Three Web Modules (packages/)
+### Web Modules (packages/)
 
 | Package | Purpose |
 |---|---|
-| `chat-core` | Agent hub, conversations, projects, files, settings, memory, user profile |
-| `chronicle` | Timeline/BBS feed, task management, Google Calendar |
-| `council` | Multi-agent workspace — **deferred to V3.1** |
+| `chat-core` | Agent hub, conversations, projects, files, settings, memory, user profile (V3) |
+| `chronicle` | Timeline/BBS feed, task management, Google Calendar (V3) |
+| `council` | Multi-agent workspace — **deferred to V3.1** (V3) |
+| `app` | **V4 App Shell + canonical chat (P1A preview)** — `exo-app` |
 
 ### Shared Package
 
@@ -66,5 +69,6 @@ pnpm install          # Install all workspace dependencies
 pnpm dev:chat         # Start chat-core dev server (:5173)
 pnpm dev:chronicle    # Start chronicle dev server (:5174)
 pnpm dev:council      # Start council dev server (:5175)
+pnpm dev:app          # Start V4 app dev server (:5176, strict port)
 pnpm build            # Build all packages
 ```
