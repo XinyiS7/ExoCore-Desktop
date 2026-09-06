@@ -215,7 +215,7 @@ describe('Conversation detail states', () => {
     ]);
     renderApp(['/chat/5']);
     expect(await screen.findByText('还没有消息')).toBeTruthy();
-    expect(screen.queryByRole('textbox')).toBeNull();
-    expect(screen.queryByRole('button', { name: /发送/ })).toBeNull();
+    expect(screen.getByRole('textbox')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /发送/ })).toBeTruthy();
   });
 });

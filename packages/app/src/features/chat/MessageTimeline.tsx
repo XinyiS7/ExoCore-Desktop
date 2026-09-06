@@ -1,4 +1,6 @@
-import type { MessageView, MessageRole } from './types';
+import { Edit2, GitBranch, RotateCw } from 'lucide-react';
+import type { MessageRole, MessageView } from './types';
+import type { OptimisticUserRow, RuntimeAssistantRow } from './runtime/types';
 import { MessageContent } from './MessageContent';
 import { formatTimeOfDay } from './time';
 
@@ -9,8 +11,36 @@ const ROLE_LABELS: Record<MessageRole, string> = {
   developer: 'Developer',
 };
 
-function MessageRow({ message }: { message: MessageView }) {
+export interface MessageTimelineProps {
+  messages: MessageView[];
+  hasOlder: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => void;
+  optimisticUser?: OptimisticUserRow | null;
+  runtimeAssistant?: RuntimeAssistantRow | null;
+  isRunActive?: boolean;
+  onEditMessage?: (id: number, content: string, isLatestUser: boolean) => void;
+  onRegenerateMessage?: (id: number, isLatestUser: boolean) => void;
+  onBranchMessage?: (id: number, snippet: string) => void;
+}
+
+function MessageRowItem({
+  message,
+  isLatestUser,
+  isRunActive,
+  onEditMessage,
+  onRegenerateMessage,
+  onBranchMessage,
+}: {
+  message: MessageView;
+  isLatestUser: boolean;
+  isRunActive?: boolean;
+  onEditMessage?: (id: number, content: string, isLatestUser: boolean) => void;
+  onRegenerateMessage?: (id: number, isLatestUser: boolean) => void;
+  onBranchMessage?: (id: number, snippet: string) => void;
+}) {
   const isAssistant = message.role === 'assistant';
+  const isUser = message.role === 'user';
   const attachmentCount = message.attachmentsMeta?.length ?? message.attachmentIds.length;
   const attachmentNames = (message.attachmentsMeta ?? []).map((meta) => meta.display_name).join('、');
   const hasReasoning = Boolean(message.reasoningContent);
@@ -25,17 +55,61 @@ function MessageRow({ message }: { message: MessageView }) {
             {[message.platform, message.modelVersion].filter(Boolean).join(' · ')}
           </span>
         ) : null}
+
+        {/* Action buttons (disabled during active run, §7.1, §7.4, §7.5) */}
+        <div className="app-msg-actions">
+          {isUser && onEditMessage && (
+            <button
+              type="button"
+              className="app-msg-action-btn"
+              disabled={isRunActive}
+              onClick={() => onEditMessage(message.id, message.content, isLatestUser)}
+              title="编辑此条消息"
+              aria-label="编辑此条消息"
+            >
+              <Edit2 size={12} aria-hidden="true" />
+              编辑
+            </button>
+          )}
+          {isUser && onRegenerateMessage && (
+            <button
+              type="button"
+              className="app-msg-action-btn"
+              disabled={isRunActive}
+              onClick={() => onRegenerateMessage(message.id, isLatestUser)}
+              title="重新生成回答"
+              aria-label="重新生成回答"
+            >
+              <RotateCw size={12} aria-hidden="true" />
+              重生成
+            </button>
+          )}
+          {isAssistant && onBranchMessage && (
+            <button
+              type="button"
+              className="app-msg-action-btn"
+              disabled={isRunActive}
+              onClick={() => onBranchMessage(message.id, message.content)}
+              title="从该回答派生新会话"
+              aria-label="从该回答派生新会话"
+            >
+              <GitBranch size={12} aria-hidden="true" />
+              分支
+            </button>
+          )}
+        </div>
       </header>
+
       <div className="app-msg-body">
         {message.content ? (
           <MessageContent content={message.content} />
         ) : (
           <span className="app-muted">（空消息）</span>
         )}
-        {/* Honest partial-capability indicators — no P1B/P1C controls here. */}
+        {/* Honest partial-capability indicators */}
         {hasReasoning ? (
           <span className="app-deferred-chip" title="推理过程内容在后续阶段开放查看">
-            推理过程 · P1B 开放
+            推理过程 · P1D 开放
           </span>
         ) : null}
         {attachmentCount > 0 ? (
@@ -51,18 +125,28 @@ function MessageRow({ message }: { message: MessageView }) {
   );
 }
 
-/** Pure message list — newest-visible-first window rendered oldest → newest. */
+/** Pure message list with optimistic / runtime overlay rendering */
 export function MessageTimeline({
   messages,
   hasOlder,
   loadingMore,
   onLoadMore,
-}: {
-  messages: MessageView[];
-  hasOlder: boolean;
-  loadingMore: boolean;
-  onLoadMore: () => void;
-}) {
+  optimisticUser,
+  runtimeAssistant,
+  isRunActive,
+  onEditMessage,
+  onRegenerateMessage,
+  onBranchMessage,
+}: MessageTimelineProps) {
+  // Find latest persisted user turn ID to identify historical vs latest turns (§7.4)
+  let latestUserMessageId = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'user') {
+      latestUserMessageId = messages[i].id;
+      break;
+    }
+  }
+
   return (
     <div className="app-timeline">
       {hasOlder ? (
@@ -77,9 +161,69 @@ export function MessageTimeline({
           </button>
         </div>
       ) : null}
+
+      {/* Persisted canonical messages */}
       {messages.map((message) => (
-        <MessageRow key={message.id} message={message} />
+        <MessageRowItem
+          key={message.id}
+          message={message}
+          isLatestUser={message.id === latestUserMessageId}
+          isRunActive={isRunActive}
+          onEditMessage={onEditMessage}
+          onRegenerateMessage={onRegenerateMessage}
+          onBranchMessage={onBranchMessage}
+        />
       ))}
+
+      {/* Optimistic User Message Overlay (§6.4) */}
+      {optimisticUser ? (
+        <article
+          key={optimisticUser.clientKey}
+          className="app-msg app-msg--user app-msg--optimistic"
+          data-role="user"
+        >
+          <header className="app-msg-head">
+            <span className="app-msg-role">你</span>
+            <span className="app-msg-time">{formatTimeOfDay(optimisticUser.createdAt)}</span>
+            <span className="app-muted" style={{ fontSize: '10.5px' }}>
+              （发送中…）
+            </span>
+          </header>
+          <div className="app-msg-body">
+            <MessageContent content={optimisticUser.content} />
+          </div>
+        </article>
+      ) : null}
+
+      {/* Runtime Assistant Message Overlay (§6.4) */}
+      {runtimeAssistant ? (
+        <article
+          key={runtimeAssistant.clientKey}
+          className="app-msg app-msg--assistant app-msg--streaming"
+          data-role="assistant"
+        >
+          <header className="app-msg-head">
+            <span className="app-msg-role">Agent</span>
+            {runtimeAssistant.isStreaming ? (
+              <span className="app-muted" style={{ fontSize: '10.5px' }}>
+                {runtimeAssistant.statusText || '生成中…'}
+              </span>
+            ) : null}
+          </header>
+          <div className="app-msg-body">
+            {runtimeAssistant.content ? (
+              <MessageContent content={runtimeAssistant.content} />
+            ) : (
+              <span className="app-spinner-inline" aria-label="等待回答" />
+            )}
+            {runtimeAssistant.error ? (
+              <div className="app-runtime-error-box" role="alert">
+                <span className="app-error-hint">{runtimeAssistant.error.message}</span>
+              </div>
+            ) : null}
+          </div>
+        </article>
+      ) : null}
     </div>
   );
 }

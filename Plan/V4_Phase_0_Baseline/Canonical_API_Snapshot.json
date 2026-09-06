@@ -1,7 +1,15 @@
 {
-  "snapshot_version": "1.1",
-  "as_of": "2026-09-02T20:30:00+02:00",
+  "snapshot_version": "1.2",
+  "as_of": "2026-09-03T11:43:25+02:00",
   "contract_amendments": [
+    {
+      "id": "P1B-B0",
+      "resource": "runtime.chat.poll / runtime.chat.sse / conversation.branch",
+      "accepted_at": "2026-09-03T11:43:25+02:00",
+      "backend_commit": "ExoCore @ 29368bbfcf31f64f3baa5c6ba3fec79662d6fb8a",
+      "authority": "P1B Detailed Plan §5 + Ecki source archaeology + Solaire review",
+      "summary": "async message_id is an opaque runtime token, not an assistant Message id; polling delta is a JSON value normalized by event kind (telemetry/cache_skipped); branch originates from an assistant Message id; backend _BUFFER_TTL=300 is declared but unenforced (process lifetime reality); generator-path errors surface as SSE error stream_crashed"
+    },
     {
       "id": "P1A-B0",
       "resource": "conversation.create.init",
@@ -481,7 +489,7 @@
         "headers": "X-Accel-Buffering: no; Cache-Control: no-cache",
         "event_schema": "frames 'event: <name>\\ndata: <json>\\n\\n'",
         "canonical_events": {
-          "status": "string (phase message; also used for tool progress with {message, args...} shape before blocking tools)",
+          "status": "string (phase message; tool progress rendered by _format_tool_status() into a safe preview string with {command}/{target} placeholders substituted and truncated)",
           "thinking": "string chunk (reasoning text)",
           "content": "string chunk (answer text)",
           "telemetry": "{\"platform\", \"model_name\", \"input_chars\", \"output_chars\", \"tool_calls\", \"cached_input_chars\"} (emitted once before terminal)",
@@ -494,7 +502,7 @@
       },
       "errors": {
         "400": "{\"error\": \"你还没输入内容，西娅。\"} (empty content, no edit, no attachments) | {\"error\": \"用户身份预设不能用于 Agent 对话\"} | {\"error\": \"不支持的 Agent 类型：...\"} | {\"code\": \"invalid_endpoint\", \"error\": \"endpoint must be an integer\"}",
-        "404": "{\"error\": \"找不到该会话\"} | synchronous ValueError -> {\"error\": str} 404 (generator-path ValueErrors surface as SSE error instead)",
+        "404": "{\"error\": \"找不到该会话\"} | synchronous ValueError -> {\"error\": str} 404 (generator-path ValueErrors such as invalid edit target surface through _sse_error_guard as SSE stream error, commonly code 'stream_crashed', not a synchronous 404)",
         "sse_error_payloads": {
           "typed": "{\"code\", \"message\", \"provider\", \"model\", \"endpoint_id\", \"retryable\"} (GatewayError categories auth_error/rate_limited/service_unavailable/protocol_error; TargetResolutionError code target_resolution_error retryable false)",
           "legacy": "{\"code\", \"message\"} with codes rate_limited | service_unavailable | auth_error | stream_error",
@@ -524,16 +532,16 @@
       "auth_csrf": "cookie credentials",
       "path_params": {"session_id": "int"},
       "query": {
-        "message_id": "string required (async token, first 8 chars of uuid4)",
+        "message_id": "string required (opaque async runtime token, first 8 chars of uuid4; not a database Message ID)",
         "cursor": "int optional default 0 (event index)"
       },
       "request": {},
       "success": {
         "http": 200,
-        "envelope": "{\"status\": string, \"events\": [{\"event_type\": string, \"delta\": string}], \"cursor\": int, \"error_message\": dict|string|null}",
+        "envelope": "{\"status\": string, \"events\": [{\"event_type\": string, \"delta\": string|object}], \"cursor\": int, \"error_message\": dict|string|null}",
         "status_values": ["processing", "done", "stopped", "error", "not_found"],
         "terminal": "done/stopped/error end the poll; error_message carries the typed error dict when available",
-        "buffer_ttl": "300s process-level singleton (StreamingBufferManager); not_found after expiry"
+        "buffer_ttl": "300s declared in backend source (_BUFFER_TTL = 300), but unenforced (no cleanup_expired or age check exists; actual lifetime is owning backend process lifetime). V4 must not fabricate a 300s client-side timeout."
       },
       "errors": {
         "400": "{\"error\": \"message_id is required\"}"
@@ -612,14 +620,14 @@
       "domain": "conversation",
       "method": "POST",
       "path": "/api/agents/conversations/<pk>/branch/",
-      "purpose": "Fork a new independent conversation from an assistant message.",
+      "purpose": "Fork a new independent conversation from a persisted assistant Message.",
       "auth_csrf": "cookie credentials; CSRF on POST",
       "path_params": {"pk": "int"},
       "query": {},
-      "request": {"branch_from_message_id": "int required; must be an assistant message in this conversation"},
+      "request": {"branch_from_message_id": "int required; must be an assistant Message.id in this conversation (not a HistoryChunk)"},
       "success": {
         "http": 201,
-        "envelope": "{\"session_id\": int, \"conversation_id\": int, \"name\": 'Branch from <original name>'}"
+        "envelope": "{\"conversation_id\": int, \"session_id\": int, \"name\": 'Branch from <original name>'}"
       },
       "errors": {
         "400": "{\"error\": \"branch_from_message_id 不能为空\"} | ValueError maps -> {\"error\": \"会话不存在\" / \"找不到指定的 AI 消息\" / \"没有可复制的有效消息\"}",

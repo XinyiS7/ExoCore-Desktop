@@ -72,7 +72,7 @@ SSE 事件（`event: <name>\ndata: <json>\n\n`；`agents/services.py` 实际发�
 
 | event | data |
 |---|---|
-| `status` | 字符串（阶段消息；阻塞工具前为 `{message, args…}` 形态进度） |
+| `status` | 字符串（阶段消息；工具进度经 `_format_tool_status()` 渲染为安全预览字符串，如 `{command}`/`{target}` 占位符被截断替换后的纯文本） |
 | `thinking` | 字符串 chunk（reasoning 文本） |
 | `content` | 字符串 chunk（回答文本） |
 | `telemetry` | `{platform, model_name, input_chars, output_chars, tool_calls, cached_input_chars}`（终态前发一次） |
@@ -83,13 +83,13 @@ SSE 事件（`event: <name>\ndata: <json>\n\n`；`agents/services.py` 实际发�
 
 **不再存在的事件名**：`delta` / `tool_call` / `tool_result` / `reasoning`（旧文档名；工具进度走 `status`，次数走 `telemetry.tool_calls`）。每次运行恰好一个终态：`done` XOR `stopped` XOR `error`；`stopped`/`error` 前部分内容已落库为 assistant 消息。
 
-**编辑/重生成（统一入口）**：POST body 带 `edit_message_id`（必须是同一会话内 role=user 的消息，可为任意历史位置）——带非空 `content` = 编辑后重发；空 content = 纯 regenerate（不新建 user 消息）。目标之后的全部消息被截断。目标找不到 → 流内 SSE error（`internal_error`），不是同步 404。
+**编辑/重生成（统一入口）**：POST body 带 `edit_message_id`（必须是同一会话内 role=user 的消息，可为任意历史位置）——带非空 `content` = 编辑后重发；空 content = 纯 regenerate（不新建 user 消息）。目标之后的全部消息被截断。目标找不到或生成器路径错误 → 经由 `_sse_error_guard` 呈现为流内 SSE error（常见为 `stream_crashed` 或 `internal_error`），不是同步 404。
 
-**async 模式**：`POST .../chat/<sid>/?mode=async` → 200 + JSON `{message_id: <8位token>, status: "processing"}`（message_id 是占位的 assistant 消息标识，后续用 status/ 端点轮询）。
+**async 模式**：`POST .../chat/<sid>/?mode=async` → 200 + JSON `{message_id: <8位token>, status: "processing"}`（`message_id` 是不透明的短期运行 token，不是持久化的 assistant 消息 ID 或 Session ID，后续用 status/ 端点轮询）。
 
-**GET /api/agents/chat/<session_id>/status/?message_id=<token>&cursor=<int>** — async 轮询：`{status, events: [{event_type, delta}], cursor, error_message}`；status ∈ `processing | done | stopped | error | not_found`；buffer TTL 300s；`error_message` 为 typed dict 或字符串。
+**GET /api/agents/chat/<session_id>/status/?message_id=<token>&cursor=<int>** — async 轮询：`{status, events: [{event_type, delta}], cursor, error_message}`；status ∈ `processing | done | stopped | error | not_found`；`events[].delta` 依据 `event_type` 归一化（文本类为 string，telemetry/cache_skipped 等结构化事件为 JSON object）；后端声明的 `_BUFFER_TTL = 300` 尚未在源码中强制执行（无清理过期逻辑，实际生命周期取决于后端进程生命周期；前端不得臆造 300s 本地超时）；`error_message` 为 typed dict 或字符串。
 
-**POST /api/agents/chat/<session_id>/stop/** — 中断流：async 带 `?message_id=`；SSE 模式不带（按 session 注册表）。成功 `{status: "stop_requested"}`；无活跃生成 → 404。
+**POST /api/agents/chat/<session_id>/stop/** — 中断流：async 带 `?message_id=<token>`；SSE 模式不带（按 session 注册表）。成功 `{status: "stop_requested"}`；无活跃生成 → 404。
 
 ### 1.4 Superior Session — Agent 自主调度
 
@@ -215,7 +215,12 @@ SSE 事件（`event: <name>\ndata: <json>\n\n`；`agents/services.py` 实际发�
 
 ### 1.7 Branch — 对话分支
 
-**POST /api/agents/conversations/<pk>/branch/** — 从指定 HistoryChunk 分支
+**POST /api/agents/conversations/<pk>/branch/** — 从指定的已持久化 assistant 消息分支
+
+- 请求体：`{"branch_from_message_id": <int>}`（必须为属于该会话的 assistant 消息 ID，非 HistoryChunk）
+- 成功 201：`{"conversation_id": int, "session_id": int, "name": "Branch from <原会话名>"}`（`conversation_id` 为 canonical 导航身份；`session_id` 为 legacy 兼容别名，V4 严禁读取）
+- 错误：400（ID 为空、找不到消息、无有效消息等）/ 500
+- 语义：复制该消息及之前的所有有效历史（最多保留最新 21 条），在新创建的独立会话中重排索引。
 
 ---
 

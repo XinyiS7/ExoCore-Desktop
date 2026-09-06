@@ -95,6 +95,8 @@ export interface ConversationSummary {
   agentType: string;
   agentPresetId: number | null;
   lastMessageAt: string | null;
+  /** Canonical thinking level ('' or null => 'auto' at request time, §5.1). */
+  thinkingLevel: string | null;
 }
 
 export interface MessageView {

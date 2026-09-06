@@ -100,6 +100,7 @@ function normalizeConversationRow(row: ConversationRow): ConversationSummary {
     agentType: row.agent_type,
     agentPresetId: row.agent_preset_id,
     lastMessageAt: row.last_message_at,
+    thinkingLevel: typeof row.thinking_level === 'string' ? row.thinking_level : null,
   };
 }
 

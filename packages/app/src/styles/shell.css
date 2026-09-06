@@ -643,3 +643,215 @@
   justify-content: center;
   padding: 4px 0 14px;
 }
+
+/* ── P1B Chat Runtime, Actions & Composer ──────────────────────────────── */
+
+.app-msg-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.app-msg-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--v4-text-mute);
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.app-msg-action-btn:hover:not(:disabled) {
+  color: var(--v4-accent);
+  background: var(--v4-panel-hover, rgba(255, 255, 255, 0.05));
+}
+
+.app-msg-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.app-msg--optimistic {
+  opacity: 0.85;
+}
+
+.app-msg--streaming .app-spinner-inline {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--v4-line);
+  border-top-color: var(--v4-accent);
+  border-radius: 50%;
+  animation: app-spin 0.8s linear infinite;
+}
+
+@keyframes app-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.app-runtime-error-box {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+}
+
+/* Runtime status banners */
+.app-runtime-banners {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 12px 6px;
+}
+
+.app-runtime-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.app-runtime-banner--active {
+  background: var(--v4-panel);
+  border: 1px solid var(--v4-line);
+  color: var(--v4-text-dim);
+}
+
+.app-runtime-banner--warning {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.app-runtime-banner--error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.app-runtime-banner--info {
+  background: var(--v4-panel);
+  border: 1px solid var(--v4-accent);
+  color: var(--v4-text);
+  justify-content: space-between;
+}
+
+.app-runtime-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+
+.app-runtime-banner-msgwrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-runtime-banner-sub {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.app-runtime-banner-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Composer box — bottom padding includes the mobile safe area so the composer
+   stays reachable above the home indicator on detail routes (C1B-R1-06). */
+.app-composer-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 12px calc(14px + env(safe-area-inset-bottom));
+  flex-shrink: 0;
+}
+
+.app-composer-editbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  font-size: 11.5px;
+  color: #fbbf24;
+}
+
+.app-composer {
+  display: flex;
+  flex-direction: column;
+  background: var(--v4-panel);
+  border: 1px solid var(--v4-line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.app-composer:focus-within {
+  border-color: var(--v4-line-strong);
+}
+
+.app-composer-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--v4-text);
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+}
+
+.app-composer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+  border-top: 1px solid var(--v4-line);
+}
+
+.app-transport-label {
+  display: inline-flex;
+  align-items: center;
+}
+
+.app-transport-select {
+  background: transparent;
+  border: 1px solid var(--v4-line);
+  color: var(--v4-text-dim);
+  font-size: 11.5px;
+  border-radius: 4px;
+  padding: 2px 4px;
+  outline: none;
+}
+
+.app-composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

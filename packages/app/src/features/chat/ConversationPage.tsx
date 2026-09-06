@@ -1,8 +1,16 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { toAppApiError } from './api';
 import {
+  findPersistedMessage,
   isValidConversationId,
   useConversationQuery,
   useMessagePagesQuery,
@@ -11,6 +19,11 @@ import {
 import { MessageTimeline } from './MessageTimeline';
 import { MoreMenu } from '../../shell/PrimaryNavigation';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
+import { useChatRuntime } from './runtime/useChatRuntime';
+import { ChatComposer } from './ChatComposer';
+import { RuntimeStatusBanner } from './RuntimeStatusBanner';
+import { TruncateConfirmModal } from './TruncateConfirmModal';
+import { BranchConfirmModal } from './BranchConfirmModal';
 
 /** Distinct invalid-URL state — no request is issued for bad route params. */
 function InvalidConversationState() {
@@ -43,13 +56,10 @@ function ErrorDetail({ error }: { error: unknown }) {
   return null;
 }
 
-/**
- * Canonical conversation read path (Plan Task 7):
- * Recent / direct URL / create-success all resolve into this one component.
- * No composer, no runtime mutation endpoint — P1B owns sending.
- */
 export function ConversationPage() {
   const { conversationId } = useParams();
+  const navigate = useNavigate();
+
   const invalid = !isValidConversationId(conversationId);
   const id = invalid ? 0 : Number(conversationId);
 
@@ -59,12 +69,118 @@ export function ConversationPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const pendingAnchor = useRef<{ top: number; height: number } | null>(null);
+  const isNearBottomRef = useRef<boolean>(true);
+  const persistedRowsRef = useRef<ReadonlyArray<{ id: number; role: string }>>([]);
+  /** Caller-side route identity for branch navigation guards (§6.3). */
+  const pageEpochRef = useRef(0);
+  const pageConversationIdRef = useRef(id);
+  pageConversationIdRef.current = id;
+  /**
+   * R5-A2: per-invocation branch caller token. Modal close, replacement or
+   * route switch REVOKES it — a revoked caller must never navigate, even if
+   * a later clear-retry succeeds. Created fresh on every confirm.
+   */
+  const branchCallerTokenRef = useRef<{ revoked: boolean } | null>(null);
+
+  const merged = pagesQuery.data;
+  // Canonical persisted rows only — runtime overlays never qualify as targets.
+  persistedRowsRef.current = merged?.rows ?? [];
+
+  // Route switch: invalidate the page-level caller identity and reset branch /
+  // truncation modal targets so an old target cannot appear in another
+  // Conversation (§6.3).
+  useEffect(() => {
+    pageEpochRef.current += 1;
+    // R5-A2: route switch revokes the pending branch invocation.
+    if (branchCallerTokenRef.current) branchCallerTokenRef.current.revoked = true;
+    branchCallerTokenRef.current = null;
+    setTruncateModal((prev) => ({ ...prev, isOpen: false }));
+    setBranchModal({ isOpen: false, targetMessage: null });
+  }, [id]);
+
+  // Runtime lifecycle hook (single authoritative owner for send/edit/regenerate/
+  // branch + transport + reconciliation; C1B intervention §3).
+  const {
+    transport,
+    setTransport,
+    status,
+    busy,
+    optimisticUser,
+    runtimeAssistant,
+    runtimeError,
+    protocolWarning,
+    hasPendingReconcile,
+    draftCleanupFailed,
+    sendMessage,
+    stopGeneration,
+    editingTarget,
+    startEdit,
+    cancelEdit,
+    confirmEdit,
+    regenerate,
+    resumePolling,
+    retrySync,
+    applyPendingReconcile,
+    acknowledgeUncertain,
+    retryReread,
+    retryStorage,
+    dismissTransient,
+    retryDraftCleanup,
+    branchFrom,
+  } = useChatRuntime({
+    conversationId: id,
+    isNearBottomRef,
+    thinkingLevel: conversationQuery.data?.thinkingLevel ?? null,
+    persistedRowsRef,
+    onNavigateToConversation: (conversationId: number) => {
+      // At most one later navigation, only after the exact source clear
+      // returned `cleared` AND this route caller is still current (§6.2).
+      if (pageEpochRef.current === 0) return;
+      navigate(`/chat/${conversationId}`);
+    },
+  });
+
+  // Modal states
+  const [truncateModal, setTruncateModal] = useState<{
+    isOpen: boolean;
+    targetId: number;
+    targetContent: string;
+    actionType: 'edit' | 'regenerate';
+  }>({
+    isOpen: false,
+    targetId: 0,
+    targetContent: '',
+    actionType: 'edit',
+  });
+
+  const [branchModal, setBranchModal] = useState<{
+    isOpen: boolean;
+    targetMessage: { id: number; snippet: string } | null;
+  }>({
+    isOpen: false,
+    targetMessage: null,
+  });
 
   const presetById = useMemo(() => {
     const map = new Map<number, string>();
     for (const preset of presetsQuery.data ?? []) map.set(preset.id, preset.name);
     return map;
   }, [presetsQuery.data]);
+
+  // Track scroll position to determine near-bottom state
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distanceToBottom < 80;
+  }, []);
+
+  // Auto-scroll when new content streams in and user is near bottom
+  useEffect(() => {
+    if (isNearBottomRef.current && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [optimisticUser, runtimeAssistant?.content]);
 
   // Preserve scroll position when older rows are prepended (Plan Task 7.7).
   useLayoutEffect(() => {
@@ -83,13 +199,99 @@ export function ConversationPage() {
     conversation?.agentPresetId === null || conversation?.agentPresetId === undefined
       ? '未知 Agent'
       : (presetById.get(conversation.agentPresetId) ?? `Agent #${conversation.agentPresetId}`);
-  const merged = pagesQuery.data;
 
   const handleLoadMore = () => {
     const el = scrollRef.current;
     if (!el || pendingAnchor.current !== null || pagesQuery.isFetchingNextPage) return;
     pendingAnchor.current = { top: el.scrollTop, height: el.scrollHeight };
     void pagesQuery.fetchNextPage();
+  };
+
+  const handleApplyPendingReconcile = async () => {
+    await applyPendingReconcile();
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+    isNearBottomRef.current = true;
+  };
+
+  // Request-side action-target guards (§5.1/§5.5, C1B-R1-05): every
+  // edit/regenerate/branch dispatch re-validates the target against the
+  // CURRENT canonical persisted rows of this conversation before POST.
+  const handleEditMessage = (msgId: number, content: string, isLatestUser: boolean) => {
+    if (busy) return;
+    if (!findPersistedMessage(merged?.rows, msgId, 'user')) return;
+    if (isLatestUser) {
+      startEdit(msgId, content);
+    } else {
+      setTruncateModal({
+        isOpen: true,
+        targetId: msgId,
+        targetContent: content,
+        actionType: 'edit',
+      });
+    }
+  };
+
+  const handleRegenerateMessage = (msgId: number, isLatestUser: boolean) => {
+    if (busy) return;
+    if (!findPersistedMessage(merged?.rows, msgId, 'user')) return;
+    if (isLatestUser) {
+      void regenerate(msgId);
+    } else {
+      setTruncateModal({
+        isOpen: true,
+        targetId: msgId,
+        targetContent: '',
+        actionType: 'regenerate',
+      });
+    }
+  };
+
+  const handleConfirmTruncate = () => {
+    if (busy) return;
+    if (!findPersistedMessage(merged?.rows, truncateModal.targetId, 'user')) return;
+    if (truncateModal.actionType === 'edit') {
+      startEdit(truncateModal.targetId, truncateModal.targetContent);
+    } else {
+      void regenerate(truncateModal.targetId);
+    }
+  };
+
+  const handleBranchMessage = (msgId: number, snippet: string) => {
+    if (busy) return;
+    if (!findPersistedMessage(merged?.rows, msgId, 'assistant')) return;
+    // R5-A2: opening a new invocation revokes any still-pending one.
+    if (branchCallerTokenRef.current) branchCallerTokenRef.current.revoked = true;
+    branchCallerTokenRef.current = null;
+    setBranchModal({
+      isOpen: true,
+      targetMessage: { id: msgId, snippet },
+    });
+  };
+
+  const handleConfirmBranch = async (msgId: number) => {
+    // R5-A2: per-invocation caller token captured BEFORE confirmation; every
+    // await revalidates token + page identity, so close/replacement/route
+    // switch can never let a stale caller navigate.
+    const callerToken = { revoked: false };
+    branchCallerTokenRef.current = callerToken;
+    const callerEpoch = pageEpochRef.current;
+    const callerConv = pageConversationIdRef.current;
+    if (!findPersistedMessage(merged?.rows, msgId, 'assistant')) {
+      throw new Error('该助手消息已不在当前会话中，无法创建分支。');
+    }
+    const res = await branchFrom(msgId, callerToken);
+    if (
+      callerToken.revoked ||
+      callerEpoch !== pageEpochRef.current ||
+      callerConv !== pageConversationIdRef.current
+    ) {
+      return; // stale caller — source result is complete; never navigate
+    }
+    // Recent was refreshed inside branchFrom (positive refresh on
+    // success/ambiguity); navigation is the only page-side act left.
+    navigate(`/chat/${res.conversationId}`);
   };
 
   return (
@@ -100,14 +302,20 @@ export function ConversationPage() {
           Chat Home
         </Link>
         <div className="app-topbar-title app-topbar-title--detail">
-          <h1 className="app-h1">{conversation?.name ?? (conversationQuery.isPending ? '加载中…' : `会话 #${id}`)}</h1>
+          <h1 className="app-h1">
+            {conversation?.name ?? (conversationQuery.isPending ? '加载中…' : `会话 #${id}`)}
+          </h1>
           <span className="app-topbar-sub">
             <span className="app-chip">{agentLabel}</span>
             <span className={`app-chip${conversation?.projectId === null ? ' app-chip--drift' : ''}`}>
               {conversation?.projectName ?? 'Drift'}
             </span>
             {presetsQuery.isError ? (
-              <button type="button" className="app-link-btn" onClick={() => void presetsQuery.refetch()}>
+              <button
+                type="button"
+                className="app-link-btn"
+                onClick={() => void presetsQuery.refetch()}
+              >
                 Agent 名称加载失败，重试
               </button>
             ) : null}
@@ -137,14 +345,18 @@ export function ConversationPage() {
       ) : null}
 
       {conversation !== undefined ? (
-        <div className="app-scroll" ref={scrollRef}>
+        <div className="app-scroll" ref={scrollRef} onScroll={handleScroll}>
           {pagesQuery.isPending && merged === undefined ? (
             <LoadingState label="正在加载消息…" />
           ) : null}
 
           {pagesQuery.isError ? (
             toAppApiError(pagesQuery.error).status === 404 ? (
-              <ErrorState title="消息历史不可用" detail="该会话的消息历史不存在（404）。" onRetry={() => void pagesQuery.refetch()} />
+              <ErrorState
+                title="消息历史不可用"
+                detail="该会话的消息历史不存在（404）。"
+                onRetry={() => void pagesQuery.refetch()}
+              />
             ) : (
               <ErrorState
                 title="消息加载失败"
@@ -155,10 +367,10 @@ export function ConversationPage() {
           ) : null}
 
           {merged !== undefined && !pagesQuery.isError ? (
-            merged.rows.length === 0 && !merged.hasOlder ? (
+            merged.rows.length === 0 && !merged.hasOlder && !optimisticUser && !runtimeAssistant ? (
               <EmptyState
                 title="还没有消息"
-                hint="这个会话还没有内容。发送消息功能将在 P1B 阶段开放。"
+                hint="这个会话还没有内容。在下方输入消息开始对话。"
               />
             ) : (
               <MessageTimeline
@@ -166,11 +378,75 @@ export function ConversationPage() {
                 hasOlder={merged.hasOlder}
                 loadingMore={pagesQuery.isFetchingNextPage}
                 onLoadMore={handleLoadMore}
+                optimisticUser={optimisticUser}
+                runtimeAssistant={runtimeAssistant}
+                isRunActive={busy}
+                onEditMessage={handleEditMessage}
+                onRegenerateMessage={handleRegenerateMessage}
+                onBranchMessage={handleBranchMessage}
               />
             )
           ) : null}
         </div>
       ) : null}
+
+      {/* Runtime Status / Warning / Error Banners */}
+      <RuntimeStatusBanner
+        status={status}
+        statusText={runtimeAssistant?.statusText}
+        error={runtimeError}
+        protocolWarning={protocolWarning}
+        hasPendingReconcile={hasPendingReconcile}
+        draftCleanupFailed={draftCleanupFailed}
+        onApplyPendingReconcile={() => void handleApplyPendingReconcile()}
+        onRetrySync={() => void retrySync()}
+        onRetryStop={() => void stopGeneration()}
+        onRetryReread={() => void retryReread()}
+        onRetryStorage={() => void retryStorage()}
+        onResumePolling={resumePolling}
+        onAcknowledgeUncertain={acknowledgeUncertain}
+        onDismissTransient={dismissTransient}
+        onRetryDraftCleanup={retryDraftCleanup}
+      />
+
+      {/* Composer (Always accessible at bottom of conversation view) */}
+      {conversation !== undefined ? (
+        <ChatComposer
+          conversationId={id}
+          status={status}
+          busy={busy}
+          transport={transport}
+          onTransportChange={setTransport}
+          onSend={sendMessage}
+          onStop={() => void stopGeneration()}
+          editingTarget={editingTarget}
+          onCancelEdit={cancelEdit}
+          onConfirmEdit={confirmEdit}
+        />
+      ) : null}
+
+      {/* Confirmation Modals */}
+      <TruncateConfirmModal
+        isOpen={truncateModal.isOpen}
+        targetMessageId={truncateModal.targetId}
+        actionType={truncateModal.actionType}
+        onConfirm={handleConfirmTruncate}
+        onClose={() => setTruncateModal((prev) => ({ ...prev, isOpen: false }))}
+      />
+
+      <BranchConfirmModal
+        isOpen={branchModal.isOpen}
+        targetMessage={branchModal.targetMessage}
+        locked={busy}
+        onConfirm={handleConfirmBranch}
+        onClose={() => {
+          // R5-A2: explicit modal close revokes the per-invocation caller — a
+          // later clear-retry may unlock but must NOT navigate.
+          if (branchCallerTokenRef.current) branchCallerTokenRef.current.revoked = true;
+          branchCallerTokenRef.current = null;
+          setBranchModal({ isOpen: false, targetMessage: null });
+        }}
+      />
     </div>
   );
 }

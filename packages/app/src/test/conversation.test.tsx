@@ -81,8 +81,8 @@ describe('canonical read path — timeline & paging', () => {
     expect(texts[3]).toContain('Developer');
     // deepseek · v4-flash caption on assistant messages.
     expect(texts[1]).toContain('deepseek');
-    // No composer on a populated conversation either.
-    expect(screen.queryByRole('textbox')).toBeNull();
+    // In P1B, composer is present on populated conversation
+    expect(screen.getByRole('textbox')).toBeTruthy();
   });
 
   it('shows deferred indicators for reasoning and attachments without claiming controls', async () => {
@@ -106,13 +106,14 @@ describe('canonical read path — timeline & paging', () => {
     );
     renderApp(['/chat/22']);
 
-    expect(await screen.findByText(/推理过程 · P1B 开放/)).toBeTruthy();
+    expect(await screen.findByText(/推理过程 · P1D 开放/)).toBeTruthy();
     expect(screen.getByText(/附件 2 个 · P1C 开放/)).toBeTruthy();
     // Deferred reasoning content itself is not claimed as readable.
     expect(screen.queryByText('hidden reasoning')).toBeNull();
     // No attachment media/control UI.
     expect(screen.queryByRole('link', { name: /a\.pdf/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /发送|重新生成|停止/ })).toBeNull();
+    // In P1B, composer send button is present
+    expect(screen.getByRole('button', { name: /发送/ })).toBeTruthy();
   });
 
   it('loads older pages with the offset invariant, dedupes and renders ascending', async () => {

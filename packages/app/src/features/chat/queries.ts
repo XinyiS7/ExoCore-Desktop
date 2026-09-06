@@ -98,15 +98,76 @@ export function useProjectsQuery() {
 
 export function useMessagePagesQuery(conversationId: number) {
   return useInfiniteQuery({
-    queryKey: queryKeys.messages(conversationId),
-    queryFn: ({ pageParam }) => fetchMessagePage(conversationId, pageParam),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) =>
-      lastPage.hasMore ? lastPage.offset + lastPage.messages.length : undefined,
+    ...messagePageQueryCore(conversationId),
     select: (data) => mergeMessagePages(data.pages),
     enabled: isValidConversationId(String(conversationId)),
-    retry: false,
   });
+}
+
+/**
+ * Single source of truth for the infinite message-page query config.
+ * Used both by the observer hook and by canonical rebuilds so the offset
+ * paging contract can never drift between consumers (C1B-R1-03).
+ */
+export function messagePageQueryCore(conversationId: number) {
+  return {
+    queryKey: queryKeys.messages(conversationId),
+    queryFn: ({ pageParam }: { pageParam: number }) => fetchMessagePage(conversationId, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage: MessagePage) =>
+      lastPage.hasMore ? lastPage.offset + lastPage.messages.length : undefined,
+    retry: false,
+  };
+}
+
+/**
+ * Canonical newest-window rebuild (C1B intervention §7, R4).
+ *
+ * Reconciliation is FOUR separated ordered effects — never one combined helper:
+ * 1. fetch canonical newest window (NETWORK ONLY — no Query/marker/UI mutation);
+ * 2. apply the fresh window (the single append/destructive Query owner);
+ * 3. conditionally clear the exact runtime marker (storage algebra);
+ * 4. identity-checked route UI unlock.
+ *
+ * `fetchFreshWindow` never touches the cache, so a fetch failure leaves the last
+ * displayed Query state untouched. `applyFreshWindow` is the only owner that
+ * mutates the message-query family: destructive resets the WHOLE family first so
+ * truncated descendants can never reappear from stale newest-relative offset
+ * pages; both cases then seed the fresh canonical newest window at offset 0 and
+ * let older pages reload from canonical offsets on demand.
+ */
+export async function fetchFreshWindow(conversationId: number): Promise<MessagePage> {
+  return fetchMessagePage(conversationId, 0);
+}
+
+export function applyFreshWindow(
+  queryClient: ReturnType<typeof useQueryClient>,
+  conversationId: number,
+  page: MessagePage,
+  destructive: boolean,
+): void {
+  if (destructive) {
+    queryClient.removeQueries({ queryKey: queryKeys.messages(conversationId) });
+  }
+  queryClient.setQueryData(queryKeys.messages(conversationId), {
+    pages: [page],
+    pageParams: [0],
+  });
+}
+
+/** Resolve a persisted canonical row by exact id + required role (§5.1/§5.5). */
+export function findPersistedMessage(
+  rows: ReadonlyArray<{ id: number; role: string }> | undefined,
+  targetId: number,
+  role: 'user' | 'assistant',
+): { id: number; role: string } | null {
+  if (!rows) return null;
+  for (const row of rows) {
+    if (row.id === targetId) {
+      return row.role === role ? row : null;
+    }
+  }
+  return null;
 }
 
 export function useCreateConversationMutation(
