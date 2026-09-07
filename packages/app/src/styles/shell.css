@@ -855,3 +855,597 @@
   align-items: center;
   gap: 8px;
 }
+
+/* ── P1C: compose attachment strip & audio recorder (V4 tokens only) ────── */
+
+.app-composer-attach-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.app-composer-tool-btn {
+  padding: 4px 6px;
+  line-height: 1;
+}
+
+.app-composer-mic--recording {
+  color: var(--v4-danger);
+  border-color: rgba(255, 107, 107, 0.4);
+  animation: app-mic-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes app-mic-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* Compose attachment strip */
+.app-att-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 2px 0 4px;
+}
+
+.app-att-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 220px;
+}
+
+.app-att-item--image {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.app-att-item-preview-wrap {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--v4-line);
+  background: var(--v4-panel-2);
+}
+
+.app-att-item-preview-wrap.app-att-item-preview--ok {
+  border-color: rgba(79, 140, 255, 0.6);
+}
+
+.app-att-item-preview-wrap.app-att-item-preview--degraded {
+  border-color: rgba(232, 182, 76, 0.5);
+}
+
+.app-att-item-preview-wrap.app-att-item-preview--failed {
+  border-color: rgba(255, 107, 107, 0.5);
+}
+
+.app-att-item-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.app-att-item-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 3px;
+  text-align: center;
+}
+
+.app-att-item-overlay--uploading {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.app-att-item-overlay--failed {
+  background: rgba(255, 107, 107, 0.32);
+}
+
+.app-att-item-overlay--degraded {
+  background: rgba(232, 182, 76, 0.3);
+}
+
+.app-att-item-state-text {
+  font-size: 10px;
+  line-height: 1.25;
+  color: var(--v4-text);
+}
+
+.app-att-warn-icon {
+  color: var(--v4-warn);
+}
+
+.app-att-item-success-badge {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--v4-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-att-spinner {
+  animation: app-att-spin 0.9s linear infinite;
+}
+
+.app-att-spinner--inline {
+  flex-shrink: 0;
+}
+
+@keyframes app-att-spin {
+  to { transform: rotate(360deg); }
+}
+
+.app-att-item-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 1px solid var(--v4-line-strong);
+  background: var(--v4-panel);
+  color: var(--v4-text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.app-att-item-remove:hover:not(:disabled) {
+  color: var(--v4-danger);
+  border-color: rgba(255, 107, 107, 0.5);
+}
+
+.app-att-item-remove:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.app-att-item-remove--chip {
+  position: static;
+  flex-shrink: 0;
+}
+
+.app-att-item-status {
+  font-size: 10px;
+  color: var(--v4-text-mute);
+}
+
+.app-att-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 180px;
+  padding: 4px 8px;
+  border: 1px solid var(--v4-line);
+  border-radius: 6px;
+  font-size: 11.5px;
+  background: var(--v4-panel-2);
+  color: var(--v4-text-dim);
+}
+
+.app-att-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-att-chip--ok {
+  border-color: rgba(79, 140, 255, 0.35);
+  color: var(--v4-text);
+}
+
+.app-att-chip--degraded {
+  border-color: rgba(232, 182, 76, 0.4);
+  color: var(--v4-warn);
+}
+
+.app-att-chip--failed {
+  border-color: rgba(255, 107, 107, 0.45);
+  color: var(--v4-danger);
+}
+
+.app-att-ok-icon {
+  color: var(--v4-accent);
+  flex-shrink: 0;
+}
+
+/* Audio compose bar */
+.app-audio-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.app-audio-rec-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--v4-danger);
+  animation: app-mic-pulse 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.app-audio-rec-seconds {
+  font-size: 11px;
+  color: var(--v4-text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.app-audio-preview {
+  height: 30px;
+  max-width: 230px;
+  flex: 1;
+  min-width: 0;
+}
+
+.app-audio-target-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--v4-text-mute);
+  padding: 2px 0;
+}
+
+.app-audio-recovery {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 9px;
+  border: 1px solid rgba(232, 182, 76, 0.4);
+  border-radius: 7px;
+  background: var(--v4-panel-2);
+  color: var(--v4-text-dim);
+  font-size: 11px;
+}
+
+.app-audio-recovery-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-audio-recovery-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 5px;
+}
+
+@media (max-width: 560px) {
+  .app-audio-recovery {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+/* User attachment manager */
+.app-att-manager {
+  margin-bottom: 6px;
+  border: 1px solid var(--v4-line);
+  border-radius: 8px;
+  background: var(--v4-panel);
+  padding: 4px 8px;
+}
+
+.app-att-manager-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.app-att-manager-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--v4-text-dim);
+  font-size: 11.5px;
+  padding: 3px 2px;
+}
+
+.app-att-manager-toggle:hover {
+  color: var(--v4-text);
+}
+
+.app-att-manager-notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--v4-warn);
+  padding: 4px 2px;
+}
+
+.app-att-manager-list {
+  list-style: none;
+  margin: 4px 0 2px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.app-att-manager-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 3px 4px;
+  border-radius: 6px;
+}
+
+.app-att-manager-row:hover {
+  background: var(--v4-panel-2);
+}
+
+.app-att-manager-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.app-att-manager-meta {
+  font-size: 10.5px;
+  color: var(--v4-text-mute);
+  flex-shrink: 0;
+}
+
+.app-att-manager-delete {
+  flex-shrink: 0;
+}
+
+.app-att-manager-loading {
+  font-size: 11px;
+  color: var(--v4-text-mute);
+  padding: 2px 4px;
+}
+
+/* ── P1C Task 5: historical attachment rendering (V4 tokens only) ───────── */
+
+.app-msg-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* Image thumbnail + zoom affordance (not color-only). */
+.app-att-thumb {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--v4-line);
+  background: var(--v4-panel-2);
+  padding: 0;
+  cursor: zoom-in;
+}
+
+.app-att-thumb:hover {
+  border-color: var(--v4-line-strong);
+}
+
+.app-att-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.app-att-thumb-zoom {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: var(--v4-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.app-att-thumb:hover .app-att-thumb-zoom,
+.app-att-thumb:focus-visible .app-att-thumb-zoom {
+  opacity: 1;
+}
+
+/* Lightbox — reused modal a11y pattern (labelled close, Escape, focus). */
+.app-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.app-lightbox-content {
+  position: relative;
+  max-width: 92vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+}
+
+.app-lightbox-img {
+  max-width: 90vw;
+  max-height: 86vh;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+
+.app-lightbox-close {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--v4-line-strong);
+  background: var(--v4-panel);
+  color: var(--v4-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.app-lightbox-close:hover {
+  color: var(--v4-danger);
+  border-color: rgba(255, 107, 107, 0.5);
+}
+
+/* Metadata-only file card (never links, never shows storage_path). */
+.app-att-filecard {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 240px;
+  padding: 7px 10px;
+  border: 1px solid var(--v4-line);
+  border-radius: 8px;
+  background: var(--v4-panel);
+  font-size: 12px;
+  color: var(--v4-text-dim);
+}
+
+.app-att-filecard-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--v4-text);
+}
+
+.app-att-filecard-meta,
+.app-att-filecard-note {
+  font-size: 10.5px;
+  color: var(--v4-text-mute);
+  flex-shrink: 0;
+}
+
+.app-att-filecard-note {
+  color: var(--v4-warn);
+}
+
+/* Historical audio bubble — same-origin content_url player (Gate G). */
+.app-audio-bubble {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 300px;
+  min-width: 220px;
+  padding: 8px 10px;
+  border: 1px solid var(--v4-line);
+  border-radius: 10px;
+  background: var(--v4-panel);
+}
+
+.app-audio-bubble-btn {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(79, 140, 255, 0.35);
+  background: var(--v4-accent-soft);
+  color: var(--v4-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-audio-bubble-btn:hover:not(:disabled) {
+  background: var(--v4-accent);
+  color: #fff;
+}
+
+.app-audio-bubble-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.app-audio-bubble-play {
+  margin-left: 1.5px;
+}
+
+.app-audio-bubble-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.app-audio-bubble-waves {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  outline: none;
+  border-radius: 4px;
+}
+
+.app-audio-bubble-waves:focus-visible {
+  box-shadow: 0 0 0 2px var(--v4-accent);
+}
+
+.app-audio-bubble-bar {
+  flex: 1;
+  border-radius: 2px;
+  background: rgba(154, 154, 166, 0.35);
+  transition: background 0.12s ease;
+}
+
+.app-audio-bubble-bar--played {
+  background: var(--v4-accent);
+}
+
+.app-audio-bubble-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+  color: var(--v4-text-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+.app-audio-bubble-loading {
+  color: var(--v4-text-dim);
+}
+
+.app-audio-bubble-error {
+  color: var(--v4-danger);
+}

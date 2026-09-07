@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  type AttemptPersistence,
   type BlockedReason,
   type CallbackIdentity,
   type ChatRuntimeError,
   type ChatTransport,
+  type ChatTurnInput,
   type ConstrainedAfter,
   type DispatchIntent,
   type NormalizedSSEEvent,
@@ -14,6 +16,7 @@ import {
   type RecoveryDescriptor,
   type ReconcileContext,
   type RuntimeAssistantRow,
+  type RuntimeAttemptOutcome,
   type RuntimeStatus,
   type StableOperationOwner,
   type SuspendedOperation,
@@ -44,6 +47,7 @@ import {
 import { applyFreshWindow, fetchFreshWindow, findPersistedMessage } from '../queries';
 import { AppApiError } from '../api';
 import type { MessagePage } from '../types';
+import { classifyAudioAttemptPage } from './attemptPersistence';
 
 export interface UseChatRuntimeOptions {
   conversationId: number;
@@ -51,13 +55,16 @@ export interface UseChatRuntimeOptions {
   /** Canonical Conversation thinking_level ('' or null => 'auto', §5.1). */
   thinkingLevel?: string | null;
   /** Live canonical persisted rows (page-level), used for request-side target validation. */
-  persistedRowsRef?: RefObject<ReadonlyArray<{ id: number; role: string }>>;
+  persistedRowsRef?: RefObject<ReadonlyArray<{ id: number; role: string; indexInSession?: number }>>;
   /**
    * Identity-checked branch navigation continuation (§6.2 outcome matrix):
    * invoked at most once, only after the exact source-marker clear returns
    * `cleared` AND caller identity is still current.
    */
   onNavigateToConversation?: (conversationId: number) => void;
+  /** Narrow, attempt-keyed P1C bridge. It reports no parser internals and
+   * never owns or relaxes the C1B operation lock. */
+  onAttemptOutcome?: (outcome: RuntimeAttemptOutcome) => void;
 }
 
 // ── Presentation projections (NEVER safety truths, §3.1/§3.2) ─────────────
@@ -176,6 +183,7 @@ export function useChatRuntime({
   thinkingLevel,
   persistedRowsRef,
   onNavigateToConversation,
+  onAttemptOutcome,
 }: UseChatRuntimeOptions) {
   const queryClient = useQueryClient();
 
@@ -207,6 +215,32 @@ export function useChatRuntime({
   const suspendedSseResponseRef = useRef<Response | null>(null);
   const onNavigateToConversationRef = useRef(onNavigateToConversation);
   onNavigateToConversationRef.current = onNavigateToConversation;
+  const onAttemptOutcomeRef = useRef(onAttemptOutcome);
+  onAttemptOutcomeRef.current = onAttemptOutcome;
+  const activeAttemptRef = useRef<{
+    epoch: number;
+    attemptKey: string;
+    attachmentIds: number[];
+    /** Persistence known before this dispatch. Exact replacements must retain
+     * their original binding when the replacement itself writes nothing. */
+    predispatchPersistence: AttemptPersistence;
+  } | null>(null);
+
+  const emitAttemptOutcome = useCallback(
+    (identity: CallbackIdentity, terminal: RuntimeAttemptOutcome['terminal'], persistence: AttemptPersistence) => {
+      const attempt = activeAttemptRef.current;
+      if (!attempt || attempt.epoch !== identity.epoch) return;
+      onAttemptOutcomeRef.current?.({ attemptKey: attempt.attemptKey, terminal, persistence });
+      if (terminal === 'done') activeAttemptRef.current = null;
+    },
+    [],
+  );
+
+  const persistenceAfterNoWrite = useCallback((identity: CallbackIdentity): AttemptPersistence => {
+    const attempt = activeAttemptRef.current;
+    if (!attempt || attempt.epoch !== identity.epoch) return { kind: 'proven_absent' };
+    return attempt.predispatchPersistence;
+  }, []);
 
   const isNearBottomRefLocal = isNearBottomRef;
   const persistedRows = persistedRowsRef;
@@ -591,6 +625,10 @@ export function useChatRuntime({
       } catch {
         if (!isCurrentIdentity(identity.epoch, convId)) return;
         if (opStateRef.current.phase !== 'reconciling') return;
+        emitAttemptOutcome(identity, 'reconcile_failed', {
+          kind: 'unknown',
+          reason: '消息历史对齐失败，无法确认语音消息是否已保存。',
+        });
         transition({
           phase: 'blocked',
           identity,
@@ -603,6 +641,16 @@ export function useChatRuntime({
       }
       if (!isCurrentIdentity(identity.epoch, convId)) return;
       if (opStateRef.current.phase !== 'reconciling') return;
+
+      if (ctx.outcome !== 'done') {
+        const terminal: RuntimeAttemptOutcome['terminal'] =
+          ctx.outcome === 'stopped'
+            ? 'stopped'
+            : ctx.outcome === 'error'
+              ? 'error'
+              : 'interrupted';
+        emitAttemptOutcome(identity, terminal, classifyAudioAttemptPage(page, activeAttemptRef.current?.attachmentIds ?? []));
+      }
 
       // 2) APPLY — the single append/destructive Query owner (no marker/UI).
       transition({ phase: 'reconciling', identity, snapshot, reconcile: { ...ctx, stage: 'applying' } });
@@ -699,7 +747,7 @@ export function useChatRuntime({
         suspendedOperation: makeSuspended(identity, snapshot, true),
       });
     },
-    [isCurrentIdentity, transition, queryClient, adoptOrReread, releaseUi, makeSuspended],
+    [isCurrentIdentity, transition, queryClient, adoptOrReread, releaseUi, makeSuspended, emitAttemptOutcome],
   );
 
   /** Terminal → ordered reconciliation, deferred while the reader is scrolled up. */
@@ -710,6 +758,12 @@ export function useChatRuntime({
       if (!isCurrentIdentity(cur.identity.epoch, cur.identity.stableOwner.conversationId)) return;
       cancelLocalReaders();
       const { identity, snapshot } = cur;
+      if (kind === 'done') {
+        emitAttemptOutcome(identity, 'done', {
+          kind: 'unknown',
+          reason: '成功终态无需恢复绑定。',
+        });
+      }
       if (kind === 'error') {
         setRuntimeAssistant((prev) =>
           prev ? { ...prev, isStreaming: false, terminalKind: 'error', error: errorPayload } : prev,
@@ -729,7 +783,7 @@ export function useChatRuntime({
       transition({ phase: 'reconciling', identity, snapshot, reconcile: ctx });
       if (!ctx.waitForLatest) void runReconcileStagesRef.current(identity, snapshot, ctx);
     },
-    [cancelLocalReaders, isCurrentIdentity, transition, isNearBottomRefLocal],
+    [cancelLocalReaders, isCurrentIdentity, transition, isNearBottomRefLocal, emitAttemptOutcome],
   );
 
   /** Async `not_found`: reconcile canonical FIRST, then durable uncertain (§5.3). */
@@ -1155,6 +1209,10 @@ export function useChatRuntime({
     (dispatchErr: unknown, identity: CallbackIdentity, pendingSnapshot: V4RuntimeLease): TurnAcceptance => {
       const classified = classifyRuntimeError(dispatchErr, 'uncertain');
       if (classified.retryClass === 'safe') {
+        // A rejected replacement wrote nothing new, but its original user
+        // Message still exists. Preserve that exact binding; only an initial
+        // ordinary send can become proven-absent here.
+        emitAttemptOutcome(identity, 'rejected', persistenceAfterNoWrite(identity));
         // Proved-safe synchronous rejection: conditional clear, unlock only
         // after `cleared`; draft/action preserved (§4.2/§5).
         const clearOut = clearRuntimeLease(pendingSnapshot);
@@ -1188,6 +1246,10 @@ export function useChatRuntime({
       }
       // Uncertain outcome (network/malformed/contract): conditional
       // pending → uncertain replacement; explicit ack is the only unlock.
+      emitAttemptOutcome(identity, 'rejected', {
+        kind: 'unknown',
+        reason: '发送结果不确定，需先完成消息历史对齐。',
+      });
       const uncertain: V4RuntimeLease = { ...pendingSnapshot, disposition: 'uncertain', updatedAt: Date.now() };
       const up = persistRuntimeLease(pendingSnapshot, uncertain);
       if (up.state === 'persisted') {
@@ -1224,7 +1286,7 @@ export function useChatRuntime({
       });
       return 'rejected';
     },
-    [releaseUi, transition, adoptOrReread, makeSuspended],
+    [releaseUi, transition, adoptOrReread, makeSuspended, emitAttemptOutcome, persistenceAfterNoWrite],
   );
 
   // ── Upgrade-persist failure handling (POST accepted) ─────────────────────
@@ -1253,6 +1315,9 @@ export function useChatRuntime({
       intent: DispatchIntent,
       pendingSnapshot: V4RuntimeLease,
     ): TurnAcceptance => {
+      // No POST has left the tab. Preserve an exact original binding for a
+      // recovery replacement; an initial send remains proven absent.
+      emitAttemptOutcome(identity, 'rejected', persistenceAfterNoWrite(identity));
       if (pendingOutcome.state === 'mutation_unavailable') {
         // Verified absence + failed set: zero POST, draft/action preserved,
         // safe full-transaction retry via Send again (§4.2). R5-P2a: a
@@ -1288,21 +1353,27 @@ export function useChatRuntime({
       }
       return 'rejected';
     },
-    [releaseUi, transition, adoptOrReread],
+    [releaseUi, transition, adoptOrReread, emitAttemptOutcome, persistenceAfterNoWrite],
   );
 
   // ── Core dispatch (send / edit / regenerate) ─────────────────────────────
   const executeTurn = useCallback(
     async (
-      content: string,
+      turn: ChatTurnInput,
       operation: 'send' | 'edit' | 'regenerate',
       editMessageId?: number,
     ): Promise<TurnAcceptance> => {
       // Synchronous same-tick guard: the ONLY lock is the union itself.
       if (phaseNow() !== 'idle') return 'rejected';
 
-      const trimmedContent = content.trim();
+      const trimmedContent = turn.content.trim();
+      const pendingAttachments = turn.pendingAttachments ?? [];
+      if (pendingAttachments.some((id) => !Number.isInteger(id) || id <= 0)) {
+        setTransientError({ code: 'ATTACHMENT_INVALID', message: '附件参数包含无效编号。', retryClass: 'safe' });
+        return 'rejected';
+      }
       const destructive = operation === 'edit' || operation === 'regenerate';
+      let predispatchPersistence: AttemptPersistence = { kind: 'proven_absent' };
 
       if (destructive) {
         if (!editMessageId || !Number.isInteger(editMessageId) || editMessageId <= 0) {
@@ -1318,8 +1389,28 @@ export function useChatRuntime({
           });
           return 'rejected';
         }
+        if (turn.attemptKey) {
+          const canonicalTarget = persistedRows?.current?.find((row) => row.id === target.id);
+          predispatchPersistence =
+            typeof canonicalTarget?.indexInSession === 'number'
+              ? {
+                  kind: 'exact_persisted',
+                  messageId: target.id,
+                  indexInSession: canonicalTarget.indexInSession,
+                }
+              : {
+                  kind: 'unknown',
+                  reason: '无法保留原始消息的精确位置，请先重新加载历史。',
+                };
+        }
       }
-      if (operation !== 'regenerate' && trimmedContent.length === 0) return 'rejected';
+      if (operation !== 'regenerate' && trimmedContent.length === 0 && pendingAttachments.length === 0) {
+        return 'rejected';
+      }
+      // Historical edit/regenerate never receives or consumes newly composed
+      // IDs. Recovery replacement is the sole explicit exception because it
+      // replays the exact already-bound snapshot.
+      if (destructive && pendingAttachments.length > 0 && !turn.attemptKey) return 'rejected';
 
       cancelLocalReaders();
       epochRef.current += 1;
@@ -1333,11 +1424,21 @@ export function useChatRuntime({
         content: trimmedContent,
         editMessageId,
         thinkingLevel: thinkingLevel ?? null,
+        pendingAttachments: [...pendingAttachments],
+        attemptKey: turn.attemptKey,
       };
       const pendingSnapshot = makeLease(stableOwner, 'pending', startedAt);
 
       // idle → predispatch is synchronous; double click/Enter cannot pass.
       transition({ phase: 'predispatch', identity, intent, pendingSnapshot });
+      activeAttemptRef.current = turn.attemptKey
+        ? {
+            epoch,
+            attemptKey: turn.attemptKey,
+            attachmentIds: [...pendingAttachments],
+            predispatchPersistence,
+          }
+        : null;
 
       if (operation === 'send') {
         setOptimisticUser({
@@ -1345,6 +1446,7 @@ export function useChatRuntime({
           clientKey: `user:${epoch}`,
           content: trimmedContent,
           createdAt: new Date().toISOString(),
+          pendingAttachmentIds: [...pendingAttachments],
         });
       } else {
         setOptimisticUser(null);
@@ -1374,6 +1476,7 @@ export function useChatRuntime({
             content: operation === 'regenerate' ? '' : trimmedContent,
             thinkingLevel: thinkingLevel ?? null,
             editMessageId: destructive ? editMessageId : undefined,
+            pendingAttachments: pendingAttachments.length > 0 ? pendingAttachments : undefined,
             signal: abortControllerRef.current.signal,
           });
           if (!isCurrentIdentity(epoch, convId)) return 'rejected';
@@ -1412,6 +1515,7 @@ export function useChatRuntime({
           content: operation === 'regenerate' ? '' : trimmedContent,
           thinkingLevel: thinkingLevel ?? null,
           editMessageId: destructive ? editMessageId : undefined,
+          pendingAttachments: pendingAttachments.length > 0 ? pendingAttachments : undefined,
           signal: abortControllerRef.current.signal,
         });
         if (!isCurrentIdentity(epoch, convId)) return 'rejected';
@@ -1463,20 +1567,26 @@ export function useChatRuntime({
 
   // ── Public commands ──────────────────────────────────────────────────────
   const sendMessage = useCallback(
-    (content: string): Promise<TurnAcceptance> => executeTurn(content, 'send'),
+    (turn: ChatTurnInput): Promise<TurnAcceptance> => executeTurn(turn, 'send'),
     [executeTurn],
   );
 
   const confirmEdit = useCallback(
     (newContent: string): Promise<TurnAcceptance> => {
       if (!editingTarget) return Promise.resolve('rejected');
-      return executeTurn(newContent, 'edit', editingTarget.id);
+      return executeTurn({ content: newContent }, 'edit', editingTarget.id);
     },
     [editingTarget, executeTurn],
   );
 
   const regenerate = useCallback(
-    (messageId: number): Promise<TurnAcceptance> => executeTurn('', 'regenerate', messageId),
+    (messageId: number): Promise<TurnAcceptance> => executeTurn({ content: '' }, 'regenerate', messageId),
+    [executeTurn],
+  );
+
+  const retryRecoveredTurn = useCallback(
+    (turn: ChatTurnInput, editMessageId: number): Promise<TurnAcceptance> =>
+      executeTurn(turn, 'edit', editMessageId),
     [executeTurn],
   );
 
@@ -2071,6 +2181,7 @@ export function useChatRuntime({
     setDraftCleanupFailed(false);
     setEditingTarget(null);
     stashedDraftRef.current = '';
+    activeAttemptRef.current = null;
     pollCursorRef.current = 0;
     pendingPollRef.current = null;
     suspendedSseResponseRef.current = null;
@@ -2156,6 +2267,7 @@ export function useChatRuntime({
     hasPendingReconcile,
     draftCleanupFailed,
     sendMessage,
+    retryRecoveredTurn,
     stopGeneration,
     editingTarget,
     startEdit,

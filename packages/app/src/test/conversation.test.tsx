@@ -107,10 +107,16 @@ describe('canonical read path — timeline & paging', () => {
     renderApp(['/chat/22']);
 
     expect(await screen.findByText(/推理过程 · P1D 开放/)).toBeTruthy();
-    expect(screen.getByText(/附件 2 个 · P1C 开放/)).toBeTruthy();
+    // P1C placeholder chip is replaced by real renderers (Task 5).
+    expect(screen.queryByText(/附件 2 个 · P1C 开放/)).toBeNull();
+    // a.pdf → metadata-only file card (no link, no download promise).
+    expect(await screen.findByText('a.pdf')).toBeTruthy();
+    // b.png has file_uri null → visible fallback card, not a broken image.
+    expect(screen.getByText('b.png')).toBeTruthy();
+    expect(screen.getByText('图片加载失败')).toBeTruthy();
     // Deferred reasoning content itself is not claimed as readable.
     expect(screen.queryByText('hidden reasoning')).toBeNull();
-    // No attachment media/control UI.
+    // No attachment download/control UI.
     expect(screen.queryByRole('link', { name: /a\.pdf/ })).toBeNull();
     // In P1B, composer send button is present
     expect(screen.getByRole('button', { name: /发送/ })).toBeTruthy();

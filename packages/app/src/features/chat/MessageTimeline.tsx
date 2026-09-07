@@ -3,6 +3,7 @@ import type { MessageRole, MessageView } from './types';
 import type { OptimisticUserRow, RuntimeAssistantRow } from './runtime/types';
 import { MessageContent } from './MessageContent';
 import { formatTimeOfDay } from './time';
+import { MessageAttachments } from './attachments/MessageAttachments';
 
 const ROLE_LABELS: Record<MessageRole, string> = {
   user: '你',
@@ -41,9 +42,10 @@ function MessageRowItem({
 }) {
   const isAssistant = message.role === 'assistant';
   const isUser = message.role === 'user';
-  const attachmentCount = message.attachmentsMeta?.length ?? message.attachmentIds.length;
-  const attachmentNames = (message.attachmentsMeta ?? []).map((meta) => meta.display_name).join('、');
+  const attachmentsMeta = message.attachmentsMeta ?? [];
   const hasReasoning = Boolean(message.reasoningContent);
+  const hasContentText = Boolean(message.content?.trim());
+  const hasAttachments = attachmentsMeta.length > 0;
 
   return (
     <article className={`app-msg app-msg--${message.role}`} data-role={message.role}>
@@ -101,9 +103,9 @@ function MessageRowItem({
       </header>
 
       <div className="app-msg-body">
-        {message.content ? (
+        {hasContentText ? (
           <MessageContent content={message.content} />
-        ) : (
+        ) : hasAttachments ? null : (
           <span className="app-muted">（空消息）</span>
         )}
         {/* Honest partial-capability indicators */}
@@ -112,14 +114,7 @@ function MessageRowItem({
             推理过程 · P1D 开放
           </span>
         ) : null}
-        {attachmentCount > 0 ? (
-          <span
-            className="app-deferred-chip"
-            title={attachmentNames ? `附件：${attachmentNames}` : undefined}
-          >
-            附件 {attachmentCount} 个 · P1C 开放
-          </span>
-        ) : null}
+        {hasAttachments ? <MessageAttachments meta={attachmentsMeta} /> : null}
       </div>
     </article>
   );
@@ -190,7 +185,12 @@ export function MessageTimeline({
             </span>
           </header>
           <div className="app-msg-body">
-            <MessageContent content={optimisticUser.content} />
+            {optimisticUser.content ? <MessageContent content={optimisticUser.content} /> : null}
+            {optimisticUser.pendingAttachmentIds.length > 0 ? (
+              <span className="app-deferred-chip">
+                待发送附件 {optimisticUser.pendingAttachmentIds.length} 个
+              </span>
+            ) : null}
           </div>
         </article>
       ) : null}

@@ -21,6 +21,13 @@ export interface PostChatOptions {
   /** Normalized Conversation thinking level ('' or null => 'auto', §5.1). */
   thinkingLevel?: string | null;
   editMessageId?: number;
+  /**
+   * P1C: validated positive attachment IDs to attach to this turn
+   * (serialized as `pending_attachments`, Task 1.5). Omitted for text-only.
+   * Ownership: only positive integers that passed attachment adapter
+   * validation may ever reach this field.
+   */
+  pendingAttachments?: number[];
   signal?: AbortSignal;
 }
 
@@ -49,6 +56,19 @@ function buildChatBody(options: PostChatOptions): Record<string, unknown> {
       throw new AppApiError('无效的消息编号', { code: 'VALIDATION' });
     }
     body.edit_message_id = options.editMessageId;
+  }
+  if (options.pendingAttachments !== undefined) {
+    // Task 1.5: serialize only after integer/positive validation; a malformed
+    // list is a contract violation, never silently dropped or coerced.
+    if (!Array.isArray(options.pendingAttachments)) {
+      throw new AppApiError('附件参数格式异常', { code: 'VALIDATION' });
+    }
+    for (const id of options.pendingAttachments) {
+      if (!Number.isInteger(id) || id <= 0) {
+        throw new AppApiError('附件参数包含无效编号', { code: 'VALIDATION' });
+      }
+    }
+    body.pending_attachments = options.pendingAttachments;
   }
   return body;
 }

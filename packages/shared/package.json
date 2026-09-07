@@ -11,7 +11,10 @@
       "default": "./src/api.js"
     },
     "./auth": "./src/auth.js",
-    "./models": "./src/models.js",
+    "./models": {
+      "types": "./src/models.d.ts",
+      "default": "./src/models.js"
+    },
     "./endpoints/*": "./src/endpoints/*",
     "./hooks/useApi": "./src/hooks/useApi.js",
     "./hooks/useCsrf": "./src/hooks/useCsrf.js",

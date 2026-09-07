@@ -149,6 +149,9 @@ export interface OptimisticUserRow {
   clientKey: string;
   content: string;
   createdAt: string;
+  /** Honest local summary only; these are attachment IDs accepted for dispatch,
+   * never fabricated persisted Message bindings. */
+  pendingAttachmentIds: number[];
 }
 
 export interface RuntimeAssistantRow {
@@ -159,6 +162,25 @@ export interface RuntimeAssistantRow {
   isStreaming: boolean;
   terminalKind?: TerminalKind;
   error?: ChatRuntimeError;
+}
+
+/** Minimum typed ordinary-turn input added by P1C Task 4. */
+export interface ChatTurnInput {
+  content: string;
+  pendingAttachments?: number[];
+  /** Present only for an uploaded-audio recovery snapshot. */
+  attemptKey?: string;
+}
+
+export type AttemptPersistence =
+  | { kind: 'exact_persisted'; messageId: number; indexInSession: number }
+  | { kind: 'proven_absent' }
+  | { kind: 'unknown'; reason: string };
+
+export interface RuntimeAttemptOutcome {
+  attemptKey: string;
+  terminal: 'done' | 'stopped' | 'error' | 'interrupted' | 'rejected' | 'reconcile_failed';
+  persistence: AttemptPersistence;
 }
 
 /** Action outcome returned by dispatch commands (accepted vs not). */
@@ -205,6 +227,9 @@ export interface DispatchIntent {
   editMessageId?: number;
   branchFromMessageId?: number;
   thinkingLevel?: string | null;
+  /** P1C ordinary/recovery turns only. Edit/regenerate never receive compose IDs. */
+  pendingAttachments?: number[];
+  attemptKey?: string;
 }
 
 /** Suspended in-memory operation context (never proof of storage ownership). */

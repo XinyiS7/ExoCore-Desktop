@@ -17,6 +17,7 @@ import {
   useVisiblePresetsQuery,
 } from './queries';
 import { MessageTimeline } from './MessageTimeline';
+import type { MessageView } from './types';
 import { MoreMenu } from '../../shell/PrimaryNavigation';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
 import { useChatRuntime } from './runtime/useChatRuntime';
@@ -24,6 +25,11 @@ import { ChatComposer } from './ChatComposer';
 import { RuntimeStatusBanner } from './RuntimeStatusBanner';
 import { TruncateConfirmModal } from './TruncateConfirmModal';
 import { BranchConfirmModal } from './BranchConfirmModal';
+import { useComposeAttachments } from './attachments/useComposeAttachments';
+import { useUserAttachmentManager } from './attachments/useUserAttachmentManager';
+import { useAudioRecorder } from './audio/useAudioRecorder';
+import { useAudioTargetGate, useModelCatalogQuery } from './audio/audioTarget';
+import { useAudioRecovery } from './audio/audioRecoveryMachine';
 
 /** Distinct invalid-URL state — no request is issued for bad route params. */
 function InvalidConversationState() {
@@ -66,11 +72,38 @@ export function ConversationPage() {
   const conversationQuery = useConversationQuery(id);
   const presetsQuery = useVisiblePresetsQuery();
   const pagesQuery = useMessagePagesQuery(id);
+  const merged = pagesQuery.data;
+
+  // P1C: compose attachment lifecycle (Task 2) — conversation-keyed so route
+  // departure clears entries, aborts uploads and revokes previews.
+  const compose = useComposeAttachments(id);
+  const audioRecovery = useAudioRecovery(id, merged?.rows ?? []);
+  // P1C: the manager's 204 callback synchronously purges both sendable owners
+  // before history/list refresh. This closes the Phase A cross-owner seam.
+  const attachmentManager = useUserAttachmentManager(id, {
+    onDeleted: (attachmentId) => {
+      compose.purgeAttachmentId(attachmentId);
+      audioRecovery.purgeAttachmentId(attachmentId);
+    },
+    isDeleteBlocked: audioRecovery.isUploading,
+  });
+  // P1C: recorder lifecycle (AUD-F, Task 3).
+  const recorder = useAudioRecorder();
+  // P1C: live catalog + automatic target gate (Task 3.2).
+  const catalogQuery = useModelCatalogQuery();
+  const audioPreset =
+    conversationQuery.data?.agentPresetId != null && presetsQuery.data
+      ? (presetsQuery.data.find((p) => p.id === conversationQuery.data?.agentPresetId) ?? null)
+      : null;
+  const audioGate = useAudioTargetGate(
+    catalogQuery.data,
+    audioPreset ?? (conversationQuery.data ? { default_model: null } : null),
+  );
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const pendingAnchor = useRef<{ top: number; height: number } | null>(null);
   const isNearBottomRef = useRef<boolean>(true);
-  const persistedRowsRef = useRef<ReadonlyArray<{ id: number; role: string }>>([]);
+  const persistedRowsRef = useRef<ReadonlyArray<MessageView>>([]);
   /** Caller-side route identity for branch navigation guards (§6.3). */
   const pageEpochRef = useRef(0);
   const pageConversationIdRef = useRef(id);
@@ -82,7 +115,6 @@ export function ConversationPage() {
    */
   const branchCallerTokenRef = useRef<{ revoked: boolean } | null>(null);
 
-  const merged = pagesQuery.data;
   // Canonical persisted rows only — runtime overlays never qualify as targets.
   persistedRowsRef.current = merged?.rows ?? [];
 
@@ -112,6 +144,7 @@ export function ConversationPage() {
     hasPendingReconcile,
     draftCleanupFailed,
     sendMessage,
+    retryRecoveredTurn,
     stopGeneration,
     editingTarget,
     startEdit,
@@ -132,6 +165,7 @@ export function ConversationPage() {
     isNearBottomRef,
     thinkingLevel: conversationQuery.data?.thinkingLevel ?? null,
     persistedRowsRef,
+    onAttemptOutcome: audioRecovery.onRuntimeOutcome,
     onNavigateToConversation: (conversationId: number) => {
       // At most one later navigation, only after the exact source clear
       // returned `cleared` AND this route caller is still current (§6.2).
@@ -139,6 +173,15 @@ export function ConversationPage() {
       navigate(`/chat/${conversationId}`);
     },
   });
+
+  const handleRetryAudio = () => {
+    void audioRecovery.retry({
+      dispatchOrdinary: sendMessage,
+      dispatchReplacement: retryRecoveredTurn,
+      runtimeBusy: busy,
+      deletePending: attachmentManager.isDeletePending(),
+    });
+  };
 
   // Modal states
   const [truncateModal, setTruncateModal] = useState<{
@@ -422,6 +465,12 @@ export function ConversationPage() {
           editingTarget={editingTarget}
           onCancelEdit={cancelEdit}
           onConfirmEdit={confirmEdit}
+          compose={compose}
+          attachmentManager={attachmentManager}
+          recorder={recorder}
+          audioGate={audioGate}
+          audioRecovery={audioRecovery}
+          onRetryAudio={handleRetryAudio}
         />
       ) : null}
 
