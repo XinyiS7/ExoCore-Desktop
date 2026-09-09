@@ -35,6 +35,42 @@ describe('P1B Runtime Client & Error Classification (§5, §6.6)', () => {
   });
 
   describe('fetchChatSSEStream', () => {
+    it('serializes the complete P1D dispatch snapshot without retired fields', async () => {
+      const { calls } = installFetch([
+        {
+          test: /^\/api\/agents\/chat\/10\/$/,
+          handler: () =>
+            new Response('event: done\ndata: [DONE]\n\n', {
+              status: 200,
+              headers: { 'Content-Type': 'text/event-stream' },
+            }),
+        },
+      ]);
+      await fetchChatSSEStream({
+        conversationId: 10,
+        content: '@src/main.ts',
+        model: 'deepseek-v4-flash',
+        endpoint: 7,
+        thinkingLevel: 'high',
+        cacheEnabled: false,
+        sessionType: 'full',
+        memoryInjectionEnabled: true,
+      });
+      const body = JSON.parse(String(calls[0].init?.body)) as Record<string, unknown>;
+      expect(body).toEqual({
+        content: '@src/main.ts',
+        model: 'deepseek-v4-flash',
+        endpoint: 7,
+        thinking_level: 'high',
+        cache_enabled: false,
+        session_type: 'full',
+        memory_injection_enabled: true,
+      });
+      expect(body).not.toHaveProperty('temperature');
+      expect(body).not.toHaveProperty('galatea_mcp');
+      expect(body).not.toHaveProperty('session_id');
+    });
+
     it('returns response with readable stream on successful SSE response', async () => {
       installFetch([
         {
@@ -67,6 +103,32 @@ describe('P1B Runtime Client & Error Classification (§5, §6.6)', () => {
   });
 
   describe('postChatAsync', () => {
+    it('serializes the same P1D snapshot in async mode', async () => {
+      const { calls } = installFetch([
+        {
+          test: /^\/api\/agents\/chat\/10\/$/,
+          handler: () => jsonResponse({ message_id: 'a1b2c3d4', status: 'processing' }),
+        },
+      ]);
+      await postChatAsync({
+        conversationId: 10,
+        content: 'turn',
+        model: 'gemini-audio',
+        endpoint: 9,
+        thinkingLevel: 'auto',
+        cacheEnabled: true,
+        sessionType: 'lite',
+      });
+      expect(JSON.parse(String(calls[0].init?.body))).toMatchObject({
+        model: 'gemini-audio',
+        endpoint: 9,
+        thinking_level: 'auto',
+        cache_enabled: true,
+        session_type: 'lite',
+      });
+      expect(JSON.parse(String(calls[0].init?.body))).not.toHaveProperty('memory_injection_enabled');
+    });
+
     it('returns opaque 8-character token upon success', async () => {
       installFetch([
         {

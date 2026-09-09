@@ -20,6 +20,13 @@ export interface PostChatOptions {
   content: string;
   /** Normalized Conversation thinking level ('' or null => 'auto', §5.1). */
   thinkingLevel?: string | null;
+  /** P1D target and per-turn controls. Runtime captures these before POST. */
+  model?: string;
+  endpoint?: number;
+  cacheEnabled?: boolean;
+  sessionType?: 'full' | 'lite';
+  /** Present only for g045. */
+  memoryInjectionEnabled?: boolean;
   editMessageId?: number;
   /**
    * P1C: validated positive attachment IDs to attach to this turn
@@ -51,6 +58,33 @@ function buildChatBody(options: PostChatOptions): Record<string, unknown> {
     content: options.content,
     thinking_level: normalizeThinkingLevel(options.thinkingLevel),
   };
+  const hasTarget = options.model !== undefined || options.endpoint !== undefined;
+  if (hasTarget) {
+    const model = options.model?.trim() ?? '';
+    if (!model || !Number.isInteger(options.endpoint) || (options.endpoint as number) <= 0) {
+      throw new AppApiError('当前模型或端点不可用，请重新选择。', { code: 'TARGET_INVALID' });
+    }
+    body.model = model;
+    body.endpoint = options.endpoint;
+  }
+  if (options.cacheEnabled !== undefined) {
+    if (typeof options.cacheEnabled !== 'boolean') {
+      throw new AppApiError('缓存开关格式异常', { code: 'VALIDATION' });
+    }
+    body.cache_enabled = options.cacheEnabled;
+  }
+  if (options.sessionType !== undefined) {
+    if (options.sessionType !== 'full' && options.sessionType !== 'lite') {
+      throw new AppApiError('历史模式格式异常', { code: 'VALIDATION' });
+    }
+    body.session_type = options.sessionType;
+  }
+  if (options.memoryInjectionEnabled !== undefined) {
+    if (typeof options.memoryInjectionEnabled !== 'boolean') {
+      throw new AppApiError('记忆开关格式异常', { code: 'VALIDATION' });
+    }
+    body.memory_injection_enabled = options.memoryInjectionEnabled;
+  }
   if (options.editMessageId !== undefined) {
     if (!Number.isInteger(options.editMessageId) || options.editMessageId <= 0) {
       throw new AppApiError('无效的消息编号', { code: 'VALIDATION' });

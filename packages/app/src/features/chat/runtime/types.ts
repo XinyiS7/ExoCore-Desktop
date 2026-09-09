@@ -1,3 +1,5 @@
+import type { AssistantRunTraceItem } from '../types';
+
 /**
  * P1B Chat Runtime Types
  * Strictly implements Plan §5, §6.3, §6.5, §6.6.
@@ -46,6 +48,29 @@ export interface TelemetryPayload {
   cached_input_chars?: number;
 }
 
+export interface RuntimeTelemetry {
+  platform?: string;
+  modelName?: string;
+  inputChars?: number;
+  outputChars?: number;
+  toolCalls?: number;
+  cachedInputChars?: number;
+}
+
+export interface RuntimeTelemetryTotals {
+  acceptedRuns: number;
+  inputChars: number;
+  outputChars: number;
+  toolCalls: number;
+  cachedInputChars: number;
+}
+
+/** Ephemeral telemetry for this Conversation page visit only. */
+export interface ConversationTelemetryProjection {
+  lastTurn: RuntimeTelemetry | null;
+  totals: RuntimeTelemetryTotals;
+}
+
 export interface StoppedPayload {
   partial?: boolean;
 }
@@ -63,6 +88,31 @@ export interface TypedBackendErrorPayload {
   retryable?: boolean;
 }
 
+export type AssistantTraceEvent =
+  | {
+      version: 1;
+      runId: string;
+      sequence: number;
+      itemId: string;
+      kind: 'thinking';
+      lifecycle: 'delta';
+      textDelta: string;
+    }
+  | {
+      version: 1;
+      runId: string;
+      sequence: number;
+      itemId: string;
+      kind: 'tool';
+      callId: string;
+      lifecycle: 'started' | 'succeeded' | 'failed';
+      toolName: string;
+      argumentPreview?: string | null;
+      resultSummary?: string | null;
+      errorSummary?: string | null;
+      durationMs?: number | null;
+    };
+
 export interface NormalizedSSEEvent {
   event:
     | 'status'
@@ -73,6 +123,7 @@ export interface NormalizedSSEEvent {
     | 'stopped'
     | 'error'
     | 'cache_skipped'
+    | 'assistant_trace'
     | 'unknown'
     | 'malformed';
   data: string;
@@ -154,20 +205,45 @@ export interface OptimisticUserRow {
   pendingAttachmentIds: number[];
 }
 
+export interface RuntimeAssistantTrace {
+  runId: string;
+  lastSequence: number;
+  items: AssistantRunTraceItem[];
+}
+
 export interface RuntimeAssistantRow {
   kind: 'client_assistant';
   clientKey: string;
   content: string;
   statusText?: string;
+  /** Legacy fallback only; cleared/ignored once authoritative trace arrives. */
+  thinking: string;
+  /** Ordered authoritative realtime projection owned by this existing overlay. */
+  assistantTrace?: RuntimeAssistantTrace;
+  telemetry?: RuntimeTelemetry;
+  cacheSkippedReason?: string;
   isStreaming: boolean;
   terminalKind?: TerminalKind;
   error?: ChatRuntimeError;
 }
 
-/** Minimum typed ordinary-turn input added by P1C Task 4. */
+/** Immutable request-affecting values captured before a chat POST. */
+export interface ConversationDispatchSettings {
+  model: string;
+  endpoint: number;
+  thinkingLevel: string;
+  cacheEnabled: boolean;
+  sessionType: 'full' | 'lite';
+  /** Present only for g045; non-g045 requests omit this field entirely. */
+  memoryInjectionEnabled?: boolean;
+}
+
+/** Minimum typed ordinary-turn input added by P1C and extended by P1D. */
 export interface ChatTurnInput {
   content: string;
   pendingAttachments?: number[];
+  /** Uploaded-audio retry supplies its original settings instead of live HUD state. */
+  dispatchSettings?: ConversationDispatchSettings;
   /** Present only for an uploaded-audio recovery snapshot. */
   attemptKey?: string;
 }
@@ -226,7 +302,8 @@ export interface DispatchIntent {
   content: string;
   editMessageId?: number;
   branchFromMessageId?: number;
-  thinkingLevel?: string | null;
+  /** P1D validated request snapshot. Branch has no chat dispatch settings. */
+  dispatchSettings?: ConversationDispatchSettings;
   /** P1C ordinary/recovery turns only. Edit/regenerate never receive compose IDs. */
   pendingAttachments?: number[];
   attemptKey?: string;

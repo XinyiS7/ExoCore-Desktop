@@ -31,13 +31,59 @@ export type AudioTargetUnsupportedReason =
 
 export type AudioTargetUnavailableReason = 'not_ready' | 'catalog_fetch_failed';
 
+function isPositiveInteger(value: unknown): value is number {
+  return Number.isInteger(value) && (value as number) > 0;
+}
+
+/** Strict selector-facing validation; malformed catalog truth is never sendable. */
+export function validateModelCatalog(raw: unknown): ModelCatalog {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    throw new AppApiError('模型目录接口返回格式异常', { body: raw, code: 'CONTRACT' });
+  }
+  const catalog = raw as Partial<ModelCatalog>;
+  if (
+    !Array.isArray(catalog.models) ||
+    !Array.isArray(catalog.endpoints) ||
+    typeof catalog.roles !== 'object' ||
+    catalog.roles === null ||
+    !Array.isArray(catalog.roles.main)
+  ) {
+    throw new AppApiError('模型目录接口缺少 models、endpoints 或 main roles', { body: raw, code: 'CONTRACT' });
+  }
+  const modelsValid = catalog.models.every(
+    (model) =>
+      typeof model?.name === 'string' &&
+      model.name.trim().length > 0 &&
+      Array.isArray(model.abilities) &&
+      model.abilities.every((ability) => typeof ability === 'string') &&
+      Array.isArray(model.compatible_endpoint_ids) &&
+      model.compatible_endpoint_ids.every(isPositiveInteger),
+  );
+  const endpointsValid = catalog.endpoints.every(
+    (endpoint) =>
+      isPositiveInteger(endpoint?.id) &&
+      typeof endpoint.name === 'string' &&
+      typeof endpoint.configured === 'boolean' &&
+      typeof endpoint.enabled === 'boolean' &&
+      Array.isArray(endpoint.attachment_transports) &&
+      endpoint.attachment_transports.every((transport) => typeof transport === 'string'),
+  );
+  const rolesValid = catalog.roles.main.every(
+    (role) =>
+      typeof role?.model === 'string' &&
+      role.model.length > 0 &&
+      isPositiveInteger(role.default_endpoint),
+  );
+  if (!modelsValid || !endpointsValid || !rolesValid) {
+    throw new AppApiError('模型目录包含无效的模型、端点或主角色条目', { body: raw, code: 'CONTRACT' });
+  }
+  return catalog as ModelCatalog;
+}
+
 /** Fetch the live model catalog through the same-origin API. */
 export async function fetchModelCatalog(): Promise<ModelCatalog> {
   const raw: unknown = await apiFetch('/api/core/model-catalog/', { method: 'GET' });
-  if (typeof raw !== 'object' || raw === null || !Array.isArray((raw as ModelCatalog).models)) {
-    throw new AppApiError('模型目录接口返回格式异常', { body: raw, code: 'CONTRACT' });
-  }
-  return raw as ModelCatalog;
+  return validateModelCatalog(raw);
 }
 
 /**
@@ -113,18 +159,35 @@ export function useModelCatalogQuery() {
  * Returns a stable `AudioTargetGate`; failures explicitly disable recording
  * only — text/file flows stay usable.
  */
+export function resolveSelectedAudioTarget(
+  catalog: ModelCatalog | null | undefined,
+  target: { model: string; endpoint: number | null } | null | undefined,
+): AudioTargetGate {
+  if (!catalog) return { state: 'unsupported', reason: 'catalog_unavailable' };
+  if (!target?.model || !Number.isInteger(target.endpoint) || (target.endpoint as number) <= 0) {
+    return { state: 'unsupported', reason: 'target_unresolved' };
+  }
+  const model = catalog.models.find((candidate) => candidate.name === target.model);
+  const endpoint = catalog.endpoints.find((candidate) => candidate.id === target.endpoint);
+  if (!model || !endpoint || !endpoint.configured || !endpoint.enabled) {
+    return { state: 'unsupported', reason: 'target_unresolved' };
+  }
+  if (!model.compatible_endpoint_ids.includes(endpoint.id)) {
+    return { state: 'unsupported', reason: 'target_unresolved' };
+  }
+  if (!(model.abilities ?? []).includes('audio')) {
+    return { state: 'unsupported', reason: 'model_without_audio' };
+  }
+  if (!(endpoint.attachment_transports ?? []).includes('file_uri')) {
+    return { state: 'unsupported', reason: 'endpoint_without_file_uri' };
+  }
+  return { state: 'supported', target: { model: target.model, endpoint: endpoint.id } };
+}
+
+/** P1D audio gate follows the selected conversation-local target. */
 export function useAudioTargetGate(
   catalog: ModelCatalog | null | undefined,
-  preset: { default_model?: string | null } | null | undefined,
+  target: { model: string; endpoint: number | null } | null | undefined,
 ): AudioTargetGate {
-  // A gate computed from loading/failed catalog is 'unsupported' with a
-  // retryable reason; a missing preset is likewise explicit, never silent.
-  if (!catalog) {
-    return { state: 'unsupported', reason: 'catalog_unavailable' };
-  }
-  if (!preset?.default_model) {
-    return { state: 'unsupported', reason: 'preset_unavailable' };
-  }
-  const { gate } = resolveAudioTarget(catalog, preset);
-  return gate;
+  return resolveSelectedAudioTarget(catalog, target);
 }

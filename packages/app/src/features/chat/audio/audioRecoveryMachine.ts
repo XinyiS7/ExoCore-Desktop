@@ -3,6 +3,7 @@ import type { MessageView } from '../types';
 import type {
   AttemptPersistence,
   ChatTurnInput,
+  ConversationDispatchSettings,
   RuntimeAttemptOutcome,
   TurnAcceptance,
 } from '../runtime/types';
@@ -14,6 +15,8 @@ export interface AudioTurnSnapshot {
   conversationId: number;
   attemptKey: string;
   originalText: string;
+  /** Target + controls captured when upload starts; every retry reuses these values. */
+  dispatchSettings: ConversationDispatchSettings;
   /** Immutable complete order: ordinary compose IDs followed by uploaded audio. */
   attachmentIds: number[];
   audioAttachmentIds: number[];
@@ -84,6 +87,7 @@ interface SendRecordedInput {
   blob: Blob;
   mimeType: string;
   target: AudioTarget;
+  dispatchSettings: ConversationDispatchSettings;
   content: string;
   attachmentIds: number[];
   dispatch: (turn: ChatTurnInput) => Promise<TurnAcceptance>;
@@ -151,7 +155,13 @@ export function useAudioRecovery(conversationId: number, canonicalRows: readonly
       setUploadError(input.blob.size > MAX_AUDIO_BYTES ? '语音超过 10 MiB 上限' : '录音内容为空，请重试');
       return 'rejected';
     }
-    if (!Number.isInteger(input.target.endpoint) || input.target.endpoint <= 0 || !input.target.model.trim()) {
+    if (
+      !Number.isInteger(input.target.endpoint) ||
+      input.target.endpoint <= 0 ||
+      !input.target.model.trim() ||
+      input.dispatchSettings.model !== input.target.model ||
+      input.dispatchSettings.endpoint !== input.target.endpoint
+    ) {
       setUploadError('语音上传缺少目标配置');
       return 'rejected';
     }
@@ -161,6 +171,7 @@ export function useAudioRecovery(conversationId: number, canonicalRows: readonly
     }
 
     const boundConversation = conversationRef.current;
+    const capturedSettings: ConversationDispatchSettings = { ...input.dispatchSettings };
     const uploadEpoch = ++uploadEpochRef.current;
     const uploadController = new AbortController();
     uploadControllerRef.current?.abort();
@@ -202,6 +213,7 @@ export function useAudioRecovery(conversationId: number, canonicalRows: readonly
         conversationId: boundConversation,
         attemptKey,
         originalText: input.content.trim(),
+        dispatchSettings: capturedSettings,
         attachmentIds,
         audioAttachmentIds: [audioId as number],
         persistence: { kind: 'unknown', reason: '发送结果尚未完成对齐。' },
@@ -218,9 +230,18 @@ export function useAudioRecovery(conversationId: number, canonicalRows: readonly
         uploadController.signal.aborted ||
         conversationRef.current !== boundConversation
       ) return 'rejected';
+
+      // Explicit phase handoff: upload has completed, so release only the upload
+      // guard before invoking the operation's own runtime continuation. `dispatch`
+      // synchronously claims the runtime owner (idle -> predispatch) before its
+      // first await, preserving exclusion against unrelated competing commands.
+      uploadControllerRef.current = null;
+      uploadingRef.current = false;
+      setUploading(false);
       return await input.dispatch({
         content: snapshot.originalText,
         pendingAttachments: [...snapshot.attachmentIds],
+        dispatchSettings: { ...snapshot.dispatchSettings },
         attemptKey,
       });
     } catch (cause) {
@@ -258,6 +279,7 @@ export function useAudioRecovery(conversationId: number, canonicalRows: readonly
     const turn: ChatTurnInput = {
       content: current.snapshot.originalText,
       pendingAttachments: [...current.snapshot.attachmentIds],
+      dispatchSettings: { ...current.snapshot.dispatchSettings },
       attemptKey: current.snapshot.attemptKey,
     };
     try {

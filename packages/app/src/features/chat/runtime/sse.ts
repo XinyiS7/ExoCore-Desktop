@@ -1,4 +1,5 @@
 import type {
+  AssistantTraceEvent,
   CacheSkippedPayload,
   NormalizedSSEEvent,
   PollingEventItem,
@@ -109,6 +110,87 @@ function malformed(kind: string, data: string, detail: string): NormalizedSSEEve
   return { event: 'malformed', data, warning: `${kind} 事件载荷格式异常：${detail}` };
 }
 
+const TRACE_ID_MAX = 128;
+const TRACE_ARGUMENT_MAX = 500;
+const TRACE_RESULT_MAX = 1000;
+const TRACE_ERROR_MAX = 500;
+
+function validTraceIdentity(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0 && Array.from(value).length <= TRACE_ID_MAX;
+}
+
+function optionalTraceText(
+  payload: Record<string, unknown>,
+  key: string,
+  limit: number,
+): { valid: boolean; value?: string | null } {
+  if (!(key in payload)) return { valid: true };
+  const value = payload[key];
+  if (value === null) return { valid: true, value: null };
+  return typeof value === 'string' && Array.from(value).length <= limit
+    ? { valid: true, value }
+    : { valid: false };
+}
+
+/** Convert the accepted snake_case wire event into one strict internal DTO. */
+export function normalizeAssistantTraceEvent(value: unknown): AssistantTraceEvent | null {
+  if (!isJsonObject(value)) return null;
+  const runId = value.run_id;
+  const sequence = value.sequence;
+  const itemId = value.item_id;
+  if (
+    value.version !== 1 ||
+    !validTraceIdentity(runId) ||
+    !Number.isInteger(sequence) ||
+    (sequence as number) < 0 ||
+    !validTraceIdentity(itemId)
+  ) return null;
+
+  if (value.kind === 'thinking') {
+    return value.lifecycle === 'delta' && typeof value.text_delta === 'string' && value.text_delta.length > 0
+      ? {
+          version: 1,
+          runId,
+          sequence: sequence as number,
+          itemId,
+          kind: 'thinking',
+          lifecycle: 'delta',
+          textDelta: value.text_delta,
+        }
+      : null;
+  }
+  if (value.kind !== 'tool') return null;
+  const callId = value.call_id;
+  const toolName = value.tool_name;
+  const lifecycle = value.lifecycle;
+  const argument = optionalTraceText(value, 'argument_preview', TRACE_ARGUMENT_MAX);
+  const result = optionalTraceText(value, 'result_summary', TRACE_RESULT_MAX);
+  const error = optionalTraceText(value, 'error_summary', TRACE_ERROR_MAX);
+  const duration = value.duration_ms;
+  if (
+    !validTraceIdentity(callId) ||
+    !validTraceIdentity(toolName) ||
+    (lifecycle !== 'started' && lifecycle !== 'succeeded' && lifecycle !== 'failed') ||
+    !argument.valid || !result.valid || !error.valid ||
+    ('duration_ms' in value && duration !== null &&
+      (typeof duration !== 'number' || !Number.isFinite(duration) || duration < 0))
+  ) return null;
+  return {
+    version: 1,
+    runId,
+    sequence: sequence as number,
+    itemId,
+    kind: 'tool',
+    callId,
+    lifecycle,
+    toolName,
+    ...('argument_preview' in value ? { argumentPreview: argument.value } : {}),
+    ...('result_summary' in value ? { resultSummary: result.value } : {}),
+    ...('error_summary' in value ? { errorSummary: error.value } : {}),
+    ...('duration_ms' in value ? { durationMs: duration as number | null } : {}),
+  };
+}
+
 /**
  * Normalizes a raw SSE event by event kind according to Plan §5.2.
  * Canonical payload violations return event 'malformed' (never content);
@@ -166,6 +248,13 @@ export function normalizeSSEEvent(event: string, data: string): NormalizedSSEEve
         data,
         parsedData: parsed as unknown as CacheSkippedPayload,
       };
+    }
+
+    case 'assistant_trace': {
+      const trace = normalizeAssistantTraceEvent(parsed);
+      return trace
+        ? { event: 'assistant_trace', data: '', parsedData: trace }
+        : malformed('assistant_trace', data, '字段、边界或生命周期无效');
     }
 
     case 'done': {
@@ -263,6 +352,13 @@ export function normalizePollingEvent(item: PollingEventItem): NormalizedSSEEven
         return { event: 'cache_skipped', data: '', parsedData: item.delta as unknown as CacheSkippedPayload };
       }
       return malformed('cache_skipped', JSON.stringify(item.delta), 'delta 应为 JSON 对象');
+    }
+
+    case 'assistant_trace': {
+      const trace = normalizeAssistantTraceEvent(item.delta);
+      return trace
+        ? { event: 'assistant_trace', data: '', parsedData: trace }
+        : malformed('assistant_trace', JSON.stringify(item.delta), '字段、边界或生命周期无效');
     }
 
     case 'stopped': {

@@ -1,7 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { installFetch, jsonResponse, renderApp, unmockFetch } from './helpers';
+import {
+  installRuntimeFetch as installFetch,
+  jsonResponse,
+  renderApp,
+  selectRuntimeTransport,
+  unmockFetch,
+} from './helpers';
 import { ConversationPage } from '../features/chat/ConversationPage';
 import * as storageModule from '../features/chat/runtime/storage';
 import { clearRuntimeLease, persistRuntimeLease, readRuntimeLease } from '../features/chat/runtime/storage';
@@ -131,11 +137,10 @@ describe('C1B-R6 micro-matrix row 1 — accepted Stop propagates through begin-p
     ]);
 
     renderApp(['/chat/80']);
-    const transport = await screen.findByLabelText('传输模式选择');
-    fireEvent.change(transport, { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // Accepted run paused on durability: Stop reachable, zero polling.
     await waitFor(() => {
@@ -233,7 +238,7 @@ describe('C1B-R6 micro-matrix row 1 — accepted Stop propagates through begin-p
     renderApp(['/chat/81']);
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // SSE accepted run paused on durability: Stop reachable.
     await waitFor(() => {
@@ -304,11 +309,10 @@ describe('C1B-R6 micro-matrix row 2 — exact owner predicate includes transport
     ]);
 
     renderApp(['/chat/82']);
-    const transport = await screen.findByLabelText('传输模式选择');
-    fireEvent.change(transport, { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // Upgrade read-failure → storage_blocked_read locks everything.
     await waitFor(() => {

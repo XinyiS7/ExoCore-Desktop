@@ -2,7 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { installFetch, jsonResponse, renderApp, unmockFetch } from './helpers';
+import {
+  installRuntimeFetch as installFetch,
+  jsonResponse,
+  renderApp,
+  selectRuntimeTransport,
+  unmockFetch,
+} from './helpers';
 import { ConversationPage } from '../features/chat/ConversationPage';
 import { useConversationsQuery } from '../features/chat/queries';
 
@@ -111,7 +117,7 @@ describe('C1B-R1 repair invariants — storage-first write safety (R1-01)', () =
     renderApp(['/chat/50']);
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: '存储被锁也要发' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     await waitFor(() => {
       expect(screen.getByText(/浏览器存储不可用/)).toBeTruthy();
@@ -141,12 +147,11 @@ describe('C1B-R1 repair invariants — storage-first write safety (R1-01)', () =
     ]);
 
     renderApp(['/chat/51']);
-    const transport = await screen.findByLabelText('传输模式选择');
-    fireEvent.change(transport, { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
 
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: '第一次' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     await waitFor(() => {
       expect(postCount).toBe(1);
@@ -159,7 +164,7 @@ describe('C1B-R1 repair invariants — storage-first write safety (R1-01)', () =
     expect(screen.getByRole('button', { name: /发送消息/ })).toBeDisabled();
 
     // Second Enter must NOT create a second POST.
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
     await new Promise((r) => setTimeout(r, 50));
     expect(postCount).toBe(1);
 
@@ -192,7 +197,7 @@ describe('C1B-R1 repair invariants — storage-first write safety (R1-01)', () =
     renderApp(['/chat/52']);
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: '要发的正文' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     await waitFor(() => {
       expect(postBody).toContain('要发的正文');
@@ -243,7 +248,7 @@ describe('C1B-R1 repair invariants — lifecycle (R1-02)', () => {
     const { unmount } = renderApp(['/chat/60']);
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: '开始后立刻离开' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
     await waitFor(() => expect(capturedSignal).not.toBeNull());
 
     unmount();
@@ -363,7 +368,7 @@ describe('C1B-R1 repair invariants — lifecycle (R1-02)', () => {
     renderApp(['/chat/62']);
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: '停止我' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     const stopBtn = await screen.findByRole('button', { name: /停止生成/ });
     fireEvent.click(stopBtn);
@@ -415,11 +420,10 @@ describe('C1B-R1 repair invariants — lifecycle (R1-02)', () => {
     ]);
 
     renderApp(['/chat/63']);
-    const transport = await screen.findByLabelText('传输模式选择');
-    fireEvent.change(transport, { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: '恢复测试' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     await waitFor(() => expect(cursorRequests.length).toBeGreaterThan(0));
     // Let the first successful poll land (cursor 0 → cursor 1), then fail the next.
@@ -474,7 +478,7 @@ describe('C1B-R1 repair invariants — canonical reconciliation (R1-03)', () => 
     renderApp(['/chat/70']);
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: '提问' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     expect(await screen.findByText('完整回答')).toBeTruthy();
     await waitFor(() => {
@@ -528,18 +532,21 @@ describe('C1B-R1 repair invariants — canonical reconciliation (R1-03)', () => 
 
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: '提问' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // Terminal arrives while scrolled up → hold pending, no rebuild GET.
-    const returnBtn = await screen.findByRole('button', { name: /返回最新位置/ });
+    const returnPrompt = await screen.findByRole('button', { name: /返回最新位置/ });
+    const latestButton = screen.getByRole('button', { name: '返回最新消息' });
     await new Promise((r) => setTimeout(r, 60));
     const getsBeforeApply = offsetRequests.length;
 
-    fireEvent.click(returnBtn);
+    fireEvent.click(latestButton);
     await waitFor(() => {
       expect(offsetRequests.length).toBeGreaterThan(getsBeforeApply);
     });
     expect(await screen.findByText('新回复')).toBeTruthy();
+    expect(returnPrompt).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '返回最新消息' })).toBeNull();
     // All applied GETs are canonical offset 0 — never stale offset pages.
     expect(offsetRequests.filter((o) => o > 0)).toHaveLength(0);
   });
@@ -653,7 +660,7 @@ describe('C1B-R1 repair invariants — protocol boundary (R1-04)', () => {
     renderApp(['/chat/80']);
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'hi' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     expect(await screen.findByText(/content 事件载荷格式异常/)).toBeTruthy();
     // Raw JSON object must never appear as answer content.
@@ -693,11 +700,10 @@ describe('C1B-R1 repair invariants — protocol boundary (R1-04)', () => {
 
     renderApp(['/chat/81']);
     await screen.findByRole('textbox', { name: /消息输入框/ });
-    const transport = await screen.findByLabelText('传输模式选择');
-    fireEvent.change(transport, { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: '保持高级思考' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     await waitFor(() => {
       expect(postBody).toContain('"thinking_level":"high"');
@@ -746,7 +752,7 @@ describe('C1B-R2 residual invariants — storage lifecycle (R2-01)', () => {
     renderApp(['/chat/95']);
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     await waitFor(() => {
       expect(screen.getByText(/无法清除上次运行标记/)).toBeTruthy();
@@ -848,11 +854,10 @@ describe('C1B-R2 residual invariants — storage lifecycle (R2-01)', () => {
       { test: /^\/api\/agents\/chat\/97\//, handler: () => emptyMessages() },
     ]);
     renderApp(['/chat/97']);
-    const transport = await screen.findByLabelText('传输模式选择');
-    fireEvent.change(transport, { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: '未知结果' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     await waitFor(() => expect(postCount).toBe(1));
     expect(
@@ -925,7 +930,7 @@ describe('C1B-R2 residual invariants — route switch identity (R2-02)', () => {
     await screen.findByText('Conversation 76');
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: '76 的问题' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     await screen.findByText(/76 的乐观回答/);
     expect(screen.getByRole('button', { name: /停止生成/ })).toBeTruthy();

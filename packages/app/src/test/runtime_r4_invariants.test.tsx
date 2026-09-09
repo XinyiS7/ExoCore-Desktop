@@ -2,7 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { installFetch, jsonResponse, renderApp, unmockFetch } from './helpers';
+import {
+  installRuntimeFetch as installFetch,
+  jsonResponse,
+  renderApp,
+  selectRuntimeTransport,
+  unmockFetch,
+} from './helpers';
 import { ConversationPage } from '../features/chat/ConversationPage';
 import { useConversationsQuery } from '../features/chat/queries';
 import * as storageModule from '../features/chat/runtime/storage';
@@ -129,11 +135,10 @@ describe('C1B-R4 invariant wave — §11.1 probe 1: accepted async snapshot atom
     ]);
 
     renderApp(['/chat/41']);
-    const transport = await screen.findByLabelText('传输模式选择');
-    fireEvent.change(transport, { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: '原子快照' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // Upgrade failure: the PENDING marker survives — never a tokenless active.
     await waitFor(() => {
@@ -195,7 +200,7 @@ describe('C1B-R4 invariant wave — §11.1 probe 2 / §4.4: independent draft-cl
     renderApp(['/chat/47']);
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // Draft row appears; the run itself completes and reconciles regardless.
     await screen.findByText(/草稿清理失败/);
@@ -253,7 +258,7 @@ describe('C1B-R4 invariant wave — §11.1 probe 2 / §4.4: independent draft-cl
     renderApp(['/chat/48']);
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // Both failure surfaces are visible and locked.
     await screen.findByText(/草稿清理失败/);
@@ -547,11 +552,10 @@ describe('C1B-R4 invariant wave — §5.3 polling cursor persist failure pauses 
     ]);
 
     renderApp(['/chat/46']);
-    const transport = await screen.findByLabelText('传输模式选择');
-    fireEvent.change(transport, { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // First poll lands (cursor 0 → 1) but its cursor persist fails → pause.
     await waitFor(() => expect(cursorRequests.length).toBe(1));
@@ -608,11 +612,10 @@ describe('C1B-R4 invariant wave — acknowledgement refresh failure retains mark
     ]);
 
     renderApp(['/chat/52']);
-    const transport = await screen.findByLabelText('传输模式选择');
-    fireEvent.change(transport, { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     await waitFor(() => expect(postCount).toBe(1));
     fireEvent.click(await screen.findByRole('button', { name: '关闭提示' }));

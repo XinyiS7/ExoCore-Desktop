@@ -1,0 +1,38 @@
+/* V4 Aura picker leaf styles — only classes NOT already present in shell.css.
+   The palette grid / swatch bar / preview / new / delete styles live in
+   shell.css; this file covers the sibling-button restructure only. */
+
+.v4-aura-swatch {
+  position: relative;
+}
+
+.v4-aura-swatch-select {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.v4-aura-swatch-edit {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.v4-aura-new-item,
+.v4-aura-new-item .v4-aura-new {
+  display: flex;
+  width: 100%;
+}
+
+.v4-aura-new-item .v4-aura-new {
+  align-items: center;
+  justify-content: center;
+}

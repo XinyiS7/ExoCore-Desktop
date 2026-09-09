@@ -12,6 +12,29 @@ const PRESET_ECKI = {
   is_visible: true,
 };
 
+const MODEL_CATALOG = {
+  models: [{
+    name: 'deepseek-v4-flash',
+    family: 'deepseek',
+    abilities: ['fc'],
+    compatible_endpoint_ids: [7],
+  }],
+  endpoints: [{
+    id: 7,
+    name: 'DeepSeek',
+    provider: 'deepseek',
+    execution_type: 'direct_api',
+    execution_adapter: 'internal_http',
+    payload_format: 'openai',
+    cache_transport: 'inline_chunk',
+    attachment_transports: ['inline_text'],
+    configured: true,
+    enabled: true,
+  }],
+  roles: { main: [{ model: 'deepseek-v4-flash', default_endpoint: 7 }], support: {} },
+  providers: [],
+};
+
 const convRow = (id: number) => ({
   id,
   name: `Conversation #${id}`,
@@ -50,16 +73,19 @@ afterEach(() => {
 });
 
 describe('P1B Chat Runtime Integration (§9.4, §9.5, §9.6, §9.7)', () => {
-  it('disables blank/whitespace send, sends on Enter, inserts newline on Shift+Enter', async () => {
+  it('disables blank/whitespace send, keeps Enter for newline, and sends on Shift+Enter', async () => {
     let sendCalls = 0;
+    let sentBody: Record<string, unknown> | null = null;
     installFetch([
       { test: '/api/agents/presets/', handler: () => jsonResponse([PRESET_ECKI]) },
+      { test: '/api/core/model-catalog/', handler: () => jsonResponse(MODEL_CATALOG) },
       { test: '/api/agents/conversations/30/', handler: () => jsonResponse(convRow(30)) },
       {
         test: /^\/api\/agents\/chat\/30\/$/,
         handler: (_url, init) => {
           if (init?.method === 'POST') {
             sendCalls += 1;
+            sentBody = JSON.parse(String(init.body)) as Record<string, unknown>;
             return new Response('event: done\ndata: [DONE]\n\n', {
               status: 200,
               headers: { 'Content-Type': 'text/event-stream' },
@@ -81,16 +107,30 @@ describe('P1B Chat Runtime Integration (§9.4, §9.5, §9.6, §9.7)', () => {
     fireEvent.change(textbox, { target: { value: '   ' } });
     expect(sendBtn).toBeDisabled();
 
-    // Shift+Enter does NOT send
+    // Plain Enter keeps the browser's native newline behavior and never sends.
     fireEvent.change(textbox, { target: { value: 'Line 1' } });
-    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
+    expect(fireEvent.keyDown(textbox, { key: 'Enter' })).toBe(true);
+    expect(sendCalls).toBe(0);
+    fireEvent.change(textbox, { target: { value: 'Line 1\nLine 2' } });
+
+    // IME composition Shift+Enter confirms text only; it must never dispatch.
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true, isComposing: true });
     expect(sendCalls).toBe(0);
 
-    // Enter sends
-    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: false });
+    // Shift+Enter sends, with all request controls frozen into the request body.
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
     await waitFor(() => {
       expect(sendCalls).toBe(1);
     });
+    expect(sentBody).toMatchObject({
+      content: 'Line 1\nLine 2',
+      model: 'deepseek-v4-flash',
+      endpoint: 7,
+      thinking_level: 'auto',
+      session_type: 'lite',
+      cache_enabled: true,
+    });
+    expect(sentBody).not.toHaveProperty('memory_injection_enabled');
   });
 
   it('renders optimistic user turn and streams SSE assistant response to completion', async () => {
@@ -99,6 +139,7 @@ describe('P1B Chat Runtime Integration (§9.4, §9.5, §9.6, §9.7)', () => {
 
     installFetch([
       { test: '/api/agents/presets/', handler: () => jsonResponse([PRESET_ECKI]) },
+      { test: '/api/core/model-catalog/', handler: () => jsonResponse(MODEL_CATALOG) },
       { test: '/api/agents/conversations/31/', handler: () => jsonResponse(convRow(31)) },
       {
         test: /^\/api\/agents\/chat\/31\/$/,
@@ -142,7 +183,7 @@ describe('P1B Chat Runtime Integration (§9.4, §9.5, §9.6, §9.7)', () => {
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
 
     fireEvent.change(textbox, { target: { value: '你好，阿莱' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // Optimistic user turn should be rendered immediately
     expect(await screen.findByText('你好，阿莱')).toBeTruthy();
@@ -160,6 +201,7 @@ describe('P1B Chat Runtime Integration (§9.4, §9.5, §9.6, §9.7)', () => {
     let stopCalled = false;
     installFetch([
       { test: '/api/agents/presets/', handler: () => jsonResponse([PRESET_ECKI]) },
+      { test: '/api/core/model-catalog/', handler: () => jsonResponse(MODEL_CATALOG) },
       { test: '/api/agents/conversations/32/', handler: () => jsonResponse(convRow(32)) },
       {
         test: '/api/agents/chat/32/stop/',
@@ -192,7 +234,7 @@ describe('P1B Chat Runtime Integration (§9.4, §9.5, §9.6, §9.7)', () => {
     renderApp(['/chat/32']);
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: '运行并停止' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // Button should become Stop button
     const stopBtn = await screen.findByRole('button', { name: /停止生成/ });
@@ -224,6 +266,7 @@ describe('P1B Chat Runtime Integration (§9.4, §9.5, §9.6, §9.7)', () => {
 
     installFetch([
       { test: '/api/agents/presets/', handler: () => jsonResponse([PRESET_ECKI]) },
+      { test: '/api/core/model-catalog/', handler: () => jsonResponse(MODEL_CATALOG) },
       { test: '/api/agents/conversations/33/', handler: () => jsonResponse(convRow(33)) },
       {
         test: /^\/api\/agents\/chat\/33\/status\//,
@@ -262,6 +305,7 @@ describe('P1B Chat Runtime Integration (§9.4, §9.5, §9.6, §9.7)', () => {
     let branchCalled = false;
     installFetch([
       { test: '/api/agents/presets/', handler: () => jsonResponse([PRESET_ECKI]) },
+      { test: '/api/core/model-catalog/', handler: () => jsonResponse(MODEL_CATALOG) },
       { test: '/api/agents/conversations/34/', handler: () => jsonResponse(convRow(34)) },
       { test: '/api/agents/conversations/99/', handler: () => jsonResponse(convRow(99)) },
       { test: '/api/agents/conversations/', handler: () => jsonResponse([convRow(34), convRow(99)]) },

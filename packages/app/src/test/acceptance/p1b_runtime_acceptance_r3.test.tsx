@@ -1,6 +1,13 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { installFetch, jsonResponse, renderApp, unmockFetch } from '../helpers';
+import {
+  installRuntimeFetch as installFetch,
+  jsonResponse,
+  renderApp,
+  runtimeTestPreset,
+  selectRuntimeTransport,
+  unmockFetch,
+} from '../helpers';
 
 const conversation = {
   id: 76,
@@ -43,7 +50,7 @@ function base(messages: unknown = emptyPage) {
   return [
     { test: '/api/agents/conversations/76/', handler: () => jsonResponse(conversation) },
     { test: '/api/agents/chat/76/', method: 'GET', handler: () => jsonResponse(messages) },
-    { test: '/api/agents/presets/', handler: () => jsonResponse([]) },
+    { test: '/api/agents/presets/', handler: () => jsonResponse([runtimeTestPreset(3)]) },
   ];
 }
 
@@ -85,9 +92,7 @@ describe('C1B R3 independent acceptance — storage transition closure', () => {
     renderApp(['/chat/76']);
     const box = await screen.findByRole('textbox', { name: '消息输入框' });
     fireEvent.change(box, { target: { value: 'persist token safely' } });
-    fireEvent.change(screen.getByRole('combobox', { name: '传输模式选择' }), {
-      target: { value: 'async' },
-    });
+    await selectRuntimeTransport('async');
     fireEvent.click(screen.getByRole('button', { name: '发送消息' }));
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/存储|凭据|恢复/));

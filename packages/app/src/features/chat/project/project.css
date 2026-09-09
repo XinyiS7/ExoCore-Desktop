@@ -1,0 +1,30 @@
+/* V4 Project leaf styles — only NEW classes not present in shell.css
+   (tree/drawer scaffolding already lives there). */
+
+.v4-tree-row--error .v4-tree-name {
+  color: var(--v4-danger, #c24141);
+}
+
+.v4-tree-row--error .v4-tree-note {
+  color: var(--v4-danger, #c24141);
+}
+
+.v4-tree-note--error {
+  color: var(--v4-danger, #c24141);
+}
+
+.v4-tree-retry {
+  border: 1px solid var(--v4-line-strong);
+  background: transparent;
+  color: var(--v4-text-dim);
+  font-size: 10px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  margin-top: 2px;
+}
+
+.v4-tree-retry:hover {
+  color: var(--v4-text);
+  border-color: var(--v4-accent);
+}

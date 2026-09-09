@@ -10,6 +10,15 @@ import { classifyAudioAttemptPersistence } from '../features/chat/runtime/attemp
 import type { MessageView } from '../features/chat/types';
 import { installFetch, jsonResponse, unmockFetch } from './helpers';
 
+const dispatchSettings = {
+  model: 'gemini-audio',
+  endpoint: 7,
+  thinkingLevel: 'medium',
+  cacheEnabled: true,
+  sessionType: 'lite' as const,
+  memoryInjectionEnabled: true,
+};
+
 const message = (id: number, indexInSession: number, attachmentIds: number[]): MessageView => ({
   id,
   role: 'user',
@@ -31,6 +40,7 @@ function recoveryState(persistence: ReturnType<typeof classifyAudioAttemptPersis
       conversationId: 42,
       attemptKey: 'attempt-1',
       originalText: '完整原文',
+      dispatchSettings,
       attachmentIds: [11, 22],
       audioAttachmentIds: [22],
       persistence,
@@ -100,6 +110,7 @@ describe('P1C audio recovery snapshot and persistence machine', () => {
         blob: new Blob(['audio'], { type: 'audio/webm' }),
         mimeType: 'audio/webm',
         target: { model: 'gemini-audio', endpoint: 7 },
+        dispatchSettings,
         content: '  完整原文  ',
         attachmentIds: [11],
         dispatch: firstDispatch,
@@ -114,6 +125,7 @@ describe('P1C audio recovery snapshot and persistence machine', () => {
     expect(firstDispatch).toHaveBeenCalledWith({
       content: '完整原文',
       pendingAttachments: [11, 22],
+      dispatchSettings,
       attemptKey: snapshot?.attemptKey,
     });
 
@@ -137,6 +149,7 @@ describe('P1C audio recovery snapshot and persistence machine', () => {
     expect(retryDispatch).toHaveBeenCalledWith({
       content: '完整原文',
       pendingAttachments: [11, 22],
+      dispatchSettings,
       attemptKey: snapshot?.attemptKey,
     });
     expect(replaceDispatch).not.toHaveBeenCalled();
@@ -178,6 +191,7 @@ describe('P1C audio recovery snapshot and persistence machine', () => {
         blob: new Blob(['audio'], { type: 'audio/webm' }),
         mimeType: 'audio/webm',
         target: { model: 'gemini-audio', endpoint: 7 },
+        dispatchSettings,
         content: 'old turn',
         attachmentIds: [11],
         dispatch,
@@ -218,6 +232,7 @@ describe('P1C audio recovery snapshot and persistence machine', () => {
         blob: new Blob(['audio'], { type: 'audio/webm' }),
         mimeType: 'audio/webm',
         target: { model: 'gemini-audio', endpoint: 7 },
+        dispatchSettings,
         content: 'old turn',
         attachmentIds: [],
         dispatch,

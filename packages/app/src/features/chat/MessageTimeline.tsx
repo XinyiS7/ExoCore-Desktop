@@ -1,9 +1,23 @@
 import { Edit2, GitBranch, RotateCw } from 'lucide-react';
-import type { MessageRole, MessageView } from './types';
+import type { AssistantRunTraceProjection, MessageRole, MessageView } from './types';
 import type { OptimisticUserRow, RuntimeAssistantRow } from './runtime/types';
 import { MessageContent } from './MessageContent';
 import { formatTimeOfDay } from './time';
 import { MessageAttachments } from './attachments/MessageAttachments';
+import { AssistantRunTrace } from './trace/AssistantRunTrace';
+
+function runtimeTraceProjection(row: RuntimeAssistantRow): AssistantRunTraceProjection | null {
+  if (!row.assistantTrace) return null;
+  return {
+    version: 1,
+    availability: 'available',
+    items: row.assistantTrace.items.map((item) =>
+      item.kind === 'tool' && item.lifecycle === 'started' && !row.isStreaming
+        ? { ...item, lifecycle: 'incomplete' }
+        : item,
+    ),
+  };
+}
 
 const ROLE_LABELS: Record<MessageRole, string> = {
   user: '你',
@@ -103,17 +117,21 @@ function MessageRowItem({
       </header>
 
       <div className="app-msg-body">
+        {isAssistant && (message.assistantRunTrace || hasReasoning) ? (
+          <AssistantRunTrace
+            reasoning={message.reasoningContent}
+            projection={message.assistantRunTrace}
+            legacyToolDetailsUnavailable={
+              message.assistantRunTrace?.availability === 'legacy_unavailable' ||
+              (!message.assistantRunTrace && hasReasoning)
+            }
+          />
+        ) : null}
         {hasContentText ? (
           <MessageContent content={message.content} />
         ) : hasAttachments ? null : (
           <span className="app-muted">（空消息）</span>
         )}
-        {/* Honest partial-capability indicators */}
-        {hasReasoning ? (
-          <span className="app-deferred-chip" title="推理过程内容在后续阶段开放查看">
-            推理过程 · P1D 开放
-          </span>
-        ) : null}
         {hasAttachments ? <MessageAttachments meta={attachmentsMeta} /> : null}
       </div>
     </article>
@@ -141,6 +159,8 @@ export function MessageTimeline({
       break;
     }
   }
+
+  const realtimeTrace = runtimeAssistant ? runtimeTraceProjection(runtimeAssistant) : null;
 
   return (
     <div className="app-timeline">
@@ -211,9 +231,15 @@ export function MessageTimeline({
             ) : null}
           </header>
           <div className="app-msg-body">
+            <AssistantRunTrace
+              reasoning={runtimeAssistant.thinking}
+              projection={realtimeTrace}
+              telemetry={runtimeAssistant.telemetry}
+              streaming={runtimeAssistant.isStreaming}
+            />
             {runtimeAssistant.content ? (
               <MessageContent content={runtimeAssistant.content} />
-            ) : (
+            ) : runtimeAssistant.thinking || (realtimeTrace?.availability === 'available' && realtimeTrace.items.length) ? null : (
               <span className="app-spinner-inline" aria-label="等待回答" />
             )}
             {runtimeAssistant.error ? (

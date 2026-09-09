@@ -2,7 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { installFetch, jsonResponse, renderApp, unmockFetch } from './helpers';
+import {
+  installRuntimeFetch as installFetch,
+  jsonResponse,
+  renderApp,
+  selectRuntimeTransport,
+  unmockFetch,
+} from './helpers';
 import { ConversationPage } from '../features/chat/ConversationPage';
 import * as storageModule from '../features/chat/runtime/storage';
 import { clearRuntimeLease, readRuntimeLease } from '../features/chat/runtime/storage';
@@ -359,11 +365,10 @@ describe('C1B-R5 sibling probes — async suspension: token/Stop retention (§10
     ]);
 
     renderApp(['/chat/70']);
-    const transport = await screen.findByLabelText('传输模式选择');
-    fireEvent.change(transport, { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // Upgrade failed: pending retained, zero polling, Stop REACHABLE (R5-B1).
     await waitFor(() => {
@@ -433,11 +438,10 @@ describe('C1B-R5 sibling probes — async suspension: token/Stop retention (§10
     ]);
 
     renderApp(['/chat/71']);
-    const transport = await screen.findByLabelText('传输模式选择');
-    fireEvent.change(transport, { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // R5-B3: conflict never guesses — adoption leaves the exact pending marker
     // and surfaces the ack lock; no tokenless active, no uncertain, no poll.
@@ -495,11 +499,10 @@ describe('C1B-R5 sibling probes — async suspension: token/Stop retention (§10
     ]);
 
     renderApp(['/chat/72']);
-    const transport = await screen.findByLabelText('传输模式选择');
-    fireEvent.change(transport, { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // Upgrade read-failure → storage_blocked_read locks everything.
     await waitFor(() => {
@@ -562,11 +565,10 @@ describe('C1B-R5 sibling probes — async suspension: token/Stop retention (§10
     ]);
 
     renderApp(['/chat/76']);
-    const transport = await screen.findByLabelText('传输模式选择');
-    fireEvent.change(transport, { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // Upgrade read-failure → storage_blocked_read; then the marker VANISHES
     // (another session cleared it) before the reread.
@@ -644,11 +646,10 @@ describe('C1B-R5 sibling probes — async suspension: token/Stop retention (§10
     ]);
 
     renderApp(['/chat/73']);
-    const transport = await screen.findByLabelText('传输模式选择');
-    fireEvent.change(transport, { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // Live: first poll lands events and cursor 1.
     await waitFor(() => {
@@ -715,7 +716,7 @@ describe('C1B-R5 sibling probes — P2 hygiene (§10.1 B5/B6)', () => {
     renderApp(['/chat/74']);
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // Zero POST, safe presentation, NO dead 重试存储操作 on a state that has no
     // storage recovery — only the dismiss action (R5-B5).
@@ -759,7 +760,7 @@ describe('C1B-R5 sibling probes — P2 hygiene (§10.1 B5/B6)', () => {
     renderApp(['/chat/75']);
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(textbox, { target: { value: '第一条' } });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     // First send: draft clear fails → warning appears; run completes.
     await screen.findByText(/草稿清理失败/);
@@ -770,7 +771,7 @@ describe('C1B-R5 sibling probes — P2 hygiene (§10.1 B5/B6)', () => {
     // Second accepted send: its draft clear SUCCEEDS and resets the flag —
     // the warning must not stick (R5-B6).
     await assertSendEnabledAfterTyping('第二条');
-    fireEvent.keyDown(screen.getByRole('textbox', { name: /消息输入框/ }), { key: 'Enter' });
+    fireEvent.keyDown(screen.getByRole('textbox', { name: /消息输入框/ }), { key: 'Enter', shiftKey: true });
     await waitFor(() => {
       expect(screen.queryByText(/草稿清理失败/)).toBeNull();
     });

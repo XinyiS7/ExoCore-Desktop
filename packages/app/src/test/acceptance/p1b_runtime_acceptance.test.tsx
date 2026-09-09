@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { installFetch, jsonResponse, renderApp, unmockFetch } from '../helpers';
+import {
+  installRuntimeFetch as installFetch,
+  jsonResponse,
+  renderApp,
+  selectRuntimeTransport,
+  unmockFetch,
+} from '../helpers';
 import { normalizeSSEEvent } from '../../features/chat/runtime/sse';
 import { pollChatStatus } from '../../features/chat/runtime/client';
 
@@ -74,7 +80,7 @@ describe('C1B independent acceptance — decisive runtime invariants', () => {
     renderApp(['/chat/71']);
     const box = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(box, { target: { value: 'must remain retry-safe' } });
-    fireEvent.keyDown(box, { key: 'Enter' });
+    fireEvent.keyDown(box, { key: 'Enter', shiftKey: true });
     await waitFor(() => expect(postCount).toBe(0));
   });
 
@@ -97,9 +103,9 @@ describe('C1B independent acceptance — decisive runtime invariants', () => {
 
     renderApp(['/chat/72']);
     await screen.findByRole('textbox', { name: /消息输入框/ });
-    fireEvent.change(screen.getByRole('combobox', { name: /传输模式选择/ }), { target: { value: 'async' } });
+    await selectRuntimeTransport('async');
     fireEvent.change(screen.getByRole('textbox', { name: /消息输入框/ }), { target: { value: 'ambiguous async' } });
-    fireEvent.keyDown(screen.getByRole('textbox', { name: /消息输入框/ }), { key: 'Enter' });
+    fireEvent.keyDown(screen.getByRole('textbox', { name: /消息输入框/ }), { key: 'Enter', shiftKey: true });
 
     await screen.findByText(/未返回有效的恢复凭据/);
     expect(postCount).toBe(1);
@@ -176,7 +182,7 @@ describe('C1B independent acceptance — decisive runtime invariants', () => {
     renderApp(['/chat/75']);
     const box = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(box, { target: { value: 'preserve settings' } });
-    fireEvent.keyDown(box, { key: 'Enter' });
+    fireEvent.keyDown(box, { key: 'Enter', shiftKey: true });
     await waitFor(() => expect(postedBody).not.toBeNull());
     expect(postedBody).toMatchObject({ thinking_level: 'high' });
   });
@@ -213,7 +219,7 @@ describe('C1B independent acceptance — decisive runtime invariants', () => {
     renderApp(['/chat/76']);
     const box = await screen.findByRole('textbox', { name: /消息输入框/ });
     fireEvent.change(box, { target: { value: 'leave route' } });
-    fireEvent.keyDown(box, { key: 'Enter' });
+    fireEvent.keyDown(box, { key: 'Enter', shiftKey: true });
     await waitFor(() => expect(postedSignal.current).not.toBeNull());
     fireEvent.click(screen.getByRole('link', { name: /Chat Home/ }));
     await waitFor(() => expect(postedSignal.current?.aborted).toBe(true));

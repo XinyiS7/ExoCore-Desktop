@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { vi } from 'vitest';
@@ -26,6 +26,41 @@ export function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+export const RUNTIME_TEST_MODEL_CATALOG = {
+  models: [{
+    name: 'deepseek-v4-flash',
+    family: 'deepseek',
+    abilities: ['fc'],
+    compatible_endpoint_ids: [7],
+  }],
+  endpoints: [{
+    id: 7,
+    name: 'DeepSeek',
+    provider: 'deepseek',
+    execution_type: 'direct_api',
+    execution_adapter: 'internal_http',
+    payload_format: 'openai',
+    cache_transport: 'inline_chunk',
+    attachment_transports: ['inline_text'],
+    configured: true,
+    enabled: true,
+  }],
+  roles: { main: [{ model: 'deepseek-v4-flash', default_endpoint: 7 }], support: {} },
+  providers: [],
+};
+
+export function runtimeTestPreset(id: number) {
+  return {
+    id,
+    name: `Runtime preset ${id}`,
+    description: null,
+    agent_type: 'standard',
+    default_model: 'deepseek-v4-flash',
+    system_prompt: null,
+    is_visible: true,
+  };
+}
+
 export function installFetch(routes: MockRoute[], fallback?: RouteHandler) {
   const calls: { url: URL; init?: RequestInit }[] = [];
   const fn = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -41,6 +76,22 @@ export function installFetch(routes: MockRoute[], fallback?: RouteHandler) {
   });
   vi.stubGlobal('fetch', fn);
   return { fn, calls };
+}
+
+export function installRuntimeFetch(routes: MockRoute[], fallback?: RouteHandler) {
+  return installFetch([
+    ...routes,
+    { test: '/api/core/model-catalog/', handler: () => jsonResponse(RUNTIME_TEST_MODEL_CATALOG) },
+  ], fallback);
+}
+
+/** Select transport through the production-owned Tactical HUD control. */
+export async function selectRuntimeTransport(transport: 'sse' | 'async') {
+  fireEvent.click(await screen.findByRole('button', { name: '战术面板' }));
+  fireEvent.change(await screen.findByRole('combobox', { name: '选择传输模式' }), {
+    target: { value: transport },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '关闭战术面板' }));
 }
 
 export function unmockFetch() {

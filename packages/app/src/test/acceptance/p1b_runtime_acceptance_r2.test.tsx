@@ -4,7 +4,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConversationPage } from '../../features/chat/ConversationPage';
 import { postChatAsync } from '../../features/chat/runtime/client';
 import { normalizeSSEEvent } from '../../features/chat/runtime/sse';
-import { installFetch, jsonResponse, renderApp, renderV4, unmockFetch } from '../helpers';
+import {
+  installRuntimeFetch as installFetch,
+  jsonResponse,
+  renderApp,
+  renderV4,
+  runtimeTestPreset,
+  selectRuntimeTransport,
+  unmockFetch,
+} from '../helpers';
 
 const conv = (id: number) => ({
   id,
@@ -39,7 +47,7 @@ function baseRoutes(ids: number[]) {
       method: 'GET',
       handler: () => jsonResponse(emptyMessages),
     },
-    { test: '/api/agents/presets/', handler: () => jsonResponse([]) },
+    { test: '/api/agents/presets/', handler: () => jsonResponse([runtimeTestPreset(3)]) },
   ];
 }
 
@@ -193,9 +201,7 @@ describe('C1B R2 independent acceptance — residual runtime invariants', () => 
     renderApp(['/chat/76']);
     const box = await screen.findByRole('textbox', { name: '消息输入框' });
     fireEvent.change(box, { target: { value: 'async unknown' } });
-    fireEvent.change(screen.getByRole('combobox', { name: '传输模式选择' }), {
-      target: { value: 'async' },
-    });
+    await selectRuntimeTransport('async');
     fireEvent.click(screen.getByRole('button', { name: '发送消息' }));
 
     await screen.findByText(/异步会话凭据已失效/);

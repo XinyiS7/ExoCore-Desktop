@@ -52,11 +52,50 @@ export interface AttachmentMeta {
   content_url: string | null;
 }
 
+export interface AssistantRunTraceThinkingItem {
+  itemId: string;
+  order: number;
+  kind: 'thinking';
+  text: string;
+}
+
+export type AssistantToolLifecycle = 'started' | 'succeeded' | 'failed' | 'incomplete';
+
+export interface AssistantRunTraceToolItem {
+  itemId: string;
+  order: number;
+  kind: 'tool';
+  callId: string;
+  lifecycle: AssistantToolLifecycle;
+  toolName: string;
+  argumentPreview?: string | null;
+  resultSummary?: string | null;
+  errorSummary?: string | null;
+  durationMs?: number | null;
+}
+
+export type AssistantRunTraceItem = AssistantRunTraceThinkingItem | AssistantRunTraceToolItem;
+
+export type AssistantRunTraceProjection =
+  | {
+      version: 1;
+      availability: 'available';
+      items: AssistantRunTraceItem[];
+      truncated?: boolean;
+    }
+  | {
+      version: 1;
+      availability: 'legacy_unavailable';
+      reason: 'ordering_unavailable';
+    };
+
 export interface MessageRow {
   id: number;
   role: MessageRole;
   content: string;
   reasoning_content: string | null;
+  /** Additive backend field; normalized fail-closed at the API boundary. */
+  assistant_run_trace?: unknown;
   platform: string | null;
   model_version: string | null;
   token_count: number | null;
@@ -97,6 +136,8 @@ export interface ConversationSummary {
   lastMessageAt: string | null;
   /** Canonical thinking level ('' or null => 'auto' at request time, §5.1). */
   thinkingLevel: string | null;
+  /** Backend row value only; P1D dispatch is owned by the local g045 Conversation preference. */
+  memoryInjectionEnabled: boolean | null;
 }
 
 export interface MessageView {
@@ -104,6 +145,8 @@ export interface MessageView {
   role: MessageRole;
   content: string;
   reasoningContent: string | null;
+  /** `null` means absent or malformed external trace data. */
+  assistantRunTrace?: AssistantRunTraceProjection | null;
   platform: string | null;
   modelVersion: string | null;
   tokenCount: number | null;

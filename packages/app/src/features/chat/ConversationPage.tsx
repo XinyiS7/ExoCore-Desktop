@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowDown, ArrowLeft } from 'lucide-react';
 import { toAppApiError } from './api';
 import {
   findPersistedMessage,
@@ -30,6 +30,13 @@ import { useUserAttachmentManager } from './attachments/useUserAttachmentManager
 import { useAudioRecorder } from './audio/useAudioRecorder';
 import { useAudioTargetGate, useModelCatalogQuery } from './audio/audioTarget';
 import { useAudioRecovery } from './audio/audioRecoveryMachine';
+import { useConversationControls } from './controls/useConversationControls';
+import { ProjectFilesDrawer } from './project/ProjectFilesDrawer';
+import { TacticalHud } from './hud/TacticalHud';
+import { HudStateStrip } from './hud/HudStateStrip';
+import { useCacheControl } from './control/useCacheControl';
+import { useAura } from './aura/useAura';
+import { AuraStage } from './aura/AuraStage';
 
 /** Distinct invalid-URL state — no request is issued for bad route params. */
 function InvalidConversationState() {
@@ -89,25 +96,67 @@ export function ConversationPage() {
   });
   // P1C: recorder lifecycle (AUD-F, Task 3).
   const recorder = useAudioRecorder();
-  // P1C: live catalog + automatic target gate (Task 3.2).
+  // P1D: one live catalog and one Conversation-local control owner. The
+  // ref-backed lock closes same-tick HUD changes at runtime/audio boundaries.
   const catalogQuery = useModelCatalogQuery();
-  const audioPreset =
+  const activePreset =
     conversationQuery.data?.agentPresetId != null && presetsQuery.data
       ? (presetsQuery.data.find((p) => p.id === conversationQuery.data?.agentPresetId) ?? null)
       : null;
-  const audioGate = useAudioTargetGate(
-    catalogQuery.data,
-    audioPreset ?? (conversationQuery.data ? { default_model: null } : null),
-  );
+  const controlLockRef = useRef(false);
+  const cacheOperationPendingRef = useRef(false);
+  const thinkingOperationPendingRef = useRef(false);
+  const controls = useConversationControls({
+    conversationId: id,
+    conversation: conversationQuery.data,
+    preset: activePreset,
+    presetReady:
+      conversationQuery.data?.agentPresetId == null || presetsQuery.data !== undefined,
+    catalog: catalogQuery.data,
+    lockedRef: controlLockRef,
+    externalOperationPendingRef: cacheOperationPendingRef,
+    thinkingOperationPendingRef,
+  });
+  const audioGate = useAudioTargetGate(catalogQuery.data, controls.target);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const pendingAnchor = useRef<{ top: number; height: number } | null>(null);
   const isNearBottomRef = useRef<boolean>(true);
+  const scrollRouteRef = useRef<{
+    conversationId: number;
+    initialized: boolean;
+    userScrolled: boolean;
+    canonicalRevision: number | null;
+  }>({ conversationId: id, initialized: false, userScrolled: false, canonicalRevision: null });
+  if (scrollRouteRef.current.conversationId !== id) {
+    scrollRouteRef.current = {
+      conversationId: id,
+      initialized: false,
+      userScrolled: false,
+      canonicalRevision: null,
+    };
+    isNearBottomRef.current = true;
+  }
+  const [isAwayFromBottom, setIsAwayFromBottom] = useState(false);
   const persistedRowsRef = useRef<ReadonlyArray<MessageView>>([]);
   /** Caller-side route identity for branch navigation guards (§6.3). */
   const pageEpochRef = useRef(0);
   const pageConversationIdRef = useRef(id);
   pageConversationIdRef.current = id;
+  const projectInsertKeyRef = useRef(0);
+  const [projectDrawerOpen, setProjectDrawerOpen] = useState(false);
+  const [hudOpen, setHudOpen] = useState(false);
+  const [controlNotice, setControlNotice] = useState<string | null>(null);
+  const [pendingProjectInsert, setPendingProjectInsert] = useState<{
+    key: number;
+    path: string;
+    conversationId: number;
+    projectId: number;
+  } | null>(null);
+  const aura = useAura(id, {
+    theme: 'dark',
+    onStorageWarning: setControlNotice,
+  });
   /**
    * R5-A2: per-invocation branch caller token. Modal close, replacement or
    * route switch REVOKES it — a revoked caller must never navigate, even if
@@ -128,6 +177,11 @@ export function ConversationPage() {
     branchCallerTokenRef.current = null;
     setTruncateModal((prev) => ({ ...prev, isOpen: false }));
     setBranchModal({ isOpen: false, targetMessage: null });
+    setProjectDrawerOpen(false);
+    setHudOpen(false);
+    setControlNotice(null);
+    setPendingProjectInsert(null);
+    setIsAwayFromBottom(false);
   }, [id]);
 
   // Runtime lifecycle hook (single authoritative owner for send/edit/regenerate/
@@ -139,6 +193,8 @@ export function ConversationPage() {
     busy,
     optimisticUser,
     runtimeAssistant,
+    telemetryProjection,
+    runtimeNotice,
     runtimeError,
     protocolWarning,
     hasPendingReconcile,
@@ -158,14 +214,20 @@ export function ConversationPage() {
     retryReread,
     retryStorage,
     dismissTransient,
+    dismissRuntimeNotice,
     retryDraftCleanup,
     branchFrom,
+    isOperationPending,
   } = useChatRuntime({
     conversationId: id,
     isNearBottomRef,
-    thinkingLevel: conversationQuery.data?.thinkingLevel ?? null,
+    dispatchSettings: controls.dispatchSettings,
     persistedRowsRef,
     onAttemptOutcome: audioRecovery.onRuntimeOutcome,
+    isExternalOperationPending: () =>
+      cacheOperationPendingRef.current ||
+      thinkingOperationPendingRef.current ||
+      audioRecovery.isUploading(),
     onNavigateToConversation: (conversationId: number) => {
       // At most one later navigation, only after the exact source clear
       // returned `cleared` AND this route caller is still current (§6.2).
@@ -173,12 +235,21 @@ export function ConversationPage() {
       navigate(`/chat/${conversationId}`);
     },
   });
+  const thinkingPending = thinkingOperationPendingRef.current;
+  const cacheControl = useCacheControl(id, {
+    runtimeUncertain: busy || audioRecovery.isUploading() || thinkingPending,
+    isRuntimeUncertain: () =>
+      isOperationPending() || audioRecovery.isUploading() || thinkingOperationPendingRef.current,
+    operationPendingRef: cacheOperationPendingRef,
+  });
+  const controlsPending = thinkingPending || cacheControl.isOperationPending();
+  controlLockRef.current = busy || audioRecovery.isUploading();
 
   const handleRetryAudio = () => {
     void audioRecovery.retry({
       dispatchOrdinary: sendMessage,
       dispatchReplacement: retryRecoveredTurn,
-      runtimeBusy: busy,
+      runtimeBusy: busy || controlsPending,
       deletePending: attachmentManager.isDeletePending(),
     });
   };
@@ -210,18 +281,63 @@ export function ConversationPage() {
     return map;
   }, [presetsQuery.data]);
 
-  // Track scroll position to determine near-bottom state
+  // Track the sole timeline scroll owner. Reaching bottom consumes the exact
+  // pending canonical reconciliation; repeated scroll events are no-ops once
+  // the runtime advances its synchronous stage out of `idle`.
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
+    scrollRouteRef.current.userScrolled = true;
     const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    isNearBottomRef.current = distanceToBottom < 80;
-  }, []);
+    const nearBottom = distanceToBottom < 80;
+    isNearBottomRef.current = nearBottom;
+    setIsAwayFromBottom(!nearBottom);
+    if (nearBottom && hasPendingReconcile) void applyPendingReconcile();
+  }, [applyPendingReconcile, hasPendingReconcile]);
 
-  // Auto-scroll when new content streams in and user is near bottom
+  // First canonical page: after layout, initialize this route identity at the
+  // latest row exactly once unless the user has already interacted with the
+  // scroll owner. Later canonical replacements follow only a near-bottom
+  // reader; older-page prepends retain the anchor path below.
+  useLayoutEffect(() => {
+    if (merged === undefined) return;
+    const el = scrollRef.current;
+    const route = scrollRouteRef.current;
+    if (!el || route.conversationId !== id) return;
+
+    if (!route.initialized) {
+      route.initialized = true;
+      route.canonicalRevision = pagesQuery.dataUpdatedAt;
+      if (route.userScrolled) return;
+      el.scrollTop = el.scrollHeight;
+      isNearBottomRef.current = true;
+      setIsAwayFromBottom(false);
+      return;
+    }
+
+    const rowsChanged = route.canonicalRevision !== pagesQuery.dataUpdatedAt;
+    route.canonicalRevision = pagesQuery.dataUpdatedAt;
+    if (
+      rowsChanged &&
+      pendingAnchor.current === null &&
+      !pagesQuery.isFetchingNextPage &&
+      isNearBottomRef.current
+    ) {
+      el.scrollTop = el.scrollHeight;
+      setIsAwayFromBottom(false);
+    }
+  }, [id, merged, pagesQuery.dataUpdatedAt, pagesQuery.isFetchingNextPage]);
+
+  // Auto-scroll when new content streams in only if the reader stayed near
+  // bottom. Scrolled-up reading position is never displaced.
   useEffect(() => {
-    if (isNearBottomRef.current && scrollRef.current) {
+    if (
+      scrollRouteRef.current.initialized &&
+      isNearBottomRef.current &&
+      scrollRef.current
+    ) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      setIsAwayFromBottom(false);
     }
   }, [optimisticUser, runtimeAssistant?.content]);
 
@@ -242,6 +358,18 @@ export function ConversationPage() {
     conversation?.agentPresetId === null || conversation?.agentPresetId === undefined
       ? '未知 Agent'
       : (presetById.get(conversation.agentPresetId) ?? `Agent #${conversation.agentPresetId}`);
+  const endpointLabel =
+    controls.compatibleEndpoints.find((endpoint) => endpoint.id === controls.target.endpoint)?.name ?? '';
+  const cacheSummary =
+    cacheControl.presentation.state === 'loading'
+      ? '缓存读取中'
+      : cacheControl.presentation.state === 'error'
+        ? '缓存不可用'
+        : cacheControl.presentation.state === 'active'
+          ? `缓存 ${Math.max(0, cacheControl.presentation.cache.remainingSeconds ?? 0)}s`
+          : cacheControl.presentation.state === 'snapshot_only'
+            ? '本地快照'
+            : '无缓存';
 
   const handleLoadMore = () => {
     const el = scrollRef.current;
@@ -250,19 +378,23 @@ export function ConversationPage() {
     void pagesQuery.fetchNextPage();
   };
 
-  const handleApplyPendingReconcile = async () => {
-    await applyPendingReconcile();
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+  const handleScrollToLatest = async () => {
+    // U-06: move the sole timeline scroll owner to its CURRENT bottom
+    // immediately — never wait on the pending canonical fetch. The pending
+    // reconciliation is consumed next, exactly once; a canonical replacement
+    // landing later follows the reader only while it stays near bottom.
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
     isNearBottomRef.current = true;
+    setIsAwayFromBottom(false);
+    if (hasPendingReconcile) await applyPendingReconcile();
   };
 
   // Request-side action-target guards (§5.1/§5.5, C1B-R1-05): every
   // edit/regenerate/branch dispatch re-validates the target against the
   // CURRENT canonical persisted rows of this conversation before POST.
   const handleEditMessage = (msgId: number, content: string, isLatestUser: boolean) => {
-    if (busy) return;
+    if (busy || controlsPending) return;
     if (!findPersistedMessage(merged?.rows, msgId, 'user')) return;
     if (isLatestUser) {
       startEdit(msgId, content);
@@ -277,7 +409,7 @@ export function ConversationPage() {
   };
 
   const handleRegenerateMessage = (msgId: number, isLatestUser: boolean) => {
-    if (busy) return;
+    if (busy || controlsPending) return;
     if (!findPersistedMessage(merged?.rows, msgId, 'user')) return;
     if (isLatestUser) {
       void regenerate(msgId);
@@ -292,7 +424,7 @@ export function ConversationPage() {
   };
 
   const handleConfirmTruncate = () => {
-    if (busy) return;
+    if (busy || controlsPending) return;
     if (!findPersistedMessage(merged?.rows, truncateModal.targetId, 'user')) return;
     if (truncateModal.actionType === 'edit') {
       startEdit(truncateModal.targetId, truncateModal.targetContent);
@@ -302,7 +434,7 @@ export function ConversationPage() {
   };
 
   const handleBranchMessage = (msgId: number, snippet: string) => {
-    if (busy) return;
+    if (busy || controlsPending) return;
     if (!findPersistedMessage(merged?.rows, msgId, 'assistant')) return;
     // R5-A2: opening a new invocation revokes any still-pending one.
     if (branchCallerTokenRef.current) branchCallerTokenRef.current.revoked = true;
@@ -339,6 +471,11 @@ export function ConversationPage() {
 
   return (
     <div className="app-page app-page--detail">
+      <AuraStage
+        paletteId={aura.selectedId}
+        theme="dark"
+        generating={status === 'streaming' || status === 'polling'}
+      />
       <header className="app-topbar app-topbar--detail">
         <Link to="/" className="app-back-link">
           <ArrowLeft size={16} aria-hidden="true" />
@@ -364,6 +501,32 @@ export function ConversationPage() {
             ) : null}
           </span>
         </div>
+        <HudStateStrip
+          model={controls.target.model}
+          endpointLabel={endpointLabel}
+          thinkingLabel={controls.thinkingLevel}
+          transport={transport}
+          cacheSummary={cacheSummary}
+          cacheReleaseEligible={
+            cacheControl.presentation.state === 'active' ||
+            cacheControl.presentation.state === 'snapshot_only'
+          }
+          cacheReleaseDisabled={cacheControl.mutationsLocked}
+          cacheReleasing={cacheControl.releasing}
+          onReleaseCache={cacheControl.release}
+          auraLabel={aura.palettes.find((palette) => palette.id === aura.selectedId)?.label ?? '默认'}
+          onOpen={() => setHudOpen(true)}
+        />
+        {conversation?.projectId ? (
+          <button
+            type="button"
+            className="app-btn app-btn-ghost app-btn-sm"
+            onClick={() => setProjectDrawerOpen(true)}
+            aria-label="打开项目文件"
+          >
+            项目文件
+          </button>
+        ) : null}
         <MoreMenu className="app-more--top" />
       </header>
 
@@ -388,48 +551,83 @@ export function ConversationPage() {
       ) : null}
 
       {conversation !== undefined ? (
-        <div className="app-scroll" ref={scrollRef} onScroll={handleScroll}>
-          {pagesQuery.isPending && merged === undefined ? (
-            <LoadingState label="正在加载消息…" />
-          ) : null}
+        <div className="app-scroll-stage">
+          {/* The sole timeline scroll owner; the stage stays a passive flex
+              wrapper so the floating affordance anchors to the timeline
+              viewport bottom, above the actual composer, with no secondary
+              scroll owner and no hard-coded composer height. */}
+          <div className="app-scroll" ref={scrollRef} onScroll={handleScroll}>
+            {pagesQuery.isPending && merged === undefined ? (
+              <LoadingState label="正在加载消息…" />
+            ) : null}
 
-          {pagesQuery.isError ? (
-            toAppApiError(pagesQuery.error).status === 404 ? (
-              <ErrorState
-                title="消息历史不可用"
-                detail="该会话的消息历史不存在（404）。"
-                onRetry={() => void pagesQuery.refetch()}
-              />
-            ) : (
-              <ErrorState
-                title="消息加载失败"
-                detail={toAppApiError(pagesQuery.error).message}
-                onRetry={() => void pagesQuery.refetch()}
-              />
-            )
-          ) : null}
+            {pagesQuery.isError ? (
+              toAppApiError(pagesQuery.error).status === 404 ? (
+                <ErrorState
+                  title="消息历史不可用"
+                  detail="该会话的消息历史不存在（404）。"
+                  onRetry={() => void pagesQuery.refetch()}
+                />
+              ) : (
+                <ErrorState
+                  title="消息加载失败"
+                  detail={toAppApiError(pagesQuery.error).message}
+                  onRetry={() => void pagesQuery.refetch()}
+                />
+              )
+            ) : null}
 
-          {merged !== undefined && !pagesQuery.isError ? (
-            merged.rows.length === 0 && !merged.hasOlder && !optimisticUser && !runtimeAssistant ? (
-              <EmptyState
-                title="还没有消息"
-                hint="这个会话还没有内容。在下方输入消息开始对话。"
-              />
-            ) : (
-              <MessageTimeline
-                messages={merged.rows}
-                hasOlder={merged.hasOlder}
-                loadingMore={pagesQuery.isFetchingNextPage}
-                onLoadMore={handleLoadMore}
-                optimisticUser={optimisticUser}
-                runtimeAssistant={runtimeAssistant}
-                isRunActive={busy}
-                onEditMessage={handleEditMessage}
-                onRegenerateMessage={handleRegenerateMessage}
-                onBranchMessage={handleBranchMessage}
-              />
-            )
+            {merged !== undefined && !pagesQuery.isError ? (
+              merged.rows.length === 0 && !merged.hasOlder && !optimisticUser && !runtimeAssistant ? (
+                <EmptyState
+                  title="还没有消息"
+                  hint="这个会话还没有内容。在下方输入消息开始对话。"
+                />
+              ) : (
+                <MessageTimeline
+                  messages={merged.rows}
+                  hasOlder={merged.hasOlder}
+                  loadingMore={pagesQuery.isFetchingNextPage}
+                  onLoadMore={handleLoadMore}
+                  optimisticUser={optimisticUser}
+                  runtimeAssistant={runtimeAssistant}
+                  isRunActive={busy || controlsPending}
+                  onEditMessage={handleEditMessage}
+                  onRegenerateMessage={handleRegenerateMessage}
+                  onBranchMessage={handleBranchMessage}
+                />
+              )
+            ) : null}
+          </div>
+
+          {isAwayFromBottom ? (
+            <button
+              type="button"
+              className="app-scroll-latest"
+              onClick={() => void handleScrollToLatest()}
+              aria-label="返回最新消息"
+              title="返回最新消息"
+            >
+              <ArrowDown size={17} aria-hidden="true" />
+            </button>
           ) : null}
+        </div>
+      ) : null}
+
+      {runtimeNotice || controlNotice || controls.storageWarning ? (
+        <div className="app-runtime-notice" role="status">
+          <span>{runtimeNotice ?? controlNotice ?? controls.storageWarning}</span>
+          <button
+            type="button"
+            onClick={() => {
+              dismissRuntimeNotice();
+              setControlNotice(null);
+              controls.dismissStorageWarning();
+            }}
+            aria-label="关闭控制提示"
+          >
+            ×
+          </button>
         </div>
       ) : null}
 
@@ -441,7 +639,7 @@ export function ConversationPage() {
         protocolWarning={protocolWarning}
         hasPendingReconcile={hasPendingReconcile}
         draftCleanupFailed={draftCleanupFailed}
-        onApplyPendingReconcile={() => void handleApplyPendingReconcile()}
+        onApplyPendingReconcile={() => void handleScrollToLatest()}
         onRetrySync={() => void retrySync()}
         onRetryStop={() => void stopGeneration()}
         onRetryReread={() => void retryReread()}
@@ -457,9 +655,12 @@ export function ConversationPage() {
         <ChatComposer
           conversationId={id}
           status={status}
-          busy={busy}
-          transport={transport}
-          onTransportChange={setTransport}
+          busy={busy || controlsPending}
+          dispatchSettings={controls.dispatchSettings}
+          targetNotice={controls.targetNotice}
+          projectId={conversation.projectId}
+          pendingProjectInsert={pendingProjectInsert}
+          onProjectInsertConsumed={() => setPendingProjectInsert(null)}
           onSend={sendMessage}
           onStop={() => void stopGeneration()}
           editingTarget={editingTarget}
@@ -474,6 +675,48 @@ export function ConversationPage() {
         />
       ) : null}
 
+      <TacticalHud
+        key={id}
+        open={hudOpen}
+        onClose={() => setHudOpen(false)}
+        runtimeUncertain={busy || audioRecovery.isUploading() || controlsPending}
+        target={controls.target}
+        onTargetChange={controls.setTarget}
+        transport={transport}
+        onTransportChange={setTransport}
+        thinkingLevel={conversation?.thinkingLevel ?? null}
+        thinkingSaveState={controls.thinkingSaveState}
+        onThinkingChange={controls.saveThinkingLevel}
+        onThinkingRetry={controls.retryThinkingSave}
+        cacheControl={cacheControl}
+        cacheEnabled={controls.preferences.cacheEnabled}
+        onCacheEnabledChange={controls.setCacheEnabled}
+        sessionType={controls.preferences.sessionType}
+        onSessionTypeChange={controls.setSessionType}
+        memoryInjectionEnabled={controls.preferences.memoryInjectionEnabled}
+        onMemoryInjectionChange={controls.setMemoryInjectionEnabled}
+        isG045={conversation?.agentType === 'g045'}
+        aura={aura}
+        telemetry={telemetryProjection}
+        onStorageWarning={setControlNotice}
+      />
+
+      <ProjectFilesDrawer
+        projectId={conversation?.projectId ?? null}
+        isOpen={projectDrawerOpen}
+        onClose={() => setProjectDrawerOpen(false)}
+        onInsertPath={(path) => {
+          if (!conversation?.projectId) return;
+          setPendingProjectInsert({
+            key: ++projectInsertKeyRef.current,
+            path,
+            conversationId: id,
+            projectId: conversation.projectId,
+          });
+          setProjectDrawerOpen(false);
+        }}
+      />
+
       {/* Confirmation Modals */}
       <TruncateConfirmModal
         isOpen={truncateModal.isOpen}
@@ -486,7 +729,7 @@ export function ConversationPage() {
       <BranchConfirmModal
         isOpen={branchModal.isOpen}
         targetMessage={branchModal.targetMessage}
-        locked={busy}
+        locked={busy || controlsPending}
         onConfirm={handleConfirmBranch}
         onClose={() => {
           // R5-A2: explicit modal close revokes the per-invocation caller — a

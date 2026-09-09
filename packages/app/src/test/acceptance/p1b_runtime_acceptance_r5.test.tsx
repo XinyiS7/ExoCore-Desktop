@@ -3,7 +3,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConversationPage } from '../../features/chat/ConversationPage';
-import { installFetch, jsonResponse, renderApp, unmockFetch } from '../helpers';
+import {
+  installRuntimeFetch as installFetch,
+  jsonResponse,
+  renderApp,
+  runtimeTestPreset,
+  selectRuntimeTransport,
+  unmockFetch,
+} from '../helpers';
 
 const conversation = {
   id: 76,
@@ -46,7 +53,7 @@ function base(messages: unknown = emptyPage) {
   return [
     { test: '/api/agents/conversations/76/', handler: () => jsonResponse(conversation) },
     { test: '/api/agents/chat/76/', method: 'GET', handler: () => jsonResponse(messages) },
-    { test: '/api/agents/presets/', handler: () => jsonResponse([]) },
+    { test: '/api/agents/presets/', handler: () => jsonResponse([runtimeTestPreset(3)]) },
     { test: '/api/agents/conversations/', handler: () => jsonResponse([conversation]) },
   ];
 }
@@ -103,9 +110,7 @@ describe('C1B R5 independent acceptance — recovery identity closure', () => {
     renderApp(['/chat/76']);
     const box = await screen.findByRole('textbox', { name: '消息输入框' });
     fireEvent.change(box, { target: { value: 'stop while storage is blocked' } });
-    fireEvent.change(screen.getByRole('combobox', { name: '传输模式选择' }), {
-      target: { value: 'async' },
-    });
+    await selectRuntimeTransport('async');
     fireEvent.click(screen.getByRole('button', { name: '发送消息' }));
 
     const stop = await screen.findByRole('button', { name: '停止生成' });
@@ -159,9 +164,7 @@ describe('C1B R5 independent acceptance — recovery identity closure', () => {
     renderApp(['/chat/76']);
     const box = await screen.findByRole('textbox', { name: '消息输入框' });
     fireEvent.change(box, { target: { value: 'respect exact owner' } });
-    fireEvent.change(screen.getByRole('combobox', { name: '传输模式选择' }), {
-      target: { value: 'async' },
-    });
+    await selectRuntimeTransport('async');
     fireEvent.click(screen.getByRole('button', { name: '发送消息' }));
     await screen.findByRole('button', { name: /重试读取存储/ });
 

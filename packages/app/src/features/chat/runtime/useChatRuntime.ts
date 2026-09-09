@@ -7,6 +7,8 @@ import {
   type ChatRuntimeError,
   type ChatTransport,
   type ChatTurnInput,
+  type ConversationDispatchSettings,
+  type ConversationTelemetryProjection,
   type ConstrainedAfter,
   type DispatchIntent,
   type NormalizedSSEEvent,
@@ -18,6 +20,7 @@ import {
   type RuntimeAssistantRow,
   type RuntimeAttemptOutcome,
   type RuntimeStatus,
+  type RuntimeTelemetry,
   type StableOperationOwner,
   type SuspendedOperation,
   type TransportPayload,
@@ -25,7 +28,7 @@ import {
   type V4RuntimeLease,
 } from './types';
 import { SSEFrameDecoder, normalizePollingEvent, normalizeSSEEvent, parseRawSSEFrame } from './sse';
-import { applyNormalizedEvent } from './events';
+import { applyNormalizedEvent, normalizeRuntimeTelemetry } from './events';
 import {
   clearConversationDraft,
   clearRuntimeLease,
@@ -52,8 +55,12 @@ import { classifyAudioAttemptPage } from './attemptPersistence';
 export interface UseChatRuntimeOptions {
   conversationId: number;
   isNearBottomRef?: RefObject<boolean>;
-  /** Canonical Conversation thinking_level ('' or null => 'auto', §5.1). */
+  /** Legacy pre-P1D fallback retained for isolated runtime harnesses. */
   thinkingLevel?: string | null;
+  /** Current validated HUD values. `null` means target unresolved and blocks dispatch. */
+  dispatchSettings?: ConversationDispatchSettings | null;
+  /** Synchronous sibling-operation guard (cache/thinking/audio page owners). */
+  isExternalOperationPending?: () => boolean;
   /** Live canonical persisted rows (page-level), used for request-side target validation. */
   persistedRowsRef?: RefObject<ReadonlyArray<{ id: number; role: string; indexInSession?: number }>>;
   /**
@@ -120,6 +127,13 @@ function sameStableOwner(
  * unless a stop POST is already pending. Single source for both the status
  * projection and stopGeneration eligibility.
  */
+function emptyTelemetryProjection(): ConversationTelemetryProjection {
+  return {
+    lastTurn: null,
+    totals: { acceptedRuns: 0, inputChars: 0, outputChars: 0, toolCalls: 0, cachedInputChars: 0 },
+  };
+}
+
 function blockedStopEligible(state: OperationState): boolean {
   if (state.phase !== 'blocked' || !state.recovery) return false;
   const rec = state.recovery;
@@ -140,6 +154,12 @@ function blockedStopEligible(state: OperationState): boolean {
     return true;
   }
   return false;
+}
+
+function cacheSkippedNotice(reason: string): string {
+  if (reason === 'platform_not_supported') return '当前平台不支持远端上下文缓存，本轮已使用普通请求。';
+  if (reason === 'remote_cache_unavailable') return '远端上下文缓存暂不可用，本轮已使用普通请求。';
+  return `本轮未使用上下文缓存（${reason}）。`;
 }
 
 function blockedCode(reason: BlockedReason): string {
@@ -181,6 +201,8 @@ export function useChatRuntime({
   conversationId,
   isNearBottomRef,
   thinkingLevel,
+  dispatchSettings,
+  isExternalOperationPending,
   persistedRowsRef,
   onNavigateToConversation,
   onAttemptOutcome,
@@ -197,7 +219,12 @@ export function useChatRuntime({
   // ── Presentation-only state (overlay rows / warnings / safe errors) ──────
   const [optimisticUser, setOptimisticUser] = useState<OptimisticUserRow | null>(null);
   const [runtimeAssistant, setRuntimeAssistant] = useState<RuntimeAssistantRow | null>(null);
+  const [telemetryProjection, setTelemetryProjection] = useState<ConversationTelemetryProjection>(
+    emptyTelemetryProjection,
+  );
+  const lastCountedTelemetryRef = useRef<{ epoch: number; telemetry: RuntimeTelemetry } | null>(null);
   const [protocolWarning, setProtocolWarning] = useState<string | null>(null);
+  const [runtimeNotice, setRuntimeNotice] = useState<string | null>(null);
   const [transientError, setTransientError] = useState<ChatRuntimeError | null>(null);
   const [stopError, setStopError] = useState<ChatRuntimeError | null>(null);
   const [draftCleanupFailed, setDraftCleanupFailed] = useState(false);
@@ -280,8 +307,30 @@ export function useChatRuntime({
   // ── Derived projections from the single union ────────────────────────────
   const status = useMemo(() => deriveStatus(opState), [opState]);
   const busy = opState.phase !== 'idle';
+  const isOperationPending = useCallback(() => phaseNow() !== 'idle', [phaseNow]);
   const hasPendingReconcile =
     opState.phase === 'reconciling' && opState.reconcile.waitForLatest && opState.reconcile.stage === 'idle';
+
+  const observeRuntimeTelemetry = useCallback((epoch: number, telemetry: RuntimeTelemetry) => {
+    const counted = lastCountedTelemetryRef.current;
+    const prior = counted?.epoch === epoch ? counted.telemetry : undefined;
+    lastCountedTelemetryRef.current = { epoch, telemetry };
+    const value = (
+      row: RuntimeTelemetry | undefined,
+      key: 'inputChars' | 'outputChars' | 'toolCalls' | 'cachedInputChars',
+    ) => row?.[key] ?? 0;
+    setTelemetryProjection((current) => ({
+      lastTurn: { ...telemetry },
+      totals: {
+        acceptedRuns: current.totals.acceptedRuns + (prior ? 0 : 1),
+        inputChars: current.totals.inputChars - value(prior, 'inputChars') + value(telemetry, 'inputChars'),
+        outputChars: current.totals.outputChars - value(prior, 'outputChars') + value(telemetry, 'outputChars'),
+        toolCalls: current.totals.toolCalls - value(prior, 'toolCalls') + value(telemetry, 'toolCalls'),
+        cachedInputChars:
+          current.totals.cachedInputChars - value(prior, 'cachedInputChars') + value(telemetry, 'cachedInputChars'),
+      },
+    }));
+  }, []);
 
   const runtimeError = useMemo<ChatRuntimeError | null>(() => {
     if (transientError) return transientError;
@@ -378,6 +427,7 @@ export function useChatRuntime({
           clientKey: `assistant:${identity.epoch}`,
           content: '',
           statusText: '正在恢复会话进度…',
+          thinking: '',
           isStreaming: true,
         });
         startPollingLoopRef.current(identity);
@@ -781,9 +831,12 @@ export function useChatRuntime({
         stage: 'idle',
       };
       transition({ phase: 'reconciling', identity, snapshot, reconcile: ctx });
+      // Backend cache truth may change at every terminal. Refetch only the
+      // exact Conversation cache row; Query remains the sole read owner.
+      void queryClient.invalidateQueries({ queryKey: ['control', 'cache', identity.stableOwner.conversationId] });
       if (!ctx.waitForLatest) void runReconcileStagesRef.current(identity, snapshot, ctx);
     },
-    [cancelLocalReaders, isCurrentIdentity, transition, isNearBottomRefLocal, emitAttemptOutcome],
+    [cancelLocalReaders, isCurrentIdentity, transition, isNearBottomRefLocal, emitAttemptOutcome, queryClient],
   );
 
   /** Async `not_found`: reconcile canonical FIRST, then durable uncertain (§5.3). */
@@ -826,9 +879,16 @@ export function useChatRuntime({
         if (normalized.event === 'done' || normalized.event === 'stopped' || normalized.event === 'error') {
           continue;
         }
+        if (normalized.event === 'telemetry') {
+          const telemetry = normalizeRuntimeTelemetry(normalized.parsedData);
+          if (telemetry) observeRuntimeTelemetry(identity.epoch, telemetry);
+        }
         setRuntimeAssistant((prev) => {
           const result = applyNormalizedEvent(prev, normalized, `assistant:${identity.epoch}`);
           if (result.warning) setProtocolWarning(result.warning);
+          if (result.next?.cacheSkippedReason && result.next.cacheSkippedReason !== prev?.cacheSkippedReason) {
+            setRuntimeNotice(cacheSkippedNotice(result.next.cacheSkippedReason));
+          }
           return result.next;
         });
       }
@@ -858,7 +918,7 @@ export function useChatRuntime({
       if (epochRef.current !== identity.epoch) return;
       pollingTimeoutRef.current = window.setTimeout(() => startPollingLoopRef.current(identity), 500);
     },
-    [isCurrentIdentity, transition, handleTerminalRef, handleNotFoundRef],
+    [isCurrentIdentity, transition, handleTerminalRef, handleNotFoundRef, observeRuntimeTelemetry],
   );
 
   const applyPollResult = useCallback(
@@ -986,9 +1046,16 @@ export function useChatRuntime({
           );
           return true;
         }
+        if (normalized.event === 'telemetry') {
+          const telemetry = normalizeRuntimeTelemetry(normalized.parsedData);
+          if (telemetry) observeRuntimeTelemetry(identity.epoch, telemetry);
+        }
         setRuntimeAssistant((prev) => {
           const result = applyNormalizedEvent(prev, normalized, `assistant:${identity.epoch}`);
           if (result.warning) setProtocolWarning(result.warning);
+          if (result.next?.cacheSkippedReason && result.next.cacheSkippedReason !== prev?.cacheSkippedReason) {
+            setRuntimeNotice(cacheSkippedNotice(result.next.cacheSkippedReason));
+          }
           return result.next;
         });
         return false;
@@ -1029,7 +1096,7 @@ export function useChatRuntime({
         handleTerminalRef.current('error', classified);
       }
     },
-    [isCurrentIdentity],
+    [isCurrentIdentity, observeRuntimeTelemetry],
   );
 
   // ── Stop (§5.4) — stop-before-abort; accepted stop is not terminal ──────
@@ -1363,11 +1430,37 @@ export function useChatRuntime({
       operation: 'send' | 'edit' | 'regenerate',
       editMessageId?: number,
     ): Promise<TurnAcceptance> => {
-      // Synchronous same-tick guard: the ONLY lock is the union itself.
-      if (phaseNow() !== 'idle') return 'rejected';
+      // Synchronous same-tick guards: runtime union remains authoritative for
+      // chat; the page-owned cache action is the one excluded sibling command.
+      if (phaseNow() !== 'idle' || isExternalOperationPending?.()) return 'rejected';
 
       const trimmedContent = turn.content.trim();
       const pendingAttachments = turn.pendingAttachments ?? [];
+      // `undefined` is a compatibility seam for pre-P1D isolated runtime
+      // harnesses. Production passes either a validated settings object or
+      // explicit null; null fails closed before any durable marker or POST.
+      const effectiveSettings = turn.dispatchSettings ?? dispatchSettings;
+      if (effectiveSettings === null) {
+        setTransientError({
+          code: 'TARGET_UNRESOLVED',
+          message: '当前模型或端点尚未就绪，请在战术控制面板中重新选择。',
+          retryClass: 'safe',
+        });
+        return 'rejected';
+      }
+      if (
+        effectiveSettings !== undefined &&
+        (!effectiveSettings.model.trim() ||
+          !Number.isInteger(effectiveSettings.endpoint) ||
+          effectiveSettings.endpoint <= 0 ||
+          (effectiveSettings.sessionType !== 'full' && effectiveSettings.sessionType !== 'lite'))
+      ) {
+        setTransientError({ code: 'TARGET_INVALID', message: '当前模型或端点不可用，请重新选择。', retryClass: 'safe' });
+        return 'rejected';
+      }
+      const capturedSettings = effectiveSettings
+        ? { ...effectiveSettings, model: effectiveSettings.model.trim() }
+        : undefined;
       if (pendingAttachments.some((id) => !Number.isInteger(id) || id <= 0)) {
         setTransientError({ code: 'ATTACHMENT_INVALID', message: '附件参数包含无效编号。', retryClass: 'safe' });
         return 'rejected';
@@ -1423,7 +1516,7 @@ export function useChatRuntime({
         operation,
         content: trimmedContent,
         editMessageId,
-        thinkingLevel: thinkingLevel ?? null,
+        dispatchSettings: capturedSettings,
         pendingAttachments: [...pendingAttachments],
         attemptKey: turn.attemptKey,
       };
@@ -1455,11 +1548,13 @@ export function useChatRuntime({
         kind: 'client_assistant',
         clientKey: `assistant:${epoch}`,
         content: '',
+        thinking: '',
         isStreaming: true,
       });
       setTransientError(null);
       setStopError(null);
       setProtocolWarning(null);
+      setRuntimeNotice(null);
 
       // 1) Durable pending against verified ABSENCE before any POST.
       const pendingOutcome = persistRuntimeLease(null, pendingSnapshot);
@@ -1474,7 +1569,12 @@ export function useChatRuntime({
           const res = await fetchChatSSEStream({
             conversationId: convId,
             content: operation === 'regenerate' ? '' : trimmedContent,
-            thinkingLevel: thinkingLevel ?? null,
+            thinkingLevel: capturedSettings?.thinkingLevel ?? thinkingLevel ?? null,
+            model: capturedSettings?.model,
+            endpoint: capturedSettings?.endpoint,
+            cacheEnabled: capturedSettings?.cacheEnabled,
+            sessionType: capturedSettings?.sessionType,
+            memoryInjectionEnabled: capturedSettings?.memoryInjectionEnabled,
             editMessageId: destructive ? editMessageId : undefined,
             pendingAttachments: pendingAttachments.length > 0 ? pendingAttachments : undefined,
             signal: abortControllerRef.current.signal,
@@ -1513,7 +1613,12 @@ export function useChatRuntime({
         const ack = await postChatAsync({
           conversationId: convId,
           content: operation === 'regenerate' ? '' : trimmedContent,
-          thinkingLevel: thinkingLevel ?? null,
+          thinkingLevel: capturedSettings?.thinkingLevel ?? thinkingLevel ?? null,
+          model: capturedSettings?.model,
+          endpoint: capturedSettings?.endpoint,
+          cacheEnabled: capturedSettings?.cacheEnabled,
+          sessionType: capturedSettings?.sessionType,
+          memoryInjectionEnabled: capturedSettings?.memoryInjectionEnabled,
           editMessageId: destructive ? editMessageId : undefined,
           pendingAttachments: pendingAttachments.length > 0 ? pendingAttachments : undefined,
           signal: abortControllerRef.current.signal,
@@ -1553,6 +1658,8 @@ export function useChatRuntime({
       transition,
       transport,
       thinkingLevel,
+      dispatchSettings,
+      isExternalOperationPending,
       persistedRows,
       cancelLocalReaders,
       handlePendingFailure,
@@ -1646,11 +1753,11 @@ export function useChatRuntime({
   }, [transition]);
 
   /** Scrolled-up hold → exactly one fresh offset-0 canonical application. */
-  const applyPendingReconcile = useCallback(() => {
+  const applyPendingReconcile = useCallback(async (): Promise<void> => {
     const cur = opStateRef.current;
     if (cur.phase !== 'reconciling' || !cur.reconcile.waitForLatest || cur.reconcile.stage !== 'idle') return;
     const { identity, snapshot, reconcile } = cur;
-    void runReconcileStagesRef.current(identity, snapshot, reconcile);
+    await runReconcileStagesRef.current(identity, snapshot, reconcile);
   }, []);
 
   /** Exact storage mutation retry for verified-prior failures (§4.2). */
@@ -1918,6 +2025,8 @@ export function useChatRuntime({
     setTransientError(null);
   }, []);
 
+  const dismissRuntimeNotice = useCallback(() => setRuntimeNotice(null), []);
+
   /** Draft cleanup retry — touches ONLY the exact draft key, never the lease. */
   const retryDraftCleanup = useCallback(() => {
     if (!clearConversationDraft(activeConversationIdRef.current)) return;
@@ -2175,7 +2284,10 @@ export function useChatRuntime({
     setOpState({ phase: 'idle' });
     setOptimisticUser(null);
     setRuntimeAssistant(null);
+    lastCountedTelemetryRef.current = null;
+    setTelemetryProjection(emptyTelemetryProjection());
     setProtocolWarning(null);
+    setRuntimeNotice(null);
     setTransientError(null);
     setStopError(null);
     setDraftCleanupFailed(false);
@@ -2260,8 +2372,11 @@ export function useChatRuntime({
     setTransport,
     status,
     busy,
+    isOperationPending,
     optimisticUser,
     runtimeAssistant,
+    telemetryProjection,
+    runtimeNotice,
     runtimeError,
     protocolWarning,
     hasPendingReconcile,
@@ -2281,6 +2396,7 @@ export function useChatRuntime({
     retryReread,
     retryStorage,
     dismissTransient,
+    dismissRuntimeNotice,
     retryDraftCleanup,
     branchFrom,
   };

@@ -1,6 +1,8 @@
 import { apiFetch } from 'exo-shared/api';
 import type {
   AgentPresetRow,
+  AssistantRunTraceItem,
+  AssistantRunTraceProjection,
   ConversationRow,
   ConversationSummary,
   CreateConversationInput,
@@ -101,6 +103,113 @@ function normalizeConversationRow(row: ConversationRow): ConversationSummary {
     agentPresetId: row.agent_preset_id,
     lastMessageAt: row.last_message_at,
     thinkingLevel: typeof row.thinking_level === 'string' ? row.thinking_level : null,
+    memoryInjectionEnabled:
+      typeof row.memory_injection_enabled === 'boolean' ? row.memory_injection_enabled : null,
+  };
+}
+
+const TRACE_ID_MAX = 128;
+const TRACE_ARGUMENT_MAX = 500;
+const TRACE_RESULT_MAX = 1000;
+const TRACE_ERROR_MAX = 500;
+const TRACE_TOOL_LIFECYCLES = new Set(['started', 'succeeded', 'failed', 'incomplete']);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function validTraceIdentity(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0 && Array.from(value).length <= TRACE_ID_MAX;
+}
+
+function optionalBoundedText(
+  row: Record<string, unknown>,
+  key: string,
+  limit: number,
+): { valid: boolean; value?: string | null } {
+  if (!(key in row)) return { valid: true };
+  const value = row[key];
+  if (value === null) return { valid: true, value: null };
+  return typeof value === 'string' && Array.from(value).length <= limit
+    ? { valid: true, value }
+    : { valid: false };
+}
+
+/**
+ * Fail-closed history trace normalization. A malformed additive field cannot
+ * block or alter canonical message content; callers receive `null` instead.
+ */
+export function normalizeAssistantRunTrace(value: unknown): AssistantRunTraceProjection | null {
+  if (!isRecord(value) || value.version !== 1) return null;
+  if (value.availability === 'legacy_unavailable') {
+    return value.reason === 'ordering_unavailable'
+      ? { version: 1, availability: 'legacy_unavailable', reason: 'ordering_unavailable' }
+      : null;
+  }
+  if (value.availability !== 'available' || !Array.isArray(value.items)) return null;
+  if (
+    value.items.length > 200 ||
+    new TextEncoder().encode(JSON.stringify(value)).byteLength > 64 * 1024 ||
+    ('truncated' in value && typeof value.truncated !== 'boolean')
+  ) return null;
+
+  const items: AssistantRunTraceItem[] = [];
+  const itemIds = new Set<string>();
+  const callIds = new Set<string>();
+  let priorOrder = -1;
+  for (const candidate of value.items) {
+    if (!isRecord(candidate)) return null;
+    const { item_id: itemId, order, kind } = candidate;
+    if (
+      !validTraceIdentity(itemId) ||
+      itemIds.has(itemId) ||
+      !Number.isInteger(order) ||
+      (order as number) < 0 ||
+      (order as number) <= priorOrder
+    ) return null;
+    itemIds.add(itemId);
+    priorOrder = order as number;
+
+    if (kind === 'thinking') {
+      if (typeof candidate.text !== 'string' || candidate.text.length === 0) return null;
+      items.push({ itemId, order: order as number, kind: 'thinking', text: candidate.text });
+      continue;
+    }
+    if (kind !== 'tool') return null;
+    const callId = candidate.call_id;
+    const toolName = candidate.tool_name;
+    const lifecycle = candidate.lifecycle;
+    const argument = optionalBoundedText(candidate, 'argument_preview', TRACE_ARGUMENT_MAX);
+    const result = optionalBoundedText(candidate, 'result_summary', TRACE_RESULT_MAX);
+    const error = optionalBoundedText(candidate, 'error_summary', TRACE_ERROR_MAX);
+    const duration = candidate.duration_ms;
+    if (
+      !validTraceIdentity(callId) || callIds.has(callId) ||
+      !validTraceIdentity(toolName) ||
+      typeof lifecycle !== 'string' || !TRACE_TOOL_LIFECYCLES.has(lifecycle) ||
+      !argument.valid || !result.valid || !error.valid ||
+      ('duration_ms' in candidate && duration !== null &&
+        (typeof duration !== 'number' || !Number.isFinite(duration) || duration < 0))
+    ) return null;
+    callIds.add(callId);
+    items.push({
+      itemId,
+      order: order as number,
+      kind: 'tool',
+      callId,
+      lifecycle: lifecycle as 'started' | 'succeeded' | 'failed' | 'incomplete',
+      toolName,
+      ...('argument_preview' in candidate ? { argumentPreview: argument.value } : {}),
+      ...('result_summary' in candidate ? { resultSummary: result.value } : {}),
+      ...('error_summary' in candidate ? { errorSummary: error.value } : {}),
+      ...('duration_ms' in candidate ? { durationMs: duration as number | null } : {}),
+    });
+  }
+  return {
+    version: 1,
+    availability: 'available',
+    items,
+    ...('truncated' in value ? { truncated: value.truncated as boolean } : {}),
   };
 }
 
@@ -110,6 +219,8 @@ function normalizeMessageRow(row: MessageRow): MessageView {
     role: row.role,
     content: row.content,
     reasoningContent: row.reasoning_content,
+    assistantRunTrace:
+      row.role === 'assistant' ? normalizeAssistantRunTrace(row.assistant_run_trace) : null,
     platform: row.platform,
     modelVersion: row.model_version,
     tokenCount: row.token_count,
