@@ -259,3 +259,92 @@ This live evidence was acceptance-owned, not executed by the Desktop Builder.
 - No commit was created during construction. Frozen Plan, acceptance report,
   and independent probes were not edited.
 - P1C-deferred attachment behavior and P2/P6 work were not introduced by P1D.
+
+## 8. Final user-acceptance repair ledger (U-01…U-06)
+
+> Recorded after acceptance-oriented review (risk H: scroll lifecycle,
+> pending reconciliation, dispatch semantics, top-bar cache affordance).
+> Frozen Plan/acceptance assets were not edited; V3 lint was left alone per
+> Alicia’s explicit approval.
+
+### 8.1 U-01 — initial history position
+
+- Single timeline scroll owner `.app-scroll` initializes at latest/bottom via
+  one page-owned route record (`conversationId`, `initialized`, `userScrolled`,
+  canonical `dataUpdatedAt` revision) and one `useLayoutEffect`, exactly once
+  per route identity.
+- Never fires on older-page prepend (pending-anchor guard), streaming rerender
+  (query `dataUpdatedAt` unchanged), trace disclosure (no dependency), or after
+  the user began scrolling (`userScrolled` flag). A→B→A re-initializes per
+  identity.
+
+### 8.2 U-02 — bottom affordance / reconciliation
+
+- Near-bottom state (`<80px`) drives a floating “返回最新消息” affordance shown
+  only when genuinely away from bottom.
+- Clicking the affordance or manually reaching bottom consumes the existing
+  pending reconcile exactly once (runtime `applyPendingReconcile` is
+  stage-guarded and awaited); the prompt cannot remain while already at bottom.
+- Streaming keeps the reader’s position unless near bottom; existing anchor
+  paging is unchanged.
+
+### 8.3 U-03 — keyboard rebaseline
+
+- Plain Enter inserts a newline (default), Shift+Enter submits through the
+  existing shared submit owner. IME no-send, autocomplete Enter/Tab selection
+  while the suggestion list is active, edit/ordinary shared submit ownership,
+  and button-send behavior are preserved; the visible hint was updated.
+
+### 8.4 U-04 — direct cache release discoverability
+
+- A compact accessible “−” trigger sits beside the top-strip cache summary,
+  rendered only when release is eligible (active or snapshot-only), disabled
+  under the same page-owned mutation/runtime lock, and invokes the SAME
+  `useCacheControl.release` owner exactly once. No second hook/mutation owner,
+  no optimistic cache truth; the full HUD release remains.
+
+### 8.5 U-05 — affordance anchoring (first repair round)
+
+- Initial hard-coded `bottom:118px` produced a real 34px overlap with the
+  composer at 320×800 (button top 648/bottom 682 vs composer top 606.25).
+- Fixed with a passive `.app-scroll-stage` (relative, flex:1, no scrolling)
+  wrapping the sole `.app-scroll`; the absolute affordance anchors 12px above
+  the timeline viewport bottom, i.e. directly above the actual composer at all
+  widths/content states, with no second scroll owner and no hard-coded
+  composer height. Loading/error flex behavior and anchor paging preserved.
+
+### 8.6 U-06 — click-before-reconcile (first repair round)
+
+- The affordance click now scrolls the owner to its current bottom
+  SYNCHRONOUSLY, then consumes the existing pending reconcile exactly once; a
+  canonical replacement landing later follows the reader only while it stays
+  near bottom. Stage guard retained.
+
+### 8.7 Final automated evidence (U repairs)
+
+```text
+Focused U + affected scroll/runtime/audio siblings:
+  11 files / 93 tests; 0 failed, 0 errors, 0 skipped, 0 unhandled; exit 0
+
+Full exo-app Vitest suite (NODE_OPTIONS=--no-experimental-webstorage):
+  46 files / 382 tests; 0 failed, 0 errors, 0 skipped, 0 unhandled; exit 0
+
+pnpm --filter exo-app typecheck: exit 0, no diagnostics
+pnpm --filter exo-app lint: exit 0, no diagnostics
+pnpm --filter exo-app build: exit 0
+  Vite 8.0.14; 4,366 modules transformed; PWA precache 89 entries
+  (only the existing >500 kB chunk-size advisory)
+git diff --check: exit 0, no whitespace findings
+git diff --cached --check: exit 0, no whitespace findings
+```
+
+### 8.8 Explicit omissions (U repairs)
+
+- One test-harness timing defect was discovered and corrected (TanStack
+  `mutateAsync` schedules the mutation function on a microtask; the first
+  cache-release page test asserted before the DELETE fired). Fixed by awaiting
+  `waitFor(releaseCalls === 1)`; production mutation ownership was not changed.
+- The Builder did not run real-Chrome geometry checks; final browser geometry
+  remains acceptance-owned (U-02/U-05 rechecks were independently PASS).
+- No provider/live traffic, build-only preview, commit, V3 lint repair, or
+  frozen-artifact edits were performed by the Desktop Builder.
