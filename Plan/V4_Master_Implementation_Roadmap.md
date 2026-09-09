@@ -158,7 +158,7 @@ C0 后端并行轨：B1 / B2 / B3 / B4 可分别提前施工与验收
 | Phase | Outcome | Hard dependencies | V4 takeover |
 |---|---|---|---|
 | **P0** | 契约、基线、capability ownership 冻结 | Frozen Specs + R1–R10 | 无 |
-| **P1** | 新 V4 app shell + 完整 canonical live chat slice；内部 P1A–P1D 分批验收 | P0；App Shell mockup decision | 全部 sub-gate PASS 后统一转移 Chat ownership |
+| **P1 — C1 PASS** | 新 V4 app shell + 完整 canonical live chat slice；普通 Chat 已转为 V4-primary | P0；App Shell mockup decision | **已完成：统一 C1 转移 Chat ownership；V3 chat 为 rollback reference** |
 | **P2** | Groups、Agent/Project workspaces、Settings/notifications 等核心壳完成 | P1 | Groups 与 remaining core shell |
 | **P3** | River + Memo + Tasks/Calendar + Diary/Heartbeat/legacy event | P2 + B2 | Chronicle 的 milestone/moment 时间阅读；highlight 暂留 V3 |
 | **P4** | Library container/navigation + Collection managed originals 与四类浏览/收藏路径 | P3 + B1 | Library shell、Collection、新 bookmark writes |
@@ -255,6 +255,8 @@ P1A–P1D 全部 PASS 后才执行 C1 统一验收并允许 Chat ownership trans
 - **Checkpoint C1：** P1A–P1D 全部通过后，V4 shell + canonical Chat 在独立入口达到统一 Dual-run acceptance。
 - C1 PASS 即把普通 Chat capability 标记为 V4-primary；V3 chat 降为 rollback reference。整个应用的 production 入口仍要等 P7 cutover。
 - 统一验收失败时回到最近通过的 C1A–C1D 施工 checkpoint，或隐藏 V4 入口回到 C0；不更改或删除 Conversation、Message、attachment、cache 数据。
+
+**Transfer record:** unified C1 passed on candidate `23dea37`; ordinary Chat is now V4-primary and V3 chat-core is the rollback reference. [gpt-5.6-sol / Solaire; Alicia approved] P2-or-later ownership and the P7 root-cutover boundary are unchanged.
 
 ---
 

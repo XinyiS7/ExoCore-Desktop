@@ -31,7 +31,7 @@ If a task requires backend or extension changes:
 
 ExoCore-Desktop is a **monorepo** containing three independent V3 SPAs and the **temporary V4 package** `exo-app`. Each runs on its own port as a standalone PWA, sharing a single Django backend (port 8000).
 
-> **Migration state (V4 P1A):** `packages/app` (`exo-app`, port **5176**, production `/app/`) is a side-by-side V4 preview shell — V3 remains production-primary until unified C1. During this window the repo hosts **four SPA/PWA packages**; `dev:app` is additive and independent from V3 dev commands. V4 never imports V3 page/components.
+> **Migration state (unified C1 PASS):** `packages/app` (`exo-app`, port **5176**, production `/app/`) owns ordinary Chat as **V4-primary**; V3 `chat-core` remains the buildable rollback reference. The whole-product root still redirects to `/chat/` until P7, and Agent/Project/Group/Settings ownership remains V3 until later gates. The repo continues to host four SPA/PWA packages; `dev:app` is additive and independent from V3 dev commands. V4 never imports V3 page/components.
 
 ## Architecture
 
@@ -42,7 +42,7 @@ ExoCore-Desktop is a **monorepo** containing three independent V3 SPAs and the *
 | `chat-core` | Agent hub, conversations, projects, files, settings, memory, user profile (V3) |
 | `chronicle` | Timeline/BBS feed, task management, Google Calendar (V3) |
 | `council` | Multi-agent workspace — **deferred to V3.1** (V3) |
-| `app` | **V4 App Shell + canonical chat (P1A preview)** — `exo-app` |
+| `app` | **V4 App Shell + canonical Chat (C1 accepted, V4-primary)** — `exo-app` |
 
 ### Shared Package
 

@@ -52,9 +52,11 @@
 |---|---|---|---|
 | **C0** (this P0) | none — documents only | sole production owner | remove/revise only unaccepted P0 documents; never reset sibling changes |
 | **P1A–P1D** (C1A–C1D checkpoints) | directly accessible at dev 5176 or additive `/app/` | **V3 remains primary** (all P1A–P1D capability rows stay V3-primary until unified C1; V4 exposes only dev/additive surfaces) | sub-gate failure hides/stops only the V4 exposure and returns to the latest accepted construction checkpoint; **no user data is deleted** |
-| **C1 (unified)** | ordinary Chat V4-primary | V3 chat drops to rollback reference | whole-product root still waits for P7 |
+| **C1 (unified) — PASS** | ordinary Chat **V4-primary** at canonical `/app/` routes | V3 chat is the buildable rollback reference | whole-product root still waits for P7 |
 | **P7** | production cutover of entire product | kept as complete rollback artifact (buildable, same routes) | rollback switches root/nginx/deployment artifact back to V3; no user-data rollback |
 | **P8** | legacy retirement | removed only per capability row, after observation period + Alicia approval | C7 git/artifact checkpoint restores source surfaces; user business data never rolled back |
+
+Unified C1 transfer was accepted on candidate `23dea37`. [gpt-5.6-sol / Solaire; Alicia approved] This changes capability ownership only: the additive paths, PWA identities, V3 rollback routes and P7 root-cutover boundary remain unchanged.
 
 ## 5. Config-change ownership by phase (so P0 is not misread as authorization)
 

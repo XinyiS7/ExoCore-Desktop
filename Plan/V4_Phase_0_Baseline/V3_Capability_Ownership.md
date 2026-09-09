@@ -3,7 +3,7 @@
 > **Artifact:** `Plan/V4_Phase_0_Baseline/V3_Capability_Ownership.md`
 > **Source rows:** `Plan/V4_Master_Implementation_Roadmap.md` §16 (all rows preserved; additions marked ➕).
 > **Grounding evidence:** current frontend source (commit `6b0948e`), `V3_Baseline.md` (VB), `Canonical_API_Snapshot.json` (SN).
-> **Rule:** P1A–P1D remain **V3-primary** until unified C1 PASS. No row may lack a fallback owner.
+> **Transfer status:** P1A–P1D remained **V3-primary** through their construction gates. Unified C1 is now PASS: the ordinary Chat rows listed in §5 are **V4-primary**, with V3 chat-core retained as the rollback reference. No row may lack a fallback owner.
 
 ## 1. Legend
 
@@ -64,7 +64,7 @@
 - **P1B**: send, SSE, async polling recovery, stop, regenerate/edit, branch → rows `sse_streaming`, `polling_recovery`, `stop`, `regenerate`, `branch`.
 - **P1C**: attachment & audio compose/upload/render/play/recovery → rows `attachments`, `audio_record_play`.
 - **P1D**: cache, endpoint/model/thinking, private memory, session history, Aura, chat-local project files, Thinking/Tool events in generic `AssistantRunTrace` → rows `cache`, `endpoint_model_thinking`, `private_memory_toggle`, `session_history_control`, `aura_theme`, `project_files_in_chat`, `tool_events_thinking`, `memory_search_toolcall`.
-- **All P1A–P1D rows stay `V3-primary` until unified C1 PASS** — the `ownership_transfer_gate` column is C1 for all of them.
+- **Historical gate rule:** all P1A–P1D rows stayed `V3-primary` until unified C1 PASS; the `ownership_transfer_gate` column remains C1 as the audit record.
 
 ## 4. Completeness notes
 
@@ -73,3 +73,28 @@
 - Chronicle highlight/bookmark remains V3-owned through P3; P4 takes only new bookmark writes into Collection (row `chronicle_highlight`).
 - Council stays deferred & independently buildable; it is not assigned to GroupChat.
 - Every migrated/replaced row has a concrete V3 fallback owner; every new capability row (library shell, collection, recall receipt) has a "disable V4 exposure" rollback.
+
+## 5. Unified C1 ownership transfer record
+
+Unified C1 passed on the accepted `23dea37` candidate. [gpt-5.6-sol / Solaire; Alicia approved]
+
+The following capability IDs are now **V4-primary** in `packages/app`; their listed V3 chat-core owners remain buildable rollback references through the side-by-side observation period:
+
+- `conv.create_recent`
+- `sse_streaming`
+- `polling_recovery`
+- `stop`
+- `regenerate`
+- `branch`
+- `tool_events_thinking`
+- `attachments`
+- `audio_record_play`
+- `cache`
+- `endpoint_model_thinking`
+- `private_memory_toggle`
+- `session_history_control`
+- `aura_theme`
+- `project_files_in_chat`
+- `memory_search_toolcall`
+
+No P2-or-later capability changes owner in C1. The root production redirect remains `/chat/` until P7; this does not reverse the capability transfer because `/app/` is the accepted canonical V4 Chat surface and V3 remains intentionally reachable for rollback.
