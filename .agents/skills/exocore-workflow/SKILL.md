@@ -1,136 +1,75 @@
 ---
 name: exocore-workflow
-description: Preserve existing behavior and downstream side effects during ExoCore code changes. Use before deleting code, changing shared signatures, or refactoring cross-module flows.
-compatibility: pi
+description: ExoCore-specific engineering and architecture change workflow. Governs impact analysis, real DB baseline protection, permission models, and update logging.
+compatibility: pi, opencode, agy
 metadata:
   scope: exocore
 ---
 
-# Skill: ExoCore 改动工作流 (exocore-workflow)
+# ExoCore 核心工程改动规范 (exocore-workflow)
 
-## 1. 核心理念
-
-改代码不是替换文本。每段旧代码被写出来都有它的目的。
-改动时必须回答：**旧代码在做什么 → 新设计下这个目的由什么承接 → 有没有遗漏。**
-
-禁止的行为模式：
-- 看到旧代码和新设计"看起来不一样"就直接删除
-- 改一个文件不考虑关联文件是否也需要同步变更
-- 不读旧代码的上下文就判断"这个不需要了"
+针对 ExoCore 跨模块体系（Django 后端 + Desktop 前端 + Windows 扩展 + 真实数据与记忆系统）的专项工程规范。在修改共享签名、模型/契约、权限或生命周期时强制执行。
 
 ---
 
-## 2. 改前：理解旧代码的目的
+## 一、 改动前：影响面探查与基线确认
 
-### A. 触发条件
+### 1. Insight 影响面强制查询
+涉及以下改动前，必须使用 Insight 查明调用链与下游依赖，严禁凭盲目局部搜索改动：
+- Django Model / Migration / Serializer / View / Service
+- API Endpoint 路径、入参、响应结构体、SSE 事件格式
+- LLM 工具声明（`tools.py`）、`engines/model_registry.py`、Memory/Retrieval 逻辑
+- 调度器 Job、信号（signals）、以及跨模块文件契约（`ExoCoreData/`）
 
-以下任一情况都必须先做这件事：
-- 删除任何函数/方法/代码块
-- 修改一个被多处调用的函数签名或行为
-- 重构一个类或模块（如"把正文标记改成工具调用"）
-
-### B. 操作
-
-对即将改动的每一段旧代码：
-
-1. **读它的实现和注释** — 不是瞟一眼，是逐行理解
-2. **问：它解决了什么问题？** — 用一句话描述它的目的（不是它的做法，是它存在的理由）
-3. **找到它的下游消费者** — 谁调用它？谁依赖它的返回值？谁依赖它的副作用？
-4. **记录行为清单** — 旧代码产生的每一个外部可见效果（返回值、DB 写入、文件写入、日志、通知、状态变更）
-
-工具链：
 ```bash
-# 1. insight 影响面查询
+# 查询类或方法的上下游关系
 python.exe .agent/insight/query_insight.py --target <ClassNameOrMethod>
-
-# 2. 全局搜索调用方
-rg -n "<function_name>" --type py
-rg -n "<class_name>" --type py
-
-# 3. 搜索同模块相关类（如果改了一个 Task，检查其他 Task 是否用同一套模式）
-rg -n "<shared_pattern>" <same_directory>
-```
-
----
-
-## 3. 改中：行为映射
-
-### 核心问题
-
-对旧代码的每一个外部可见效果，在新设计中由什么机制承接？
-
-| 旧行为 | 新设计中的承接 | 状态 |
-|--------|-------------|------|
-| `parse_action()` 从正文正则提取操作 | function calling 返回结构化 args | ✓ 已覆盖 |
-| `_record_interaction()` 记录探索搜索到 Register | ??? | ⚠ 待确认 |
-
-如果某个旧行为在新设计中**找不到承接**，只有两个选择：
-- **补上**：在新设计中增加机制覆盖这个行为
-- **问用户**：这个功能是否要废弃？为什么要废弃？
-
-**绝对禁止**：行为缺失但默不作声地跳过。
-
-### 关联模块同步检查
-
-改了 A 文件的一个模式，必须搜索 B/C/D 文件是否用了同一套旧模式：
-
-```bash
-# 示例：改了 services.py 里某个类的 parse_action，检查同文件其他类
-rg -n "parse_action" background_sessions/services.py
-
-# 改了工具声明模式，检查所有工具声明文件
-rg -n "<old_pattern>" agents/tool_declarations/ background_sessions/
-```
-
----
-
-## 4. 改后：提交前审查
-
-### 强制流程
-
-```bash
-# 1. 查看所有改动文件
-git diff --stat
-
-# 2. 逐文件检查 diff
-git diff <each_file>
-
-# 3. 对每个改动文件问自己：
-#    - 这个文件的改动是否都是本次意图范围内的？
-#    - 有没有遗漏的关联文件？（改了 services.py 的某个方法，tools.py 是否也需要对应调整？）
-#    - 有没有"顺手"改动的不相关代码？如果有，要么分开 commit，要么提醒用户
-```
-
-### 无关改动处理
-
-如果 `git diff --stat` 显示有不在本次意图范围内的文件被改动：
-1. 检查改动内容
-2. 如果是独立修复/改进 → 分开 commit，写清楚的 commit message
-3. 如果是意外改动 → 恢复
-4. 如果与本次改动相关但忘了提 → 补充到 commit 中，更新 commit message
-
----
-
-## 5. Insight 强制查询
-
-以下改动前必须跑 insight（与 `get_exocore_insight` skill 互补）：
-
-- Django model / migration / serializer / view / service
-- API endpoint / response shape / SSE event
-- LLM tool declaration / tool name / tool result shape
-- `../../../engines/model_registry.py`
-- memory / context cache / retrieval 逻辑
-- scheduler job / signal / background routine
-- 跨模块契约（frontend / extension / ExoCoreData 文件格式 / port）
-
-```bash
-python.exe .agent/insight/query_insight.py --target <EntityName>
-# 或
+# 查询文件级别的级联影响
 python.exe .agent/insight/query_insight.py --file <path>
 ```
+核验链条：**Model 变更 → Serializer 映射 → View/Endpoint → 前端 SPAs (Desktop) / Windows Extension 消费点**。
+
+### 2. 真实数据库基线检查（Real DB Discipline）
+- **基线恒为 8 条**：真实库 `AgentPreset` 严禁新增、删除或篡改主键（底层已由 PostgreSQL trigger 物理防护）。
+- **开工与收工强制核验**：在 `ExoCore/` 根目录下执行：
+  ```bash
+  bash .agent/check_real_db_baseline.sh
+  ```
+  必须确认终端输出 `OK: AgentPreset baseline 8 rows`。
+- **探测与测试规则**：
+  - 如需真实库实例做只读或字段级测试，**仅允许复用归档预设**（id=3 `Archived Chat` 或 id=4 `Archived G045 Chat`）；
+  - 测试完毕必须还原配置并将 `is_visible` 设为 false；
+  - 真实库数据写入与清理一律走 Django ORM，严禁裸 SQL DDL/INSERT。
 
 ---
 
-## 6. 删除看似走不到的代码前，必须确认其目的由什么承接
+## 二、 核心架构约束：G045 权限本位
 
-看到“走不到”的代码分支（如 collector/logging 分支），不得直接删除。旧代码的存在通常有目的；新设计可能改变了调用路径，但目的本身（写入 Register、记录探索行为等）可能仍需在新路径上等价承接。删除前先回答：这个分支为什么存在？它的目的在新设计中由哪个调用点承接？若无承接点，必须在等价位置补上实现后再删。
+- **本体为唯一事实源**：G045（Alessandro）的工具集（`shell` + `smart_read`）是全权限本体。
+- **单向收窄原则**：其他路径限定工具（`my_workspace_*`, `project_*`）只是对本体做目录 scope 收窄，底层走同一执行引擎。
+- **严禁能力倒挂**：绝对禁止“派生有而本体没有”；所有工具白名单、过滤缓存必须以本体为基准；新增能力优先赋予本体，G045 只增不减。
+
+---
+
+## 三、 改动中：行为承接与下游防线
+
+### 1. 目的承接律（代码不只是字符替换）
+旧代码的存在皆有其业务目的。改动前必须逐行明确：**旧代码解决了什么问题 → 新设计下由什么机制承接 → 有无下游遗漏**。
+- **禁止静默移除观测与副作用**：看似“走不到”或不影响主流程的 collector、telemetry、private_log、状态写入等分支，往往承载着监控或外部联动。改变调用路径时，必须在新路径等价承接其目的，严禁直接删除了事。
+- **关联模式同步搜索**：改动某一通用设计（如 Task 解析方式、Tool 结构），必须全局搜索同目录及关联模块，确保兄弟实现同步演进，拒绝局部打补丁。
+
+---
+
+## 四、 改动后：提交审查与 Update Log 纪律
+
+### 1. Update Log 记录准则（仅限重大里程碑）
+`Plan/ExoCore_update_log.md`（或前端 `Update_log.md`）是高层架构与版本历史记录，**绝非日常碎屑流水账**：
+- **必须记录**：重大架构重构、全新独立功能模块接入、跨端核心公共契约变更、破坏性生命周期升级。
+- **严禁记录**：日常 Bug 修复、局部单测调整、样式/CSS 微调、临时排错过程。日常开发足迹交由对应 Checkpoint 交付记录承载，保持 Update Log 干净高尚。
+
+### 2. 提交前 Diff 隔离
+```bash
+git diff --stat
+git diff <file>
+```
+逐文件审查，确认每一处改动均为本次既定意图。顺手发现的无关问题单独建 issue 或另起提交，绝不混入当前变更。
