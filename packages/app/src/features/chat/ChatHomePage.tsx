@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Bot, FolderKanban, Plus } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from './queries';
 import type { CreateConversationResult } from './types';
@@ -38,6 +38,16 @@ export function ChatHomePage() {
           <span className="app-topbar-sub">最近会话 · V4 P1A</span>
         </div>
         <div className="app-topbar-actions">
+          {/* P2A: secondary Chat-area entry into the Agent Hub (D4). */}
+          <Link to="/agents" className="app-btn app-btn-ghost">
+            <Bot size={16} aria-hidden="true" />
+            Agent Hub
+          </Link>
+          {/* P2B: secondary Chat-area entry into the Project Hub (D8). */}
+          <Link to="/projects" className="app-btn app-btn-ghost">
+            <FolderKanban size={16} aria-hidden="true" />
+            项目 Hub
+          </Link>
           <button type="button" className="app-btn" onClick={openCreate}>
             <Plus size={16} aria-hidden="true" />
             新建会话

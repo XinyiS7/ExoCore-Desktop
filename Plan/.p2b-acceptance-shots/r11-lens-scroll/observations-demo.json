@@ -1,0 +1,79 @@
+{
+  "scenario": "project-detail agent filter below fold",
+  "viewport": "1280x480",
+  "base": "http://localhost:8080/app",
+  "candidateIds": [
+    "1",
+    "4",
+    "2",
+    "6"
+  ],
+  "picked": {
+    "id": "4",
+    "rows": 13
+  },
+  "snapshots": {
+    "before": {
+      "url": "/app/projects/4",
+      "docScrollTop": 0,
+      "docOverflow": 0,
+      "appScrollTop": 0,
+      "rows": 13,
+      "checked": "all",
+      "chips": [
+        "全部",
+        "Ricky",
+        "Ecki",
+        "Alessandro",
+        "骆白箫"
+      ]
+    },
+    "afterWheel": {
+      "url": "/app/projects/4",
+      "docScrollTop": 0,
+      "docOverflow": 0,
+      "appScrollTop": 897,
+      "rows": 13,
+      "checked": "all",
+      "chips": [
+        "全部",
+        "Ricky",
+        "Ecki",
+        "Alessandro",
+        "骆白箫"
+      ]
+    },
+    "clickChip": "Ricky",
+    "afterClick": {
+      "url": "/app/projects/4",
+      "docScrollTop": 0,
+      "docOverflow": 0,
+      "appScrollTop": 690,
+      "rows": 1,
+      "checked": "7",
+      "chips": [
+        "全部",
+        "Ricky",
+        "Ecki",
+        "Alessandro",
+        "骆白箫"
+      ]
+    },
+    "afterBackToAll": {
+      "url": "/app/projects/4",
+      "docScrollTop": 0,
+      "docOverflow": 0,
+      "appScrollTop": 690,
+      "rows": 13,
+      "checked": "all",
+      "chips": [
+        "全部",
+        "Ricky",
+        "Ecki",
+        "Alessandro",
+        "骆白箫"
+      ]
+    }
+  },
+  "pass": true
+}

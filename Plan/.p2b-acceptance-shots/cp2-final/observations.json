@@ -1,0 +1,168 @@
+{
+  "result": "PASS",
+  "environment": "isolated production bundle /app, mocked HTTP only",
+  "observations": [
+    {
+      "stage": "resources-390",
+      "viewport": 390,
+      "body": 390
+    },
+    {
+      "stage": "delete-390",
+      "viewport": 390,
+      "body": 390
+    },
+    {
+      "stage": "knowledge-390",
+      "viewport": 390,
+      "body": 390
+    },
+    {
+      "stage": "resources-1280",
+      "viewport": 1280,
+      "body": 1280
+    },
+    {
+      "stage": "delete-1280",
+      "viewport": 1280,
+      "body": 1280
+    },
+    {
+      "stage": "knowledge-1280",
+      "viewport": 1280,
+      "body": 1280
+    },
+    {
+      "stage": "branch-success",
+      "insidePending": true,
+      "singlePost": true
+    },
+    {
+      "stage": "branch-ambiguous",
+      "insidePending": true,
+      "singlePost": true
+    }
+  ],
+  "requests": [
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/model-catalog/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/1/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/chat/1/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/1/cache/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/model-catalog/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/1/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/chat/1/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/1/cache/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/1/branch/",
+      "method": "POST"
+    },
+    {
+      "path": "/api/agents/conversations/111/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/chat/111/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/111/cache/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/model-catalog/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/1/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/chat/1/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/1/cache/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/1/branch/",
+      "method": "POST"
+    }
+  ]
+}

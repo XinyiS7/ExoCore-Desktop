@@ -1,0 +1,220 @@
+{
+  "result": "PASS",
+  "environment": "production bundle mocked HTTP; no real deletion",
+  "observations": [
+    {
+      "stage": "fixed-project-create",
+      "width": 390,
+      "viewport": 390,
+      "body": 390
+    },
+    {
+      "stage": "archive-preview",
+      "width": 390,
+      "viewport": 390,
+      "body": 390
+    },
+    {
+      "stage": "failed-preview-blocked",
+      "width": 390
+    },
+    {
+      "stage": "delete-pending-contained",
+      "width": 390
+    },
+    {
+      "stage": "rollback-warning",
+      "width": 390,
+      "viewport": 390,
+      "body": 390
+    },
+    {
+      "stage": "204-hub-navigation",
+      "width": 390
+    },
+    {
+      "stage": "fixed-project-create",
+      "width": 1280,
+      "viewport": 1280,
+      "body": 1280
+    },
+    {
+      "stage": "archive-preview",
+      "width": 1280,
+      "viewport": 1280,
+      "body": 1280
+    },
+    {
+      "stage": "failed-preview-blocked",
+      "width": 1280
+    },
+    {
+      "stage": "delete-pending-contained",
+      "width": 1280
+    },
+    {
+      "stage": "rollback-warning",
+      "width": 1280,
+      "viewport": 1280,
+      "body": 1280
+    },
+    {
+      "stage": "204-hub-navigation",
+      "width": 1280
+    }
+  ],
+  "requests": [
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "DELETE"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "DELETE"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "DELETE"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "DELETE"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    }
+  ]
+}

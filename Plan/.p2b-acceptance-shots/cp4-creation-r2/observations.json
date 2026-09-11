@@ -1,0 +1,297 @@
+{
+  "result": "PASS",
+  "checks": 152,
+  "failures": [],
+  "observations": [
+    {
+      "width": 320,
+      "phase": "ordinary",
+      "beforeTab": {
+        "inside": true,
+        "tag": "INPUT"
+      }
+    },
+    {
+      "width": 320,
+      "phase": "pending",
+      "beforeTab": {
+        "inside": false,
+        "tag": "BODY"
+      }
+    },
+    {
+      "width": 320,
+      "phase": "ambiguous",
+      "beforeTab": {
+        "inside": false,
+        "tag": "BODY"
+      }
+    },
+    {
+      "width": 1280,
+      "phase": "ordinary",
+      "beforeTab": {
+        "inside": true,
+        "tag": "INPUT"
+      }
+    },
+    {
+      "width": 1280,
+      "phase": "pending",
+      "beforeTab": {
+        "inside": false,
+        "tag": "BODY"
+      }
+    },
+    {
+      "width": 1280,
+      "phase": "ambiguous",
+      "beforeTab": {
+        "inside": false,
+        "tag": "BODY"
+      }
+    }
+  ],
+  "requests": [
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/sessions/init/",
+      "method": "POST"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/sessions/init/",
+      "method": "POST"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/sessions/init/",
+      "method": "POST"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/sessions/init/",
+      "method": "POST"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    }
+  ]
+}

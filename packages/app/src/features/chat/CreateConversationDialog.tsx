@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { X } from 'lucide-react';
 import { toAppApiError } from './api';
-import type { CreateConversationResult } from './types';
+import type { AgentPresetRow, CreateConversationResult } from './types';
 import { isG045AgentType, useCreateConversationMutation, useProjectsQuery, useVisiblePresetsQuery } from './queries';
 import { LoadingState } from '../../shared/AsyncState';
 
@@ -58,23 +58,57 @@ function SectionLoad({
 export function CreateConversationDialog({
   onClose,
   onCreated,
+  fixedPreset,
+  fixedProject,
 }: {
   onClose: () => void;
   onCreated: (result: CreateConversationResult) => void;
+  /** Profile mode: validated Agent identity is displayed but cannot be changed. */
+  fixedPreset?: AgentPresetRow;
+  /** Project mode: validated Project identity is displayed but cannot be changed. */
+  fixedProject?: { id: number; name: string };
 }) {
-  const presetsQuery = useVisiblePresetsQuery();
+  const presetsQuery = useVisiblePresetsQuery(fixedPreset === undefined);
   const projectsQuery = useProjectsQuery();
-  // onAmbiguousWrite: a 2xx write returned a malformed envelope — outcome is
-  // unknown, so this dialog instance must never submit again (terminal lock).
-  const mutation = useCreateConversationMutation(
-    (result) => onCreated(result),
-    () => setAmbiguousWrite(true),
-  );
   const [ambiguousWrite, setAmbiguousWrite] = useState(false);
   const [permissionIds, setPermissionIds] = useState<number[]>([]);
   const [bannerError, setBannerError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const mountedRef = useRef(false);
+  const fixedPresetIdRef = useRef<number | null>(fixedPreset?.id ?? null);
+  const fixedProjectIdRef = useRef<number | null>(fixedProject?.id ?? null);
+  const nextSubmitTokenRef = useRef(0);
+  const activeOriginRef = useRef<{
+    token: number;
+    fixedPresetId: number | null;
+    fixedProjectId: number | null;
+  } | null>(null);
+  fixedPresetIdRef.current = fixedPreset?.id ?? null;
+  fixedProjectIdRef.current = fixedProject?.id ?? null;
+
+  const isCurrentOrigin = (origin: {
+    token: number;
+    fixedPresetId: number | null;
+    fixedProjectId: number | null;
+  }) =>
+    mountedRef.current &&
+    activeOriginRef.current?.token === origin.token &&
+    fixedPresetIdRef.current === origin.fixedPresetId &&
+    fixedProjectIdRef.current === origin.fixedProjectId;
+
+  // Canonical shared invalidation remains inside the mutation. These callbacks
+  // are dialog-local and therefore run only for the still-live submit origin.
+  const mutation = useCreateConversationMutation(
+    (result) => {
+      const origin = activeOriginRef.current;
+      if (origin && isCurrentOrigin(origin)) onCreated(result);
+    },
+    () => {
+      const origin = activeOriginRef.current;
+      if (origin && isCurrentOrigin(origin)) setAmbiguousWrite(true);
+    },
+  );
 
   const {
     register,
@@ -87,10 +121,11 @@ export function CreateConversationDialog({
   });
 
   const selectedPresetId = watch('presetId');
-  const primaryProjectId = watch('projectId');
+  const selectedProjectId = watch('projectId');
+  const primaryProjectId = fixedProject ? String(fixedProject.id) : selectedProjectId;
   const selectedPreset = useMemo(
-    () => (presetsQuery.data ?? []).find((preset) => String(preset.id) === selectedPresetId),
-    [presetsQuery.data, selectedPresetId],
+    () => fixedPreset ?? (presetsQuery.data ?? []).find((preset) => String(preset.id) === selectedPresetId),
+    [fixedPreset, presetsQuery.data, selectedPresetId],
   );
   const eligiblePresets = useMemo(
     () => (presetsQuery.data ?? []).filter((preset) => preset.agent_type !== 'user'),
@@ -110,20 +145,61 @@ export function CreateConversationDialog({
     setPermissionIds((prev) => (primary ? prev.filter((id) => id !== primary) : prev));
   }, [primaryProjectId]);
 
-  // Focus entry + Escape + return focus (a11y, Plan §17.4).
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      activeOriginRef.current = null;
+    };
+  }, []);
+
+  const closeDialog = useCallback(() => {
+    // Revoke synchronously; do not wait for React to unmount before suppressing
+    // a completion that races with the close event.
+    activeOriginRef.current = null;
+    onClose();
+  }, [onClose]);
+
+  // Focus entry + Escape + return focus + Tab containment (a11y, Plan §8.8).
+  // The canonical modal must trap forward/backward Tab across its currently
+  // usable controls while open (Home selectable / fixed-Agent / fixed-Project /
+  // g045 dynamic permission states share this component). Only enabled,
+  // visible controls participate, so a pending/ambiguous disabled submit is
+  // skipped and focus wraps across the remaining usable controls without
+  // reaching background page elements. Escape remains safe in every state -
+  // the terminal lock applies to submit, not to closing (creation policy).
   useEffect(() => {
     returnFocusRef.current = document.activeElement as HTMLElement | null;
     const firstField = dialogRef.current?.querySelector<HTMLElement>('input, select, textarea');
     firstField?.focus();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') {
+        closeDialog();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusables = [...dialog.querySelectorAll<HTMLElement>(
+        'input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])',
+      )].filter((el) => !el.closest('[hidden]'));
+      if (focusables.length === 0) return;
+      const index = focusables.indexOf(document.activeElement as HTMLElement);
+      const delta = event.shiftKey ? -1 : 1;
+      // Wrap: last + Tab → first, first + Shift+Tab → last. If focus somehow
+      // left the dialog, re-enter at the nearest edge.
+      const next = index === -1
+        ? (event.shiftKey ? focusables.length - 1 : 0)
+        : (index + delta + focusables.length) % focusables.length;
+      event.preventDefault();
+      focusables[next].focus();
     };
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('keydown', onKey);
       returnFocusRef.current?.focus?.();
     };
-  }, [onClose]);
+  }, [closeDialog]);
 
   const togglePermission = (projectId: number) => {
     setPermissionIds((prev) =>
@@ -133,16 +209,27 @@ export function CreateConversationDialog({
 
   const onSubmit = handleSubmit(async (values) => {
     if (ambiguousWrite) return; // terminal lock — never submit again.
+    const submittedPreset = fixedPreset ?? selectedPreset;
+    const origin = {
+      token: ++nextSubmitTokenRef.current,
+      fixedPresetId: fixedPreset?.id ?? null,
+      fixedProjectId: fixedProject?.id ?? null,
+    };
+    activeOriginRef.current = origin;
     setBannerError(null);
     try {
       await mutation.mutateAsync({
-        presetId: Number(values.presetId),
-        projectId: values.projectId ? Number(values.projectId) : 0,
+        // Capture Agent identity and type before the request leaves. A later
+        // Profile switch cannot rewrite this already-created input object.
+        presetId: submittedPreset?.id ?? Number(values.presetId),
+        projectId: fixedProject?.id ?? (values.projectId ? Number(values.projectId) : 0),
         ...(values.name.trim() ? { name: values.name.trim() } : {}),
-        ...(isG045 ? { frozenProjectIds: permissionIds } : {}),
+        ...(isG045AgentType(submittedPreset?.agent_type) ? { frozenProjectIds: [...permissionIds] } : {}),
       });
-      // onCreated in the mutation hook closes the dialog and navigates.
+      // The mutation invalidates shared Conversations before the guarded local
+      // callback closes/navigates a still-live origin.
     } catch (cause) {
+      if (!isCurrentOrigin(origin)) return;
       const error = toAppApiError(cause);
       if (error.ambiguousWrite) {
         // Mutation onError already invalidated Recent; surface the terminal
@@ -169,7 +256,7 @@ export function CreateConversationDialog({
           <h2 id="create-title" className="app-h2">
             新建会话
           </h2>
-          <button type="button" className="app-icon-btn" aria-label="关闭" onClick={onClose}>
+          <button type="button" className="app-icon-btn" aria-label="关闭" onClick={closeDialog}>
             <X size={18} aria-hidden="true" />
           </button>
         </div>
@@ -191,51 +278,77 @@ export function CreateConversationDialog({
             <span className="app-field-label" id="preset-label">
               Agent <span className="app-required">*</span>
             </span>
-            <SectionLoad
-              loading={presetsQuery.isPending}
-              error={presetsQuery.isError}
-              onRetry={() => void presetsQuery.refetch()}
-            >
-              <div className="app-radio-group" role="radiogroup" aria-labelledby="preset-label">
-                {eligiblePresets.map((preset) => (
-                  <label key={preset.id} className="app-radio-card">
-                    <input type="radio" value={String(preset.id)} {...register('presetId', { required: '请选择一个 Agent' })} />
-                    <span className="app-radio-card-body">
-                      <span className="app-radio-card-name">
-                        {preset.name}
-                        {isG045AgentType(preset.agent_type) ? (
-                          <span className="app-phase-chip app-phase-chip--g045">g045</span>
-                        ) : null}
-                      </span>
-                      {preset.description ? <span className="app-radio-card-desc">{preset.description}</span> : null}
-                    </span>
-                  </label>
-                ))}
-                {eligiblePresets.length === 0 ? <p className="app-muted">暂无可用的 Agent。</p> : null}
+            {fixedPreset ? (
+              <div className="app-radio-card" aria-labelledby="preset-label fixed-preset-name">
+                <span className="app-radio-card-body">
+                  <span id="fixed-preset-name" className="app-radio-card-name">
+                    {fixedPreset.name || `Agent #${fixedPreset.id}`}
+                    {isG045AgentType(fixedPreset.agent_type) ? (
+                      <span className="app-phase-chip app-phase-chip--g045">g045</span>
+                    ) : null}
+                  </span>
+                  {fixedPreset.description ? <span className="app-radio-card-desc">{fixedPreset.description}</span> : null}
+                  <span className="app-muted">已固定为当前 Agent</span>
+                </span>
               </div>
-            </SectionLoad>
-            <FieldError message={errors.presetId?.message} />
+            ) : (
+              <SectionLoad
+                loading={presetsQuery.isPending}
+                error={presetsQuery.isError}
+                onRetry={() => void presetsQuery.refetch()}
+              >
+                <div className="app-radio-group" role="radiogroup" aria-labelledby="preset-label">
+                  {eligiblePresets.map((preset) => (
+                    <label key={preset.id} className="app-radio-card">
+                      <input type="radio" value={String(preset.id)} {...register('presetId', { required: '请选择一个 Agent' })} />
+                      <span className="app-radio-card-body">
+                        <span className="app-radio-card-name">
+                          {preset.name}
+                          {isG045AgentType(preset.agent_type) ? (
+                            <span className="app-phase-chip app-phase-chip--g045">g045</span>
+                          ) : null}
+                        </span>
+                        {preset.description ? <span className="app-radio-card-desc">{preset.description}</span> : null}
+                      </span>
+                    </label>
+                  ))}
+                  {eligiblePresets.length === 0 ? <p className="app-muted">暂无可用的 Agent。</p> : null}
+                </div>
+              </SectionLoad>
+            )}
+            {!fixedPreset ? <FieldError message={errors.presetId?.message} /> : null}
           </div>
 
           <div className="app-field">
-            <label className="app-field-label" htmlFor="conv-project">
-              所属项目（可选）
-            </label>
-            <SectionLoad
-              loading={projectsQuery.isPending}
-              error={projectsQuery.isError}
-              onRetry={() => void projectsQuery.refetch()}
-            >
-              <select id="conv-project" className="app-input" {...register('projectId')}>
-                <option value="0">— 不关联（Drift）—</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={String(project.id)}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </SectionLoad>
-            <p className="app-muted">不选择项目时，会话标记为 Drift。</p>
+            <span className="app-field-label" id="project-label">
+              所属项目{fixedProject ? null : '（可选）'}
+            </span>
+            {fixedProject ? (
+              <div className="app-radio-card" aria-labelledby="project-label fixed-project-name">
+                <span className="app-radio-card-body">
+                  <span id="fixed-project-name" className="app-radio-card-name">
+                    {fixedProject.name || `项目 #${fixedProject.id}`}
+                  </span>
+                  <span className="app-muted">已固定为当前项目</span>
+                </span>
+              </div>
+            ) : (
+              <SectionLoad
+                loading={projectsQuery.isPending}
+                error={projectsQuery.isError}
+                onRetry={() => void projectsQuery.refetch()}
+              >
+                <select id="conv-project" aria-labelledby="project-label" className="app-input" {...register('projectId')}>
+                  <option value="0">— 不关联（Drift）—</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={String(project.id)}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </SectionLoad>
+            )}
+            {!fixedProject ? <p className="app-muted">不选择项目时，会话标记为 Drift。</p> : null}
           </div>
 
           {isG045 ? (
@@ -267,7 +380,7 @@ export function CreateConversationDialog({
           ) : null}
 
           <div className="app-dialog-actions">
-            <button type="button" className="app-btn app-btn-ghost" onClick={onClose}>
+            <button type="button" className="app-btn app-btn-ghost" onClick={closeDialog}>
               取消
             </button>
             <button type="submit" className="app-btn app-btn--primary" disabled={submitLocked}>

@@ -1,9 +1,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
-import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import { formatMessageTime } from '../../utils/time';
 import { useTheme } from 'exo-shared';
@@ -104,8 +102,8 @@ const GroupchatMessage = React.memo(({ msg, isUser, senderName, senderAvatarUrl,
   {isUser ? (
    <div className={`max-w-[92%] bg-exo-pure border border-exo-mist-12 rounded-[4px] rounded-tr-none p-4 text-sm shadow-brutalist transition-all hover:border-exo-mist-20 prose ${theme !== 'light' ? 'prose-invert' : ''} prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none tx-message-normal opacity-90`} style={{ fontFamily: 'var(--font-message)' }}>
    <ReactMarkdown
-   remarkPlugins={[remarkGfm, remarkMath]}
-   rehypePlugins={[rehypeHighlight, rehypeKatex, rehypeRaw]}
+   remarkPlugins={[remarkGfm]}
+   rehypePlugins={[rehypeHighlight, rehypeRaw]}
    components={MD_COMPONENTS}
    >
    {processedContent}
@@ -124,8 +122,8 @@ const GroupchatMessage = React.memo(({ msg, isUser, senderName, senderAvatarUrl,
     </details>
    )}
    <ReactMarkdown
-   remarkPlugins={[remarkGfm, remarkMath]}
-   rehypePlugins={[rehypeHighlight, rehypeKatex, rehypeRaw]}
+   remarkPlugins={[remarkGfm]}
+   rehypePlugins={[rehypeHighlight, rehypeRaw]}
    components={MD_COMPONENTS}
    >
    {processedContent}

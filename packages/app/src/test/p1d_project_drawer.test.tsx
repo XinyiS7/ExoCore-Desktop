@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ProjectFilesDrawer } from '../features/chat/project/ProjectFilesDrawer';
 import { installFetch, jsonResponse, unmockFetch } from './helpers';
 
@@ -183,5 +183,47 @@ describe('P1D project files drawer (Plan Task 5 / §6.6, §8.5)', () => {
     await waitFor(() => expect(screen.getByRole('dialog', { name: '项目文件' })).toBeTruthy());
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('R5 consumer: callback-identity rerenders keep drawer focus contained; Escape closes; trigger restored', async () => {
+    installProjectRoutes();
+    function DrawerHarness() {
+      const [isOpen, setIsOpen] = useState(false);
+      const [tick, setTick] = useState(0);
+      return (
+        <>
+          <button type="button" onClick={() => setIsOpen(true)}>
+            open drawer
+          </button>
+          <button type="button" onClick={() => setTick((t) => t + 1)}>
+            bump {tick}
+          </button>
+          {/* INLINE onClose: the ConversationPage consumer shape — each parent
+              rerender hands the helper a NEW callback identity. */}
+          <ProjectFilesDrawer
+            projectId={3}
+            isOpen={isOpen}
+            onClose={() => setIsOpen(false)}
+            onInsertPath={vi.fn()}
+          />
+        </>
+      );
+    }
+    wrap(<DrawerHarness />);
+    const trigger = screen.getByRole('button', { name: 'open drawer' });
+    trigger.focus();
+    fireEvent.click(trigger);
+    const dialog = await screen.findByRole('dialog', { name: '项目文件' });
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+
+    fireEvent.click(screen.getByRole('button', { name: /bump/ }));
+    fireEvent.click(screen.getByRole('button', { name: /bump/ }));
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    fireEvent.keyDown(document.activeElement as Element, { key: 'Escape' });
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: '项目文件' })).toBeNull();
+    });
+    expect(document.activeElement).toBe(trigger);
   });
 });

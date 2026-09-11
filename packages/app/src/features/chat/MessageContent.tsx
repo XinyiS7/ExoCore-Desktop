@@ -1,8 +1,6 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
 
 /**
@@ -143,8 +141,8 @@ export function MessageContent({ content }: { content: string }) {
   return (
     <div className="app-md">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeHighlight, rehypeKatex]}
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeHighlight]}
         components={MD_COMPONENTS}
       >
         {content}

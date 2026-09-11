@@ -82,10 +82,11 @@ export function useConversationQuery(id: number) {
   });
 }
 
-export function useVisiblePresetsQuery() {
+export function useVisiblePresetsQuery(enabled = true) {
   return useQuery({
     queryKey: queryKeys.presets,
     queryFn: listVisiblePresets,
+    enabled,
   });
 }
 

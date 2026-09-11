@@ -1,0 +1,756 @@
+{
+  "wantFixed": false,
+  "results": {
+    "project-lens": {
+      "before": {
+        "docScrollTop": 0,
+        "docOverflow": 213,
+        "appScrollTop": 0,
+        "appRect": {
+          "top": 65,
+          "bottom": 520
+        },
+        "topbar": {
+          "top": 0,
+          "bottom": 65
+        },
+        "filterBar": {
+          "top": 710,
+          "bottom": 742.75
+        },
+        "rowCount": 90,
+        "checkedValue": "all",
+        "active": {
+          "tag": "BODY",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 290.75,
+            "bottom": 291.75
+          },
+          "appRect": {
+            "top": 65,
+            "bottom": 520
+          }
+        }
+      },
+      "afterWheelScroll": {
+        "docScrollTop": 0,
+        "docOverflow": 213,
+        "appScrollTop": 585,
+        "appRect": {
+          "top": 65,
+          "bottom": 520
+        },
+        "topbar": {
+          "top": 0,
+          "bottom": 65
+        },
+        "filterBar": {
+          "top": 125,
+          "bottom": 157.75
+        },
+        "rowCount": 90,
+        "checkedValue": "all",
+        "active": {
+          "tag": "BODY",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 290.75,
+            "bottom": 291.75
+          },
+          "appRect": {
+            "top": 65,
+            "bottom": 520
+          }
+        }
+      },
+      "afterFilterClick": {
+        "docScrollTop": 213,
+        "docOverflow": 213,
+        "appScrollTop": 585,
+        "appRect": {
+          "top": -148,
+          "bottom": 307
+        },
+        "topbar": {
+          "top": -213,
+          "bottom": -148
+        },
+        "filterBar": {
+          "top": -88,
+          "bottom": -55.25
+        },
+        "rowCount": 71,
+        "checkedValue": "5",
+        "active": {
+          "tag": "INPUT",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 77.75,
+            "bottom": 78.75
+          },
+          "appRect": {
+            "top": -148,
+            "bottom": 307
+          }
+        }
+      },
+      "afterBackToAll": {
+        "docScrollTop": 213,
+        "docOverflow": 213,
+        "appScrollTop": 585,
+        "appRect": {
+          "top": -148,
+          "bottom": 307
+        },
+        "topbar": {
+          "top": -213,
+          "bottom": -148
+        },
+        "filterBar": {
+          "top": -88,
+          "bottom": -55.25
+        },
+        "rowCount": 90,
+        "checkedValue": "all",
+        "active": {
+          "tag": "INPUT",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 77.75,
+            "bottom": 78.75
+          },
+          "appRect": {
+            "top": -148,
+            "bottom": 307
+          }
+        }
+      },
+      "afterKeyboard": {
+        "docScrollTop": 213,
+        "docOverflow": 213,
+        "appScrollTop": 585,
+        "appRect": {
+          "top": -148,
+          "bottom": 307
+        },
+        "topbar": {
+          "top": -213,
+          "bottom": -148
+        },
+        "filterBar": {
+          "top": -88,
+          "bottom": -55.25
+        },
+        "rowCount": 71,
+        "checkedValue": "5",
+        "active": {
+          "tag": "INPUT",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 77.75,
+            "bottom": 78.75
+          },
+          "appRect": {
+            "top": -148,
+            "bottom": 307
+          }
+        }
+      },
+      "height": 520,
+      "hiddenInput": {
+        "inputRect": {
+          "top": 290.75,
+          "bottom": 291.75
+        },
+        "appRect": {
+          "top": 65,
+          "bottom": 520
+        }
+      }
+    },
+    "agent-profile": {
+      "before": {
+        "docScrollTop": 0,
+        "docOverflow": 0,
+        "appScrollTop": 0,
+        "appRect": {
+          "top": 69,
+          "bottom": 520
+        },
+        "topbar": {
+          "top": 0,
+          "bottom": 69
+        },
+        "filterBar": {
+          "top": 339,
+          "bottom": 371.75
+        },
+        "rowCount": 90,
+        "checkedValue": "all",
+        "active": {
+          "tag": "BODY",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 349.38,
+            "bottom": 362.38
+          },
+          "appRect": {
+            "top": 69,
+            "bottom": 520
+          }
+        }
+      },
+      "afterWheelScroll": {
+        "docScrollTop": 0,
+        "docOverflow": 0,
+        "appScrollTop": 210,
+        "appRect": {
+          "top": 69,
+          "bottom": 520
+        },
+        "topbar": {
+          "top": 0,
+          "bottom": 69
+        },
+        "filterBar": {
+          "top": 129,
+          "bottom": 161.75
+        },
+        "rowCount": 90,
+        "checkedValue": "all",
+        "active": {
+          "tag": "BODY",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 349.38,
+            "bottom": 362.38
+          },
+          "appRect": {
+            "top": 69,
+            "bottom": 520
+          }
+        }
+      },
+      "afterFilterClick": {
+        "docScrollTop": 0,
+        "docOverflow": 0,
+        "appScrollTop": 210,
+        "appRect": {
+          "top": 69,
+          "bottom": 520
+        },
+        "topbar": {
+          "top": 0,
+          "bottom": 69
+        },
+        "filterBar": {
+          "top": 129,
+          "bottom": 161.75
+        },
+        "rowCount": 77,
+        "checkedValue": "project-41",
+        "active": {
+          "tag": "INPUT",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 349.38,
+            "bottom": 362.38
+          },
+          "appRect": {
+            "top": 69,
+            "bottom": 520
+          }
+        }
+      },
+      "afterBackToAll": {
+        "docScrollTop": 0,
+        "docOverflow": 0,
+        "appScrollTop": 67,
+        "appRect": {
+          "top": 69,
+          "bottom": 520
+        },
+        "topbar": {
+          "top": 0,
+          "bottom": 69
+        },
+        "filterBar": {
+          "top": 272,
+          "bottom": 304.75
+        },
+        "rowCount": 90,
+        "checkedValue": "all",
+        "active": {
+          "tag": "INPUT",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 349.38,
+            "bottom": 362.38
+          },
+          "appRect": {
+            "top": 69,
+            "bottom": 520
+          }
+        }
+      },
+      "afterKeyboard": {
+        "docScrollTop": 0,
+        "docOverflow": 0,
+        "appScrollTop": 67,
+        "appRect": {
+          "top": 69,
+          "bottom": 520
+        },
+        "topbar": {
+          "top": 0,
+          "bottom": 69
+        },
+        "filterBar": {
+          "top": 272,
+          "bottom": 304.75
+        },
+        "rowCount": 0,
+        "checkedValue": "drift",
+        "active": {
+          "tag": "INPUT",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 349.38,
+            "bottom": 362.38
+          },
+          "appRect": {
+            "top": 69,
+            "bottom": 520
+          }
+        }
+      },
+      "height": 520,
+      "hiddenInput": {
+        "inputRect": {
+          "top": 349.38,
+          "bottom": 362.38
+        },
+        "appRect": {
+          "top": 69,
+          "bottom": 520
+        }
+      }
+    },
+    "agent-profile-squashed": {
+      "before": {
+        "docScrollTop": 0,
+        "docOverflow": 2,
+        "appScrollTop": 0,
+        "appRect": {
+          "top": 69,
+          "bottom": 360
+        },
+        "topbar": {
+          "top": 0,
+          "bottom": 69
+        },
+        "filterBar": {
+          "top": 339,
+          "bottom": 371.75
+        },
+        "rowCount": 90,
+        "checkedValue": "all",
+        "active": {
+          "tag": "BODY",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 349.38,
+            "bottom": 362.38
+          },
+          "appRect": {
+            "top": 69,
+            "bottom": 360
+          }
+        }
+      },
+      "afterWheelScroll": {
+        "docScrollTop": 0,
+        "docOverflow": 2,
+        "appScrollTop": 210,
+        "appRect": {
+          "top": 69,
+          "bottom": 360
+        },
+        "topbar": {
+          "top": 0,
+          "bottom": 69
+        },
+        "filterBar": {
+          "top": 129,
+          "bottom": 161.75
+        },
+        "rowCount": 90,
+        "checkedValue": "all",
+        "active": {
+          "tag": "BODY",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 349.38,
+            "bottom": 362.38
+          },
+          "appRect": {
+            "top": 69,
+            "bottom": 360
+          }
+        }
+      },
+      "afterFilterClick": {
+        "docScrollTop": 2,
+        "docOverflow": 2,
+        "appScrollTop": 210,
+        "appRect": {
+          "top": 67,
+          "bottom": 358
+        },
+        "topbar": {
+          "top": -2,
+          "bottom": 67
+        },
+        "filterBar": {
+          "top": 127,
+          "bottom": 159.75
+        },
+        "rowCount": 77,
+        "checkedValue": "project-41",
+        "active": {
+          "tag": "INPUT",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 347.38,
+            "bottom": 360.38
+          },
+          "appRect": {
+            "top": 67,
+            "bottom": 358
+          }
+        }
+      },
+      "afterBackToAll": {
+        "docScrollTop": 2,
+        "docOverflow": 2,
+        "appScrollTop": 210,
+        "appRect": {
+          "top": 67,
+          "bottom": 358
+        },
+        "topbar": {
+          "top": -2,
+          "bottom": 67
+        },
+        "filterBar": {
+          "top": 127,
+          "bottom": 159.75
+        },
+        "rowCount": 90,
+        "checkedValue": "all",
+        "active": {
+          "tag": "INPUT",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 347.38,
+            "bottom": 360.38
+          },
+          "appRect": {
+            "top": 67,
+            "bottom": 358
+          }
+        }
+      },
+      "afterKeyboard": {
+        "docScrollTop": 2,
+        "docOverflow": 2,
+        "appScrollTop": 210,
+        "appRect": {
+          "top": 67,
+          "bottom": 358
+        },
+        "topbar": {
+          "top": -2,
+          "bottom": 67
+        },
+        "filterBar": {
+          "top": 127,
+          "bottom": 159.75
+        },
+        "rowCount": 0,
+        "checkedValue": "drift",
+        "active": {
+          "tag": "INPUT",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 347.38,
+            "bottom": 360.38
+          },
+          "appRect": {
+            "top": 67,
+            "bottom": 358
+          }
+        }
+      },
+      "height": 360,
+      "hiddenInput": {
+        "inputRect": {
+          "top": 349.38,
+          "bottom": 362.38
+        },
+        "appRect": {
+          "top": 69,
+          "bottom": 360
+        }
+      }
+    },
+    "files-upload": {
+      "before": {
+        "docScrollTop": 0,
+        "docOverflow": 373,
+        "appScrollTop": 0,
+        "appRect": {
+          "top": 65,
+          "bottom": 360
+        },
+        "topbar": {
+          "top": 0,
+          "bottom": 65
+        },
+        "filterBar": {
+          "top": 710,
+          "bottom": 742.75
+        },
+        "rowCount": 90,
+        "checkedValue": "all",
+        "active": {
+          "tag": "BODY",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 290.75,
+            "bottom": 291.75
+          },
+          "appRect": {
+            "top": 65,
+            "bottom": 360
+          }
+        }
+      },
+      "afterWheelScroll": {
+        "docScrollTop": 0,
+        "docOverflow": 373,
+        "appScrollTop": 585,
+        "appRect": {
+          "top": 65,
+          "bottom": 360
+        },
+        "topbar": {
+          "top": 0,
+          "bottom": 65
+        },
+        "filterBar": {
+          "top": 125,
+          "bottom": 157.75
+        },
+        "rowCount": 90,
+        "checkedValue": "all",
+        "active": {
+          "tag": "BODY",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 290.75,
+            "bottom": 291.75
+          },
+          "appRect": {
+            "top": 65,
+            "bottom": 360
+          }
+        }
+      },
+      "hiddenInput": {
+        "inputRect": {
+          "top": 290.75,
+          "bottom": 291.75
+        },
+        "appRect": {
+          "top": 65,
+          "bottom": 360
+        }
+      },
+      "afterUploadClick": {
+        "docScrollTop": 0,
+        "docOverflow": 373,
+        "appScrollTop": 585,
+        "appRect": {
+          "top": 65,
+          "bottom": 360
+        },
+        "topbar": {
+          "top": 0,
+          "bottom": 65
+        },
+        "filterBar": {
+          "top": 125,
+          "bottom": 157.75
+        },
+        "rowCount": 90,
+        "checkedValue": "all",
+        "active": {
+          "tag": "BODY",
+          "cls": ""
+        },
+        "hiddenInput": {
+          "inputRect": {
+            "top": 290.75,
+            "bottom": 291.75
+          },
+          "appRect": {
+            "top": 65,
+            "bottom": 360
+          }
+        }
+      }
+    }
+  },
+  "requestLog": [
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/5/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/plasmids/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/5/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/plasmids/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    }
+  ]
+}

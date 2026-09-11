@@ -25,4 +25,9 @@ export const NAV_ITEMS: NavItem[] = [
 ];
 
 export const isChatActive = (pathname: string) =>
-  pathname === '/' || /^\/chat(?:\/|$)/.test(pathname);
+  pathname === '/' ||
+  /^\/chat(?:\/|$)/.test(pathname) ||
+  // P2A: Agent Hub/Profile stay under the Chat product area's active state (D4).
+  /^\/agents(?:\/|$)/.test(pathname) ||
+  // P2B: Project Hub/Detail stay under the Chat product area's active state (D8).
+  /^\/projects(?:\/|$)/.test(pathname);

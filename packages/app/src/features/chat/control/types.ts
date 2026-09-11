@@ -66,15 +66,28 @@ export interface ProjectDetailRow {
   createdAt: string;
 }
 
-/** Uploaded ProjectFile reference row (read-only, §4.3/§6.6). */
+/** Uploaded ProjectFile reference row (P1D §4.3/§6.6; P2B D3 mixed IDs). */
+/**
+ * Verified file identity (D3): a positive integer (web upload) or the
+ * `kf_<positive integer>` string form (Obsidian sync). Anything else is a
+ * contract error; `source` metadata never becomes a second rejection gate.
+ */
+export type ProjectFileId = number | string;
+
 export interface ProjectFileRow {
-  id: number;
+  id: ProjectFileId;
   name: string;
   fileType: string;
   size: number;
   /** Absolute content URL served by the backend; never a local path. */
   url: string | null;
   previewUrl: string | null;
+  /**
+   * Backend list source label: 'web_upload' | 'obsidian_sync'. Presentation
+   * metadata only (D3) — unknown or ID-inconsistent values degrade to a
+   * neutral reference label and never reject an otherwise usable row.
+   */
+  source: string | null;
   createdAt: string;
 }
 

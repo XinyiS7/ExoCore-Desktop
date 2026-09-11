@@ -1,0 +1,451 @@
+/* P2B Project Hub / Project Detail — app-local styles (Plan §5.1).
+   Reuses base tokens + shared app-* classes (app-recent-* rows, app-chip,
+   app-dialog, app-field, ...); only Project-specific surfaces are defined
+   here. One scroll owner per page (app-scroll). */
+
+/* ── Hub ─────────────────────────────────────────────────────────────── */
+
+.project-hub-grid {
+  list-style: none;
+  margin: 0;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .project-hub-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    padding: 20px;
+  }
+}
+
+.project-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--v4-line);
+  border-radius: var(--v4-radius);
+  background: var(--v4-panel);
+  color: var(--v4-text);
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+.project-card:hover {
+  border-color: var(--v4-line-strong);
+}
+
+.project-card-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 14.5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.project-card-desc {
+  font-size: 12.5px;
+  color: var(--v4-text-dim);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.project-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--v4-text-mute);
+  overflow-wrap: anywhere;
+}
+
+/* Count failure must never look like a zero count (§8.2). */
+.project-card-meta--error {
+  color: var(--v4-text-dim);
+}
+
+/* ── Detail ──────────────────────────────────────────────────────────── */
+
+.project-profile {
+  padding: 16px;
+  /* D8: Project Detail hides the mobile bottom bar, so the page's own content
+     must keep the home-indicator inset itself (§8.8); desktop env() resolves 0. */
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 860px;
+}
+
+@media (min-width: 768px) {
+  .project-profile {
+    padding: 20px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+}
+
+.project-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.project-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.project-section-heading .app-h2 {
+  margin: 0;
+}
+
+.project-section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.project-identity-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.project-identity-desc {
+  margin: 0;
+  color: var(--v4-text-dim);
+  overflow-wrap: anywhere;
+}
+
+.project-facts {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--v4-line);
+  border-radius: var(--v4-radius);
+  padding: 12px 14px;
+  background: var(--v4-panel);
+}
+
+.project-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+@media (min-width: 768px) {
+  .project-fact {
+    flex-direction: row;
+    gap: 12px;
+  }
+}
+
+.project-fact-label {
+  color: var(--v4-text-mute);
+  font-size: 12px;
+  flex-shrink: 0;
+  min-width: 110px;
+}
+
+.project-fact-value {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-family: var(--v4-font);
+}
+
+/* Filter region: horizontal scroll stays inside this labelled region at
+   narrow widths; the document never overflows horizontally. */
+.project-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+/* Long-content clamp for detail/lens chips (unbreakable path/name strings
+   truncate instead of pushing the viewport wider). */
+.project-chip-clamp {
+  max-width: min(52vw, 280px);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-filter-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--v4-line);
+  border-radius: 999px;
+  font-size: 12.5px;
+  color: var(--v4-text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.project-filter-option span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-filter-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.project-filter-option:has(input:checked) {
+  border-color: var(--v4-accent);
+  background: var(--v4-accent-soft);
+  color: var(--v4-text);
+  /* Selected meaning is not color-only: weight steps 400 → 600 on check. */
+  font-weight: 600;
+}
+
+.project-filter-option:has(input:focus-visible) {
+  outline: 2px solid var(--v4-accent);
+  outline-offset: 2px;
+}
+/* ── P2B Stage B: workspace Files + Project Knowledge (Plan §6.3/§6.4) ────── */
+
+.app-btn--danger {
+  background: var(--v4-danger);
+  border-color: var(--v4-danger);
+  color: #fff;
+}
+.app-btn--danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.app-btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+  min-height: 28px;
+}
+.app-textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 8px 10px;
+  border: 1px solid var(--v4-line);
+  border-radius: 6px;
+  background: var(--v4-surface);
+  color: var(--v4-text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.app-textarea:focus {
+  outline: none;
+  border-color: var(--v4-accent);
+}
+.app-banner--success {
+  border-left-color: var(--v4-accent);
+  background: rgba(82, 196, 26, 0.08);
+}
+
+/* Files section */
+.project-file-list,
+.project-knowledge-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.project-file-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--v4-line);
+  border-radius: 8px;
+}
+.project-file-name {
+  flex: 1 1 18ch;
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.project-file-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.project-file-size {
+  font-size: 12px;
+  color: var(--v4-text-dim);
+}
+.project-file-note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: var(--v4-text-dim);
+}
+.project-file-delete {
+  margin-left: auto;
+}
+
+/* Knowledge section */
+.project-knowledge-row {
+  padding: 12px;
+  border: 1px solid var(--v4-line);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.project-knowledge-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.project-knowledge-title {
+  flex: 1 1 16ch;
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.project-knowledge-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+.project-knowledge-abstract {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.project-knowledge-time {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* B02: lossless per-entry keyword editor */
+.project-keyword-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.project-keyword-add .app-input {
+  flex: 1;
+}
+.project-keyword-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.project-keyword-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  /* D02: the shared `.app-chip` sets white-space:nowrap; Project keywords must
+     wrap inside the editor instead of extending past the modal body. The
+     stored atomic entry is never split — only its rendered line breaks. */
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* D02: the keyword text is an explicit flex item whose min-width:0 makes the
+   wrap actually take effect; the trailing remove control stays visible and
+   on the same line end (flex-shrink:0). Empty entries render as an empty
+   text span and remain removable by index. */
+.project-keyword-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.project-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--v4-text-dim);
+  cursor: pointer;
+}
+.project-chip-remove:hover:not(:disabled) {
+  background: rgba(255, 107, 107, 0.15);
+  color: var(--v4-danger);
+}
+.project-chip-remove:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Stage C: archive/delete preview and recovery choices */
+.project-delete-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--v4-line);
+  border-radius: 8px;
+  background: var(--v4-panel);
+}
+
+.project-delete-copy p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.project-delete-file-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.project-delete-file-choice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--v4-line);
+  border-radius: 7px;
+}
+
+.project-delete-file-choice span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

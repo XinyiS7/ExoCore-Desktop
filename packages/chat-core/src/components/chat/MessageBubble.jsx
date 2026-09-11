@@ -2,9 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { FileText, Copy, Bookmark, Check, X, ZoomIn, Edit2, RotateCw, GitFork } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
-import rehypeKatex from 'rehype-katex';
 import { baseUrl, getCsrfToken, useTheme } from 'exo-shared';
 import { formatMessageTime } from '../../utils/time';
 
@@ -25,14 +23,12 @@ function extractText(node) {
 const RE_UNICODE_BACKTICK = /[｀]/g;
 const RE_UNICODE_TILDE = /[～]/g;
 const RE_ENTITY_BACKTICK = /&#(?:96|x60);/gi;
-const RE_UNICODE_DOLLAR = /[＄]/g;  // U+FF04 fullwidth dollar sign — LLMs sometimes emit this instead of ASCII $
 function normalizeMarkdown(text) {
  if (!text) return text;
  return text
  .replace(RE_UNICODE_BACKTICK, '`')
  .replace(RE_UNICODE_TILDE, '~')
- .replace(RE_ENTITY_BACKTICK, '`')
- .replace(RE_UNICODE_DOLLAR, '$');
+ .replace(RE_ENTITY_BACKTICK, '`');
 }
 
 // ── Mermaid lazy-load ────────────────────────────────────────────────
@@ -388,13 +384,13 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
   {isUser ? (
    msg.content.trim() ? (
     <div className={`max-w-[92%] bg-exo-pure/40 backdrop-blur-md border border-cinder-line rounded-[4px] rounded-tr-none p-4 text-sm transition-all hover:border-exo-mist-20 prose ${theme !== 'light' ? 'prose-invert' : ''} prose-sm prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none tx-message-normal opacity-90`} style={{ fontFamily: 'var(--font-message)' }}>
-    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
+    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
     </div>
    ) : null
   ) : (
    msg.content.trim() ? (
     <div className={`w-full prose ${theme !== 'light' ? 'prose-invert' : ''} prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0 prose-code:before:content-none prose-code:after:content-none`} style={{ fontFamily: 'var(--font-message)' }}>
-    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
+    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]} components={MD_COMPONENTS}>{normalizeMarkdown(msg.content)}</ReactMarkdown>
     </div>
    ) : null
   )}

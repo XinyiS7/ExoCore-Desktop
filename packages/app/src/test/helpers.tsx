@@ -7,6 +7,10 @@ import { AppShell } from '../shell/AppShell';
 import { ChatHomePage } from '../features/chat/ChatHomePage';
 import { ConversationPage } from '../features/chat/ConversationPage';
 import { NotFoundPage } from '../features/chat/NotFoundPage';
+import { AgentHubPage } from '../features/agents/AgentHubPage';
+import { AgentProfilePage } from '../features/agents/AgentProfilePage';
+import { ProjectHubPage } from '../features/projects/ProjectHubPage';
+import { ProjectDetailPage } from '../features/projects/ProjectDetailPage';
 
 // ── fetch mock helpers ─────────────────────────────────────────────────────
 
@@ -131,6 +135,10 @@ export function renderApp(initialEntries: string[] = ['/']) {
             <Route index element={<ChatHomePage />} />
             <Route path="chat" element={<Navigate to="/" replace />} />
             <Route path="chat/:conversationId" element={<ConversationPage />} />
+            <Route path="agents" element={<AgentHubPage />} />
+            <Route path="agents/:presetId" element={<AgentProfilePage />} />
+            <Route path="projects" element={<ProjectHubPage />} />
+            <Route path="projects/:projectId" element={<ProjectDetailPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

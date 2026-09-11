@@ -1,0 +1,43 @@
+{
+  "result": "PASS",
+  "widths": [
+    390
+  ],
+  "environment": "isolated production bundle /app; mocked HTTP only",
+  "observations": [
+    {
+      "stage": "pending-knowledge-write",
+      "pendingFocus": {
+        "inside": true,
+        "tag": "DIV",
+        "id": ""
+      }
+    }
+  ],
+  "requests": [
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/201/",
+      "method": "PATCH"
+    }
+  ]
+}

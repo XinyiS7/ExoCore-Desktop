@@ -191,10 +191,15 @@ export async function patchConversationThinkingLevel(
 /** GET /api/core/projects/<id>/ */
 export async function fetchProjectDetail(projectId: number): Promise<ProjectDetailRow> {
   const raw = await apiFetch(`/api/core/projects/${projectId}/`);
+  const id = (raw as Record<string, unknown> | null)?.id;
+  // F03: the frozen positive base-10 Project identity contract — non-positive
+  // or fractional numeric ids must never establish an editable owner.
   if (
     typeof raw !== 'object' ||
     raw === null ||
-    typeof (raw as Record<string, unknown>).id !== 'number' ||
+    typeof id !== 'number' ||
+    !Number.isInteger(id) ||
+    (id as number) <= 0 ||
     typeof (raw as Record<string, unknown>).name !== 'string'
   ) {
     throw contractError('项目详情接口返回格式异常', raw);
@@ -210,7 +215,20 @@ export async function fetchProjectDetail(projectId: number): Promise<ProjectDeta
   };
 }
 
-/** GET /api/core/projects/<id>/files/ — bare array, read-only rows. */
+/**
+ * Verified file ID forms (P2B D3): a positive integer (web upload) or the
+ * `kf_<positive integer>` string form (Obsidian sync). `source` metadata is
+ * presentation-only and never becomes a second rejection gate; unknown or
+ * ID-inconsistent source values render a neutral label but the row stays
+ * usable as long as its verified ID + name pass.
+ */
+export function isVerifiedProjectFileId(value: unknown): value is number | string {
+  if (typeof value === 'number') return Number.isInteger(value) && (value as number) > 0;
+  if (typeof value === 'string') return /^kf_[1-9]\d*$/.test(value);
+  return false;
+}
+
+/** GET /api/core/projects/<id>/files/ — bare array, read-only rows (mixed IDs). */
 export async function fetchProjectFiles(projectId: number): Promise<ProjectFileRow[]> {
   const raw = await apiFetch(`/api/core/projects/${projectId}/files/`);
   if (!Array.isArray(raw)) throw contractError('项目文件接口返回格式异常', raw);
@@ -219,19 +237,20 @@ export async function fetchProjectFiles(projectId: number): Promise<ProjectFileR
     if (
       typeof item !== 'object' ||
       item === null ||
-      typeof (item as Record<string, unknown>).id !== 'number' ||
+      !isVerifiedProjectFileId((item as Record<string, unknown>).id) ||
       typeof (item as Record<string, unknown>).name !== 'string'
     ) {
       throw contractError('项目文件接口包含异常行', raw);
     }
     const row = item as Record<string, unknown>;
     rows.push({
-      id: row.id as number,
+      id: row.id as number | string,
       name: typeof row.name === 'string' ? row.name : '',
       fileType: typeof row.file_type === 'string' ? row.file_type : '',
       size: typeof row.size === 'number' ? row.size : 0,
       url: typeof row.url === 'string' ? row.url : null,
       previewUrl: typeof row.preview_url === 'string' ? row.preview_url : null,
+      source: typeof row.source === 'string' ? row.source : null,
       createdAt: typeof row.created_at === 'string' ? row.created_at : '',
     });
   }

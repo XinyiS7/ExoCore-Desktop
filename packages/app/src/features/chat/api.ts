@@ -55,7 +55,8 @@ export class AppApiError extends Error {
   }
 }
 
-function contractError(message: string, body: unknown): AppApiError {
+/** Shared guarded-envelope error factory for feature adapters (chat + agents). */
+export function contractError(message: string, body: unknown): AppApiError {
   return new AppApiError(message, { body, code: 'CONTRACT' });
 }
 
@@ -288,10 +289,30 @@ export async function listVisiblePresets(): Promise<AgentPresetRow[]> {
   return raw as AgentPresetRow[];
 }
 
-/** GET /api/core/projects/ */
+/**
+ * GET /api/core/projects/ — the single canonical Projects-list owner (P2B §5.2).
+ * Bare array; backend order is authoritative. Row guard: a row without a
+ * positive integer id + string name cannot produce a valid card link and must
+ * surface as an explicit contract error, never as broken UI (P2B §5.3 — "malformed
+ * success" is distinguishable from empty/error). This is the minimum identity
+ * guard, not a general project validation framework.
+ */
 export async function listProjects(): Promise<ProjectRow[]> {
   const raw = await apiFetch('/api/core/projects/');
   if (!Array.isArray(raw)) throw contractError('项目列表接口返回格式异常', raw);
+  for (const item of raw) {
+    const row = item as Record<string, unknown> | null;
+    if (
+      typeof row !== 'object' ||
+      row === null ||
+      typeof row.id !== 'number' ||
+      !Number.isInteger(row.id) ||
+      (row.id as number) <= 0 ||
+      typeof row.name !== 'string'
+    ) {
+      throw contractError('项目列表接口包含异常行', raw);
+    }
+  }
   return raw as ProjectRow[];
 }
 

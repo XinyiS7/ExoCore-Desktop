@@ -1,0 +1,111 @@
+{
+  "result": "FAIL",
+  "observations": [
+    {
+      "width": 320,
+      "chipWidth": 250,
+      "textWidth": 1576.296875,
+      "textFits": false,
+      "removeRight": 1637.296875,
+      "bodyRight": 303,
+      "removeVisible": false,
+      "whiteSpace": "nowrap",
+      "bodyScrollWidth": 1620,
+      "bodyClientWidth": 286
+    },
+    {
+      "width": 1280,
+      "chipWidth": 502,
+      "textWidth": 1576.296875,
+      "textFits": false,
+      "removeRight": 1991.296875,
+      "bodyRight": 909,
+      "removeVisible": false,
+      "whiteSpace": "nowrap",
+      "bodyScrollWidth": 1620,
+      "bodyClientWidth": 538
+    }
+  ],
+  "requests": [
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    }
+  ]
+}

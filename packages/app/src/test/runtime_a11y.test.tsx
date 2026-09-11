@@ -1,5 +1,8 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { useCallback, useState } from 'react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { BranchConfirmModal } from '../features/chat/BranchConfirmModal';
+import { TruncateConfirmModal } from '../features/chat/TruncateConfirmModal';
 import { installFetch, jsonResponse, renderApp, unmockFetch } from './helpers';
 
 const PRESET_ECKI = {
@@ -132,4 +135,151 @@ describe('C1B-R1-06 — real modal a11y (focus, Escape, containment)', () => {
     });
     expect(document.activeElement).toBe(editBtn);
   });
+});
+
+// ── R5: shared-helper consumer regressions ─────────────────────────────────
+// The corrected helper no longer re-enters its focus effect on lock flips;
+// these cases cover (a) the authorized caller-local lock anchor and (b) the
+// pre-existing callback-identity rerender behavior of the inline-onClose
+// consumers (Branch/Truncate here; TacticalHud and ProjectFilesDrawer have
+// their own runner cases in p1d_hud / p1d_project_drawer test files).
+// NOTE: jsdom does not model Chromium's native focus-drop from a disabled
+// control — the lock case asserts the ANCHOR behavior, not the native drop.
+
+describe('R5 — helper consumers: lock transition and callback-identity rerenders', () => {
+  function BranchLockHarness({ onConfirm }: { onConfirm: () => Promise<void> }) {
+    const [locked, setLocked] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
+    // STABLE onClose: isolates the lock anchor from callback-rerender effects.
+    const onClose = useCallback(() => setIsOpen(false), []);
+    return (
+      <>
+        <button type="button" onClick={() => setIsOpen(true)}>
+          open branch
+        </button>
+        <button type="button" onClick={() => setLocked(true)}>
+          engage lock
+        </button>
+        <button type="button" onClick={() => setLocked(false)}>
+          release lock
+        </button>
+        {isOpen ? (
+          <BranchConfirmModal
+            isOpen
+            targetMessage={{ id: 7, snippet: '一段历史回答' }}
+            locked={locked}
+            onConfirm={onConfirm}
+            onClose={onClose}
+          />
+        ) : null}
+      </>
+    );
+  }
+
+  it('branch lock transition: focus anchors on the enabled cancel control; live Escape policy; no duplicate submit; release restores the trigger', async () => {
+    const onConfirm = vi.fn(() => new Promise<void>(() => {}));
+    render(<BranchLockHarness onConfirm={onConfirm} />);
+
+    const trigger = screen.getByRole('button', { name: 'open branch' });
+    trigger.focus();
+    fireEvent.click(trigger);
+    const dialog = await screen.findByRole('dialog', { name: '创建独立对话分支' });
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+
+    const cancel = screen.getByRole('button', { name: '取消' });
+    const confirm = screen.getByRole('button', { name: '确认创建分支' });
+    confirm.focus();
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+
+    // lock engages -> the modal's own anchor moves focus to the enabled cancel
+    fireEvent.click(screen.getByRole('button', { name: 'engage lock' }));
+    await waitFor(() => expect(document.activeElement).toBe(cancel));
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    // live Escape policy: suppressed while locked, dialog stays open
+    fireEvent.keyDown(document.activeElement as Element, { key: 'Escape' });
+    expect(screen.getByRole('dialog', { name: '创建独立对话分支' })).toBeTruthy();
+    // duplicate-submit policy: a locked confirm cannot fire again
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+
+    // release -> Escape closes and focus returns to the invoking trigger
+    fireEvent.click(screen.getByRole('button', { name: 'release lock' }));
+    fireEvent.keyDown(document.activeElement as Element, { key: 'Escape' });
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: '创建独立对话分支' })).toBeNull();
+    });
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  function RerenderHarness({ kind }: { kind: 'branch' | 'truncate' }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [tick, setTick] = useState(0);
+    const [closes, setCloses] = useState(0);
+    return (
+      <>
+        <button type="button" onClick={() => setIsOpen(true)}>
+          open {kind}
+        </button>
+        <button type="button" onClick={() => setTick((t) => t + 1)}>
+          bump {tick}
+        </button>
+        <span data-testid="closes">{closes}</span>
+        {isOpen && kind === 'branch' ? (
+          // INLINE onClose — the real ConversationPage consumer shape: every
+          // parent rerender hands the helper a NEW callback identity.
+          <BranchConfirmModal
+            isOpen
+            targetMessage={{ id: 7, snippet: '一段历史回答' }}
+            locked={false}
+            onConfirm={() => Promise.resolve()}
+            onClose={() => {
+              setCloses((c) => c + 1);
+              setIsOpen(false);
+            }}
+          />
+        ) : null}
+        {isOpen && kind === 'truncate' ? (
+          <TruncateConfirmModal
+            isOpen
+            targetMessageId={7}
+            actionType="edit"
+            onConfirm={() => undefined}
+            onClose={() => {
+              setCloses((c) => c + 1);
+              setIsOpen(false);
+            }}
+          />
+        ) : null}
+      </>
+    );
+  }
+
+  it.each([['branch'], ['truncate']] as const)(
+    '%s modal: callback-identity rerenders keep focus contained; Escape still closes; trigger restored',
+    async (kind) => {
+      render(<RerenderHarness kind={kind} />);
+      const trigger = screen.getByRole('button', { name: `open ${kind}` });
+      trigger.focus();
+      fireEvent.click(trigger);
+      const dialogName = kind === 'branch' ? '创建独立对话分支' : /确认截断后续对话/;
+      const dialog = await screen.findByRole('dialog', { name: dialogName });
+      await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+
+      // parent rerenders (new inline onClose identity) — containment holds
+      fireEvent.click(screen.getByRole('button', { name: /bump/ }));
+      fireEvent.click(screen.getByRole('button', { name: /bump/ }));
+      expect(screen.getByRole('dialog', { name: dialogName })).toBeTruthy();
+      expect(dialog.contains(document.activeElement)).toBe(true);
+
+      // Escape remains functional (no lock in this shape) and restores the trigger
+      fireEvent.keyDown(document.activeElement as Element, { key: 'Escape' });
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog', { name: dialogName })).toBeNull();
+      });
+      expect(screen.getByTestId('closes').textContent).toBe('1');
+      expect(document.activeElement).toBe(trigger);
+    },
+  );
 });

@@ -1,0 +1,243 @@
+/* P2A Agent Hub / Agent Profile — app-local styles (Plan §4.1 "app-local Agent styles").
+   Reuses base tokens + existing app-recent-* row classes; only Agent-specific
+   surfaces are defined here. One scroll owner per page (app-scroll). */
+
+/* ── Hub ─────────────────────────────────────────────────────────────── */
+
+.agent-hub-grid {
+  list-style: none;
+  margin: 0;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .agent-hub-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    padding: 20px;
+  }
+}
+
+.agent-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--v4-line);
+  border-radius: var(--v4-radius);
+  background: var(--v4-panel);
+  color: var(--v4-text);
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+.agent-card:hover {
+  border-color: var(--v4-line-strong);
+}
+
+.agent-card-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 14.5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.agent-card-type {
+  font-size: 11px;
+  color: var(--v4-text-mute);
+}
+
+.agent-card-desc {
+  font-size: 12.5px;
+  color: var(--v4-text-dim);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Profile ─────────────────────────────────────────────────────────── */
+
+.agent-profile {
+  padding: 16px;
+  /* C3: Profile hides the mobile bottom bar, so the page's own content must
+     keep the home-indicator inset itself (§8.7); desktop env() resolves 0. */
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 860px;
+}
+
+@media (min-width: 768px) {
+  .agent-profile {
+    padding: 20px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+}
+
+.agent-profile-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.agent-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.agent-section-heading .app-h2 {
+  margin: 0;
+}
+
+.agent-identity-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.agent-identity-desc {
+  margin: 0;
+  color: var(--v4-text-dim);
+  overflow-wrap: anywhere;
+}
+
+.agent-facts {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--v4-line);
+  border-radius: var(--v4-radius);
+  padding: 12px 14px;
+  background: var(--v4-panel);
+}
+
+.agent-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+@media (min-width: 768px) {
+  .agent-fact {
+    flex-direction: row;
+    gap: 12px;
+  }
+}
+
+.agent-fact-label {
+  color: var(--v4-text-mute);
+  font-size: 12px;
+  flex-shrink: 0;
+  min-width: 110px;
+}
+
+.agent-fact-value {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-family: var(--v4-font);
+}
+
+/* Filter region: horizontal scroll stays inside this labelled region at
+   narrow widths; the document never overflows horizontally. */
+.agent-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+/* C3 long-content repair: unbreakable strings in P2A-rendered chips (long
+   model ids / Project names) truncate with an ellipsis instead of pushing
+   past the viewport. Scoped to the Profile's own chip renders only —
+   shared C1 chip surfaces keep their existing behavior. */
+.agent-chip-clamp {
+  max-width: min(52vw, 280px);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-filter-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--v4-line);
+  border-radius: 999px;
+  font-size: 12.5px;
+  color: var(--v4-text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.agent-filter-option span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-filter-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.agent-filter-option:has(input:checked) {
+  border-color: var(--v4-accent);
+  background: var(--v4-accent-soft);
+  color: var(--v4-text);
+  /* Selected meaning is not color-only: weight steps 400 → 600 on check. */
+  font-weight: 600;
+}
+
+.agent-filter-option:has(input:focus-visible) {
+  outline: 2px solid var(--v4-accent);
+  outline-offset: 2px;
+}
+
+/* ── Memory summary ──────────────────────────────────────────────────── */
+
+.agent-memory-count {
+  margin: 0;
+  font-size: 13.5px;
+}
+
+.agent-tag-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agent-tag {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--v4-panel-2);
+  border: 1px solid var(--v4-line);
+  color: var(--v4-text-dim);
+  overflow-wrap: anywhere;
+}

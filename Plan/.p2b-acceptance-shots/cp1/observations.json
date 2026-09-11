@@ -1,0 +1,108 @@
+{
+  "result": "PASS",
+  "widths": [
+    390,
+    1280
+  ],
+  "environment": "isolated production bundle /app; mocked HTTP only",
+  "observations": [
+    {
+      "width": 390,
+      "screen": "hub",
+      "client": 390,
+      "scroll": 390,
+      "hasLongName": true
+    },
+    {
+      "width": 390,
+      "screen": "create",
+      "client": 390,
+      "scroll": 390,
+      "hasLongName": true
+    },
+    {
+      "width": 390,
+      "screen": "detail",
+      "client": 390,
+      "scroll": 390,
+      "hasLongName": true
+    },
+    {
+      "width": 390,
+      "screen": "edit",
+      "client": 390,
+      "scroll": 390,
+      "hasLongName": true
+    },
+    {
+      "width": 1280,
+      "screen": "hub",
+      "client": 1280,
+      "scroll": 1280,
+      "hasLongName": true
+    },
+    {
+      "width": 1280,
+      "screen": "create",
+      "client": 1280,
+      "scroll": 1280,
+      "hasLongName": true
+    },
+    {
+      "width": 1280,
+      "screen": "detail",
+      "client": 1280,
+      "scroll": 1280,
+      "hasLongName": true
+    },
+    {
+      "width": 1280,
+      "screen": "edit",
+      "client": 1280,
+      "scroll": 1280,
+      "hasLongName": true
+    }
+  ],
+  "requests": [
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    }
+  ]
+}

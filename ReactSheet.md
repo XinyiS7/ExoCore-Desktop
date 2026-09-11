@@ -282,17 +282,26 @@ type AssistantRunTraceProjection =
 
 ### 2.1 Knowledge Fragments — 知识片段
 
-**GET /api/memory/knowledge/**
+**GET /api/memory/knowledge/** — 支持 `?topic=<value>` 与 `?project=<id>` 过滤；反序列化为裸数组（后端视图的 `page_size` 声明未激活，无分页）
 
 ```json
 [{
   "id": 1, "uid": "note-123", "title": "My Note",
-  "content": "...", "project": 1, "source_type": "obsidian_md",
-  "source_path": "/vault/note.md", "created_at": "..."
+  "topic": "scope", "status": "active", "source_type": "obsidian_md",
+  "tags": ["deep", "note"], "keywords": ["k1", "k2"],
+  "abstract": "...", "project": 1,
+  "created_at": "...", "updated_at": "..."
 }]
 ```
 
-**GET /api/memory/knowledge/<pk>/** / **PATCH**
+**GET /api/memory/knowledge/<pk>/** — 单个片段
+
+**PATCH /api/memory/knowledge/<pk>/** — 仅 `abstract`(string) 与/或 `keywords`(string[])
+
+- 返回 `{"msg": string, "updated": string[]}`；`updated` 列出实际落库字段
+- **abstract 会先 `strip()`**：与存储值 strip 后相同 → 不入库、`updated` 不含 abstract、**不启动后台线程**；仅当 strip 后仍有差异才写入并**异步触发重向量化**（后台线程调用 embedding provider）
+- 前端只能呈现「已保存 + 后台索引刷新已启动」当 `updated` 实际含 abstract 时；不得声称重向量化已完成
+- keywords 非数组 → 400 `{"error": "keywords 必须是数组"}`；不存在 → 404 `{"error": ...}
 
 ### 2.2 Memory Plasmids — 记忆质粒
 
@@ -520,15 +529,38 @@ key_value write-only，响应不返回。last_four 自动提取。
 
 ### 3.8 Projects — 项目管理
 
-**GET /api/core/projects/** — 列表，title/description/work_dir
+**GET /api/core/projects/** — 裸数组，字段 `{id, name, description, prompt, work_dir, created_at}`（name 为唯一必填）；列表不返回 Archived 项目
 
-**POST /api/core/projects/** / **PATCH** / **DELETE** — 删除触发 archive
+**POST /api/core/projects/** — body `{name, description?, prompt?, work_dir?}`，仅这四个受支持字段；返回 201 + 完整行
+
+**PATCH /api/core/projects/<pk>/** — 同上四个字段（work_dir 为空字符串 = 未绑定）；返回完整行
+
+**GET /api/core/projects/<pk>/delete-preview/** — 删除确认预览：
+
+```json
+{
+  "conversations_to_archive": 2,
+  "files": [{"id": 11, "name": "notes.txt", "size": 1024}],
+  "files_total_size": 1024
+}
+```
+
+预览只统计直接关联 Conversation 与上传的 `ProjectFile`，不枚举全部 Knowledge 或文件系统状况；`files[].id` 均为正整数上传文件 ID。
+
+**DELETE /api/core/projects/<pk>/** — body 必须显式发送 `{ "keep_file_ids": [11] }`，不恢复文件时发送空数组。成功 204（无 JSON body）：所有 `ProjectFile` 数据行删除，选中的物理文件移入后端 `SavedFiles` 作为脱离项目的恢复文件（名称可能调整），直接 Conversation 归档到 `Archived Project` 并改由 `Archived Chat` 持有，仍存活的 Knowledge 归档到 `Archived Project`。失败返回 `{error, code}`；`file_rollback_failed` 表示文件回滚不完整，不能声称文件系统未改变。
 
 ### 3.9 Project Files — 项目文件
 
-**POST /api/core/projects/<project_pk>/files/** — multipart 上传
+**GET /api/core/projects/<project_pk>/files/** — 裸数组，混排两类行：
 
-**DELETE /api/core/projects/<project_pk>/files/<pk>/** — 删除文件 + KnowledgeFragment
+- Web 上传：`{id: int, name, file_type, size, file, url, preview_url, source: "web_upload", created_at}`
+- Obsidian 同步：`{id: "kf_<int>", name: "<title>.md", file_type: "text/markdown", size: 0, file: null, source: "obsidian_sync", created_at}`（无 url/preview_url）
+
+> id 仅两种已验证形态：正整数 或 `kf_<正整数>`；未知/ID 不一致的 `source` 只是展示元数据，不允许因此拒绝整行
+
+**POST /api/core/projects/<project_pk>/files/** — multipart 上传，字段名 `file`；201 返回上传行（`source` 仅在列表接口标记）
+
+**DELETE /api/core/projects/<project_pk>/files/<pk>/** — `<pk>` 原样透传（正整数上传 id 或 `kf_<int>` 同步 id）；成功 204（无 JSON body）；失败 `{error, code}`（如 `file_required` / `project_file_not_found` / `file_operation_failed`）
 
 ### 3.10 Tweets — 时间线推文
 

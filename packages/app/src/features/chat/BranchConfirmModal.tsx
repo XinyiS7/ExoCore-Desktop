@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GitBranch } from 'lucide-react';
 import { useDialogA11y } from './dialogA11y';
 import { toAppApiError } from './api';
@@ -29,6 +29,21 @@ export function BranchConfirmModal({
     closeDisabledWhileLocked: true,
     locked,
   });
+  const lockedRef = useRef(locked);
+  lockedRef.current = locked;
+  const cancelRef = useRef<HTMLButtonElement | null>(null);
+
+  // R5 scope disposition (A): bounded lock-transition anchor. Source-derived
+  // rationale: the corrected shared helper no longer re-enters its focus
+  // effect on lock flips, so THIS modal preserves its locked-state focus
+  // ownership locally — when `locked` engages, move focus to the still-enabled
+  // 取消 control (existing cancel/Escape/duplicate-submit/ambiguous policies
+  // unchanged; helper API unchanged). Branch's real-browser lock outcome is
+  // not independently verified; this is a bounded preservation measure, not
+  // a claim that the native disabled-focus drop is the only possible path.
+  useEffect(() => {
+    if (lockedRef.current) cancelRef.current?.focus();
+  }, [locked]);
 
   if (!isOpen || !targetMessage) return null;
 
@@ -83,7 +98,7 @@ export function BranchConfirmModal({
         </div>
 
         <div className="app-dialog-actions">
-          <button type="button" className="app-btn app-btn-ghost" onClick={onClose}>
+          <button ref={cancelRef} type="button" className="app-btn app-btn-ghost" onClick={onClose}>
             取消
           </button>
           <button

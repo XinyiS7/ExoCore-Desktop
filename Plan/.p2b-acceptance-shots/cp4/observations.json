@@ -1,0 +1,1333 @@
+{
+  "result": "FAIL",
+  "checks": 1750,
+  "failures": [
+    "dev-320-fixed-create:Tab3",
+    "dev-320-fixed-create:Tab4",
+    "dev-320-fixed-create:Tab5",
+    "dev-320-fixed-create:Tab6",
+    "dev-320-fixed-create:Tab7",
+    "dev-320-fixed-create:Tab8",
+    "dev-320-fixed-create:Tab9",
+    "dev-320-fixed-create:Tab10",
+    "dev-320-fixed-create:Tab11",
+    "dev-320-fixed-create:Tab12",
+    "dev-320-fixed-create:Tab13",
+    "dev-320-fixed-create:Tab14",
+    "dev-320-fixed-create:ShiftTab2",
+    "dev-320-fixed-create:ShiftTab3",
+    "dev-320-fixed-create:ShiftTab4",
+    "dev-390-fixed-create:Tab3",
+    "dev-390-fixed-create:Tab4",
+    "dev-390-fixed-create:Tab5",
+    "dev-390-fixed-create:Tab6",
+    "dev-390-fixed-create:Tab7",
+    "dev-390-fixed-create:Tab8",
+    "dev-390-fixed-create:Tab9",
+    "dev-390-fixed-create:Tab10",
+    "dev-390-fixed-create:Tab11",
+    "dev-390-fixed-create:Tab12",
+    "dev-390-fixed-create:Tab13",
+    "dev-390-fixed-create:ShiftTab3",
+    "dev-390-fixed-create:ShiftTab4",
+    "dev-767-fixed-create:Tab3",
+    "dev-767-fixed-create:Tab4",
+    "dev-767-fixed-create:Tab5",
+    "dev-767-fixed-create:Tab6",
+    "dev-767-fixed-create:Tab7",
+    "dev-767-fixed-create:Tab8",
+    "dev-767-fixed-create:Tab9",
+    "dev-767-fixed-create:Tab10",
+    "dev-767-fixed-create:Tab11",
+    "dev-767-fixed-create:Tab12",
+    "dev-767-fixed-create:Tab13",
+    "dev-767-fixed-create:Tab14",
+    "dev-767-fixed-create:ShiftTab2",
+    "dev-767-fixed-create:ShiftTab3",
+    "dev-767-fixed-create:ShiftTab4",
+    "dev-768-fixed-create:Tab3",
+    "dev-768-fixed-create:Tab4",
+    "dev-768-fixed-create:Tab5",
+    "dev-768-fixed-create:Tab6",
+    "dev-768-fixed-create:Tab7",
+    "dev-768-fixed-create:Tab8",
+    "dev-768-fixed-create:Tab9",
+    "dev-768-fixed-create:Tab10",
+    "dev-768-fixed-create:Tab11",
+    "dev-768-fixed-create:Tab12",
+    "dev-768-fixed-create:Tab13",
+    "dev-768-fixed-create:Tab14",
+    "dev-768-fixed-create:Tab15",
+    "dev-768-fixed-create:Tab16",
+    "dev-768-fixed-create:ShiftTab0",
+    "dev-768-fixed-create:ShiftTab1",
+    "dev-768-fixed-create:ShiftTab2",
+    "dev-768-fixed-create:ShiftTab3",
+    "dev-768-fixed-create:ShiftTab4",
+    "dev-1280-fixed-create:Tab3",
+    "dev-1280-fixed-create:Tab4",
+    "dev-1280-fixed-create:Tab5",
+    "dev-1280-fixed-create:Tab6",
+    "dev-1280-fixed-create:Tab7",
+    "dev-1280-fixed-create:Tab8",
+    "dev-1280-fixed-create:Tab9",
+    "dev-1280-fixed-create:Tab10",
+    "dev-1280-fixed-create:Tab11",
+    "dev-1280-fixed-create:Tab12",
+    "dev-1280-fixed-create:Tab13",
+    "dev-1280-fixed-create:Tab14",
+    "dev-1280-fixed-create:Tab15",
+    "dev-1280-fixed-create:Tab16",
+    "dev-1280-fixed-create:ShiftTab0",
+    "dev-1280-fixed-create:ShiftTab1",
+    "dev-1280-fixed-create:ShiftTab2",
+    "dev-1280-fixed-create:ShiftTab3",
+    "dev-1280-fixed-create:ShiftTab4",
+    "prod-320-fixed-create:Tab3",
+    "prod-320-fixed-create:Tab4",
+    "prod-320-fixed-create:Tab5",
+    "prod-320-fixed-create:Tab6",
+    "prod-320-fixed-create:Tab7",
+    "prod-320-fixed-create:Tab8",
+    "prod-320-fixed-create:Tab9",
+    "prod-320-fixed-create:Tab10",
+    "prod-320-fixed-create:Tab11",
+    "prod-320-fixed-create:Tab12",
+    "prod-320-fixed-create:Tab13",
+    "prod-320-fixed-create:Tab14",
+    "prod-320-fixed-create:ShiftTab2",
+    "prod-320-fixed-create:ShiftTab3",
+    "prod-320-fixed-create:ShiftTab4",
+    "prod-390-fixed-create:Tab3",
+    "prod-390-fixed-create:Tab4",
+    "prod-390-fixed-create:Tab5",
+    "prod-390-fixed-create:Tab6",
+    "prod-390-fixed-create:Tab7",
+    "prod-390-fixed-create:Tab8",
+    "prod-390-fixed-create:Tab9",
+    "prod-390-fixed-create:Tab10",
+    "prod-390-fixed-create:Tab11",
+    "prod-390-fixed-create:Tab12",
+    "prod-390-fixed-create:Tab13",
+    "prod-390-fixed-create:Tab14",
+    "prod-390-fixed-create:ShiftTab2",
+    "prod-390-fixed-create:ShiftTab3",
+    "prod-390-fixed-create:ShiftTab4",
+    "prod-767-fixed-create:Tab3",
+    "prod-767-fixed-create:Tab4",
+    "prod-767-fixed-create:Tab5",
+    "prod-767-fixed-create:Tab6",
+    "prod-767-fixed-create:Tab7",
+    "prod-767-fixed-create:Tab8",
+    "prod-767-fixed-create:Tab9",
+    "prod-767-fixed-create:Tab10",
+    "prod-767-fixed-create:Tab11",
+    "prod-767-fixed-create:Tab12",
+    "prod-767-fixed-create:Tab13",
+    "prod-767-fixed-create:ShiftTab3",
+    "prod-767-fixed-create:ShiftTab4",
+    "prod-768-fixed-create:Tab3",
+    "prod-768-fixed-create:Tab4",
+    "prod-768-fixed-create:Tab5",
+    "prod-768-fixed-create:Tab6",
+    "prod-768-fixed-create:Tab7",
+    "prod-768-fixed-create:Tab8",
+    "prod-768-fixed-create:Tab9",
+    "prod-768-fixed-create:Tab10",
+    "prod-768-fixed-create:Tab11",
+    "prod-768-fixed-create:Tab12",
+    "prod-768-fixed-create:Tab13",
+    "prod-768-fixed-create:Tab14",
+    "prod-768-fixed-create:Tab15",
+    "prod-768-fixed-create:Tab16",
+    "prod-768-fixed-create:ShiftTab0",
+    "prod-768-fixed-create:ShiftTab1",
+    "prod-768-fixed-create:ShiftTab2",
+    "prod-768-fixed-create:ShiftTab3",
+    "prod-768-fixed-create:ShiftTab4",
+    "prod-1280-fixed-create:Tab3",
+    "prod-1280-fixed-create:Tab4",
+    "prod-1280-fixed-create:Tab5",
+    "prod-1280-fixed-create:Tab6",
+    "prod-1280-fixed-create:Tab7",
+    "prod-1280-fixed-create:Tab8",
+    "prod-1280-fixed-create:Tab9",
+    "prod-1280-fixed-create:Tab10",
+    "prod-1280-fixed-create:Tab11",
+    "prod-1280-fixed-create:Tab12",
+    "prod-1280-fixed-create:Tab13",
+    "prod-1280-fixed-create:Tab14",
+    "prod-1280-fixed-create:Tab15",
+    "prod-1280-fixed-create:Tab16",
+    "prod-1280-fixed-create:ShiftTab0",
+    "prod-1280-fixed-create:ShiftTab1",
+    "prod-1280-fixed-create:ShiftTab2",
+    "prod-1280-fixed-create:ShiftTab3",
+    "prod-1280-fixed-create:ShiftTab4"
+  ],
+  "observations": [
+    {
+      "env": "dev",
+      "width": 320,
+      "scene": "hub",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "dev",
+      "width": 320,
+      "scene": "create-project",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 320,
+      "scene": "detail",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "dev",
+      "width": 320,
+      "scene": "edit-project",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 320,
+      "scene": "fixed-create",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 320,
+      "scene": "archive-preview",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 320,
+      "scene": "file-confirm",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 320,
+      "scene": "knowledge-edit",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 390,
+      "scene": "hub",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "dev",
+      "width": 390,
+      "scene": "create-project",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 390,
+      "scene": "detail",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "dev",
+      "width": 390,
+      "scene": "edit-project",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 390,
+      "scene": "fixed-create",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 390,
+      "scene": "archive-preview",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 390,
+      "scene": "file-confirm",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 390,
+      "scene": "knowledge-edit",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 767,
+      "scene": "hub",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "dev",
+      "width": 767,
+      "scene": "create-project",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 767,
+      "scene": "detail",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "dev",
+      "width": 767,
+      "scene": "edit-project",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 767,
+      "scene": "fixed-create",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 767,
+      "scene": "archive-preview",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 767,
+      "scene": "file-confirm",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 767,
+      "scene": "knowledge-edit",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 768,
+      "scene": "hub",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "dev",
+      "width": 768,
+      "scene": "create-project",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 768,
+      "scene": "detail",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "dev",
+      "width": 768,
+      "scene": "edit-project",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 768,
+      "scene": "fixed-create",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 768,
+      "scene": "archive-preview",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 768,
+      "scene": "file-confirm",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 768,
+      "scene": "knowledge-edit",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 1280,
+      "scene": "hub",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "dev",
+      "width": 1280,
+      "scene": "create-project",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 1280,
+      "scene": "detail",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "dev",
+      "width": 1280,
+      "scene": "edit-project",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 1280,
+      "scene": "fixed-create",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 1280,
+      "scene": "archive-preview",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 1280,
+      "scene": "file-confirm",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "dev",
+      "width": 1280,
+      "scene": "knowledge-edit",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 320,
+      "scene": "hub",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "prod",
+      "width": 320,
+      "scene": "create-project",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 320,
+      "scene": "detail",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "prod",
+      "width": 320,
+      "scene": "edit-project",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 320,
+      "scene": "fixed-create",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 320,
+      "scene": "archive-preview",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 320,
+      "scene": "file-confirm",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 320,
+      "scene": "knowledge-edit",
+      "doc": 320,
+      "body": 320,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 390,
+      "scene": "hub",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "prod",
+      "width": 390,
+      "scene": "create-project",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 390,
+      "scene": "detail",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "prod",
+      "width": 390,
+      "scene": "edit-project",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 390,
+      "scene": "fixed-create",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 390,
+      "scene": "archive-preview",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 390,
+      "scene": "file-confirm",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 390,
+      "scene": "knowledge-edit",
+      "doc": 390,
+      "body": 390,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 767,
+      "scene": "hub",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "prod",
+      "width": 767,
+      "scene": "create-project",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 767,
+      "scene": "detail",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "prod",
+      "width": 767,
+      "scene": "edit-project",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 767,
+      "scene": "fixed-create",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 767,
+      "scene": "archive-preview",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 767,
+      "scene": "file-confirm",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 767,
+      "scene": "knowledge-edit",
+      "doc": 767,
+      "body": 767,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 768,
+      "scene": "hub",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "prod",
+      "width": 768,
+      "scene": "create-project",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 768,
+      "scene": "detail",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "prod",
+      "width": 768,
+      "scene": "edit-project",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 768,
+      "scene": "fixed-create",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 768,
+      "scene": "archive-preview",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 768,
+      "scene": "file-confirm",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 768,
+      "scene": "knowledge-edit",
+      "doc": 768,
+      "body": 768,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 1280,
+      "scene": "hub",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "prod",
+      "width": 1280,
+      "scene": "create-project",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 1280,
+      "scene": "detail",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 0
+    },
+    {
+      "env": "prod",
+      "width": 1280,
+      "scene": "edit-project",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 1280,
+      "scene": "fixed-create",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 1280,
+      "scene": "archive-preview",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 1280,
+      "scene": "file-confirm",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 1
+    },
+    {
+      "env": "prod",
+      "width": 1280,
+      "scene": "knowledge-edit",
+      "doc": 1280,
+      "body": 1280,
+      "reduced": true,
+      "dialogs": 1
+    }
+  ],
+  "requests": [
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/files/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/memory/knowledge/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/conversations/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/",
+      "method": "GET"
+    },
+    {
+      "path": "/api/core/projects/41/delete-preview/",
+      "method": "GET"
+    }
+  ],
+  "environment": "real Vite dev+production PWA controlled; API intercepted/mock only"
+}

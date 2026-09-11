@@ -1,0 +1,1917 @@
+{
+  "source": "D:\\Alicia\\ExoCore_Project\\ExoCore-Desktop\\packages\\app\\scripts\\p2a_browser_probe.mjs",
+  "assertions": 125,
+  "failures": 0,
+  "observations": [
+    {
+      "name": "hub-normal",
+      "width": 320,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 320,
+        "actualViewport": 320,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": []
+      },
+      "reachable": {
+        "found": true,
+        "width": 252,
+        "height": 99,
+        "left": 34,
+        "right": 286,
+        "top": 99,
+        "bottom": 198,
+        "hit": true,
+        "label": "G045 助手g045g045暂无描述"
+      }
+    },
+    {
+      "name": "hub-long",
+      "width": 320,
+      "mode": "long",
+      "data": {
+        "actualWidth": 320,
+        "actualViewport": 320,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": []
+      },
+      "reachable": {
+        "found": true,
+        "width": 252,
+        "height": 99,
+        "left": 34,
+        "right": 286,
+        "top": 99,
+        "bottom": 198,
+        "hit": true,
+        "label": "G045 助手g045g045暂无描述"
+      }
+    },
+    {
+      "name": "profile-normal",
+      "width": 320,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 320,
+        "actualViewport": 320,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": [
+          {
+            "left": 100,
+            "right": 162.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 168.59375,
+            "right": 277.28125,
+            "width": 108.6875,
+            "text": "deepseek-v4-flash"
+          },
+          {
+            "left": 34,
+            "right": 85,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 93,
+            "right": 143.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 151.296875,
+            "right": 225.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 49,
+            "right": 111.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 49,
+            "right": 90.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 49,
+            "right": 111.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 184.734375,
+        "height": 35.5,
+        "left": 101.265625,
+        "right": 286,
+        "top": 357.5,
+        "bottom": 393,
+        "hit": true,
+        "label": "使用此 Agent 新建会话"
+      }
+    },
+    {
+      "name": "profile-long",
+      "width": 320,
+      "mode": "long",
+      "data": {
+        "actualWidth": 320,
+        "actualViewport": 320,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": true,
+        "conversationPresent": true,
+        "projectPresent": true,
+        "tagPresent": true,
+        "clipBounds": [
+          {
+            "left": 100,
+            "right": 162.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 100,
+            "right": 266.390625,
+            "width": 166.390625,
+            "text": "deepseek-v4-flash-plus-ultra-max-ex"
+          },
+          {
+            "left": 34,
+            "right": 85,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 93,
+            "right": 143.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 151.296875,
+            "right": 225.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 34,
+            "right": 115.796875,
+            "width": 81.796875,
+            "text": "Project #9"
+          },
+          {
+            "left": 34,
+            "right": 286,
+            "width": 252,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          },
+          {
+            "left": 49,
+            "right": 111.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 49,
+            "right": 90.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 49,
+            "right": 118.109375,
+            "width": 69.109375,
+            "text": "Project #9"
+          },
+          {
+            "left": 49,
+            "right": 215.390625,
+            "width": 166.390625,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 184.734375,
+        "height": 35.5,
+        "left": 101.265625,
+        "right": 286,
+        "top": 382.5,
+        "bottom": 418,
+        "hit": true,
+        "label": "使用此 Agent 新建会话"
+      }
+    },
+    {
+      "name": "profile-dialog",
+      "width": 320,
+      "mode": "long",
+      "data": {
+        "actualWidth": 320,
+        "actualViewport": 320,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": true,
+        "conversationPresent": true,
+        "projectPresent": true,
+        "tagPresent": true,
+        "clipBounds": [
+          {
+            "left": 100,
+            "right": 162.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 100,
+            "right": 266.390625,
+            "width": 166.390625,
+            "text": "deepseek-v4-flash-plus-ultra-max-ex"
+          },
+          {
+            "left": 34,
+            "right": 85,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 93,
+            "right": 143.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 151.296875,
+            "right": 225.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 34,
+            "right": 115.796875,
+            "width": 81.796875,
+            "text": "Project #9"
+          },
+          {
+            "left": 34,
+            "right": 286,
+            "width": 252,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          },
+          {
+            "left": 49,
+            "right": 111.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 49,
+            "right": 90.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 49,
+            "right": 118.109375,
+            "width": 69.109375,
+            "text": "Project #9"
+          },
+          {
+            "left": 49,
+            "right": 215.390625,
+            "width": 166.390625,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 82,
+        "height": 35.5,
+        "left": 203,
+        "right": 285,
+        "top": 612,
+        "bottom": 647.5,
+        "hit": true,
+        "label": "创建会话"
+      }
+    },
+    {
+      "name": "home",
+      "width": 320,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 320,
+        "actualViewport": 320,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": [
+          {
+            "left": 33,
+            "right": 71.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 77.78125,
+            "right": 140.390625,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 33,
+            "right": 71.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 77.78125,
+            "right": 119.15625,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 33,
+            "right": 71.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 77.78125,
+            "right": 140.390625,
+            "width": 62.609375,
+            "text": "Project 7"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 86.609375,
+        "height": 55,
+        "left": 98.0625,
+        "right": 184.671875,
+        "top": 12.75,
+        "bottom": 67.75,
+        "hit": true,
+        "label": "Agent Hub"
+      }
+    },
+    {
+      "name": "hub-normal",
+      "width": 390,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 390,
+        "actualViewport": 390,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": []
+      },
+      "reachable": {
+        "found": true,
+        "width": 322,
+        "height": 99,
+        "left": 34,
+        "right": 356,
+        "top": 99,
+        "bottom": 198,
+        "hit": true,
+        "label": "G045 助手g045g045暂无描述"
+      }
+    },
+    {
+      "name": "hub-long",
+      "width": 390,
+      "mode": "long",
+      "data": {
+        "actualWidth": 390,
+        "actualViewport": 390,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": []
+      },
+      "reachable": {
+        "found": true,
+        "width": 322,
+        "height": 99,
+        "left": 34,
+        "right": 356,
+        "top": 99,
+        "bottom": 198,
+        "hit": true,
+        "label": "G045 助手g045g045暂无描述"
+      }
+    },
+    {
+      "name": "profile-normal",
+      "width": 390,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 390,
+        "actualViewport": 390,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": [
+          {
+            "left": 100,
+            "right": 162.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 168.59375,
+            "right": 277.28125,
+            "width": 108.6875,
+            "text": "deepseek-v4-flash"
+          },
+          {
+            "left": 34,
+            "right": 85,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 93,
+            "right": 143.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 151.296875,
+            "right": 225.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 49,
+            "right": 111.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 49,
+            "right": 90.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 49,
+            "right": 111.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 184.734375,
+        "height": 35.5,
+        "left": 171.265625,
+        "right": 356,
+        "top": 357.5,
+        "bottom": 393,
+        "hit": true,
+        "label": "使用此 Agent 新建会话"
+      }
+    },
+    {
+      "name": "profile-long",
+      "width": 390,
+      "mode": "long",
+      "data": {
+        "actualWidth": 390,
+        "actualViewport": 390,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": true,
+        "conversationPresent": true,
+        "projectPresent": true,
+        "tagPresent": true,
+        "clipBounds": [
+          {
+            "left": 100,
+            "right": 162.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 100,
+            "right": 302.796875,
+            "width": 202.796875,
+            "text": "deepseek-v4-flash-plus-ultra-max-ex"
+          },
+          {
+            "left": 34,
+            "right": 85,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 93,
+            "right": 143.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 151.296875,
+            "right": 225.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 233.71875,
+            "right": 315.515625,
+            "width": 81.796875,
+            "text": "Project #9"
+          },
+          {
+            "left": 34,
+            "right": 356,
+            "width": 322,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          },
+          {
+            "left": 49,
+            "right": 111.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 49,
+            "right": 90.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 49,
+            "right": 118.109375,
+            "width": 69.109375,
+            "text": "Project #9"
+          },
+          {
+            "left": 49,
+            "right": 251.796875,
+            "width": 202.796875,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 184.734375,
+        "height": 35.5,
+        "left": 171.265625,
+        "right": 356,
+        "top": 382.5,
+        "bottom": 418,
+        "hit": true,
+        "label": "使用此 Agent 新建会话"
+      }
+    },
+    {
+      "name": "profile-dialog",
+      "width": 390,
+      "mode": "long",
+      "data": {
+        "actualWidth": 390,
+        "actualViewport": 390,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": true,
+        "conversationPresent": true,
+        "projectPresent": true,
+        "tagPresent": true,
+        "clipBounds": [
+          {
+            "left": 100,
+            "right": 162.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 100,
+            "right": 302.796875,
+            "width": 202.796875,
+            "text": "deepseek-v4-flash-plus-ultra-max-ex"
+          },
+          {
+            "left": 34,
+            "right": 85,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 93,
+            "right": 143.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 151.296875,
+            "right": 225.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 233.71875,
+            "right": 315.515625,
+            "width": 81.796875,
+            "text": "Project #9"
+          },
+          {
+            "left": 34,
+            "right": 356,
+            "width": 322,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          },
+          {
+            "left": 49,
+            "right": 111.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 49,
+            "right": 90.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 49,
+            "right": 118.109375,
+            "width": 69.109375,
+            "text": "Project #9"
+          },
+          {
+            "left": 49,
+            "right": 251.796875,
+            "width": 202.796875,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 82,
+        "height": 35.5,
+        "left": 273,
+        "right": 355,
+        "top": 592.5,
+        "bottom": 628,
+        "hit": true,
+        "label": "创建会话"
+      }
+    },
+    {
+      "name": "home",
+      "width": 390,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 390,
+        "actualViewport": 390,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": [
+          {
+            "left": 33,
+            "right": 71.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 77.78125,
+            "right": 140.390625,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 33,
+            "right": 71.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 77.78125,
+            "right": 119.15625,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 33,
+            "right": 71.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 77.78125,
+            "right": 140.390625,
+            "width": 62.609375,
+            "text": "Project 7"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 111.296875,
+        "height": 55,
+        "left": 115.4375,
+        "right": 226.734375,
+        "top": 12.75,
+        "bottom": 67.75,
+        "hit": true,
+        "label": "Agent Hub"
+      }
+    },
+    {
+      "name": "hub-normal",
+      "width": 767,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 767,
+        "actualViewport": 767,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": []
+      },
+      "reachable": {
+        "found": true,
+        "width": 699,
+        "height": 99,
+        "left": 34,
+        "right": 733,
+        "top": 99,
+        "bottom": 198,
+        "hit": true,
+        "label": "G045 助手g045g045暂无描述"
+      }
+    },
+    {
+      "name": "hub-long",
+      "width": 767,
+      "mode": "long",
+      "data": {
+        "actualWidth": 767,
+        "actualViewport": 767,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": []
+      },
+      "reachable": {
+        "found": true,
+        "width": 699,
+        "height": 99,
+        "left": 34,
+        "right": 733,
+        "top": 99,
+        "bottom": 198,
+        "hit": true,
+        "label": "G045 助手g045g045暂无描述"
+      }
+    },
+    {
+      "name": "profile-normal",
+      "width": 767,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 767,
+        "actualViewport": 767,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": [
+          {
+            "left": 100,
+            "right": 162.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 168.59375,
+            "right": 277.28125,
+            "width": 108.6875,
+            "text": "deepseek-v4-flash"
+          },
+          {
+            "left": 34,
+            "right": 85,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 93,
+            "right": 143.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 151.296875,
+            "right": 225.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 49,
+            "right": 111.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 49,
+            "right": 90.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 49,
+            "right": 111.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 184.734375,
+        "height": 35.5,
+        "left": 548.265625,
+        "right": 733,
+        "top": 357.5,
+        "bottom": 393,
+        "hit": true,
+        "label": "使用此 Agent 新建会话"
+      }
+    },
+    {
+      "name": "profile-long",
+      "width": 767,
+      "mode": "long",
+      "data": {
+        "actualWidth": 767,
+        "actualViewport": 767,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": true,
+        "conversationPresent": true,
+        "projectPresent": true,
+        "tagPresent": true,
+        "clipBounds": [
+          {
+            "left": 100,
+            "right": 162.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 168.59375,
+            "right": 448.59375,
+            "width": 280,
+            "text": "deepseek-v4-flash-plus-ultra-max-ex"
+          },
+          {
+            "left": 34,
+            "right": 85,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 93,
+            "right": 143.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 151.296875,
+            "right": 225.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 233.71875,
+            "right": 315.515625,
+            "width": 81.796875,
+            "text": "Project #9"
+          },
+          {
+            "left": 34,
+            "right": 733,
+            "width": 699,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          },
+          {
+            "left": 49,
+            "right": 111.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 49,
+            "right": 90.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 49,
+            "right": 118.109375,
+            "width": 69.109375,
+            "text": "Project #9"
+          },
+          {
+            "left": 49,
+            "right": 329,
+            "width": 280,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 184.734375,
+        "height": 35.5,
+        "left": 548.265625,
+        "right": 733,
+        "top": 382,
+        "bottom": 417.5,
+        "hit": true,
+        "label": "使用此 Agent 新建会话"
+      }
+    },
+    {
+      "name": "profile-dialog",
+      "width": 767,
+      "mode": "long",
+      "data": {
+        "actualWidth": 767,
+        "actualViewport": 767,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": true,
+        "conversationPresent": true,
+        "projectPresent": true,
+        "tagPresent": true,
+        "clipBounds": [
+          {
+            "left": 100,
+            "right": 162.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 168.59375,
+            "right": 448.59375,
+            "width": 280,
+            "text": "deepseek-v4-flash-plus-ultra-max-ex"
+          },
+          {
+            "left": 34,
+            "right": 85,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 93,
+            "right": 143.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 151.296875,
+            "right": 225.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 233.71875,
+            "right": 315.515625,
+            "width": 81.796875,
+            "text": "Project #9"
+          },
+          {
+            "left": 34,
+            "right": 733,
+            "width": 699,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          },
+          {
+            "left": 49,
+            "right": 111.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 49,
+            "right": 90.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 49,
+            "right": 118.109375,
+            "width": 69.109375,
+            "text": "Project #9"
+          },
+          {
+            "left": 49,
+            "right": 329,
+            "width": 280,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 82,
+        "height": 35.5,
+        "left": 552.5,
+        "right": 634.5,
+        "top": 534,
+        "bottom": 569.5,
+        "hit": true,
+        "label": "创建会话"
+      }
+    },
+    {
+      "name": "home",
+      "width": 767,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 767,
+        "actualViewport": 767,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": [
+          {
+            "left": 33,
+            "right": 71.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 77.78125,
+            "right": 140.390625,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 33,
+            "right": 71.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 77.78125,
+            "right": 119.15625,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 33,
+            "right": 71.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 77.78125,
+            "right": 140.390625,
+            "width": 62.609375,
+            "text": "Project 7"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 114.40625,
+        "height": 35.5,
+        "left": 486.59375,
+        "right": 601,
+        "top": 14.25,
+        "bottom": 49.75,
+        "hit": true,
+        "label": "Agent Hub"
+      }
+    },
+    {
+      "name": "hub-normal",
+      "width": 768,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 768,
+        "actualViewport": 768,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": []
+      },
+      "reachable": {
+        "found": true,
+        "width": 476,
+        "height": 99,
+        "left": 254,
+        "right": 730,
+        "top": 103,
+        "bottom": 202,
+        "hit": true,
+        "label": "G045 助手g045g045暂无描述"
+      }
+    },
+    {
+      "name": "hub-long",
+      "width": 768,
+      "mode": "long",
+      "data": {
+        "actualWidth": 768,
+        "actualViewport": 768,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": []
+      },
+      "reachable": {
+        "found": true,
+        "width": 476,
+        "height": 99,
+        "left": 254,
+        "right": 730,
+        "top": 103,
+        "bottom": 202,
+        "hit": true,
+        "label": "G045 助手g045g045暂无描述"
+      }
+    },
+    {
+      "name": "profile-normal",
+      "width": 768,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 768,
+        "actualViewport": 768,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": [
+          {
+            "left": 326,
+            "right": 388.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 394.59375,
+            "right": 503.28125,
+            "width": 108.6875,
+            "text": "deepseek-v4-flash"
+          },
+          {
+            "left": 254,
+            "right": 305,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 313,
+            "right": 363.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 371.296875,
+            "right": 445.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 269,
+            "right": 331.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 269,
+            "right": 310.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 269,
+            "right": 331.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 184.734375,
+        "height": 35.5,
+        "left": 545.265625,
+        "right": 730,
+        "top": 293.5,
+        "bottom": 329,
+        "hit": true,
+        "label": "使用此 Agent 新建会话"
+      }
+    },
+    {
+      "name": "profile-long",
+      "width": 768,
+      "mode": "long",
+      "data": {
+        "actualWidth": 768,
+        "actualViewport": 768,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": true,
+        "conversationPresent": true,
+        "projectPresent": true,
+        "tagPresent": true,
+        "clipBounds": [
+          {
+            "left": 326,
+            "right": 388.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 394.59375,
+            "right": 674.59375,
+            "width": 280,
+            "text": "deepseek-v4-flash-plus-ultra-max-ex"
+          },
+          {
+            "left": 254,
+            "right": 305,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 313,
+            "right": 363.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 371.296875,
+            "right": 445.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 453.71875,
+            "right": 535.515625,
+            "width": 81.796875,
+            "text": "Project #9"
+          },
+          {
+            "left": 254,
+            "right": 720,
+            "width": 466,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          },
+          {
+            "left": 269,
+            "right": 331.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 269,
+            "right": 310.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 269,
+            "right": 338.109375,
+            "width": 69.109375,
+            "text": "Project #9"
+          },
+          {
+            "left": 269,
+            "right": 549,
+            "width": 280,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 184.734375,
+        "height": 35.5,
+        "left": 535.265625,
+        "right": 720,
+        "top": 382.5,
+        "bottom": 418,
+        "hit": true,
+        "label": "使用此 Agent 新建会话"
+      }
+    },
+    {
+      "name": "profile-dialog",
+      "width": 768,
+      "mode": "long",
+      "data": {
+        "actualWidth": 768,
+        "actualViewport": 768,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": true,
+        "conversationPresent": true,
+        "projectPresent": true,
+        "tagPresent": true,
+        "clipBounds": [
+          {
+            "left": 326,
+            "right": 388.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 394.59375,
+            "right": 674.59375,
+            "width": 280,
+            "text": "deepseek-v4-flash-plus-ultra-max-ex"
+          },
+          {
+            "left": 254,
+            "right": 305,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 313,
+            "right": 363.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 371.296875,
+            "right": 445.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 453.71875,
+            "right": 535.515625,
+            "width": 81.796875,
+            "text": "Project #9"
+          },
+          {
+            "left": 254,
+            "right": 720,
+            "width": 466,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          },
+          {
+            "left": 269,
+            "right": 331.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 269,
+            "right": 310.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 269,
+            "right": 338.109375,
+            "width": 69.109375,
+            "text": "Project #9"
+          },
+          {
+            "left": 269,
+            "right": 549,
+            "width": 280,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 82,
+        "height": 35.5,
+        "left": 553,
+        "right": 635,
+        "top": 534,
+        "bottom": 569.5,
+        "hit": true,
+        "label": "创建会话"
+      }
+    },
+    {
+      "name": "home",
+      "width": 768,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 768,
+        "actualViewport": 768,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": [
+          {
+            "left": 249,
+            "right": 287.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 293.78125,
+            "right": 356.390625,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 249,
+            "right": 287.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 293.78125,
+            "right": 335.15625,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 249,
+            "right": 287.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 293.78125,
+            "right": 356.390625,
+            "width": 62.609375,
+            "text": "Project 7"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 114.40625,
+        "height": 35.5,
+        "left": 525.59375,
+        "right": 640,
+        "top": 14.25,
+        "bottom": 49.75,
+        "hit": true,
+        "label": "Agent Hub"
+      }
+    },
+    {
+      "name": "hub-normal",
+      "width": 1280,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 1280,
+        "actualViewport": 1280,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": []
+      },
+      "reachable": {
+        "found": true,
+        "width": 322.65625,
+        "height": 99,
+        "left": 254,
+        "right": 576.65625,
+        "top": 103,
+        "bottom": 202,
+        "hit": true,
+        "label": "G045 助手g045g045暂无描述"
+      }
+    },
+    {
+      "name": "hub-long",
+      "width": 1280,
+      "mode": "long",
+      "data": {
+        "actualWidth": 1280,
+        "actualViewport": 1280,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": []
+      },
+      "reachable": {
+        "found": true,
+        "width": 322.65625,
+        "height": 99,
+        "left": 254,
+        "right": 576.65625,
+        "top": 103,
+        "bottom": 202,
+        "hit": true,
+        "label": "G045 助手g045g045暂无描述"
+      }
+    },
+    {
+      "name": "profile-normal",
+      "width": 1280,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 1280,
+        "actualViewport": 1280,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": [
+          {
+            "left": 326,
+            "right": 388.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 394.59375,
+            "right": 503.28125,
+            "width": 108.6875,
+            "text": "deepseek-v4-flash"
+          },
+          {
+            "left": 254,
+            "right": 305,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 313,
+            "right": 363.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 371.296875,
+            "right": 445.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 269,
+            "right": 331.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 269,
+            "right": 310.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 269,
+            "right": 331.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 184.734375,
+        "height": 35.5,
+        "left": 889.265625,
+        "right": 1074,
+        "top": 293.5,
+        "bottom": 329,
+        "hit": true,
+        "label": "使用此 Agent 新建会话"
+      }
+    },
+    {
+      "name": "profile-long",
+      "width": 1280,
+      "mode": "long",
+      "data": {
+        "actualWidth": 1280,
+        "actualViewport": 1280,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": true,
+        "conversationPresent": true,
+        "projectPresent": true,
+        "tagPresent": true,
+        "clipBounds": [
+          {
+            "left": 326,
+            "right": 388.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 394.59375,
+            "right": 674.59375,
+            "width": 280,
+            "text": "deepseek-v4-flash-plus-ultra-max-ex"
+          },
+          {
+            "left": 254,
+            "right": 305,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 313,
+            "right": 363.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 371.296875,
+            "right": 445.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 453.71875,
+            "right": 535.515625,
+            "width": 81.796875,
+            "text": "Project #9"
+          },
+          {
+            "left": 254,
+            "right": 1074,
+            "width": 820,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          },
+          {
+            "left": 269,
+            "right": 331.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 269,
+            "right": 310.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 269,
+            "right": 338.109375,
+            "width": 69.109375,
+            "text": "Project #9"
+          },
+          {
+            "left": 269,
+            "right": 549,
+            "width": 280,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 184.734375,
+        "height": 35.5,
+        "left": 889.265625,
+        "right": 1074,
+        "top": 416.5,
+        "bottom": 452,
+        "hit": true,
+        "label": "使用此 Agent 新建会话"
+      }
+    },
+    {
+      "name": "profile-dialog",
+      "width": 1280,
+      "mode": "long",
+      "data": {
+        "actualWidth": 1280,
+        "actualViewport": 1280,
+        "overflow": false,
+        "namePresent": true,
+        "promptPresent": true,
+        "conversationPresent": true,
+        "projectPresent": true,
+        "tagPresent": true,
+        "clipBounds": [
+          {
+            "left": 326,
+            "right": 388.59375,
+            "width": 62.59375,
+            "text": "standard"
+          },
+          {
+            "left": 394.59375,
+            "right": 674.59375,
+            "width": 280,
+            "text": "deepseek-v4-flash-plus-ultra-max-ex"
+          },
+          {
+            "left": 254,
+            "right": 305,
+            "width": 51,
+            "text": "全部"
+          },
+          {
+            "left": 313,
+            "right": 363.296875,
+            "width": 50.296875,
+            "text": "Drift"
+          },
+          {
+            "left": 371.296875,
+            "right": 445.71875,
+            "width": 74.421875,
+            "text": "Project 7"
+          },
+          {
+            "left": 453.71875,
+            "right": 535.515625,
+            "width": 81.796875,
+            "text": "Project #9"
+          },
+          {
+            "left": 254,
+            "right": 1074,
+            "width": 820,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          },
+          {
+            "left": 269,
+            "right": 331.609375,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 269,
+            "right": 310.375,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 269,
+            "right": 338.109375,
+            "width": 69.109375,
+            "text": "Project #9"
+          },
+          {
+            "left": 269,
+            "right": 549,
+            "width": 280,
+            "text": "非常长的项目名称非常长的项目名称非常长的项目名称非常长的项目名称非常长"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 82,
+        "height": 35.5,
+        "left": 809,
+        "right": 891,
+        "top": 534,
+        "bottom": 569.5,
+        "hit": true,
+        "label": "创建会话"
+      }
+    },
+    {
+      "name": "home",
+      "width": 1280,
+      "mode": "normal",
+      "data": {
+        "actualWidth": 1280,
+        "actualViewport": 1280,
+        "overflow": false,
+        "namePresent": false,
+        "promptPresent": false,
+        "conversationPresent": false,
+        "projectPresent": false,
+        "tagPresent": false,
+        "clipBounds": [
+          {
+            "left": 323,
+            "right": 361.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 367.78125,
+            "right": 430.390625,
+            "width": 62.609375,
+            "text": "Project 7"
+          },
+          {
+            "left": 323,
+            "right": 361.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 367.78125,
+            "right": 409.15625,
+            "width": 41.375,
+            "text": "Drift"
+          },
+          {
+            "left": 323,
+            "right": 361.78125,
+            "width": 38.78125,
+            "text": "Ecki"
+          },
+          {
+            "left": 367.78125,
+            "right": 430.390625,
+            "width": 62.609375,
+            "text": "Project 7"
+          }
+        ]
+      },
+      "reachable": {
+        "found": true,
+        "width": 114.40625,
+        "height": 35.5,
+        "left": 1037.59375,
+        "right": 1152,
+        "top": 14.25,
+        "bottom": 49.75,
+        "hit": true,
+        "label": "Agent Hub"
+      }
+    }
+  ]
+}

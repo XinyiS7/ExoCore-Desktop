@@ -40,6 +40,17 @@ describe('P1D project adapters (Plan Task 1 / §6.6)', () => {
     await expect(fetchProjectDetail(3)).rejects.toMatchObject({ code: 'CONTRACT' });
   });
 
+  it.each([0, -4, 1.5])('F03: rejects non-positive/fractional numeric detail identity (%s)', async (badId) => {
+    installFetch([
+      {
+        test: `/api/core/projects/${badId}/`,
+        handler: () =>
+          jsonResponse({ id: badId, name: 'X', description: null, prompt: null, work_dir: null, created_at: 't' }),
+      },
+    ]);
+    await expect(fetchProjectDetail(badId)).rejects.toMatchObject({ code: 'CONTRACT' });
+  });
+
   it('validates uploaded project-file reference rows', async () => {
     installFetch([
       {
@@ -62,6 +73,60 @@ describe('P1D project adapters (Plan Task 1 / §6.6)', () => {
       },
     ]);
     await expect(fetchProjectFiles(3)).rejects.toMatchObject({ code: 'CONTRACT' });
+  });
+
+  it('accepts mixed numeric and kf_ file ids with source labels (D3)', async () => {
+    installFetch([
+      {
+        test: '/api/core/projects/3/files/',
+        handler: () =>
+          jsonResponse([
+            { id: 11, name: 'guide.pdf', file_type: 'pdf', size: 2048, url: 'http://x/f.pdf', source: 'web_upload', created_at: 't' },
+            { id: 'kf_42', name: 'note.md', file_type: 'text/markdown', size: 0, file: null, source: 'obsidian_sync', created_at: 't' },
+          ]),
+      },
+    ]);
+    const rows = await fetchProjectFiles(3);
+    expect(rows).toMatchObject([
+      { id: 11, source: 'web_upload' },
+      { id: 'kf_42', name: 'note.md', source: 'obsidian_sync', url: null },
+    ]);
+  });
+
+  it.each([
+    'kf_0',
+    'kf_abc',
+    'kf_-3',
+    'kf_1.5',
+    '',
+    0,
+    -4,
+    1.5,
+  ])('rejects unverified file id form %j (D3 minimum repair, no coercion framework)', async (badId) => {
+    installFetch([
+      {
+        test: '/api/core/projects/3/files/',
+        handler: () => jsonResponse([{ id: badId, name: 'x', source: 'web_upload', created_at: 't' }]),
+      },
+    ]);
+    await expect(fetchProjectFiles(3)).rejects.toMatchObject({ code: 'CONTRACT' });
+  });
+
+  it('unknown or ID-inconsistent source metadata degrades to a neutral label, never rejects the row (D3)', async () => {
+    installFetch([
+      {
+        test: '/api/core/projects/3/files/',
+        handler: () =>
+          jsonResponse([
+            { id: 'kf_9', name: 'future.md', file_type: 'text/markdown', size: 0, source: 'web_upload', created_at: 't' },
+            { id: 12, name: 'v9.pdf', file_type: 'pdf', size: 10, url: 'http://x/v9.pdf', source: 'future_label_v9', created_at: 't' },
+          ]),
+      },
+    ]);
+    const rows = await fetchProjectFiles(3);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ id: 'kf_9', source: 'web_upload' });
+    expect(rows[1]).toMatchObject({ id: 12, source: 'future_label_v9', url: 'http://x/v9.pdf' });
   });
 
   it('fetches the recursive root tree', async () => {
