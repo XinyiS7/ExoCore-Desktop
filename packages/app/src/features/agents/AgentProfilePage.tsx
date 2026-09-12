@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { toAppApiError } from '../chat/api';
 import { CreateConversationDialog } from '../chat/CreateConversationDialog';
+import { ConversationDeleteMenu } from '../chat/ConversationDeleteMenu';
 import { isG045AgentType, useConversationsQuery } from '../chat/queries';
 import { formatDateTime } from '../chat/time';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
@@ -208,7 +209,7 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
                   ) : null}
                   <ul className="app-recent-list" aria-label="该 Agent 的会话">
                     {visibleRows.map((row) => (
-                      <li key={row.id}>
+                      <li key={row.id} className="app-recent-item">
                         <Link to={`/chat/${row.id}`} className="app-recent-row">
                           <span className="app-recent-name">{row.name || `会话 #${row.id}`}</span>
                           <span className="app-recent-time">
@@ -222,6 +223,10 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
                             </span>
                           </span>
                         </Link>
+                        <ConversationDeleteMenu
+                          conversationId={row.id}
+                          conversationName={row.name || `会话 #${row.id}`}
+                        />
                       </li>
                     ))}
                   </ul>

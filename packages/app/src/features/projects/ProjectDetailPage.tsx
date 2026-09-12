@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MessageSquarePlus, Pencil, Trash2 } from 'lucide-react';
 import { CreateConversationDialog } from '../chat/CreateConversationDialog';
+import { ConversationDeleteMenu } from '../chat/ConversationDeleteMenu';
 import { useConversationsQuery, useVisiblePresetsQuery } from '../chat/queries';
 import { useProjectDetailQuery } from '../chat/control/queries';
 import { toAppApiError } from '../chat/api';
@@ -184,7 +185,7 @@ function ProjectConversationLens({ projectId }: { projectId: number }) {
           </div>
           <ul className="app-recent-list" aria-label="该项目下的会话">
             {visibleRows.map((row) => (
-              <li key={row.id}>
+              <li key={row.id} className="app-recent-item">
                 <Link to={`/chat/${row.id}`} className="app-recent-row">
                   <span className="app-recent-name">{row.name || `会话 #${row.id}`}</span>
                   <span className="app-recent-time">
@@ -194,6 +195,10 @@ function ProjectConversationLens({ projectId }: { projectId: number }) {
                     <span className="app-chip project-chip-clamp">{agentLabel(row, presetNames)}</span>
                   </span>
                 </Link>
+                <ConversationDeleteMenu
+                  conversationId={row.id}
+                  conversationName={row.name || `会话 #${row.id}`}
+                />
               </li>
             ))}
           </ul>

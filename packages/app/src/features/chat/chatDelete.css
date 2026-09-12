@@ -1,0 +1,147 @@
+/* ── V4 single-conversation delete (T1) ────────────────────────────────────
+ * Row affordance + shared confirm dialog styling. All NEW rules; existing
+ * shell/app-dialog/app-recent styles untouched. The trigger is always
+ * reachable (mouse/keyboard/touch), flex-shrink:0 so long names and narrow
+ * windows never push it out of the row. */
+
+.app-recent-item {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.app-recent-item .app-recent-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.conversation-row-menu {
+  position: relative;
+  flex-shrink: 0;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+}
+
+.conversation-menu-trigger,
+.conversation-delete-trigger {
+  flex-shrink: 0;
+  align-self: center;
+  color: var(--v4-text-mute);
+  border: 1px solid transparent;
+}
+
+.conversation-menu-trigger:hover:not(:disabled),
+.conversation-menu-trigger:focus-visible,
+.conversation-menu-trigger[aria-expanded="true"] {
+  color: var(--v4-text);
+  border-color: var(--v4-line-strong);
+  background: var(--v4-panel-2);
+}
+
+.conversation-delete-trigger:hover:not(:disabled),
+.conversation-delete-trigger:focus-visible {
+  color: var(--v4-danger);
+  border-color: var(--v4-line-strong);
+}
+
+.app-recent-item:has(.conversation-menu-trigger:hover) .app-recent-row,
+.app-recent-item:has(.conversation-menu-trigger:focus-visible) .app-recent-row,
+.app-recent-item:has(.conversation-delete-trigger:hover) .app-recent-row,
+.app-recent-item:has(.conversation-delete-trigger:focus-visible) .app-recent-row {
+  border-color: var(--v4-line-strong);
+}
+
+.conversation-dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 80;
+  min-width: 140px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--v4-panel-2);
+  border: 1px solid var(--v4-line-strong);
+  border-radius: var(--v4-radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.conversation-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--v4-text);
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.conversation-menu-item:hover:not(:disabled),
+.conversation-menu-item:focus-visible:not(:disabled) {
+  background: var(--v4-panel);
+  outline: none;
+}
+
+.conversation-menu-item--danger {
+  color: var(--v4-danger);
+}
+
+.conversation-menu-item--danger:hover:not(:disabled),
+.conversation-menu-item--danger:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, var(--v4-danger) 12%, transparent);
+  color: var(--v4-danger);
+}
+
+.conversation-menu-item:disabled,
+.conversation-menu-item[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.conversation-delete-dialog {
+  width: min(460px, 100%);
+}
+
+.conversation-delete-body {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.conversation-delete-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--v4-danger) 12%, transparent);
+  color: var(--v4-danger);
+}
+
+.conversation-delete-em {
+  color: var(--v4-danger);
+  font-weight: 600;
+}
+
+.conversation-delete-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.conversation-delete-body .app-banner {
+  margin-top: 8px;
+}

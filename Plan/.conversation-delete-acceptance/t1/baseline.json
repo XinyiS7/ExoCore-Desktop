@@ -1,0 +1,20 @@
+{
+  "status": [
+    "A  Plan/V4_P2_Conversation_Delete_T0_Disposition.md",
+    "A  Plan/V4_P2_Conversation_Delete_Target.md",
+    "A  Plan/V4_P2_Conversation_Delete_acceptance_report.md",
+    " M packages/app/src/features/agents/AgentProfilePage.tsx",
+    " M packages/app/src/features/chat/RecentConversationList.tsx",
+    " M packages/app/src/features/projects/ProjectDetailPage.tsx",
+    " M packages/app/src/main.tsx",
+    "?? Plan/.conversation-delete-acceptance/",
+    "?? Plan/V4_P2_Conversation_Delete_Construction_Evidence.md",
+    "?? docs/superpowers/specs/2026-09-11-v4-conversation-delete-prerequisites.md",
+    "?? packages/app/src/features/chat/ConversationDeleteConfirmDialog.tsx",
+    "?? packages/app/src/features/chat/ConversationDeleteMenu.tsx",
+    "?? packages/app/src/features/chat/chatDelete.css",
+    "?? packages/app/src/features/chat/chatDelete.ts",
+    "?? packages/app/src/test/p2_conversation_delete.test.tsx"
+  ],
+  "head": "31eeb43b73bc885598d8de614bbfcb13ee10be31"
+}

@@ -1,0 +1,42 @@
+{
+  "note": "Backend R2 pinned before independent runs. JSON sanitizer parallel work separately pinned, not delete scope.",
+  "pins": {
+    "Plan/Archived/json_sanitizer_invalid_escape_fix_plan.md": "69C4F82232B41DB4E34477A899CE6559DE21FA1BCC0D0A0CDDD64C04E295C2B2",
+    "agents/context_builder.py": "2CA1360C0AEF314D58ADF2E60678EA7F7ED06A40D07A5EA60F54C810D2D0E859",
+    "engines/tests/test_json_sanitizer.py": "BACEB613FFA356675C441BC009338A75327313CA12CDB50114A5DFDD3F589E45",
+    "Plan/v4_conversation_delete_backend_plan.md": "6A80978F57D8FBF01F9085DEB0F15B3EACCDA38FDC62ECBAF0E74BE86F0E9D31",
+    "agents/streaming_buffer.py": "93BB54B06D4644A7BE4677660FC3977DD06A1E170EC8E07760169E89D75D9D97",
+    ".agents/skills/sia-telemetry/SKILL.md": "MISSING",
+    "Plan/ExoCore_update_log.md": "E3DAF78EBD5911E89005D8490F53E15F3EB93397A8185F14DF60C61777C6DDB3",
+    "Plan/garden_notification_poll_heartbeat_plan.md": "D545D603BE9A5CBC0A1729D7E724A393A4728B846656C523B14A89792F741A62",
+    "background_sessions/services.py": "327BEFAB513B300DB6CFC0118D89D37B92659BC5978037B624B55E73EF4C9A0C",
+    "push/services.py": "56E62D16A9E2AE5F57886F06A61FCCC2295DE0E7736468DF866DB5E8784C8058",
+    "agents/tests/test_conversation_delete.py": "5DBC51383A17F29C2F76F00A8D6A31EC6AD1AD58D10DB25021ED24F7BBC0F2F2",
+    "Plan/PENDING_INDEX.md": "13D3C67931BD0994A4FEB3AE34AA5A82CA8850C943FF6DFEF9D694E5443D686C",
+    "agents/execution_coordinator.py": "994477A481809D3D3A97E2E79BD79172854B1A9E1FA1CB52E5CF6E6B2F425262",
+    "ReactSheet.md": "5766AA07DAF48A86F91D2C78D0F176269FF6534BF5C196749D97AC5554BD5111",
+    "memory/services.py": "C9A66A28FA624395FAE0FED6468ACF1BE1786271ED7AEC80B54E18B42422B2CE",
+    "agents/views.py": "8FC1E82D7E3236BCD46D335CD6276EFC9527FDDE2D7C311DB7E955B1DA64D30C",
+    "engines/json_sanitizer.py": "4FAA85AD9E31BC06E8DC97CE4FB6A51CD61BBECDB9F17887E25B64082D33E808"
+  },
+  "head": "759a826ecdb40e6cc74b74bf9b0d913ed287b9d4",
+  "status": [
+    " D .agents/skills/sia-telemetry/SKILL.md",
+    "A  Plan/Archived/json_sanitizer_invalid_escape_fix_plan.md",
+    " M Plan/ExoCore_update_log.md",
+    " M Plan/PENDING_INDEX.md",
+    "A  Plan/v4_conversation_delete_backend_plan.md",
+    " M ReactSheet.md",
+    " M agents/context_builder.py",
+    " M agents/streaming_buffer.py",
+    " M agents/views.py",
+    " M background_sessions/services.py",
+    " M engines/json_sanitizer.py",
+    " M engines/tests/test_json_sanitizer.py",
+    " M memory/services.py",
+    " M push/services.py",
+    "?? Plan/garden_notification_poll_heartbeat_plan.md",
+    "?? agents/execution_coordinator.py",
+    "?? agents/tests/test_conversation_delete.py"
+  ]
+}

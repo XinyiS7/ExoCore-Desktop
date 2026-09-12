@@ -1,0 +1,50 @@
+{
+  "status": [
+    " D .agents/skills/sia-telemetry/SKILL.md",
+    "A  Plan/Archived/json_sanitizer_invalid_escape_fix_plan.md",
+    " M Plan/ExoCore_update_log.md",
+    " M Plan/PENDING_INDEX.md",
+    "A  Plan/history_chunk_anti_fragmentation_plan.md",
+    "A  Plan/v4_conversation_delete_backend_plan.md",
+    " M ReactSheet.md",
+    " M agents/context_builder.py",
+    " M agents/streaming_buffer.py",
+    " M agents/views.py",
+    " M background_sessions/services.py",
+    " M engines/json_sanitizer.py",
+    " M engines/tests/test_json_sanitizer.py",
+    " M memory/services.py",
+    " M push/services.py",
+    "?? Plan/garden_notification_poll_heartbeat_plan.md",
+    "?? agents/execution_coordinator.py",
+    "?? agents/tests/test_conversation_delete.py"
+  ],
+  "pins": {
+    "Plan/Archived/json_sanitizer_invalid_escape_fix_plan.md": "69C4F82232B41DB4E34477A899CE6559DE21FA1BCC0D0A0CDDD64C04E295C2B2",
+    "Plan/garden_notification_poll_heartbeat_plan.md": "D545D603BE9A5CBC0A1729D7E724A393A4728B846656C523B14A89792F741A62",
+    "agents/execution_coordinator.py": "52629162BF133AA868FE647B22B89FA2F2CE932D6CCB0076A1093D7CF5049C46",
+    "Plan/PENDING_INDEX.md": "13D3C67931BD0994A4FEB3AE34AA5A82CA8850C943FF6DFEF9D694E5443D686C",
+    "push/services.py": "56E62D16A9E2AE5F57886F06A61FCCC2295DE0E7736468DF866DB5E8784C8058",
+    "agents/views.py": "46CA3FFA9EA0342403AF039BB896332B1185D3116C510A048008DB6D0B54068E",
+    "Plan/v4_conversation_delete_backend_plan.md": "F90E951C9A5D18BD281BB335518E65596B290CDCD05AA8D4E33BDD3FF08D5EA3",
+    "agents/streaming_buffer.py": "1B2F57A9F2EBF3CBC7E0AC54CB168FA4B15BC6934FCF26C35E34D13DF074C6D3",
+    "ReactSheet.md": "5766AA07DAF48A86F91D2C78D0F176269FF6534BF5C196749D97AC5554BD5111",
+    "engines/tests/test_json_sanitizer.py": "BACEB613FFA356675C441BC009338A75327313CA12CDB50114A5DFDD3F589E45",
+    ".agents/skills/sia-telemetry/SKILL.md": "MISSING",
+    "memory/services.py": "C9A66A28FA624395FAE0FED6468ACF1BE1786271ED7AEC80B54E18B42422B2CE",
+    "agents/tests/test_conversation_delete.py": "603A58938DEAA7CEF21225F018F77EDE902B51DE3BB194E1457A90016144BE69",
+    "agents/context_builder.py": "2CA1360C0AEF314D58ADF2E60678EA7F7ED06A40D07A5EA60F54C810D2D0E859",
+    "Plan/ExoCore_update_log.md": "E3DAF78EBD5911E89005D8490F53E15F3EB93397A8185F14DF60C61777C6DDB3",
+    "background_sessions/services.py": "327BEFAB513B300DB6CFC0118D89D37B92659BC5978037B624B55E73EF4C9A0C",
+    "engines/json_sanitizer.py": "4FAA85AD9E31BC06E8DC97CE4FB6A51CD61BBECDB9F17887E25B64082D33E808"
+  },
+  "head": "759a826ecdb40e6cc74b74bf9b0d913ed287b9d4",
+  "changed_since_r2": [
+    "Plan/v4_conversation_delete_backend_plan.md",
+    "agents/streaming_buffer.py",
+    "agents/tests/test_conversation_delete.py",
+    "agents/execution_coordinator.py",
+    "agents/views.py",
+    "Plan/v4_conversation_delete_backend_plan.md"
+  ]
+}

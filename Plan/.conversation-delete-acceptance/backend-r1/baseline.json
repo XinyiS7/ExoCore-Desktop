@@ -1,0 +1,34 @@
+{
+  "note": "R1 frozen before independent tests; unrelated four paths preserved, status alone not byte-proof of preconstruction equality",
+  "pins": {
+    "background_sessions/services.py": "327BEFAB513B300DB6CFC0118D89D37B92659BC5978037B624B55E73EF4C9A0C",
+    "Plan/PENDING_INDEX.md": "13D3C67931BD0994A4FEB3AE34AA5A82CA8850C943FF6DFEF9D694E5443D686C",
+    "memory/services.py": "6D168AF8478715B70DA0BB15BD84527619225793C3F3F6E75EBBA303FF52F7CC",
+    "ReactSheet.md": "2B06A48794F96D59B5B0183159762D881B9E9E05125C28041940D38554FF37DA",
+    "push/services.py": "56E62D16A9E2AE5F57886F06A61FCCC2295DE0E7736468DF866DB5E8784C8058",
+    "agents/streaming_buffer.py": "283475F92123FA7A08A0E848D624EC9055457873231443EEAE9528B31B87B370",
+    "Plan/v4_conversation_delete_backend_plan.md": "5C043464EEEC7C879588E07804AFDC6728DD355B616471F6DA541518261593F7",
+    "agents/tests/test_conversation_delete.py": "A85B1373E39165D9DFE85B191A04E3E5D2AEECD980EAA8F63E7D6020A435DCB6",
+    "agents/context_builder.py": "2CA1360C0AEF314D58ADF2E60678EA7F7ED06A40D07A5EA60F54C810D2D0E859",
+    "agents/execution_coordinator.py": "B0F77EFDCA3A881CC0BF73B0E9E08FDEB37CC2345F442F402213BB6BC9B6B5E4",
+    "Plan/garden_notification_poll_heartbeat_plan.md": "D545D603BE9A5CBC0A1729D7E724A393A4728B846656C523B14A89792F741A62",
+    "agents/views.py": "D6722EBC846A07E148ABAC83C9B29255749059A65199CC3A9F40D020162FD46E",
+    ".agents/skills/sia-telemetry/SKILL.md": "MISSING"
+  },
+  "head": "759a826ecdb40e6cc74b74bf9b0d913ed287b9d4",
+  "status": [
+    " D .agents/skills/sia-telemetry/SKILL.md",
+    " M Plan/PENDING_INDEX.md",
+    "A  Plan/v4_conversation_delete_backend_plan.md",
+    " M ReactSheet.md",
+    " M agents/context_builder.py",
+    " M agents/streaming_buffer.py",
+    " M agents/views.py",
+    " M background_sessions/services.py",
+    " M memory/services.py",
+    " M push/services.py",
+    "?? Plan/garden_notification_poll_heartbeat_plan.md",
+    "?? agents/execution_coordinator.py",
+    "?? agents/tests/test_conversation_delete.py"
+  ]
+}

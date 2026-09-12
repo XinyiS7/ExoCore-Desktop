@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useConversationsQuery, useVisiblePresetsQuery } from './queries';
 import { toAppApiError } from './api';
+import { ConversationDeleteMenu } from './ConversationDeleteMenu';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
 import { formatDateTime } from './time';
 
@@ -15,7 +16,13 @@ function identityLabel(presetId: number | null, presetName: string | undefined):
  * Recent ordinary Conversations. Backend order is authoritative — the
  * response array is never mutated or re-sorted client-side (Plan §6.4).
  */
-export function RecentConversationList({ onRequestCreate }: { onRequestCreate: () => void }) {
+export interface RecentConversationListProps {
+  onRequestCreate: () => void;
+  /** Optional parent notification after a confirmed/absent deletion. */
+  onDeletedConversation?: (deletedId: number) => void;
+}
+
+export function RecentConversationList({ onRequestCreate, onDeletedConversation }: RecentConversationListProps) {
   const conversationsQuery = useConversationsQuery();
   const presetsQuery = useVisiblePresetsQuery();
 
@@ -74,7 +81,7 @@ export function RecentConversationList({ onRequestCreate }: { onRequestCreate: (
       ) : null}
       <ul className="app-recent-list" aria-label="最近会话">
         {conversations.map((conversation) => (
-          <li key={conversation.id}>
+          <li key={conversation.id} className="app-recent-item">
             <Link to={`/chat/${conversation.id}`} className="app-recent-row">
               <span className="app-recent-name">{conversation.name || `会话 #${conversation.id}`}</span>
               <span className="app-recent-time">{formatDateTime(conversation.lastMessageAt ?? conversation.createdAt)}</span>
@@ -87,6 +94,11 @@ export function RecentConversationList({ onRequestCreate }: { onRequestCreate: (
                 </span>
               </span>
             </Link>
+            <ConversationDeleteMenu
+              conversationId={conversation.id}
+              conversationName={conversation.name || `会话 #${conversation.id}`}
+              onDeleted={onDeletedConversation}
+            />
           </li>
         ))}
       </ul>

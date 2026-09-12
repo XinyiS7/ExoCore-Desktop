@@ -1,3 +1,5 @@
+/* eslint-disable no-undef -- standalone CDP spot-check script (Acceptance-owned); 
+   node/browser globals (fetch/WebSocket/console/process) are intentional here. */
 // Acceptance-owned R11 real-demo spot check (read-only): after the fix, the
 // live production bundle at :8080 must not scroll the document when the
 // project-lens agent filter is used below the fold. GETs + client-side filter
