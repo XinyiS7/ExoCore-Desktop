@@ -1,9 +1,9 @@
 # ExoCore V4 — Master Implementation Roadmap
 
 > **文档类型：** Master Roadmap；不是源码级 Implementation Plan。  
-> **状态：** Revised after R1 review — ready for freeze。  
+> **状态：** Active master roadmap — amended after P2A/P2B acceptance for TTS、assistant-message arrival notifications and deferred Groups。
 > **适用仓库：** `ExoCore-Desktop`；后端工作仅通过独立 handoff 进入 `ExoCore`。  
-> **日期：** 2026-09-02。  
+> **日期：** 2026-09-12。
 > **产品决策：** Alicia。  
 > **Roadmap：** gpt-5.6-sol / Solaire。  
 
@@ -14,7 +14,7 @@
 本 Roadmap 只冻结：
 
 1. phase 边界与依赖；
-2. backend handoff B1–B4；
+2. backend handoff B1–B6；
 3. 每阶段 entry / exit gate；
 4. checkpoint 与 rollback；
 5. V3 capability 的阶段所有权；
@@ -37,7 +37,7 @@
 **Implementation facts**
 
 1. 当前运行源码、API 与只读数据库事实；
-2. 已验收的 R1–R10 evidence report；
+2. 已验收的 R1–R10 evidence report，以及 2026-09-12 新增的 R11/R12 产品与源码事实；
 3. 历史 Plan、旧 ReactSheet 与其他旧文档。
 
 两类权威冲突时不互相覆盖：源码事实不得改写 Alicia 已冻结的产品语义，产品文档也不得假装不存在当前契约限制；冲突必须转化为 contract clarification 或 backend handoff gate。[model not supplied / R1 reviewer，Alicia approved]
@@ -67,7 +67,7 @@
 
 ---
 
-## 2. R1–R10 evidence translated into planning constraints
+## 2. R1–R12 evidence translated into planning constraints
 
 | Research | 已确认事实 / Roadmap 约束 | 进入哪个 gate |
 |---|---|---|
@@ -81,6 +81,8 @@
 | **R8 Recall runtime data** | 当前没有足够稳定的 generation attempt、candidate/injected record、hit path、score/rank、rejection reason 与 feedback persistence。前端不能推导或伪造 Recall Receipt。 | **B4 hard gate → P6** |
 | **R9 legacy `.webm`** | 当前不能把旧附件索引视为可靠 provenance；是否为最初语音、是否原始字节均须独立核验。它不是 P4 首期 blocker。 | Deferred；只读核验后另立人工 promotion task |
 | **R10 V3 capabilities** | V3 的聊天、群聊、通知、Settings、Project files 与 Chronicle 能力散布于现有 SPAs。每项必须显式 migrate / replace / defer / retire，并在 takeover 前由 V3 持有。 | 全 phase ownership matrix |
+| **R11 Message TTS** | 后端正在建立 message-identity 驱动的 lazy TTS render：canonical text 不变，voice artifact 不进入 attachment lifecycle；前端按钮负责首次请求生成，完成后切换为带播放进度条的播放器，并可显示 message-level directed 标志；不解释 voice authoring 内部结构。 | **B5 hard gate → P2T** |
+| **R12 Assistant-message arrival** | `send_message` 当前把正文注入 Prime Conversation 并直接 Push，但普通 async reply 与额外 assistant Message 没有统一 arrival owner。目标必须改为“canonical assistant Message committed”触发同一逻辑事件；前台原位 reconciliation，后台系统 Push，不按 producer 分叉。 | **B6 hard gate → P2D** |
 
 > **Contract mismatch rule：** Phase 0 若发现文档 endpoint 与当前运行契约不一致，只冻结真实契约和兼容策略；不得顺手在 Roadmap 中指定源码修法。
 
@@ -90,19 +92,25 @@
 
 ```text
 P0 Contract & Baseline Freeze
- └── P1 V4 App Shell + Canonical Chat Vertical Slice
-      └── P2 Groups + Chat Workspaces + Remaining Core Shell
-           └── [B2 PASS] P3 River + Memo
-                └── [B1 PASS] P4 Library Shell + Collection
-                     └── [B3 PASS] P5 Memory Library
-                          └── [B4 PASS] P6 Recall Observability
-                               └── P7 Production Cutover
-                                    └── [观察期结束 + Alicia 明确批准] P8 Legacy Retirement & Cleanup
+ └── P1 V4 App Shell + Canonical Chat Vertical Slice [C1 PASS]
+      └── P2A Agent Workspace [accepted]
+           └── P2B Project Workspace [accepted]
+                └── [B5 PASS] P2T Message TTS
+                     └── P2C Core Shell + Account + Settings
+                          └── [B6 PASS] P2D Assistant-message Notifications [C2]
+                               └── [B2 PASS] P3 River + Memo
+                                    └── [B1 PASS] P4 Library Shell + Collection
+                                         └── [B3 PASS] P5 Memory Library
+                                              └── [B4 PASS] P6 Recall Observability
+                                                   └── P7 Production Cutover
+                                                        └── [观察期结束 + Alicia 明确批准] P8 Legacy Retirement & Cleanup
 
-C0 后端并行轨：B1 / B2 / B3 / B4 可分别提前施工与验收
+P2G GroupChat remains a separately released future slice and is not a C2/P3 predecessor. It may not run concurrently with another shell/navigation owner; its later insertion point requires an explicit roadmap release.
+
+C0 后端并行轨：B1–B6 可分别提前施工与验收
 ```
 
-前端 ownership transfer 严格串行，避免同一 shell、导航或共享契约被多个 phase 同时改动。B1–B4 可以在对应前端 phase 之前并行施工，但每项必须独立计划、独立验收、独立 handoff。后端完成不自动授权前端进入下一 phase；还需满足该 phase 的全部 entry gate。
+前端 ownership transfer 严格串行，避免同一 shell、导航或共享契约被多个 phase 同时改动。B1–B6 可以在对应前端 phase 之前并行施工，但每项必须独立计划、独立验收、独立 handoff。后端完成不自动授权前端进入下一 phase；还需满足该 phase 的全部 entry gate。
 
 ---
 
@@ -159,8 +167,12 @@ C0 后端并行轨：B1 / B2 / B3 / B4 可分别提前施工与验收
 |---|---|---|---|
 | **P0** | 契约、基线、capability ownership 冻结 | Frozen Specs + R1–R10 | 无 |
 | **P1 — C1 PASS** | 新 V4 app shell + 完整 canonical live chat slice；普通 Chat 已转为 V4-primary | P0；App Shell mockup decision | **已完成：统一 C1 转移 Chat ownership；V3 chat 为 rollback reference** |
-| **P2** | Groups、Agent/Project workspaces、Settings/notifications 等核心壳完成 | P1 | Groups 与 remaining core shell |
-| **P3** | River + Memo + Tasks/Calendar + Diary/Heartbeat/legacy event | P2 + B2 | Chronicle 的 milestone/moment 时间阅读；highlight 暂留 V3 |
+| **P2A/P2B — accepted** | Agent 与 Project workspaces、Files/Knowledge、canonical Chat entry convergence | C1 | Agent/Project workspace surfaces（C2 前保持 dual-run transfer state） |
+| **P2T** | 每条 eligible assistant Message 的 lazy TTS 生成、进度与播放入口 | P2B + B5 | 新 message-level voice playback capability |
+| **P2C** | Core Shell、Account/More、Settings 与跨页面 shell ownership | P2T | remaining core shell（notifications runtime 除外） |
+| **P2D — C2 PASS** | assistant-message arrival 的前台原位刷新、后台 Web Push、未读与 typed deeplink | P2C + B6 | Workspaces、Shell、Settings、Notifications 的统一 Core C2 ownership |
+| **P2G — deferred** | Group list/create/room/send/broadcast，保持独立 GroupChat runtime | Alicia future release | GroupChat only；不阻塞 C2/P3，未施工期间 V3-primary |
+| **P3** | River + Memo + Tasks/Calendar + Diary/Heartbeat/legacy event | C2 + B2 | Chronicle 的 milestone/moment 时间阅读；highlight 暂留 V3 |
 | **P4** | Library container/navigation + Collection managed originals 与四类浏览/收藏路径 | P3 + B1 | Library shell、Collection、新 bookmark writes |
 | **P5** | 向既有 Library shell 加入 MemoryPlasmid、Trigger/Tags、History exact lookup | P4 + B3 | V3 Memory 管理入口 |
 | **P6** | Recall Receipt + feedback + Recall Lab runtime observability | P5 + B4（并继承 P1 chat） | 自动 recall 可观察与反馈能力 |
@@ -180,21 +192,21 @@ C0 后端并行轨：B1 / B2 / B3 / B4 可分别提前施工与验收
 - 冻结真实 Conversation create/list/message/runtime contract，解决旧文档差异。
 - 冻结 V3 capability matrix、现有用户路径和可运行基线。
 - 冻结 V4 package / route / deployment 的边界，不预测后续源码结构。
-- 为 B1–B4 建立独立 handoff 队列、owner、依赖和验收接口。
+- 为当时已知的 B1–B4 建立独立 handoff 队列、owner、依赖和验收接口；后续 roadmap amendment 可按相同纪律追加 B5/B6。
 - 建立 phase verification 层级：contract、component/user-path、build/lint、V3 regression；仅写验证目标，不在 Roadmap 固定测试实现。
 - 记录当前已知脏工作区并与 V4 施工隔离，尤其不混入既有音频或其他在途修改。
 
 ### Entry gate
 
 - Freeze Index 与全部引用 Spec 可读且优先级一致。
-- R1–R10 结论已能映射到 contract 或 phase gate；没有新的 P0 产品分叉。
+- R1–R10 结论已能映射到 contract 或 phase gate；后增 R11/R12 分别由 B5/B6 承接，不追改已通过的 C0。
 - V3 三个 SPA、后端仓库与当前运行环境均可访问，具备在 P0 内建立启动、构建、关键路径及已知失败 baseline 的条件。
 
 ### Exit gate
 
 - canonical API snapshot 明确普通 Conversation、GroupChat、attachments/audio、chat runtime、tasks、memory、notifications 的现状。
 - 下方 capability matrix 每项均有 disposition、takeover phase 和 fallback owner。
-- B1–B4 均有独立 handoff brief；其中包含前端需要的稳定接口与二元验收目标，但不夹带 React 施工。
+- C0 时的 B1–B4 均有独立 handoff brief；后增 B5/B6 也必须满足相同的稳定接口与二元验收要求，不夹带 React 施工。
 - 已冻结 V4 与 V3 side-by-side 的运行和回退方式。
 - P1A Detailed Plan 获准起草；P1B 及以后仍按 sub-gate / phase checkpoint 释放。
 
@@ -260,43 +272,98 @@ P1A–P1D 全部 PASS 后才执行 C1 统一验收并允许 Chat ownership trans
 
 ---
 
-## 8. Phase 2 — Groups + Chat Workspaces + Remaining Core Shell
+## 8. Phase 2 — Workspaces + Message Voice + Core Shell + Notifications
 
 ### Objective
 
-补齐实时交流与系统管理的核心壳，使 V4 不依赖 V3 页面完成 Agent、Project、GroupChat、Settings 和通知路径。
+在已验收的 Agent/Project workspace 上补齐 message-level voice playback、Core Shell/Settings 与统一 assistant-message arrival，使 V4 的日常 Chat 与管理路径不依赖 V3。GroupChat 因当前产品优先级后移，继续由 V3-primary 持有，不阻塞 Core C2 或 P3。[gpt-5.6-sol / Solaire; Alicia approved]
 
-### Scope boundary
+### 8.1 Accepted foundation — P2A / P2B
 
-- Agent Hub / Agent Profile 与按 Project / Drift 缩小会话范围。
-- Project Hub / Project Detail、Files 与 Project Knowledge 入口。
-- Group list / Group room；保持独立 API 与消息运行逻辑。
-- Settings、用户/账号入口、notifications 与跨页面 shell behavior。
-- 不含 River、Collection、完整 Memory 管理和 Council。
+- **P2A accepted:** Agent Hub / Profile、Conversation lens、canonical Chat entry。
+- **P2B accepted:** Project Hub / Detail、Conversation lens、Files/Knowledge 与 project lifecycle。
+- 两个 workspace 继续引用同一 canonical Conversation/Project facts；C2 前不夸大为整个 Core Shell 已转移。
 
-### Backend handoff
+### 8.2 P2T — Message TTS
 
-- 默认使用现有契约。
-- 只有 P0/P1 的真实数据量证据证明前端过滤不可接受时，才另开 Conversation filter/pagination handoff；不得把推测性扩展塞入 P2。
+**User path:** eligible assistant Message → 常驻 voice button → 请求/复用该 message 的 render → 显示生成等待状态 → 完成后同一控件切换为带进度条的播放、暂停与拖动。
 
-### Entry gate
+Scope and invariants:
 
-- P1 PASS，普通 chat runtime ownership 已明确。
-- Agent/Profile、Project、Groups 与 Settings 的 mockup blocker 已冻结。
-- GroupChat V3 baseline 可独立运行并有错误/恢复行为记录。
+- 前端只以 canonical message identity 请求 voice render，不提交或改写 message text、emotion、segment 或 voice direction。
+- `voice_available=false` 时不展示可操作入口；`voice_available=true` 时入口稳定存在，不因尚未缓存而消失。
+- 首次点击触发 lazy generation；cached artifact 直接进入可播放态。生成中只展示后端真实 render 状态，不伪造生成百分比；用户要求的进度条是音频完成后的播放时间轴。
+- 状态至少区分 idle / queued-or-generating / playable / failed-retryable / unavailable。失败只影响该消息的 voice control，不影响文本、Chat runtime 或 Message history。
+- 复用 P1C 的 source-agnostic one-at-a-time playback seam；TTS artifact 不进入 `Message.attachment_ids`，不伪装成用户上传音频。
+- 不 autoplay，不因 Push 到达自动朗读，不把 Live API / 主动电话纳入本切片。
+- `voice_directed` 如由 B5 暴露，只允许 message-level 盲盒标志；前端与普通 network payload 不泄露 emotion、target、scope、segment 数量或内部 authoring record。
 
-### Exit gate
+**B5 gate:** 后端须先冻结 message read projection、render start/read/status 与完成判定、audio retrieval、cache identity/invalidation、权限与稳定错误语义。2026-09-12 voice-direction proposal 是 discussion draft；其 action targeting/tool authoring 未冻结部分不阻塞薄前端，但不得被前端猜测实现。
 
-- Agent 与 Project 是同一 Conversation 集合的两个筛选入口，不复制实体。
-- GroupChat 不调用普通 Conversation 专属接口。
-- Project files/knowledge 从 workspace 与 chat-local 入口保持同一后端事实来源。
-- Settings 现有有效管理能力与通知入口保持可达；未获批准的配置契约不重写。
-- Chat、Groups、Agent、Project、Settings 的核心路径不再需要跳回 V3。
+### 8.3 P2C — Core Shell + Account + Settings
 
-### Checkpoint / rollback
+- avatar / More、Account/Profile 与 Settings routes 形成唯一 V4 shell owner。
+- 只迁移当前仍有效的 management surfaces；无有效后端契约的旧占位项继续 disabled/omitted，不借迁移重写 backend。
+- Notifications 设置入口在 P2C 落位，但其订阅、arrival、unread 与 click runtime 由 P2D 接管。
+- 跨页面标题、active navigation、mobile/desktop shell 与 direct-open 由同一业务实现拥有。
 
-- **Checkpoint C2：** Core Shell complete。
-- 回退到 C1 时，Groups/Settings/Workspace 继续由 V3-primary；不得影响已验收的 V4 canonical Chat。
+### 8.4 P2D — Assistant-message arrival + Notifications
+
+**Canonical event:** notification truth is an eligible canonical assistant Message committed to an ordinary Conversation, not a particular producer calling `send_message`.
+
+Producer convergence:
+
+- Sandro `send_message` 仍可把正文落入其 Prime Conversation，但不得再拥有一条平行的 direct-Push notification path；成功落库后进入统一 assistant-message arrival pipeline。
+- 普通 live/async Chat 的最终 assistant Message、以及其他明确列入 B6 producer inventory 的合法 Conversation assistant writes，使用同一 event identity 与 delivery rules。
+- system/task alerts that are not Conversation messages remain a separate typed notification class; they must not fabricate a Conversation/message identity。
+- maintenance、import、replay、test fixture、failed/rolled-back writes、GroupChat、Council 与非 ordinary/fake Conversation 默认不得误触发；任何例外必须在 B6 producer inventory 中显式批准。
+
+Visibility routing:
+
+| PWA state | Required behavior |
+|---|---|
+| exact Conversation visible and active | suppress OS popup; reconcile the exact message collection in place, preserve existing scroll/reader rules, and do not reload the page |
+| PWA visible on another Conversation/page | suppress OS popup; update canonical unread/list state and show only the shell-owned in-app indication |
+| no visible PWA client / app backgrounded or closed | show one Android system Web Push notification for that assistant Message |
+| notification click, cold or warm start | acknowledge once and navigate through typed logical target to canonical V4 `/app/chat/:conversationId`; stale/missing target fails visibly and safely |
+
+Delivery and state rules:
+
+- One logical arrival identity must deduplicate service-worker delivery, foreground handoff, reconnect reconciliation and normal runtime completion; no duplicate bubble, unread increment or popup。
+- Foreground correctness may not rely solely on a React component's own send lifecycle. B6 must provide a server-originated arrival transport or an explicitly bounded reconciliation contract for externally inserted messages。
+- Push permission controls **system delivery**, not canonical message visibility. With permission denied/expired, an open or refocused PWA must still reconcile messages; it must not remain permanently stale。
+- A browser Push subscription is not considered healthy until backend persistence is confirmed. Browser-only success, backend failure and expired/410 subscription remain distinct recoverable states。
+- Unread is keyed by canonical conversation/message identity. Seeing the exact active Conversation can advance seen state; merely having the PWA foregrounded on another page cannot silently consume it。
+- Android acceptance covers visible/background/closed/lock-screen delivery, warm/cold click, denied permission, subscription renewal/expiry, network recovery and trusted production HTTPS. OEM battery policy or OS Do Not Disturb suppression must be reported separately from backend send failure。
+
+**B6 gate:** backend handoff must freeze event identity, eligible producer inventory, transaction-commit timing, ordinary-Conversation boundary, payload/deeplink schema, foreground transport or reconciliation contract, deduplication, unread/seen ownership, Push result semantics and compatibility with Register ACK. A model-wide `post_save` hook or a new live channel is not prescribed by this Roadmap; the backend plan must choose the smallest complete mechanism after source review.
+
+### 8.5 Deferred P2G — Groups
+
+- Group list/create/room/send/broadcast and recovery remain a separate runtime and never reuse ordinary Conversation APIs。
+- P2G is not cancelled, but it has no active construction authorization or reserved slot. V3 GroupChat remains the truthful owner and reachable fallback。
+- P2G does not block C2 or P3. Before later release, the roadmap must assign a non-conflicting insertion point and its own acceptance gate; it cannot hitchhike into P2C/P2D or a River slice。
+
+### 8.6 Core C2 entry / exit / rollback
+
+Entry:
+
+- P2A and P2B remain accepted; B5 passes before P2T and B6 passes before P2D。
+- TTS frontend read/action contract、Core Shell mockup、notification permission/unread/deeplink semantics are frozen before their respective Detailed Plans。
+- Trusted Android HTTPS/PWA installation is available for P2D real-device evidence。
+
+Exit:
+
+- Agent/Project workspaces, message TTS, Account/Settings and notification paths complete their observable user journeys without hidden V3 completion pages。
+- Foreground external assistant arrival refreshes the current Chat in place; background arrival produces one correctly routed system notification。
+- Existing canonical Chat runtime, attachment audio and Project facts remain intact；TTS/arrival failure never corrupts text conversation truth。
+- V3 GroupChat is explicitly preserved and remains outside the C2 verdict。
+
+Checkpoint / rollback:
+
+- **Checkpoint C2:** Workspaces + Message TTS + Core Shell/Settings + Assistant-message Notifications complete。
+- C2 transfers only those capabilities. GroupChat remains `V3-primary / P2G deferred`。
+- Rollback returns P2T/P2C/P2D exposure to their prior owner or disabled state while preserving C1 Chat and accepted workspace data; it never deletes Message、voice artifacts、subscriptions or unread facts。
 
 ---
 
@@ -330,7 +397,7 @@ B2 必须稳定提供：
 
 ### Entry gate
 
-- P2 PASS。
+- Core C2 PASS；P2G remains independently deferred and is not a P3 dependency。
 - B2 backend contract 与独立验收 PASS。
 - Memo 演化现 Timeline/Tweet 还是兼容替换的技术决策已冻结；reply tree 必须保留。
 - Task 创建现有故障已独立诊断：若 baseline FAIL，应先作为单独 bugfix 修复，不夹入 River migration。
@@ -522,7 +589,7 @@ B4 必须稳定提供：
 
 ### Exit gate
 
-- 单次主要构建提供 Chat / Groups / River / Library，不要求用户日常在 chat-core 与 chronicle SPA 间切换。
+- 单次主要构建提供 Chat / River / Library；若 P2G 已通过则同时提供 Groups。若 Alicia 仍明确 defer Groups，V3 GroupChat owner 与可达入口必须保留并清楚标示，不得伪装为 V4 已完成。
 - Settings、notifications、deep links、PWA refresh/direct-open 与错误恢复通过最终验收。
 - V3 rollback artifact/package 可在约定恢复时限内重新成为入口。
 - 观察期起止条件、故障阈值、回切责任和证据记录已冻结。
@@ -574,7 +641,7 @@ B4 必须稳定提供：
 
 ## 15. Backend handoff register
 
-> `ExoCore-Desktop` 只写需求契约；Django 施工必须交给 `ExoCore` 仓库 agent。每个 handoff 在进入对应 phase 前另写独立 spec 至 `docs/superpowers/specs/`，再交给后端 agent；禁止把后端和前端塞进一张施工单。
+> `ExoCore-Desktop` 只写需求契约；Django 施工必须交给 `ExoCore` 仓库 agent。每个 handoff 在进入对应 phase 前另写独立 spec 至 `Plan/spec/`，再交给后端 agent；禁止把后端和前端塞进一张施工单。
 
 | ID | Backend owner | Frontend consumer | Earliest start | Required before | Compatibility rule |
 |---|---|---|---|---|---|
@@ -582,6 +649,10 @@ B4 必须稳定提供：
 | **B2 River aggregation** | ExoCore | P3 | C0 后可并行 | P3 Detailed Plan freeze | source CRUD 保持；aggregation additive |
 | **B3 Memory search/filter** | ExoCore | P5 | C0 后可并行 | P5 Detailed Plan freeze | 现 Plasmid CRUD 保持；扩展查询不得破坏 V3 |
 | **B4 Recall identity/observability** | ExoCore | P6 | C0 后可并行 | P6 Detailed Plan freeze | 未升级的 chat consumer 可忽略新 records；不得改变回答语义 |
+| **B5 Message TTS render contract** | ExoCore | P2T | 已开始独立需求/后端设计 | P2T Detailed Plan freeze | additive message projection；文本/attachment/chat runtime 不依赖 voice 成功 |
+| **B6 Assistant-message arrival contract** | ExoCore | P2D | C1 后可独立规划 | P2D Detailed Plan freeze | canonical Message write behavior preserved；`send_message`/async converge without duplicate Push or Group/Council leakage |
+
+B6 frontend-authored backend handoff: `Plan/spec/2026-09-12-assistant-message-arrival-notification-handoff.md`. B5 source discussion currently lives in the backend requirement set and must still yield a frozen frontend-facing contract before P2T planning.
 
 Handoff acceptance 只判断稳定接口、权限、分页/identity/error 语义与数据完整性；不要求后端 agent决定前端视觉。
 
@@ -610,10 +681,11 @@ Handoff acceptance 只判断稳定接口、权限、分页/identity/error 语义
 | Project workspace files/knowledge | chat-core Project views | **Migrate** | P2 | workspace 与 chat 引用同一事实来源 | V3 Project views |
 | Agent Hub / Profile | chat-core | **Replace within canonical Chat area** | P2 | 身份、Prompt、会话入口、Memory deep link 保持 | V3 Agent views |
 | Project Hub / Detail | chat-core | **Replace within canonical Chat area** | P2 | 项目详情、会话、files/knowledge 入口保持 | V3 Project views |
-| GroupChat | chat-core Groupchat views | **Migrate, keep separate runtime** | P2 | list/room/send/recovery 不伪装普通 chat | V3 Groupchat views |
-| Notifications / push UI | chat-core + chronicle duplicate surfaces | **Replace with one shell owner** | P2 | 单入口、未读状态、导航目标保持 | V3 duplicate providers/panels |
-| Settings | chat-core | **Migrate with contract preservation** | P2 | 现有效设置全部可达；不顺手重写 backend | V3 Settings |
-| User/Profile shell entry | chat-core | **Migrate** | P2 | 账号/头像/More 稳定可达 | V3 User view |
+| Message TTS playback | 无 V4 owner；后端 B5 建设中 | **Add thin message-level consumer** | P2T/C2 | lazy render、真实 render 状态、播放时间轴、single-owner playback、failure isolation、no autoplay | Disable voice control；canonical text remains |
+| GroupChat | chat-core Groupchat views | **Defer, later migrate with separate runtime** | P2G（未排期） | list/create/room/send/broadcast/recovery 不伪装普通 chat | V3 Groupchat views |
+| Assistant-message arrival / push UI | chat-core + chronicle duplicate surfaces；V3 `send_message` direct Push | **Replace with one canonical Message-arrival owner** | P2D/C2 | exact-active foreground reconcile；other-visible unread；background one Push；typed canonical deeplink；deduplicated | V3 duplicate providers/panels + current send_message path |
+| Settings | chat-core | **Migrate with contract preservation** | P2C/C2 | 现有效设置全部可达；不顺手重写 backend | V3 Settings |
+| User/Profile shell entry | chat-core | **Migrate** | P2C/C2 | 账号/头像/More 稳定可达 | V3 User view |
 | Timeline/Tweet → Memo candidate | chronicle Timeline | **Replace after source decision** | P3 | 低摩擦创建、Tags、reply tree | V3 Timeline |
 | Task CRUD/actions | chronicle | **Migrate** | P3 | create/edit/complete/defer 与错误状态可靠 | V3 Task views |
 | Calendar | chronicle | **Migrate as companion view** | P3 | 不复制 Task source | V3 Calendar |
@@ -642,8 +714,14 @@ C1A PASS → 只写 P1B Detailed Plan
 C1B PASS → 只写 P1C Detailed Plan
 C1C PASS → 只写 P1D Detailed Plan
 C1D PASS → 执行统一 C1 Chat ownership acceptance
-C1 PASS  → 才允许写 P2 Detailed Plan
+C1 PASS  → 才允许写 P2A Detailed Plan
+P2A PASS → 才允许写 P2B Detailed Plan
+P2B PASS + B5 PASS → 才允许写 P2T Detailed Plan
+P2T PASS → 才允许写 P2C Detailed Plan
+P2C PASS + B6 PASS → 才允许写 P2D Detailed Plan
+P2D PASS → 执行统一 Core C2 acceptance
 C2 PASS + B2 PASS → 才允许写 P3 Detailed Plan
+P2G 仅由 Alicia 以后单独释放；不作为 C2/P3 前置，且不得与其他 shell/navigation construction 并发
 C3 PASS + B1 PASS → 才允许写 P4 Detailed Plan
 C4 PASS + B3 PASS → 才允许写 P5 Detailed Plan
 C5 PASS + B4 PASS → 才允许写 P6 Detailed Plan
@@ -663,7 +741,7 @@ Roadmap handoff 前按 acceptance scope 做消融：
 
 - 新 V4 package：它提供 V3 side-by-side rollback，是结构性重构的必要隔离。
 - P1 保留统一 Chat ownership gate，但以 P1A–P1D 小批施工：既防能力静默丢失，也防 Detailed Plan 巨型化。
-- B1–B4 独立 gate：它们分别解决数据完整性、跨源分页、服务端检索和 attempt identity，不能由前端可靠补造。
+- B1–B6 独立 gate：它们分别解决数据完整性、跨源分页、服务端检索、attempt identity、voice render 与 assistant-message arrival，均不能由前端可靠补造。
 - P7 只做 cutover、P8 才做 retirement：迁移完成与删除旧入口不是同一个风险等级。
 
 ### 删除 / 拒绝进入 active scope
@@ -675,8 +753,12 @@ Roadmap handoff 前按 acceptance scope 做消融：
 - 自动 feedback 调权、自动 Tag 合并、History semantic ranking：超出冻结目标。
 - destructive Chronicle cleanup 与 Council retirement：必须另行批准。
 - Phase 2 以后源码文件预测：在未来源码与后端契约未就绪时属于脆弱猜测。
+- Push 到达后自动 TTS/自动播放、Live API、主动电话：都不需要满足当前“点按生成并播放”与消息提醒目标。
+- 为 foreground refresh 预先指定 WebSocket、SSE 或数据库 signal：Roadmap 只冻结 observable contract；B6 来源核对后选择最小完整机制。
+- 在 Conversation arrival 已成为统一事实后继续保留 `send_message` 专属 direct-Push 平行通道：会制造重复消息/通知，必须被统一机制承接而不是共存。
+- 因“不急用”直接删除 GroupChat 或把未施工状态计入 C2 PASS：前者破坏回退，后者是假验收；正确处置是 P2G deferred + V3-primary。
 
-**Razor conclusion：** P0–P8 均对应独立可验收的 contract、ownership transfer 或 cleanup gate；P1 内部再以 P1A–P1D 控制施工尺寸。没有必要合并为巨型 V4 施工单，也没有证据支持新增平行基础设施。
+**Razor conclusion：** P2T 是薄前端对已规划 backend artifact 的必要消费面；P2C 是 P2D 单一 shell owner 的前置；P2D 以 Message arrival 收敛现有重复/漏刷行为。Groups 不阻塞当前价值链，故从 Core C2 predecessor 中消融但保留明确 owner。无需 Capacitor、Live/电话、自动朗读或预选实时传输技术。
 
 ---
 
@@ -684,14 +766,14 @@ Roadmap handoff 前按 acceptance scope 做消融：
 
 本 Roadmap 可冻结，当且仅当 Alicia 确认：
 
-- [ ] phase 顺序和边界可接受；
-- [ ] B1–B4 是独立 backend handoff，不与前端施工混单；
-- [ ] P1A–P1D 可以分别计划和施工，但只有统一 C1 能转移 Chat ownership；
-- [ ] V3 capability matrix 没有遗漏需要保留的能力；
-- [ ] P3 不提前接管 highlight/bookmark；P4 才把新 bookmark writes 转给 Collection；
-- [ ] P4 owns Library shell，P5 复用；P1 owns `AssistantRunTrace`，P6 只扩展 recall；
-- [ ] P7 cutover 后 V3 保持完整 rollback reference；只有 P8 可受控清理；
-- [ ] Phase 1 之后不提前写源码级计划；
-- [ ] Deferred / non-goal 项未被偷偷纳入 active scope。
+- [x] phase 顺序和边界可接受；P2T → P2C → P2D，P2G independently deferred；
+- [x] B1–B6 是独立 backend handoff，不与前端施工混单；
+- [x] P1A–P1D 已完成，只有统一 C1 转移了 Chat ownership；
+- [x] V3 capability matrix 保留所有未转移 owner；GroupChat 明确留在 V3-primary；
+- [x] P3 不提前接管 highlight/bookmark；P4 才把新 bookmark writes 转给 Collection；
+- [x] P4 owns Library shell，P5 复用；P1 owns `AssistantRunTrace`，P6 只扩展 recall；
+- [x] P7 cutover 后 V3 保持完整 rollback reference；只有 P8 可受控清理；
+- [x] 后续仍不在 backend contract/上游 gate 前提前写源码级计划；
+- [x] TTS/notification active scope 与 Groups/Live/电话/Capacitor deferred scope 已分离。
 
-冻结后下一份允许起草的文档只有 **Phase 0 Detailed Plan**；P1 及以后仍按 checkpoint 顺序释放。
+**Current release position:** P2A/P2B 已独立验收；待 P2B 文件收尾后，下一份允许起草的源码级施工计划只有 **P2T Detailed Plan**，且必须等待 B5 frontend contract freeze。P2C、P2D、P3 与 P2G 不自动获准。
