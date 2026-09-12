@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, CSS custom properties, localStorage, OKLCH color interpolation
 
-**Spec:** `docs/superpowers/specs/2026-06-22-aurora-light-theme-design.md`
+**Spec:** `2026-06-22-aurora-light-theme-design.md`
 
 ## Global Constraints
 

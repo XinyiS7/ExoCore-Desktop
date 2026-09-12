@@ -8,9 +8,6 @@ dist/
 # IDE
 .idea/
 
-# Tool runtime
-.superpowers/
-
 # Windows junk
 *.lnk
 

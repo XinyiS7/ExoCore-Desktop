@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 18, vanilla fetch, localStorage
 
-**Spec:** `docs/superpowers/specs/2026-06-06-memory-injection-and-async-resume-design.md`
+**Spec:** `2026-06-06-memory-injection-and-async-resume-design.md`
 
 **涉及文件（4个）：**
 - `packages/chat-core/src/components/chat/ControlsDrawer.jsx` — 新增 toggle UI

@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, React Router v6, Tailwind CSS (chat-* palette), exo-shared apiFetch + apiFetch wrapper
 
-**Spec:** `docs/superpowers/specs/2026-06-03-key-management-design.md`
+**Spec:** `2026-06-03-key-management-design.md`
 
 ---
 

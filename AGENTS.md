@@ -17,7 +17,7 @@ This repo is **ExoCore-Desktop** (React + Vite frontend).
 You may READ their source code and docs to understand API contracts, data models, and existing behavior — but you MUST NEVER modify files in those directories.
 
 If a task requires backend or extension changes:
-1. Write a clear spec/doc in `docs/superpowers/specs/` describing what the other repo needs to change
+1. Write a clear spec/doc in `Plan/spec/` describing what the other repo needs to change
 2. Tell the user to hand it off to that repo's agent
 3. Do NOT reach across and edit files yourself
 
