@@ -13,6 +13,7 @@ import type {
   MessageRow,
   MessageView,
   ProjectRow,
+  VoiceProjection,
 } from './types';
 
 /**
@@ -214,6 +215,24 @@ export function normalizeAssistantRunTrace(value: unknown): AssistantRunTracePro
   };
 }
 
+/**
+ * Fail-closed message voice projection (B5 read model). Only three strict
+ * booleans survive; unknown extra keys are ignored and malformed additive
+ * data returns `null` without ever touching canonical content.
+ */
+export function normalizeVoiceProjection(value: unknown): VoiceProjection | null {
+  if (!isRecord(value)) return null;
+  const { available, directed, cached } = value;
+  if (
+    typeof available !== 'boolean' ||
+    typeof directed !== 'boolean' ||
+    typeof cached !== 'boolean'
+  ) {
+    return null;
+  }
+  return { available, directed, cached };
+}
+
 function normalizeMessageRow(row: MessageRow): MessageView {
   return {
     id: row.id,
@@ -222,6 +241,7 @@ function normalizeMessageRow(row: MessageRow): MessageView {
     reasoningContent: row.reasoning_content,
     assistantRunTrace:
       row.role === 'assistant' ? normalizeAssistantRunTrace(row.assistant_run_trace) : null,
+    voice: row.role === 'assistant' ? normalizeVoiceProjection(row.voice) : null,
     platform: row.platform,
     modelVersion: row.model_version,
     tokenCount: row.token_count,

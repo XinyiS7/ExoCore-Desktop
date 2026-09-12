@@ -96,6 +96,8 @@ export interface MessageRow {
   reasoning_content: string | null;
   /** Additive backend field; normalized fail-closed at the API boundary. */
   assistant_run_trace?: unknown;
+  /** B5 additive voice projection; normalized fail-closed at the API boundary. */
+  voice?: unknown;
   platform: string | null;
   model_version: string | null;
   token_count: number | null;
@@ -140,6 +142,16 @@ export interface ConversationSummary {
   memoryInjectionEnabled: boolean | null;
 }
 
+/**
+ * B5 message-level voice read model: availability, blind-box direction and a
+ * consultative cache snapshot (validity itself stays backend-owned, D10).
+ */
+export interface VoiceProjection {
+  available: boolean;
+  directed: boolean;
+  cached: boolean;
+}
+
 export interface MessageView {
   id: number;
   role: MessageRole;
@@ -147,6 +159,8 @@ export interface MessageView {
   reasoningContent: string | null;
   /** `null` means absent or malformed external trace data. */
   assistantRunTrace?: AssistantRunTraceProjection | null;
+  /** `null` means absent, malformed or non-assistant voice data. */
+  voice?: VoiceProjection | null;
   platform: string | null;
   modelVersion: string | null;
   tokenCount: number | null;

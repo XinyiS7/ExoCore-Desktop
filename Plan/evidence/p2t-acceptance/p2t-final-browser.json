@@ -1,0 +1,849 @@
+{
+  "result": "PASS",
+  "contract": "production dist + mocked JSON + byte responses mirroring independently accepted Django Range contract; paired live-server Chrome gate recorded in R7",
+  "assets": [
+    {
+      "file": "index.html",
+      "sha256": "b13e6b39cfe6f943714bfaef6b53456b5c4d73ee522ac5061c4515aedc0e79dc"
+    }
+  ],
+  "requests": [
+    {
+      "path": "/api/core/model-catalog/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/chat/7/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/cache/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/core/model-catalog/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/chat/7/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/cache/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/core/model-catalog/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/chat/7/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/cache/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/messages/72/tts/",
+      "method": "POST",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/messages/72/tts/content/",
+      "method": "GET",
+      "range": "bytes=0-"
+    },
+    {
+      "path": "/api/agents/conversations/7/messages/73/tts/",
+      "method": "POST",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/messages/74/tts/",
+      "method": "POST",
+      "range": null
+    },
+    {
+      "path": "/api/core/model-catalog/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/chat/7/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/cache/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/messages/72/tts/",
+      "method": "POST",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/messages/72/tts/content/",
+      "method": "GET",
+      "range": "bytes=0-"
+    },
+    {
+      "path": "/api/agents/conversations/7/messages/73/tts/",
+      "method": "POST",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/messages/74/tts/",
+      "method": "POST",
+      "range": null
+    },
+    {
+      "path": "/api/core/model-catalog/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/presets/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/chat/7/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/cache/",
+      "method": "GET",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/messages/72/tts/",
+      "method": "POST",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/messages/72/tts/content/",
+      "method": "GET",
+      "range": "bytes=0-"
+    },
+    {
+      "path": "/api/agents/conversations/7/messages/73/tts/",
+      "method": "POST",
+      "range": null
+    },
+    {
+      "path": "/api/agents/conversations/7/messages/74/tts/",
+      "method": "POST",
+      "range": null
+    }
+  ],
+  "responses": [
+    {
+      "path": "/api/agents/conversations/7/messages/72/tts/content/",
+      "status": 206,
+      "range": "bytes=0-",
+      "contentRange": "bytes 0-64043/64044",
+      "contentLength": 64044
+    },
+    {
+      "path": "/api/agents/conversations/7/messages/72/tts/content/",
+      "status": 206,
+      "range": "bytes=0-",
+      "contentRange": "bytes 0-64043/64044",
+      "contentLength": 64044
+    },
+    {
+      "path": "/api/agents/conversations/7/messages/72/tts/content/",
+      "status": 206,
+      "range": "bytes=0-",
+      "contentRange": "bytes 0-64043/64044",
+      "contentLength": 64044
+    }
+  ],
+  "results": [
+    {
+      "width": 320,
+      "before": {
+        "time": 0.134875,
+        "duration": 4,
+        "readyState": 4,
+        "networkState": 1,
+        "buffered": [
+          [
+            0,
+            4
+          ]
+        ],
+        "seekable": [
+          [
+            0,
+            4
+          ]
+        ]
+      },
+      "after": 1.963541,
+      "data": {
+        "viewport": 320,
+        "doc": 320,
+        "scroller": {
+          "scroll": 320,
+          "client": 320
+        },
+        "heads": [
+          {
+            "rect": {
+              "left": 18,
+              "right": 302,
+              "top": 123,
+              "bottom": 144,
+              "width": 284,
+              "height": 21
+            },
+            "scroll": 284,
+            "client": 284,
+            "modelLines": 1,
+            "branchLines": 2
+          },
+          {
+            "rect": {
+              "left": 18,
+              "right": 302,
+              "top": 187.25,
+              "bottom": 232.25,
+              "width": 284,
+              "height": 45
+            },
+            "scroll": 284,
+            "client": 284,
+            "modelLines": 2,
+            "branchLines": 3
+          },
+          {
+            "rect": {
+              "left": 18,
+              "right": 302,
+              "top": 275.5,
+              "bottom": 296.5,
+              "width": 284,
+              "height": 21
+            },
+            "scroll": 284,
+            "client": 284,
+            "modelLines": 1,
+            "branchLines": 2
+          },
+          {
+            "rect": {
+              "left": 18,
+              "right": 302,
+              "top": 339.75,
+              "bottom": 384.75,
+              "width": 284,
+              "height": 45
+            },
+            "scroll": 284,
+            "client": 284,
+            "modelLines": 2,
+            "branchLines": 3
+          }
+        ],
+        "controls": [
+          {
+            "rect": {
+              "left": 226,
+              "right": 246,
+              "top": 125.25,
+              "bottom": 141.25,
+              "width": 20,
+              "height": 16
+            },
+            "scroll": 20,
+            "client": 20,
+            "button": {
+              "left": 226,
+              "right": 246,
+              "top": 125.25,
+              "bottom": 141.25,
+              "width": 20,
+              "height": 16
+            },
+            "points": [
+              true,
+              true,
+              true
+            ]
+          },
+          {
+            "rect": {
+              "left": 206.21875,
+              "right": 254.21875,
+              "top": 197.75,
+              "bottom": 213.75,
+              "width": 48,
+              "height": 16
+            },
+            "scroll": 48,
+            "client": 48,
+            "button": {
+              "left": 206.21875,
+              "right": 226.21875,
+              "top": 197.75,
+              "bottom": 213.75,
+              "width": 20,
+              "height": 16
+            },
+            "points": [
+              true,
+              true,
+              true
+            ]
+          },
+          {
+            "rect": {
+              "left": 226,
+              "right": 246,
+              "top": 277.75,
+              "bottom": 293.75,
+              "width": 20,
+              "height": 16
+            },
+            "scroll": 20,
+            "client": 20,
+            "button": {
+              "left": 226,
+              "right": 246,
+              "top": 277.75,
+              "bottom": 293.75,
+              "width": 20,
+              "height": 16
+            },
+            "points": [
+              true,
+              true,
+              true
+            ]
+          },
+          {
+            "rect": {
+              "left": 187.328125,
+              "right": 256.375,
+              "top": 343.75,
+              "bottom": 372.75,
+              "width": 69.046875,
+              "height": 29
+            },
+            "scroll": 69,
+            "client": 69,
+            "button": {
+              "left": 187.328125,
+              "right": 256.375,
+              "top": 343.75,
+              "bottom": 372.75,
+              "width": 69.046875,
+              "height": 29
+            },
+            "points": [
+              true,
+              true,
+              true
+            ]
+          }
+        ],
+        "retry": {
+          "text": "语音服务未就绪",
+          "font": 10,
+          "textRect": {
+            "left": 192.328125,
+            "right": 243.53125,
+            "top": 344.75,
+            "bottom": 371.25,
+            "width": 51.203125,
+            "height": 26.5
+          },
+          "title": "语音服务未就绪",
+          "aria": "重试生成语音"
+        },
+        "slider": {
+          "max": 4,
+          "text": "0:01 共 0:04"
+        }
+      },
+      "violations": []
+    },
+    {
+      "width": 390,
+      "before": {
+        "time": 0.170394,
+        "duration": 4,
+        "readyState": 4,
+        "networkState": 1,
+        "buffered": [
+          [
+            0,
+            4
+          ]
+        ],
+        "seekable": [
+          [
+            0,
+            4
+          ]
+        ]
+      },
+      "after": 2,
+      "data": {
+        "viewport": 390,
+        "doc": 390,
+        "scroller": {
+          "scroll": 390,
+          "client": 390
+        },
+        "heads": [
+          {
+            "rect": {
+              "left": 18,
+              "right": 372,
+              "top": 123,
+              "bottom": 144,
+              "width": 354,
+              "height": 21
+            },
+            "scroll": 354,
+            "client": 354,
+            "modelLines": 1,
+            "branchLines": 2
+          },
+          {
+            "rect": {
+              "left": 18,
+              "right": 372,
+              "top": 187.25,
+              "bottom": 208.25,
+              "width": 354,
+              "height": 21
+            },
+            "scroll": 354,
+            "client": 354,
+            "modelLines": 1,
+            "branchLines": 2
+          },
+          {
+            "rect": {
+              "left": 18,
+              "right": 372,
+              "top": 251.5,
+              "bottom": 272.5,
+              "width": 354,
+              "height": 21
+            },
+            "scroll": 354,
+            "client": 354,
+            "modelLines": 1,
+            "branchLines": 2
+          },
+          {
+            "rect": {
+              "left": 18,
+              "right": 372,
+              "top": 315.75,
+              "bottom": 336.75,
+              "width": 354,
+              "height": 21
+            },
+            "scroll": 354,
+            "client": 354,
+            "modelLines": 1,
+            "branchLines": 2
+          }
+        ],
+        "controls": [
+          {
+            "rect": {
+              "left": 296,
+              "right": 316,
+              "top": 125.25,
+              "bottom": 141.25,
+              "width": 20,
+              "height": 16
+            },
+            "scroll": 20,
+            "client": 20,
+            "button": {
+              "left": 296,
+              "right": 316,
+              "top": 125.25,
+              "bottom": 141.25,
+              "width": 20,
+              "height": 16
+            },
+            "points": [
+              true,
+              true,
+              true
+            ]
+          },
+          {
+            "rect": {
+              "left": 268,
+              "right": 316,
+              "top": 189.5,
+              "bottom": 205.5,
+              "width": 48,
+              "height": 16
+            },
+            "scroll": 48,
+            "client": 48,
+            "button": {
+              "left": 268,
+              "right": 288,
+              "top": 189.5,
+              "bottom": 205.5,
+              "width": 20,
+              "height": 16
+            },
+            "points": [
+              true,
+              true,
+              true
+            ]
+          },
+          {
+            "rect": {
+              "left": 296,
+              "right": 316,
+              "top": 253.75,
+              "bottom": 269.75,
+              "width": 20,
+              "height": 16
+            },
+            "scroll": 20,
+            "client": 20,
+            "button": {
+              "left": 296,
+              "right": 316,
+              "top": 253.75,
+              "bottom": 269.75,
+              "width": 20,
+              "height": 16
+            },
+            "points": [
+              true,
+              true,
+              true
+            ]
+          },
+          {
+            "rect": {
+              "left": 221,
+              "right": 316,
+              "top": 317.75,
+              "bottom": 334.25,
+              "width": 95,
+              "height": 16.5
+            },
+            "scroll": 95,
+            "client": 95,
+            "button": {
+              "left": 221,
+              "right": 316,
+              "top": 317.75,
+              "bottom": 334.25,
+              "width": 95,
+              "height": 16.5
+            },
+            "points": [
+              true,
+              true,
+              true
+            ]
+          }
+        ],
+        "retry": {
+          "text": "语音服务未就绪",
+          "font": 10,
+          "textRect": {
+            "left": 226,
+            "right": 311,
+            "top": 318.75,
+            "bottom": 332.75,
+            "width": 85,
+            "height": 14
+          },
+          "title": "语音服务未就绪",
+          "aria": "重试生成语音"
+        },
+        "slider": {
+          "max": 4,
+          "text": "0:02 共 0:04"
+        }
+      },
+      "violations": []
+    },
+    {
+      "width": 1280,
+      "before": {
+        "time": 0.166143,
+        "duration": 4,
+        "readyState": 4,
+        "networkState": 1,
+        "buffered": [
+          [
+            0,
+            4
+          ]
+        ],
+        "seekable": [
+          [
+            0,
+            4
+          ]
+        ]
+      },
+      "after": 1.930555,
+      "data": {
+        "viewport": 1280,
+        "doc": 1280,
+        "scroller": {
+          "scroll": 1064,
+          "client": 1064
+        },
+        "heads": [
+          {
+            "rect": {
+              "left": 308,
+              "right": 1188,
+              "top": 87,
+              "bottom": 108,
+              "width": 880,
+              "height": 21
+            },
+            "scroll": 880,
+            "client": 880,
+            "modelLines": 1,
+            "branchLines": 2
+          },
+          {
+            "rect": {
+              "left": 308,
+              "right": 1188,
+              "top": 151.25,
+              "bottom": 172.25,
+              "width": 880,
+              "height": 21
+            },
+            "scroll": 880,
+            "client": 880,
+            "modelLines": 1,
+            "branchLines": 2
+          },
+          {
+            "rect": {
+              "left": 308,
+              "right": 1188,
+              "top": 215.5,
+              "bottom": 236.5,
+              "width": 880,
+              "height": 21
+            },
+            "scroll": 880,
+            "client": 880,
+            "modelLines": 1,
+            "branchLines": 2
+          },
+          {
+            "rect": {
+              "left": 308,
+              "right": 1188,
+              "top": 279.75,
+              "bottom": 300.75,
+              "width": 880,
+              "height": 21
+            },
+            "scroll": 880,
+            "client": 880,
+            "modelLines": 1,
+            "branchLines": 2
+          }
+        ],
+        "controls": [
+          {
+            "rect": {
+              "left": 1082,
+              "right": 1132,
+              "top": 87,
+              "bottom": 107.5,
+              "width": 50,
+              "height": 20.5
+            },
+            "scroll": 50,
+            "client": 50,
+            "button": {
+              "left": 1082,
+              "right": 1132,
+              "top": 87,
+              "bottom": 107.5,
+              "width": 50,
+              "height": 20.5
+            },
+            "points": [
+              true,
+              true,
+              true
+            ]
+          },
+          {
+            "rect": {
+              "left": 1011.625,
+              "right": 1132,
+              "top": 153.5,
+              "bottom": 169.5,
+              "width": 120.375,
+              "height": 16
+            },
+            "scroll": 120,
+            "client": 120,
+            "button": {
+              "left": 1011.625,
+              "right": 1035.625,
+              "top": 153.5,
+              "bottom": 169.5,
+              "width": 24,
+              "height": 16
+            },
+            "points": [
+              true,
+              true,
+              true
+            ]
+          },
+          {
+            "rect": {
+              "left": 1071,
+              "right": 1132,
+              "top": 215.5,
+              "bottom": 236,
+              "width": 61,
+              "height": 20.5
+            },
+            "scroll": 61,
+            "client": 61,
+            "button": {
+              "left": 1071,
+              "right": 1132,
+              "top": 215.5,
+              "bottom": 236,
+              "width": 61,
+              "height": 20.5
+            },
+            "points": [
+              true,
+              true,
+              true
+            ]
+          },
+          {
+            "rect": {
+              "left": 1027,
+              "right": 1132,
+              "top": 279.75,
+              "bottom": 300.25,
+              "width": 105,
+              "height": 20.5
+            },
+            "scroll": 105,
+            "client": 105,
+            "button": {
+              "left": 1027,
+              "right": 1132,
+              "top": 279.75,
+              "bottom": 300.25,
+              "width": 105,
+              "height": 20.5
+            },
+            "points": [
+              true,
+              true,
+              true
+            ]
+          }
+        ],
+        "retry": {
+          "text": "语音服务未就绪",
+          "font": 11,
+          "textRect": {
+            "left": 1033,
+            "right": 1126,
+            "top": 281.75,
+            "bottom": 296.75,
+            "width": 93,
+            "height": 15
+          },
+          "title": "语音服务未就绪",
+          "aria": "重试生成语音"
+        },
+        "slider": {
+          "max": 4,
+          "text": "0:01 共 0:04"
+        }
+      },
+      "violations": []
+    }
+  ]
+}

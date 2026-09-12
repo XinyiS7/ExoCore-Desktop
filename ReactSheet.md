@@ -1098,6 +1098,109 @@ shared server 冻结，不代表 Moonlight 已接入。
 
 ---
 
+## 第十二篇  消息语音合成与点播 (Message TTS)
+
+### 12.1 Message 读模型扩展
+
+在 `GET /api/agents/chat/<id>/` 返回的原子消息体中新增 `voice` 字段：
+
+- **非 assistant 消息**（`user` / `system`）：恒为 `null`；
+- **assistant 消息**：
+  ```json
+  {
+    "id": 4201,
+    "role": "assistant",
+    "content": "台词正文...",
+    "voice": {
+      "available": true,
+      "directed": false,
+      "cached": false
+    }
+  }
+  ```
+  - `available`: 该会话所属 AgentPreset 是否绑定了活跃声线（`active_voice_profile`）且本消息包含非空可朗读台词（剥离单星号动作 `*...*` 后）；
+  - `directed`: **听觉盲盒标志**。仅在消息的私有 `tool_calls` 中包含合法的 `voice_emotion` 工具调用时为 `true`。响应绝对不包含任何 emotion 文本、目标句或分段数细节；
+  - `cached`: 后端是否已成功生成并持久化音频文件（true 时客户端点击秒播）。
+
+### 12.2 点播触发与状态轮询
+
+**POST /api/agents/conversations/<pk>/messages/<message_pk>/tts/**
+
+客户端以消息身份发起点播请求，请求体为 `{}`（禁止携带文本、情绪或配置，全由后端推导）。
+
+- **Cache Hit**（HTTP 200 OK）：已存在有效音频缓存，直接返回可播放资源：
+  ```json
+  {
+    "status": "playable",
+    "content_url": "/api/agents/conversations/1/messages/4201/tts/content/",
+    "duration_ms": 3200
+  }
+  ```
+- **Cache Miss / In-Flight**（HTTP 202 Accepted）：后台线程池已排队或正在生成：
+  ```json
+  {
+    "status": "generating",
+    "retry_after_ms": 1500
+  }
+  ```
+- **异常 / 失败**（HTTP 503 / 504 / 500）：
+  ```json
+  {
+    "status": "failed_retryable",
+    "code": "runtime_offline",
+    "message": "Voice runtime is offline."
+  }
+  ```
+
+**GET /api/agents/conversations/<pk>/messages/<message_pk>/tts/**
+
+只读状态查询接口（客户端按 `retry_after_ms` 间隔轮询，不触发新任务）。
+
+- 未触发点播时：`200 {"status": "idle"}`
+- 物理文件缺失/过期/损坏时：`GET /tts/` 状态查询自动检测并稳定幂等返回 `200 {"status": "idle"}`，支持客户端重新发起 `POST` 生成；
+- 渲染中：`202 {"status": "generating", "retry_after_ms": 1500}`
+- 已就绪：`200 {"status": "playable", "content_url": "...", "duration_ms": 3200}`
+- 假死超时（超过 60 秒未完成）：`504 {"status": "failed_retryable", "code": "generation_timeout", "message": "Voice generation timed out. Please retry."}`
+- 失败状态：`503/500 {"status": "failed_retryable", "code": "...", "message": "..."}`（消息使用白名单公网安全文案，绝不泄露内部私有指令或异常堆栈）
+
+### 12.3 音频流式分发
+
+**GET /api/agents/conversations/<pk>/messages/<message_pk>/tts/content/**
+
+流式返回本地渲染就绪的音频文件（同源、受会话约束），支持单段字节 Range。
+
+- 无 `Range`、非法写法（非 `bytes` 单位、空 spec、非数字段）与多段 range：整段 `200`（`FileResponse`），响应头含 `Accept-Ranges: bytes`；
+- 语法有效且可满足的单段 range（`bytes=start-end` / `bytes=start-` / `bytes=-suffix`）：`206`，精确 `Content-Range: bytes <start>-<end>/<size>` 与 `Content-Length`，仅流式读取该段字节；`end` 超出资源长度按 `size-1` 收敛，`last < first` 视为非法写法按整段 `200` 处理；
+- 语法有效但不可满足（`start >= size`、suffix 长度为 0、资源为空）：`416` + `Content-Range: bytes */<size>`，响应体为有界 JSON 错误（`error: range_not_satisfiable`）；该分支不打开分发流、不回传任何音频字节（此前的有效性门禁可能已校验工件元信息，但不进入字节分发）；
+- `Accept-Ranges: bytes` 与 `Cache-Control: private, no-cache, max-age=0` 适用于全部媒体响应（`200` / `206` / `416`）；其中 `Cache-Control` 的目的仍是非版本化稳定 URL 杜绝长缓存，确保消息编辑或重新生成后客户端立即获得最新音频；
+- `Content-Disposition: inline; filename="msg_<id>.wav"` 仅适用于 `200` 与 `206`（`416` 不带该头）；
+- 渲染 MIME 取渲染工件实际类型，缺失时回退 `audio/wav`；
+- 鉴权严格按会话隔离：跨会话 / 消息不存在返回 `404`（`error: not_found`）；未渲染就绪、哈希/版本过期或物理文件缺失返回 `404` 并附加 `code: audio_artifact_missing`。
+
+### 12.4 前端 5 态生命周期映射与错误矩阵
+
+前端状态机统一收敛为 5 态：
+```text
+unavailable       -> 控件不展示或禁用（role!=assistant / 无声线或非激活 / 空台词 / 权限不足）
+idle              -> 控件就绪待播放（available=true, cached=false）
+generating        -> 渲染生成中（展示局部 loading / pulse 动画）
+playable          -> 渲染完成可播放（挂载 content_url，支持播放进度条）
+failed_retryable  -> 生成失败可重试（保留播放控件，展示重试按钮）
+```
+
+**错误分类与客户端行为矩阵 (Error / Action Matrix)**：
+
+| 错误代码 (`code`) | HTTP 状态码 | 前端映射状态 | 客户端行为与 UX 处置指导 |
+|---|---|---|---|
+| `ineligible_message` | 422 | `unavailable` | 隐藏或禁用播放控件；不可重试 |
+| `no_active_profile` | 422 | `unavailable` | 声线未绑定或非激活状态；隐藏或禁用播放控件；不可重试 |
+| `not_found` / `audio_artifact_missing` | 404 | `unavailable` | 会话/消息不存在或音频文件丢失/过期；content 端点返回 404；status 轮询自动降级为 idle |
+| `runtime_offline` | 503 | `failed_retryable` | 保留控件，显示重试入口；提示“语音服务未就绪” |
+| `generation_timeout` | 504 | `failed_retryable` | 保留控件，显示重试入口；提示“生成超时，点击重试” |
+| `generation_failed` | 500 | `failed_retryable` | 保留控件，显示重试入口；提示“生成异常，点击重试” |
+
+---
+
 ## 附录 A — Typed Error Shape (§P1-11 commit 6)
 
 SSE 和 async polling 共用的稳定 error payload：

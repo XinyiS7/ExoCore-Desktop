@@ -585,6 +585,7 @@ export function ConversationPage() {
                 />
               ) : (
                 <MessageTimeline
+                  conversationId={id}
                   messages={merged.rows}
                   hasOlder={merged.hasOlder}
                   loadingMore={pagesQuery.isFetchingNextPage}

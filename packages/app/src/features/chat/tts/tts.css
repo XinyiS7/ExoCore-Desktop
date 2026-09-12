@@ -1,0 +1,150 @@
+/* P2T message voice control — compact actions-cluster leaf (Plan D5/D6/D9).
+   Only new `.app-voice-*` rules live here; the existing `.app-msg-actions`
+   and attachment player rules are never rewritten. */
+
+.app-voice-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.app-voice-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--v4-text-mute);
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.app-voice-btn:hover:not(:disabled) {
+  color: var(--v4-accent);
+  background: var(--v4-panel-hover, rgba(255, 255, 255, 0.05));
+}
+
+.app-voice-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* `directed` authoring choice — visual only, same button, no extra copy. */
+.app-voice-btn--directed {
+  color: var(--v4-accent);
+  text-shadow: 0 0 8px rgba(79, 140, 255, 0.45);
+}
+
+.app-voice-spin {
+  animation: app-voice-spin 0.8s linear infinite;
+}
+
+@keyframes app-voice-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Compact player — the playable form of the same control (D5/D8). */
+.app-voice-progress {
+  flex: 1 1 60px;
+  min-width: 36px;
+  max-width: 150px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  outline: none;
+  border-radius: 4px;
+}
+
+.app-voice-progress:focus-visible {
+  box-shadow: 0 0 0 2px var(--v4-accent);
+}
+
+.app-voice-progress-track {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(154, 154, 166, 0.35);
+  overflow: hidden;
+}
+
+.app-voice-progress-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: var(--v4-accent);
+}
+
+.app-voice-time {
+  font-size: 10.5px;
+  color: var(--v4-text-mute);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.app-voice-loading {
+  font-size: 10.5px;
+  color: var(--v4-text-dim);
+  white-space: nowrap;
+}
+
+/* Responsive fitting (CP3 / acceptance T11).
+   The row header must never overflow at 320px: role + time + model + the
+   existing three action buttons already fill it. Below 420px the control
+   therefore keeps only what carries meaning without layout room — the icon
+   (with its unchanged `aria-label`/`title`), the seek slider (with its
+   unchanged `aria-valuetext`, which still reports real media timing).
+   Nothing else in the timeline is touched, and adding a fourth item to a
+   fixed-width actions cluster is exactly what these numbers measure. */
+@media (max-width: 420px) {
+  .app-voice-control {
+    gap: 4px;
+    /* Never shrink below what the control actually draws: the header's
+       flexible model tag absorbs the width instead of clipping this leaf. */
+    min-width: min-content;
+  }
+
+  .app-voice-btn {
+    font-size: 0;
+    padding: 2px 4px;
+    gap: 0;
+  }
+
+  /* The retry reason is bounded whitelist copy, not decoration: at touch
+     widths it stays visibly rendered (wrapping into the control) instead of
+     being reduced to an icon + hover-only title. */
+  .app-voice-btn--failure {
+    font-size: 10px;
+    line-height: 1.25;
+    padding: 2px 5px;
+    gap: 3px;
+    white-space: normal;
+    text-align: left;
+    /* Readable floor for the bounded reason; the header's flexible model tag
+       absorbs the rest of the width instead of squeezing this text away. */
+    min-width: 56px;
+    max-width: 104px;
+  }
+
+  .app-voice-progress {
+    flex: 1 1 32px;
+    min-width: 24px;
+    max-width: 64px;
+  }
+
+  .app-voice-time,
+  .app-voice-loading {
+    display: none;
+  }
+}

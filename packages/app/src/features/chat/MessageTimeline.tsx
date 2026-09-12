@@ -5,6 +5,7 @@ import { MessageContent } from './MessageContent';
 import { formatTimeOfDay } from './time';
 import { MessageAttachments } from './attachments/MessageAttachments';
 import { AssistantRunTrace } from './trace/AssistantRunTrace';
+import { MessageVoiceControl } from './tts/MessageVoiceControl';
 
 function runtimeTraceProjection(row: RuntimeAssistantRow): AssistantRunTraceProjection | null {
   if (!row.assistantTrace) return null;
@@ -28,6 +29,11 @@ const ROLE_LABELS: Record<MessageRole, string> = {
 
 export interface MessageTimelineProps {
   messages: MessageView[];
+  /**
+   * Conversation identity for row-level actions that need it (P2T voice).
+   * Optional so existing direct-render tests keep working unchanged (D12).
+   */
+  conversationId?: number;
   hasOlder: boolean;
   loadingMore: boolean;
   onLoadMore: () => void;
@@ -41,6 +47,7 @@ export interface MessageTimelineProps {
 
 function MessageRowItem({
   message,
+  conversationId,
   isLatestUser,
   isRunActive,
   onEditMessage,
@@ -48,6 +55,7 @@ function MessageRowItem({
   onBranchMessage,
 }: {
   message: MessageView;
+  conversationId?: number;
   isLatestUser: boolean;
   isRunActive?: boolean;
   onEditMessage?: (id: number, content: string, isLatestUser: boolean) => void;
@@ -56,6 +64,7 @@ function MessageRowItem({
 }) {
   const isAssistant = message.role === 'assistant';
   const isUser = message.role === 'user';
+  const voice = message.voice;
   const attachmentsMeta = message.attachmentsMeta ?? [];
   const hasReasoning = Boolean(message.reasoningContent);
   const hasContentText = Boolean(message.content?.trim());
@@ -72,8 +81,21 @@ function MessageRowItem({
           </span>
         ) : null}
 
-        {/* Action buttons (disabled during active run, §7.1, §7.4, §7.5) */}
+        {/* Action buttons (disabled during active run, §7.1, §7.4, §7.5).
+            The P2T voice control is deliberately NOT run-locked (D7) and shares
+            this cluster instead of adding a second `margin-left: auto` column. */}
         <div className="app-msg-actions">
+          {conversationId !== undefined &&
+          isAssistant &&
+          voice !== null &&
+          voice !== undefined &&
+          voice.available ? (
+            <MessageVoiceControl
+              conversationId={conversationId}
+              messageId={message.id}
+              voice={voice}
+            />
+          ) : null}
           {isUser && onEditMessage && (
             <button
               type="button"
@@ -141,6 +163,7 @@ function MessageRowItem({
 /** Pure message list with optimistic / runtime overlay rendering */
 export function MessageTimeline({
   messages,
+  conversationId,
   hasOlder,
   loadingMore,
   onLoadMore,
@@ -182,6 +205,7 @@ export function MessageTimeline({
         <MessageRowItem
           key={message.id}
           message={message}
+          conversationId={conversationId}
           isLatestUser={message.id === latestUserMessageId}
           isRunActive={isRunActive}
           onEditMessage={onEditMessage}
