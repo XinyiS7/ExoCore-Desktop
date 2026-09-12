@@ -102,6 +102,36 @@ export function unmockFetch() {
   vi.unstubAllGlobals();
 }
 
+/**
+ * Test-environment guard for conda Node ≥25: Node's experimental WebStorage
+ * global shadows jsdom's localStorage under vitest 4 (its getWindowKeys skips
+ * keys already present on the node global), leaving a broken empty Storage
+ * without clear(). Healthy environments pass through untouched; broken ones
+ * get an in-memory Storage with the full Web Storage contract.
+ */
+export function ensureTestLocalStorage(): void {
+  const ls = window.localStorage as Storage | null | undefined;
+  if (ls && typeof ls.clear === 'function') return;
+  const store = new Map<string, string>();
+  const storage: Storage = {
+    get length() {
+      return store.size;
+    },
+    clear: () => {
+      store.clear();
+    },
+    getItem: (key) => store.get(key) ?? null,
+    key: (index) => [...store.keys()][index] ?? null,
+    removeItem: (key) => {
+      store.delete(key);
+    },
+    setItem: (key, value) => {
+      store.set(key, String(value));
+    },
+  };
+  Object.defineProperty(window, 'localStorage', { value: storage, configurable: true, writable: true });
+}
+
 export function callsToPath(calls: { url: URL }[], pathPart: string): { url: URL; init?: RequestInit }[] {
   return calls.filter((c) => c.url.pathname.includes(pathPart));
 }

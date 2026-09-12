@@ -35,6 +35,13 @@ export interface PostChatOptions {
    * validation may ever reach this field.
    */
   pendingAttachments?: number[];
+  /**
+   * Explicit Force Cache send (V3 capability recovery): serializes
+   * `force_cache_rebuild=true` ONLY when explicitly true. Ordinary sends
+   * omit the field; backend `cache_skipped` stays the authoritative feedback
+   * for platforms without remote cache support.
+   */
+  forceCacheRebuild?: boolean;
   signal?: AbortSignal;
 }
 
@@ -72,6 +79,14 @@ function buildChatBody(options: PostChatOptions): Record<string, unknown> {
       throw new AppApiError('缓存开关格式异常', { code: 'VALIDATION' });
     }
     body.cache_enabled = options.cacheEnabled;
+  }
+  if (options.forceCacheRebuild !== undefined) {
+    if (typeof options.forceCacheRebuild !== 'boolean') {
+      throw new AppApiError('缓存重建开关格式异常', { code: 'VALIDATION' });
+    }
+    // Explicit Force Cache send only: false/undefined must never serialize
+    // the wire field (普通发送绝不能误带 true).
+    if (options.forceCacheRebuild) body.force_cache_rebuild = true;
   }
   if (options.sessionType !== undefined) {
     if (options.sessionType !== 'full' && options.sessionType !== 'lite') {

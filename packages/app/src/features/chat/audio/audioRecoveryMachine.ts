@@ -90,6 +90,9 @@ interface SendRecordedInput {
   dispatchSettings: ConversationDispatchSettings;
   content: string;
   attachmentIds: number[];
+  /** Explicit Force Cache intent from the composer; forwarded to the exact
+   * dispatch of this turn. Retries replay ordinary semantics (V3 parity). */
+  forceCacheRebuild?: boolean;
   dispatch: (turn: ChatTurnInput) => Promise<TurnAcceptance>;
 }
 
@@ -241,6 +244,7 @@ export function useAudioRecovery(conversationId: number, canonicalRows: readonly
       return await input.dispatch({
         content: snapshot.originalText,
         pendingAttachments: [...snapshot.attachmentIds],
+        forceCacheRebuild: input.forceCacheRebuild || undefined,
         dispatchSettings: { ...snapshot.dispatchSettings },
         attemptKey,
       });

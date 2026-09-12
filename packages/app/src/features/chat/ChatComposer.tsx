@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { FilePlus2, ImagePlus, Mic, MicOff, Send, Square, X } from 'lucide-react';
+import { FilePlus2, ImagePlus, Mic, MicOff, Send, Snowflake, Square, X } from 'lucide-react';
 import type {
   ChatTurnInput,
   ConversationDispatchSettings,
@@ -127,6 +127,14 @@ export function ChatComposer({
     status === 'polling' ||
     status === 'stopping';
 
+  // Sendable-attachment fact shared by the ordinary-send gate, the Force
+  // Cache entry and the Ctrl+Shift+Enter shortcut. Same round, same fact:
+  // validated positive compose IDs + a recorded audio clip. Recorded audio
+  // is transferred to the recovery snapshot on dispatch, so the entry and
+  // handleSubmit read exactly the same values.
+  const hasRecordedAudio = recorder.status === 'recorded' && recorder.blob !== null;
+  const hasSendableAttachments = compose.getSuccessfulIds().length > 0 || hasRecordedAudio;
+
   // Audio target availability for the mic button.
   const audioSupported = audioGate.state === 'supported';
   const audioLoading = audioGate.state === 'loading';
@@ -185,7 +193,7 @@ export function ChatComposer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingProjectInsert?.key]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (forceRequested = false) => {
     if (busy || runActive || audioRecovery.isUploading() || dispatchSettings === null) return;
     // The ref-backed delete guard closes the same-tick Delete → Send race;
     // state-backed disabling remains the presentation projection.
@@ -194,7 +202,8 @@ export function ChatComposer({
     const submittedText = cleanProjectRefsForSend(trimmed);
 
     // Edit is deliberately text-only: newly composed IDs and recorded media
-    // remain untouched for the next ordinary turn.
+    // remain untouched for the next ordinary turn. Historical edits never
+    // carry force rebuild.
     if (editingTarget) {
       if (!trimmed) return;
       const outcome = await onConfirmEdit(submittedText);
@@ -203,8 +212,12 @@ export function ChatComposer({
     }
 
     const currentAttachmentIds = compose.getSuccessfulIds();
-    const hasRecordedAudio = recorder.status === 'recorded' && recorder.blob !== null;
     if (!trimmed && currentAttachmentIds.length === 0 && !hasRecordedAudio) return;
+
+    // Explicit Force Cache without sendable attachments degrades to an
+    // ordinary send — a forced empty request is never manufactured. Edit
+    // mode above already exits without force.
+    const forceCacheRebuild = forceRequested && hasSendableAttachments;
 
     let outcome: TurnAcceptance;
     if (hasRecordedAudio) {
@@ -220,12 +233,14 @@ export function ChatComposer({
         dispatchSettings,
         content: submittedText,
         attachmentIds: currentAttachmentIds,
+        forceCacheRebuild: forceCacheRebuild || undefined,
         dispatch: onSend,
       });
     } else {
       outcome = await onSend({
         content: submittedText,
         pendingAttachments: currentAttachmentIds.length > 0 ? currentAttachmentIds : undefined,
+        forceCacheRebuild: forceCacheRebuild || undefined,
         dispatchSettings,
       });
     }
@@ -286,6 +301,17 @@ export function ChatComposer({
         setAutocompleteDismissed(true);
         return;
       }
+    }
+
+    if (e.key === 'Enter' && e.ctrlKey && e.shiftKey) {
+      // Restored V3 Force Cache Send: explicit ice entry. Degrades to an
+      // ordinary send without sendable attachments (handled inside
+      // handleSubmit); every existing send guard (busy/runActive/uploading/
+      // target/delete-pending) still applies. IME composing is already
+      // guarded above; edit mode is text-only and never forces.
+      e.preventDefault();
+      void handleSubmit(true);
+      return;
     }
 
     if (e.key === 'Enter' && e.shiftKey) {
@@ -523,6 +549,24 @@ export function ChatComposer({
           ) : null}
 
           <div className="app-composer-actions">
+            {!editingTarget && hasSendableAttachments ? (
+              <button
+                type="button"
+                className="app-btn app-composer-force"
+                onClick={() => void handleSubmit(true)}
+                disabled={
+                  busy ||
+                  dispatchSettings === null ||
+                  compose.anyUploading ||
+                  attachmentManager.deletePending ||
+                  audioRecovery.uploading
+                }
+                title="生成Cache并发送 (Ctrl+Shift+Enter)"
+                aria-label="生成Cache并发送"
+              >
+                <Snowflake size={14} aria-hidden="true" />
+              </button>
+            ) : null}
             {runActive ? (
               <button
                 type="button"

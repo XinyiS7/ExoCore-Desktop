@@ -911,6 +911,21 @@
   gap: 8px;
 }
 
+/* Explicit Force Cache send (V3 capability recovery) — ice entry. Visible
+   only while this round holds sendable attachments; honors the same send
+   guards as the primary button (disabled state). */
+.app-composer-force {
+  padding: 5px 9px;
+  line-height: 1;
+  color: var(--v4-accent);
+  border-color: rgba(79, 140, 255, 0.35);
+  background: var(--v4-accent-soft);
+}
+
+.app-composer-force:hover {
+  background: rgba(79, 140, 255, 0.22);
+}
+
 /* ── P1C: compose attachment strip & audio recorder (V4 tokens only) ────── */
 
 .app-composer-attach-tools {

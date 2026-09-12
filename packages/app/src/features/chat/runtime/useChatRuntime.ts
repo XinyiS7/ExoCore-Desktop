@@ -1436,6 +1436,11 @@ export function useChatRuntime({
 
       const trimmedContent = turn.content.trim();
       const pendingAttachments = turn.pendingAttachments ?? [];
+      // Explicit Force Cache send is an ordinary-send-only intent: destructive
+      // (edit/regenerate) turns can never carry it — 编辑历史消息不得误触
+      // force rebuild. Retries replay exact content/attachments, never the
+      // one-shot force flag.
+      const forceCacheRebuild = operation === 'send' && turn.forceCacheRebuild === true;
       // `undefined` is a compatibility seam for pre-P1D isolated runtime
       // harnesses. Production passes either a validated settings object or
       // explicit null; null fails closed before any durable marker or POST.
@@ -1518,6 +1523,7 @@ export function useChatRuntime({
         editMessageId,
         dispatchSettings: capturedSettings,
         pendingAttachments: [...pendingAttachments],
+        forceCacheRebuild,
         attemptKey: turn.attemptKey,
       };
       const pendingSnapshot = makeLease(stableOwner, 'pending', startedAt);
@@ -1577,6 +1583,7 @@ export function useChatRuntime({
             memoryInjectionEnabled: capturedSettings?.memoryInjectionEnabled,
             editMessageId: destructive ? editMessageId : undefined,
             pendingAttachments: pendingAttachments.length > 0 ? pendingAttachments : undefined,
+            forceCacheRebuild,
             signal: abortControllerRef.current.signal,
           });
           if (!isCurrentIdentity(epoch, convId)) return 'rejected';
@@ -1621,6 +1628,7 @@ export function useChatRuntime({
           memoryInjectionEnabled: capturedSettings?.memoryInjectionEnabled,
           editMessageId: destructive ? editMessageId : undefined,
           pendingAttachments: pendingAttachments.length > 0 ? pendingAttachments : undefined,
+          forceCacheRebuild,
           signal: abortControllerRef.current.signal,
         });
         if (!isCurrentIdentity(epoch, convId)) return 'rejected';

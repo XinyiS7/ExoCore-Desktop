@@ -242,6 +242,13 @@ export interface ConversationDispatchSettings {
 export interface ChatTurnInput {
   content: string;
   pendingAttachments?: number[];
+  /**
+   * Explicit Force Cache send (V3 parity): only the explicit composer entry
+   * (Force Cache button / Ctrl+Shift+Enter with sendable attachments) sets
+   * true. Ordinary sends omit/false and the client serializes
+   * force_cache_rebuild=true solely for this flag.
+   */
+  forceCacheRebuild?: boolean;
   /** Uploaded-audio retry supplies its original settings instead of live HUD state. */
   dispatchSettings?: ConversationDispatchSettings;
   /** Present only for an uploaded-audio recovery snapshot. */
@@ -306,6 +313,8 @@ export interface DispatchIntent {
   dispatchSettings?: ConversationDispatchSettings;
   /** P1C ordinary/recovery turns only. Edit/regenerate never receive compose IDs. */
   pendingAttachments?: number[];
+  /** Explicit Force Cache intent captured at dispatch; honored for `send` only. */
+  forceCacheRebuild?: boolean;
   attemptKey?: string;
 }
 
