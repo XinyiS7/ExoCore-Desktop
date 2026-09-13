@@ -9,7 +9,7 @@
 ### 架构决策
 
 - 已验收的 Agent/Project workspaces 之后，施工顺序调整为 `P2T Message TTS → P2C Core Shell/Settings → P2D Assistant-message Notifications → Core C2`。
-- TTS 前端保持薄层：消息按钮首次请求后台生成，等待期间显示真实状态；完成后同一控件切换为带播放时间轴的播放器。TTS failure 不影响 canonical text，且不自动播放。
+- TTS 前端保持薄层：消息按钮首次请求后台生成，等待期间显示真实状态；完成后同一控件切换为带播放时间轴的播放器。TTS failure 不影响 canonical text；未经用户点击绝不播放，用户点按触发的生成成功后立即播放。
 - 通知事实从 `send_message` 专属 Push 改为“eligible canonical assistant Message committed”。当前会话前台原位 reconciliation，其他前台页面更新未读/站内提示，后台或关闭时由 Android Web Push 显示系统通知。
 - `send_message` 与 normal live/async assistant completion 收敛到同一 arrival identity，禁止 direct Push + generic Push 双通道重复；系统/Task 非 Conversation 通知保持独立 typed class。
 - GroupChat 改为 `P2G deferred`，V3 继续作为明确 owner；不阻塞 Core C2/P3，也不伪装为已迁移。
@@ -18,7 +18,9 @@
 ### 计划记录
 
 - Master roadmap：`Plan/V4_Master_Implementation_Roadmap.md`
+- B5 backend handoff：`Plan/spec/2026-09-12-message-tts-render-contract-handoff.md`
 - B6 backend handoff：`Plan/spec/2026-09-12-assistant-message-arrival-notification-handoff.md`
+- P2T 前端 Detailed Plan：`Plan/V4_Phase_2T_Message_TTS_Detailed_Plan.md`（已施工并独立验收）
 
 ---
 

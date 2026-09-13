@@ -652,7 +652,7 @@ B4 必须稳定提供：
 | **B5 Message TTS render contract** | ExoCore | P2T | 已开始独立需求/后端设计 | P2T Detailed Plan freeze | additive message projection；文本/attachment/chat runtime 不依赖 voice 成功 |
 | **B6 Assistant-message arrival contract** | ExoCore | P2D | C1 后可独立规划 | P2D Detailed Plan freeze | canonical Message write behavior preserved；`send_message`/async converge without duplicate Push or Group/Council leakage |
 
-B6 frontend-authored backend handoff: `Plan/spec/2026-09-12-assistant-message-arrival-notification-handoff.md`. B5 source discussion currently lives in the backend requirement set and must still yield a frozen frontend-facing contract before P2T planning.
+Frontend-authored backend handoffs: B5 `Plan/spec/2026-09-12-message-tts-render-contract-handoff.md`; B6 `Plan/spec/2026-09-12-assistant-message-arrival-notification-handoff.md`. B5's internal authoring discussion remains in the backend requirement set; the new handoff freezes only the thin frontend-facing contract requirements and does not authorize Django or P2T construction. B5 must still implement, independently accept and synchronize that contract into both `ReactSheet.md` files before P2T planning.
 
 Handoff acceptance 只判断稳定接口、权限、分页/identity/error 语义与数据完整性；不要求后端 agent决定前端视觉。
 
