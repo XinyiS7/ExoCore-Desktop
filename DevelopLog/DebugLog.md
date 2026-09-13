@@ -48,6 +48,18 @@
 
 ---
 
+# DEBUG: chat-core Build Retained Removed KaTeX CSS Import (✅ FIXED)
+
+- **Date**: 2026-09-12
+- **Phenomenon**: `pnpm --filter exo-chat-core build` failed when Vite could not resolve `katex/dist/katex.min.css` from `packages/chat-core/src/main.jsx`.
+- **Inference & Evidence**:
+  1. Commit `31eeb43` intentionally removed chat-core's KaTeX/remark-math/rehype-katex dependencies and removed both markdown renderers' math plugin wiring, but left the entry-point CSS import behind.
+  2. `pnpm --filter exo-app build` still passed, isolating the failure to the V3 rollback package rather than the accepted V4 Chat implementation.
+- **Correction Plan**: Remove only the orphaned CSS import; do not restore obsolete math dependencies or alter V4 behavior.
+- **Correction Result**: The chat-core build and workspace regression pipeline pass again; V4 remains the ordinary-Chat owner and V3 remains buildable as rollback reference.
+
+---
+
 # DEBUG: Same-Origin Multi-PWA Install — Identity Collapse Without `id` and `scope` (✅ FIXED)
 
 - **Date**: 2026-06-07

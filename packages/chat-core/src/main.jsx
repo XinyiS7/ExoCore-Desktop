@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
 import App from './App';
 import './index.css';
-import 'katex/dist/katex.min.css';
 import { apiFetch } from 'exo-shared';
 import { pushNotification } from './stores/notificationStore';
 
