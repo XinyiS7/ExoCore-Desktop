@@ -4,6 +4,8 @@ import { Plus } from 'lucide-react';
 import { useConversationsQuery, useProjectsQuery } from '../chat/queries';
 import { toAppApiError } from '../chat/api';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
+import { useDocumentTitle } from '../../shared/useDocumentTitle';
+import { MoreMenu } from '../../shell/PrimaryNavigation';
 import { useCreateProjectMutation } from './queries';
 import { ProjectFormDialog } from './ProjectFormDialog';
 
@@ -18,6 +20,7 @@ import { ProjectFormDialog } from './ProjectFormDialog';
  * hook) and navigates EXACTLY once by the returned id (dialog origin guard).
  */
 export function ProjectHubPage() {
+  useDocumentTitle('项目');
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const projectsQuery = useProjectsQuery();
@@ -46,6 +49,7 @@ export function ProjectHubPage() {
             <Plus size={16} aria-hidden="true" />
             新建项目
           </button>
+          <MoreMenu className="app-more--top" />
         </div>
       </header>
 

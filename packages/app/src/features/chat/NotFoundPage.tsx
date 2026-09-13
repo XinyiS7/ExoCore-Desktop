@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useDocumentTitle } from '../../shared/useDocumentTitle';
 
 /** Real wildcard not-found state — never an empty page that looks complete. */
 export function NotFoundPage() {
+  useDocumentTitle('页面不存在');
   return (
     <div className="app-page app-page--center">
       <div className="app-error-page" role="alert">

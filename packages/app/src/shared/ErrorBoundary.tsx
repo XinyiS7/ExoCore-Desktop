@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { isRouteErrorResponse, Link, useRouteError } from 'react-router-dom';
+import { useDocumentTitle } from './useDocumentTitle';
 
 /**
  * Route-level error containment (Plan Task 4.4).
@@ -40,6 +41,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { hasError
 
 /** Router errorElement: shows the thrown route error (404/500 from loaders are not used in P1A). */
 export function RouteErrorFallback() {
+  useDocumentTitle('页面加载失败');
   const error = useRouteError();
   const message = isRouteErrorResponse(error)
     ? `${error.status} ${error.statusText}`

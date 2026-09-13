@@ -20,10 +20,19 @@
     "./hooks/useCsrf": "./src/hooks/useCsrf.js",
     "./styles/base.css": "./src/styles/base.css",
     "./styles/transitions.css": "./src/styles/transitions.css",
-    "./profile": "./src/profile.js",
+    "./profile": {
+      "types": "./src/profile.d.ts",
+      "default": "./src/profile.js"
+    },
     "./hooks/useProfile": "./src/hooks/useProfile.js",
-    "./hooks/useFont": "./src/hooks/useFont.js",
-    "./hooks/useTheme": "./src/hooks/useTheme.js",
+    "./hooks/useFont": {
+      "types": "./src/hooks/useFont.d.ts",
+      "default": "./src/hooks/useFont.js"
+    },
+    "./hooks/useTheme": {
+      "types": "./src/hooks/useTheme.d.ts",
+      "default": "./src/hooks/useTheme.js"
+    },
     "./utils/avatar": "./src/utils/avatar.js",
     "./styles/fonts.css": "./src/styles/fonts.css"
   },

@@ -43,13 +43,13 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--exo-font-scale, 1));
   font-weight: 600;
   overflow-wrap: anywhere;
 }
 
 .project-card-desc {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
   color: var(--v4-text-dim);
   overflow-wrap: anywhere;
   display: -webkit-box;
@@ -62,7 +62,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  font-size: 11px;
+  font-size: calc(11px * var(--exo-font-scale, 1));
   color: var(--v4-text-mute);
   overflow-wrap: anywhere;
 }
@@ -157,7 +157,7 @@
 
 .project-fact-label {
   color: var(--v4-text-mute);
-  font-size: 12px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
   flex-shrink: 0;
   min-width: 110px;
 }
@@ -197,7 +197,7 @@
   padding: 5px 12px;
   border: 1px solid var(--v4-line);
   border-radius: 999px;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
   color: var(--v4-text-dim);
   cursor: pointer;
   white-space: nowrap;
@@ -241,7 +241,7 @@
 }
 .app-btn-sm {
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
   min-height: 28px;
 }
 .app-textarea {
@@ -253,7 +253,7 @@
   background: var(--v4-surface);
   color: var(--v4-text);
   font: inherit;
-  font-size: 13px;
+  font-size: calc(13px * var(--exo-font-scale, 1));
   line-height: 1.5;
   resize: vertical;
 }
@@ -287,7 +287,7 @@
 }
 .project-file-name {
   flex: 1 1 18ch;
-  font-size: 13px;
+  font-size: calc(13px * var(--exo-font-scale, 1));
   font-weight: 600;
   overflow-wrap: anywhere;
 }
@@ -297,13 +297,13 @@
   gap: 6px;
 }
 .project-file-size {
-  font-size: 12px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
   color: var(--v4-text-dim);
 }
 .project-file-note {
   flex-basis: 100%;
   margin: 0;
-  font-size: 12px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
   color: var(--v4-text-dim);
 }
 .project-file-delete {
@@ -327,7 +327,7 @@
 }
 .project-knowledge-title {
   flex: 1 1 16ch;
-  font-size: 13px;
+  font-size: calc(13px * var(--exo-font-scale, 1));
   font-weight: 600;
   overflow-wrap: anywhere;
 }
@@ -339,14 +339,14 @@
 }
 .project-knowledge-abstract {
   margin: 0;
-  font-size: 13px;
+  font-size: calc(13px * var(--exo-font-scale, 1));
   line-height: 1.55;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
 .project-knowledge-time {
   margin: 0;
-  font-size: 12px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
 }
 
 /* B02: lossless per-entry keyword editor */

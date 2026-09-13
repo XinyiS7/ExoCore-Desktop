@@ -6,6 +6,8 @@ import './styles/shell.css';
 import './features/agents/agents.css';
 import './features/projects/projects.css';
 import './features/chat/chatDelete.css';
+import './features/account/account.css';
+import './features/settings/settings.css';
 import { AppProviders } from './app/AppProviders';
 
 // V4 service worker: P1A shell precache only (no /api caching, no push).

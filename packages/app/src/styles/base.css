@@ -1,6 +1,7 @@
-/* ExoCore V4 — base reset & tokens (P1A: legibility only, no final visual design) */
+/* ExoCore V4 — base reset & semantic design tokens */
 
-:root {
+:root,
+[data-theme='dark'] {
   color-scheme: dark;
   --v4-bg: #0a0a0c;
   --v4-panel: #101014;
@@ -15,12 +16,44 @@
   --v4-danger: #ff6b6b;
   --v4-warn: #e8b64c;
   --v4-radius: 8px;
-  --v4-font: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  --v4-mono: ui-monospace, 'Cascadia Code', 'Sarasa Mono SC', Consolas, monospace;
-  /* Deterministic mobile bottom-bar contract (C1A-R2-02): content 64px
-     (icon 18 + label 14 + badge 14 + 2×3px gaps + 2×6px padding) plus the
-     1px border. Both the fixed bar and the main-column offset MUST use this
-     token — never re-measure or hardcode elsewhere. */
+  --v4-hover-overlay: rgba(255, 255, 255, 0.06);
+  --v4-active-overlay: rgba(255, 255, 255, 0.1);
+  --v4-code-bg: #0d0d11;
+  --v4-code-head-bg: rgba(255, 255, 255, 0.03);
+  --v4-scrollbar-thumb: rgba(255, 255, 255, 0.18);
+  --font-system: 'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
+  --font-message: 'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
+  --font-code: 'Maple Mono', 'Sarasa Gothic Mono', 'Consolas', monospace;
+  --v4-font: var(--font-system, system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif);
+  --v4-mono: var(--font-code, ui-monospace, 'Cascadia Code', 'Sarasa Mono SC', Consolas, monospace);
+  --v4-bb-offset: 65px;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  --v4-bg: #f8f9fb;
+  --v4-panel: #ffffff;
+  --v4-panel-2: #f0f2f5;
+  --v4-line: rgba(0, 0, 0, 0.08);
+  --v4-line-strong: rgba(0, 0, 0, 0.16);
+  --v4-text: #18181b;
+  --v4-text-dim: #52525b;
+  --v4-text-mute: #71717a;
+  --v4-accent: #2563eb;
+  --v4-accent-soft: rgba(37, 99, 235, 0.12);
+  --v4-danger: #dc2626;
+  --v4-warn: #d97706;
+  --v4-radius: 8px;
+  --v4-hover-overlay: rgba(0, 0, 0, 0.04);
+  --v4-active-overlay: rgba(0, 0, 0, 0.08);
+  --v4-code-bg: #f4f5f8;
+  --v4-code-head-bg: rgba(0, 0, 0, 0.03);
+  --v4-scrollbar-thumb: rgba(0, 0, 0, 0.22);
+  --font-system: 'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
+  --font-message: 'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
+  --font-code: 'Maple Mono', 'Sarasa Gothic Mono', 'Consolas', monospace;
+  --v4-font: var(--font-system, system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif);
+  --v4-mono: var(--font-code, ui-monospace, 'Cascadia Code', 'Sarasa Mono SC', Consolas, monospace);
   --v4-bb-offset: 65px;
 }
 
@@ -39,7 +72,7 @@ body {
   background: var(--v4-bg);
   color: var(--v4-text);
   font-family: var(--v4-font);
-  font-size: 14px;
+  font-size: calc(14px * var(--exo-font-scale, 1));
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
@@ -72,20 +105,20 @@ a {
 
 .app-h1 {
   margin: 0;
-  font-size: 17px;
+  font-size: calc(17px * var(--exo-font-scale, 1));
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 
 .app-h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: calc(15px * var(--exo-font-scale, 1));
   font-weight: 600;
 }
 
 .app-muted {
   color: var(--v4-text-mute);
-  font-size: 12px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
   margin: 4px 0 0;
 }
 
@@ -100,13 +133,13 @@ a {
   color: var(--v4-text);
   border-radius: var(--v4-radius);
   padding: 7px 14px;
-  font-size: 13px;
+  font-size: calc(13px * var(--exo-font-scale, 1));
   text-decoration: none;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .app-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--v4-hover-overlay, rgba(255, 255, 255, 0.06));
 }
 
 .app-btn--primary {
@@ -116,6 +149,10 @@ a {
 }
 
 .app-btn--primary:hover {
+  background: #3b82f6;
+}
+
+[data-theme='dark'] .app-btn--primary:hover {
   background: #6a9dff;
 }
 
@@ -129,7 +166,7 @@ a {
 }
 
 .app-btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--v4-hover-overlay, rgba(255, 255, 255, 0.06));
   color: var(--v4-text);
 }
 
@@ -138,7 +175,7 @@ a {
   background: none;
   color: var(--v4-accent);
   text-decoration: underline;
-  font-size: 12px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
   padding: 0 2px;
 }
 
@@ -155,7 +192,7 @@ a {
 }
 
 .app-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--v4-hover-overlay, rgba(255, 255, 255, 0.06));
   color: var(--v4-text);
 }
 
@@ -189,13 +226,13 @@ a {
 
 .app-async-title {
   margin: 0;
-  font-size: 14px;
+  font-size: calc(14px * var(--exo-font-scale, 1));
   color: var(--v4-text);
 }
 
 .app-async-detail {
   margin: 0;
-  font-size: 12px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
   max-width: 46ch;
   overflow-wrap: anywhere;
 }
@@ -225,7 +262,7 @@ a {
   border: 1px solid var(--v4-line);
   border-left: 3px solid var(--v4-warn);
   border-radius: 6px;
-  font-size: 12px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
   color: var(--v4-text-dim);
   background: rgba(232, 182, 76, 0.06);
 }
@@ -246,13 +283,13 @@ a {
 
 .app-error-title {
   margin: 0;
-  font-size: 15px;
+  font-size: calc(15px * var(--exo-font-scale, 1));
   font-weight: 600;
 }
 
 .app-error-hint {
   margin: 0;
-  font-size: 12px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
   color: var(--v4-text-dim);
   max-width: 48ch;
 }
@@ -266,6 +303,7 @@ a {
 /* Markdown message typography */
 .app-md {
   overflow-wrap: anywhere;
+  font-family: var(--font-message, var(--v4-font));
 }
 
 .app-md > :first-child {
@@ -336,6 +374,10 @@ a {
   color: #9ec1ff;
 }
 
+[data-theme='light'] .app-inline-code {
+  color: #0550ae;
+}
+
 /* Chips */
 .app-chip {
   display: inline-flex;
@@ -344,7 +386,7 @@ a {
   border: 1px solid var(--v4-line);
   border-radius: 999px;
   padding: 1px 9px;
-  font-size: 11px;
+  font-size: calc(11px * var(--exo-font-scale, 1));
   color: var(--v4-text-dim);
   background: var(--v4-panel);
   white-space: nowrap;
@@ -360,11 +402,15 @@ a {
   border: 1px solid var(--v4-line);
   border-radius: 4px;
   padding: 0 5px;
-  font-size: 9px;
+  font-size: calc(9px * var(--exo-font-scale, 1));
   letter-spacing: 0.08em;
   color: var(--v4-text-mute);
   background: rgba(255, 255, 255, 0.04);
   line-height: 1.5;
+}
+
+[data-theme='light'] .app-phase-chip {
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .app-phase-chip--g045 {
@@ -379,7 +425,7 @@ a {
   border: 1px solid var(--v4-line);
   border-radius: var(--v4-radius);
   overflow: hidden;
-  background: #0d0d11;
+  background: var(--v4-code-bg, #0d0d11);
 }
 
 .app-code-head {
@@ -389,12 +435,12 @@ a {
   gap: 8px;
   padding: 5px 12px;
   border-bottom: 1px solid var(--v4-line);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--v4-code-head-bg, rgba(255, 255, 255, 0.03));
 }
 
 .app-code-lang {
   font-family: var(--v4-mono);
-  font-size: 10px;
+  font-size: calc(10px * var(--exo-font-scale, 1));
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--v4-text-mute);
@@ -405,13 +451,106 @@ a {
   padding: 12px 14px;
   overflow-x: auto;
   font-family: var(--v4-mono);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
   line-height: 1.55;
+  background: transparent;
 }
 
 .app-code-block code {
   font-family: var(--v4-mono);
   background: none;
+}
+
+/* ── Scoped Highlight.js light overrides (Plan §3 D8) ── */
+[data-theme='light'] .hljs {
+  color: #24292f;
+  background: transparent;
+}
+
+[data-theme='light'] .hljs-doctag,
+[data-theme='light'] .hljs-keyword,
+[data-theme='light'] .hljs-meta .hljs-keyword,
+[data-theme='light'] .hljs-template-tag,
+[data-theme='light'] .hljs-template-variable,
+[data-theme='light'] .hljs-type,
+[data-theme='light'] .hljs-variable.language_ {
+  color: #cf222e;
+}
+
+[data-theme='light'] .hljs-title,
+[data-theme='light'] .hljs-title.class_,
+[data-theme='light'] .hljs-title.class_.inherited__,
+[data-theme='light'] .hljs-title.function_ {
+  color: #8250df;
+}
+
+[data-theme='light'] .hljs-attr,
+[data-theme='light'] .hljs-attribute,
+[data-theme='light'] .hljs-literal,
+[data-theme='light'] .hljs-meta,
+[data-theme='light'] .hljs-number,
+[data-theme='light'] .hljs-operator,
+[data-theme='light'] .hljs-selector-attr,
+[data-theme='light'] .hljs-selector-class,
+[data-theme='light'] .hljs-selector-id,
+[data-theme='light'] .hljs-variable {
+  color: #0550ae;
+}
+
+[data-theme='light'] .hljs-string,
+[data-theme='light'] .hljs-regexp {
+  color: #0a3069;
+}
+
+[data-theme='light'] .hljs-built_in,
+[data-theme='light'] .hljs-symbol {
+  color: #953800;
+}
+
+[data-theme='light'] .hljs-comment,
+[data-theme='light'] .hljs-code,
+[data-theme='light'] .hljs-formula {
+  color: #6e7781;
+}
+
+[data-theme='light'] .hljs-name,
+[data-theme='light'] .hljs-quote,
+[data-theme='light'] .hljs-selector-tag,
+[data-theme='light'] .hljs-selector-pseudo {
+  color: #116329;
+}
+
+[data-theme='light'] .hljs-subst {
+  color: #24292f;
+}
+
+[data-theme='light'] .hljs-section {
+  color: #0550ae;
+  font-weight: bold;
+}
+
+[data-theme='light'] .hljs-bullet {
+  color: #f0883e;
+}
+
+[data-theme='light'] .hljs-emphasis {
+  color: #24292f;
+  font-style: italic;
+}
+
+[data-theme='light'] .hljs-strong {
+  color: #24292f;
+  font-weight: bold;
+}
+
+[data-theme='light'] .hljs-addition {
+  color: #116329;
+  background-color: #dafbe1;
+}
+
+[data-theme='light'] .hljs-deletion {
+  color: #82071e;
+  background-color: #ffebe9;
 }
 
 .app-mermaid {
@@ -429,5 +568,5 @@ a {
 /* Scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-color: var(--v4-scrollbar-thumb, rgba(255, 255, 255, 0.18)) transparent;
 }

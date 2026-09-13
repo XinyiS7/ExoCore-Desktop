@@ -17,8 +17,19 @@ const catalog: ModelCatalog = {
     { id: 1, name: 'deepseek-api', provider: 'deepseek', execution_type: 'cloud', execution_adapter: 'http', payload_format: 'chat', cache_transport: '', attachment_transports: [], configured: true, enabled: true },
     { id: 2, name: 'gemini-antigravity', provider: 'gemini', execution_type: 'cloud', execution_adapter: 'http', payload_format: 'chat', cache_transport: 'context_cache', attachment_transports: ['file_uri'], configured: true, enabled: true },
   ],
-  roles: { main: [{ model: 'gemini-2.5-flash', default_endpoint: 2 }], support: {} },
-  providers: [],
+  roles: {
+    main: [{ model: 'gemini-2.5-flash', default_endpoint: 2 }],
+    support: {
+      general_sub_agent: { model: 'gemini-2.5-flash', default_endpoint: 2 },
+      vision_helper: { model: 'gemini-2.5-flash', default_endpoint: 2 },
+      grounding: { model: 'gemini-2.5-flash', default_endpoint: 2 },
+      image_gen: { model: 'gemini-2.5-flash', default_endpoint: 2 },
+    },
+  },
+  providers: [
+    { id: 'gemini', display_name: 'Gemini', execution_type: 'cloud' },
+    { id: 'deepseek', display_name: 'DeepSeek', execution_type: 'cloud' },
+  ],
 };
 
 function wrap(ui: ReactNode) {

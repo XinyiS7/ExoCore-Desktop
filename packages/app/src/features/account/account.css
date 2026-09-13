@@ -1,0 +1,331 @@
+/* ── Account feature styles (V4 P2C) ─────────────────────────────────── */
+
+.account-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.account-section {
+  background: var(--v4-panel);
+  border: 1px solid var(--v4-line);
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.account-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Avatar row */
+.account-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.account-avatar-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2px solid var(--v4-line-strong);
+  background: var(--v4-panel-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--v4-text-dim);
+  flex-shrink: 0;
+}
+
+.account-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.account-avatar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.account-avatar-hint {
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  color: var(--v4-text-dim);
+}
+
+.account-hidden-file {
+  display: none;
+}
+
+/* Profile form */
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.account-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.account-label {
+  font-size: calc(13px * var(--exo-font-scale, 1));
+  font-weight: 500;
+  color: var(--v4-text);
+}
+
+.account-required {
+  color: var(--v4-danger);
+}
+
+.account-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+
+/* Prompt Card */
+.account-prompt-card {
+  background: var(--v4-panel-2);
+  border: 1px solid var(--v4-line);
+  border-radius: 6px;
+  padding: 16px;
+  min-height: 80px;
+}
+
+.account-prompt-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--v4-font-mono, monospace);
+  font-size: calc(13px * var(--exo-font-scale, 1));
+  line-height: 1.6;
+  color: var(--v4-text);
+}
+
+.account-prompt-empty {
+  font-size: calc(13px * var(--exo-font-scale, 1));
+  color: var(--v4-text-dim);
+  font-style: italic;
+}
+
+/* Telemetry Usage */
+.usage-period-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.usage-mode-toggle {
+  display: inline-flex;
+  border: 1px solid var(--v4-line);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--v4-panel-2);
+}
+
+.usage-mode-btn {
+  padding: 6px 12px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  border: none;
+  background: transparent;
+  color: var(--v4-text-dim);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.usage-mode-btn:hover {
+  color: var(--v4-text);
+}
+
+.usage-mode-btn--active {
+  background: var(--v4-accent);
+  color: #fff;
+  font-weight: 500;
+}
+
+.usage-nav-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.usage-period-label {
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  color: var(--v4-text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.usage-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.usage-metric-card {
+  background: var(--v4-panel-2);
+  border: 1px solid var(--v4-line);
+  border-radius: 6px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.usage-metric-label {
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  color: var(--v4-text-dim);
+}
+
+.usage-metric-value {
+  font-size: calc(18px * var(--exo-font-scale, 1));
+  font-weight: 600;
+  color: var(--v4-text);
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+.usage-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--v4-line);
+  border-radius: 6px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.usage-table {
+  width: 100%;
+  min-width: 500px;
+  border-collapse: collapse;
+  font-size: calc(13px * var(--exo-font-scale, 1));
+  text-align: left;
+}
+
+.usage-table th {
+  padding: 10px 14px;
+  background: var(--v4-panel-2);
+  border-bottom: 1px solid var(--v4-line);
+  color: var(--v4-text-dim);
+  font-weight: 500;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  white-space: nowrap;
+}
+
+.usage-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--v4-line);
+  color: var(--v4-text);
+}
+
+.usage-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.usage-date-cell {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-model-cell {
+  font-family: var(--v4-font-mono, monospace);
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.usage-num-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Avatar Crop Dialog */
+.avatar-crop-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.avatar-crop-viewport {
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #000;
+  cursor: grab;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.avatar-crop-viewport:active {
+  cursor: grabbing;
+}
+
+.avatar-crop-image {
+  position: absolute;
+  max-width: none;
+  pointer-events: none;
+}
+
+.avatar-crop-mask {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  border: 1px dashed rgba(255, 255, 255, 0.4);
+}
+
+.avatar-crop-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 240px;
+}
+
+.avatar-crop-slider {
+  flex: 1;
+}
+
+/* Success banner */
+.app-banner--success {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: calc(13px * var(--exo-font-scale, 1));
+}
+
+.app-banner--error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: calc(13px * var(--exo-font-scale, 1));
+}

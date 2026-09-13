@@ -19,6 +19,7 @@ import {
 import { MessageTimeline } from './MessageTimeline';
 import type { MessageView } from './types';
 import { MoreMenu } from '../../shell/PrimaryNavigation';
+import { useDocumentTitle } from '../../shared/useDocumentTitle';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
 import { useChatRuntime } from './runtime/useChatRuntime';
 import { ChatComposer } from './ChatComposer';
@@ -77,6 +78,19 @@ export function ConversationPage() {
   const id = invalid ? 0 : Number(conversationId);
 
   const conversationQuery = useConversationQuery(id);
+  const conv = conversationQuery.data;
+
+  const title = invalid
+    ? '会话不存在'
+    : conversationQuery.isError
+      ? toAppApiError(conversationQuery.error).status === 404
+        ? '会话不存在'
+        : '会话加载失败'
+      : conv && conv.id === id
+        ? conv.name?.trim() || `会话 #${id}`
+        : '会话';
+  useDocumentTitle(title);
+
   const presetsQuery = useVisiblePresetsQuery();
   const pagesQuery = useMessagePagesQuery(id);
   const merged = pagesQuery.data;

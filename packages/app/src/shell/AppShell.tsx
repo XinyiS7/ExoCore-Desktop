@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { MoreMenu, PrimaryNavigation } from './PrimaryNavigation';
 
-const DETAIL_PATH = /^\/chat\/\d+$|^\/agents\/[1-9]\d*$|^\/projects\/[1-9]\d*$/;
+const DETAIL_PATH = /^\/chat\/\d+$|^\/agents\/[1-9]\d*$|^\/projects\/[1-9]\d*$|^\/account$|^\/settings(?:\/.*)?$/;
 
 /**
  * Responsive App Shell (D1 = D-A + M1 + X1 + C1):

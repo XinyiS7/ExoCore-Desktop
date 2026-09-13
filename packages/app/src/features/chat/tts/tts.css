@@ -19,7 +19,7 @@
   border: none;
   padding: 2px 6px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: calc(11px * var(--exo-font-scale, 1));
   white-space: nowrap;
   color: var(--v4-text-mute);
   cursor: pointer;
@@ -87,14 +87,14 @@
 }
 
 .app-voice-time {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--exo-font-scale, 1));
   color: var(--v4-text-mute);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
 .app-voice-loading {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--exo-font-scale, 1));
   color: var(--v4-text-dim);
   white-space: nowrap;
 }
@@ -125,7 +125,7 @@
      widths it stays visibly rendered (wrapping into the control) instead of
      being reduced to an icon + hover-only title. */
   .app-voice-btn--failure {
-    font-size: 10px;
+    font-size: calc(10px * var(--exo-font-scale, 1));
     line-height: 1.25;
     padding: 2px 5px;
     gap: 3px;

@@ -7,6 +7,7 @@ import type { CreateConversationResult } from './types';
 import { RecentConversationList } from './RecentConversationList';
 import { CreateConversationDialog } from './CreateConversationDialog';
 import { MoreMenu } from '../../shell/PrimaryNavigation';
+import { useDocumentTitle } from '../../shared/useDocumentTitle';
 
 /**
  * V4 Chat Home — the package root.
@@ -14,6 +15,7 @@ import { MoreMenu } from '../../shell/PrimaryNavigation';
  * No search, no Agent/Project Hub aggregation (those belong to P2).
  */
 export function ChatHomePage() {
+  useDocumentTitle('Chat');
   const [dialogOpen, setDialogOpen] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();

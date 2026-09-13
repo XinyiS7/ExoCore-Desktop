@@ -6,6 +6,53 @@
     <meta name="theme-color" content="#0a0a0c" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>ExoCore V4</title>
+    <script>
+      (function() {
+        try {
+          var theme = 'dark';
+          var storedTheme = localStorage.getItem('exo_theme');
+          if (storedTheme === 'light') theme = 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+          var metaTheme = document.querySelector('meta[name="theme-color"]');
+          if (metaTheme) {
+            metaTheme.setAttribute('content', theme === 'light' ? '#f8f9fb' : '#0a0a0c');
+          }
+
+          var validFonts = ['sarasa', 'wenkai', 'maple'];
+          var sys = localStorage.getItem('exo_font_system');
+          document.documentElement.setAttribute(
+            'data-font-system',
+            validFonts.indexOf(sys) !== -1 ? sys : 'sarasa'
+          );
+
+          var msg = localStorage.getItem('exo_font_message');
+          document.documentElement.setAttribute(
+            'data-font-message',
+            validFonts.indexOf(msg) !== -1 ? msg : 'sarasa'
+          );
+
+          var code = localStorage.getItem('exo_font_code');
+          document.documentElement.setAttribute(
+            'data-font-code',
+            validFonts.indexOf(code) !== -1 ? code : 'maple'
+          );
+
+          var scale = 100;
+          var rawScale = localStorage.getItem('exo_font_scale');
+          if (rawScale != null) {
+            var s = parseFloat(rawScale);
+            if (!isNaN(s)) {
+              if (s < 10) s = Math.round(s * 100);
+              else s = Math.round(s);
+              if (s >= 80 && s <= 150) {
+                scale = s;
+              }
+            }
+          }
+          document.documentElement.style.setProperty('--exo-font-scale', String(scale / 100));
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

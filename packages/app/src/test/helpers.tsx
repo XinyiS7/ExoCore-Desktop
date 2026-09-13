@@ -11,6 +11,15 @@ import { AgentHubPage } from '../features/agents/AgentHubPage';
 import { AgentProfilePage } from '../features/agents/AgentProfilePage';
 import { ProjectHubPage } from '../features/projects/ProjectHubPage';
 import { ProjectDetailPage } from '../features/projects/ProjectDetailPage';
+import { AccountPage } from '../features/account/AccountPage';
+import { AppearanceProvider } from '../app/AppearanceProvider';
+import { SettingsLayout } from '../features/settings/SettingsLayout';
+import { AppearancePanel } from '../features/settings/AppearancePanel';
+import { RoutinePanel } from '../features/settings/RoutinePanel';
+import { NotificationsPlaceholder } from '../features/settings/NotificationsPlaceholder';
+import { KeysPanel } from '../features/settings/KeysPanel';
+import { ModelRolesPanel } from '../features/settings/ModelRolesPanel';
+import { McpPanel } from '../features/settings/McpPanel';
 
 // ── fetch mock helpers ─────────────────────────────────────────────────────
 
@@ -23,10 +32,11 @@ export interface MockRoute {
   handler: RouteHandler;
 }
 
-export function jsonResponse(body: unknown, status = 200): Response {
+export function jsonResponse(body: unknown, status: number | ResponseInit = 200): Response {
+  const init: ResponseInit = typeof status === 'number' ? { status } : status;
   return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
+    ...init,
+    headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) },
   });
 }
 
@@ -49,8 +59,24 @@ export const RUNTIME_TEST_MODEL_CATALOG = {
     configured: true,
     enabled: true,
   }],
-  roles: { main: [{ model: 'deepseek-v4-flash', default_endpoint: 7 }], support: {} },
-  providers: [],
+  roles: {
+    main: [{ model: 'deepseek-v4-flash', default_endpoint: 7 }],
+    support: {
+      general_sub_agent: { model: 'deepseek-v4-flash', default_endpoint: 7 },
+      vision_helper: { model: 'deepseek-v4-flash', default_endpoint: 7 },
+      grounding: { model: 'deepseek-v4-flash', default_endpoint: 7 },
+      image_gen: { model: 'deepseek-v4-flash', default_endpoint: 7 },
+    },
+  },
+  providers: [
+    {
+      id: 'deepseek',
+      display_name: 'DeepSeek',
+      execution_type: 'direct_api',
+      execution_adapter: 'internal_http',
+      requires_endpoint_api_key: true,
+    },
+  ],
 };
 
 export function runtimeTestPreset(id: number) {
@@ -149,30 +175,49 @@ export function renderV4(ui: ReactElement, initialEntries: string[] = ['/']) {
   const queryClient = makeQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={initialEntries}>{ui}</MemoryRouter>
+      <AppearanceProvider>
+        <MemoryRouter initialEntries={initialEntries}>{ui}</MemoryRouter>
+      </AppearanceProvider>
     </QueryClientProvider>,
   );
 }
 
 /** Render the real route tree (shell + pages) with canonical paths. */
-export function renderApp(initialEntries: string[] = ['/']) {
+export function renderApp(
+  initialEntries: string[] = ['/'],
+  { redirectSettings = false }: { redirectSettings?: boolean } = {},
+) {
   const queryClient = makeQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={initialEntries}>
-        <Routes>
-          <Route element={<AppShell />}>
-            <Route index element={<ChatHomePage />} />
-            <Route path="chat" element={<Navigate to="/" replace />} />
-            <Route path="chat/:conversationId" element={<ConversationPage />} />
-            <Route path="agents" element={<AgentHubPage />} />
-            <Route path="agents/:presetId" element={<AgentProfilePage />} />
-            <Route path="projects" element={<ProjectHubPage />} />
-            <Route path="projects/:projectId" element={<ProjectDetailPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
+      <AppearanceProvider>
+        <MemoryRouter initialEntries={initialEntries}>
+          <Routes>
+            <Route element={<AppShell />}>
+              <Route index element={<ChatHomePage />} />
+              <Route path="chat" element={<Navigate to="/" replace />} />
+              <Route path="chat/:conversationId" element={<ConversationPage />} />
+              <Route path="agents" element={<AgentHubPage />} />
+              <Route path="agents/:presetId" element={<AgentProfilePage />} />
+              <Route path="projects" element={<ProjectHubPage />} />
+              <Route path="projects/:projectId" element={<ProjectDetailPage />} />
+              <Route path="account" element={<AccountPage />} />
+              <Route path="user" element={<Navigate to="/account" replace />} />
+              <Route path="settings" element={<SettingsLayout />}>
+                {redirectSettings && <Route index element={<Navigate to="/settings/keys" replace />} />}
+                <Route path="keys" element={<KeysPanel />} />
+                <Route path="models" element={<ModelRolesPanel />} />
+                <Route path="mcp" element={<McpPanel />} />
+                <Route path="appearance" element={<AppearancePanel />} />
+                <Route path="routine" element={<RoutinePanel />} />
+                <Route path="notifications" element={<NotificationsPlaceholder />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </AppearanceProvider>
     </QueryClientProvider>,
   );
 }

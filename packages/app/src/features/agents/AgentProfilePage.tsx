@@ -7,6 +7,8 @@ import { ConversationDeleteMenu } from '../chat/ConversationDeleteMenu';
 import { isG045AgentType, useConversationsQuery } from '../chat/queries';
 import { formatDateTime } from '../chat/time';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
+import { useDocumentTitle } from '../../shared/useDocumentTitle';
+import { MoreMenu } from '../../shell/PrimaryNavigation';
 import { isValidPresetId, useAgentMemoryQuery, useAgentPresetQuery } from './queries';
 import {
   applyConversationFilter,
@@ -18,6 +20,7 @@ import {
 
 /** Distinct invalid-URL state — no request is issued for bad route params. */
 function InvalidAgentState() {
+  useDocumentTitle('Agent 不存在');
   return (
     <div className="app-page app-page--center">
       <div className="app-error-page" role="alert">
@@ -33,6 +36,7 @@ function InvalidAgentState() {
 
 /** 404: the preset is hidden/absent from the visible-only queryset. */
 function AgentMissingState() {
+  useDocumentTitle('Agent 不存在');
   return (
     <div className="app-error-page" role="alert">
       <p className="app-error-title">Agent 不存在或未公开</p>
@@ -77,6 +81,16 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
   }, [presetId]);
 
   const preset = presetQuery.data;
+
+  const title = presetQuery.isError
+    ? toAppApiError(presetQuery.error).status === 404
+      ? 'Agent 不存在'
+      : 'Agent 详情加载失败'
+    : preset && preset.id === presetId
+      ? preset.name?.trim() || 'Agent Profile'
+      : 'Agent Profile';
+  useDocumentTitle(title);
+
   const agentRows = useMemo(
     () => (conversationsQuery.data ?? []).filter((row) => row.agentPresetId === presetId),
     [conversationsQuery.data, presetId],
@@ -120,6 +134,7 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
             </span>
           ) : null}
         </div>
+        <MoreMenu className="app-more--top" />
       </header>
 
       <div className="app-scroll">

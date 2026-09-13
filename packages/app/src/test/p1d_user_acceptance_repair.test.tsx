@@ -31,8 +31,24 @@ const catalog = {
     configured: true,
     enabled: true,
   }],
-  roles: { main: [{ model: 'deepseek-v4-flash', default_endpoint: 7 }], support: {} },
-  providers: [],
+  roles: {
+    main: [{ model: 'deepseek-v4-flash', default_endpoint: 7 }],
+    support: {
+      general_sub_agent: { model: 'deepseek-v4-flash', default_endpoint: 7 },
+      vision_helper: { model: 'deepseek-v4-flash', default_endpoint: 7 },
+      grounding: { model: 'deepseek-v4-flash', default_endpoint: 7 },
+      image_gen: { model: 'deepseek-v4-flash', default_endpoint: 7 },
+    },
+  },
+  providers: [
+    {
+      id: 'deepseek',
+      display_name: 'DeepSeek',
+      execution_type: 'direct_api',
+      execution_adapter: 'internal_http',
+      requires_endpoint_api_key: true,
+    },
+  ],
 };
 
 const conversation = (id: number) => ({

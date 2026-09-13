@@ -8,6 +8,14 @@ import { AgentHubPage } from '../features/agents/AgentHubPage';
 import { AgentProfilePage } from '../features/agents/AgentProfilePage';
 import { ProjectHubPage } from '../features/projects/ProjectHubPage';
 import { ProjectDetailPage } from '../features/projects/ProjectDetailPage';
+import { AccountPage } from '../features/account/AccountPage';
+import { SettingsLayout } from '../features/settings/SettingsLayout';
+import { AppearancePanel } from '../features/settings/AppearancePanel';
+import { RoutinePanel } from '../features/settings/RoutinePanel';
+import { NotificationsPlaceholder } from '../features/settings/NotificationsPlaceholder';
+import { KeysPanel } from '../features/settings/KeysPanel';
+import { ModelRolesPanel } from '../features/settings/ModelRolesPanel';
+import { McpPanel } from '../features/settings/McpPanel';
 
 // Vite BASE_URL: "/" in dev, "/app/" in production build → basename "" / "/app".
 // Browser refresh and nginx fallback preserve the same detail route (Plan §5.4).
@@ -31,6 +39,24 @@ export const router = createBrowserRouter(
         // P2B: Project Hub (L1) + directly addressable Project Detail (L2, D8).
         { path: 'projects', element: <ProjectHubPage /> },
         { path: 'projects/:projectId', element: <ProjectDetailPage /> },
+        // P2C CP C-1: Canonical Account page + /user legacy redirect (Plan §3 D1).
+        { path: 'account', element: <AccountPage /> },
+        { path: 'user', element: <Navigate to="/account" replace /> },
+        // P2C CP C-4: Settings feature shell with Keys, Models, MCP, Appearance, Routine, Notifications (Plan §6 CP C-4).
+        {
+          path: 'settings',
+          element: <SettingsLayout />,
+          children: [
+            { index: true, element: <Navigate to="/settings/keys" replace /> },
+            { path: 'keys', element: <KeysPanel /> },
+            { path: 'models', element: <ModelRolesPanel /> },
+            { path: 'mcp', element: <McpPanel /> },
+            { path: 'appearance', element: <AppearancePanel /> },
+            { path: 'routine', element: <RoutinePanel /> },
+            { path: 'notifications', element: <NotificationsPlaceholder /> },
+            { path: '*', element: <NotFoundPage /> },
+          ],
+        },
         // Real not-found state (no masquerading empty page).
         { path: '*', element: <NotFoundPage /> },
       ],

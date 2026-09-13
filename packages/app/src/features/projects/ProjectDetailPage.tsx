@@ -8,6 +8,8 @@ import { useProjectDetailQuery } from '../chat/control/queries';
 import { toAppApiError } from '../chat/api';
 import { formatDateTime } from '../chat/time';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
+import { useDocumentTitle } from '../../shared/useDocumentTitle';
+import { MoreMenu } from '../../shell/PrimaryNavigation';
 import { isValidProjectId, useUpdateProjectMutation } from './queries';
 import {
   agentLabel,
@@ -24,6 +26,7 @@ import { ProjectKnowledgeSection } from './ProjectKnowledgeSection';
 
 /** Distinct invalid-URL state — no request is issued for bad route params. */
 function InvalidProjectState() {
+  useDocumentTitle('项目不存在');
   return (
     <div className="app-page app-page--center">
       <div className="app-error-page" role="alert">
@@ -39,6 +42,7 @@ function InvalidProjectState() {
 
 /** 404: the Project is absent from the backend (Archived projects are excluded). */
 function ProjectMissingState() {
+  useDocumentTitle('项目不存在');
   return (
     <div className="app-error-page" role="alert">
       <p className="app-error-title">项目不存在或已被删除</p>
@@ -229,6 +233,15 @@ function ProjectDetail({ projectId }: { projectId: number }) {
 
   const project = detailQuery.data;
 
+  const title = detailQuery.isError
+    ? toAppApiError(detailQuery.error).status === 404
+      ? '项目不存在'
+      : '项目详情加载失败'
+    : project && project.id === projectId
+      ? project.name?.trim() || '项目详情'
+      : '项目详情';
+  useDocumentTitle(title);
+
   return (
     <div className="app-page">
       <header className="app-topbar app-topbar--detail">
@@ -240,6 +253,7 @@ function ProjectDetail({ projectId }: { projectId: number }) {
           <h1 className="app-h1">项目详情</h1>
           {project ? <span className="app-topbar-sub project-chip-clamp">{project.name}</span> : null}
         </div>
+        <MoreMenu className="app-more--top" />
       </header>
 
       <div className="app-scroll">

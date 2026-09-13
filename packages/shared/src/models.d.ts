@@ -29,6 +29,22 @@ export interface ModelCatalogEndpoint {
 export interface ModelCatalogRoleMain {
   model: string;
   default_endpoint: number;
+  style_shadow?: string | null;
+  position?: number;
+}
+
+export interface ModelCatalogProvider {
+  id: string | number;
+  display_name: string;
+  execution_type: string;
+  execution_adapter?: string;
+  requires_endpoint_api_key?: boolean;
+  base_url?: string;
+  supported_families?: string[];
+  supported_models?: string[];
+  excluded_models?: string[];
+  model_name_prefix?: string;
+  model_name_overrides?: Record<string, string>;
 }
 
 export interface ModelCatalog {
@@ -38,7 +54,7 @@ export interface ModelCatalog {
     main: ModelCatalogRoleMain[];
     support: Record<string, { model: string; default_endpoint: number }>;
   };
-  providers: Array<{ id: number; display_name: string; execution_type: string }>;
+  providers: ModelCatalogProvider[];
 }
 
 export interface InitialSessionTarget {

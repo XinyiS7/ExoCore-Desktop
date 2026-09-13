@@ -79,7 +79,7 @@
   background: none;
   border-radius: 6px;
   padding: 7px 10px;
-  font-size: 13px;
+  font-size: calc(13px * var(--exo-font-scale, 1));
   color: var(--v4-text);
   text-align: left;
   cursor: pointer;

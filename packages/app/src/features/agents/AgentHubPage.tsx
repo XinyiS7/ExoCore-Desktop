@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { isG045AgentType, useVisiblePresetsQuery } from '../chat/queries';
 import { toAppApiError } from '../chat/api';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
+import { useDocumentTitle } from '../../shared/useDocumentTitle';
+import { MoreMenu } from '../../shell/PrimaryNavigation';
 import { orderVisiblePresets } from './projection';
 
 /**
@@ -10,6 +12,7 @@ import { orderVisiblePresets } from './projection';
  * fan-out, no lifecycle actions. Cards navigate to the canonical Profile.
  */
 export function AgentHubPage() {
+  useDocumentTitle('Agent Hub');
   const presetsQuery = useVisiblePresetsQuery();
 
   return (
@@ -18,6 +21,9 @@ export function AgentHubPage() {
         <div className="app-topbar-title">
           <h1 className="app-h1">Agent Hub</h1>
           <span className="app-topbar-sub">可见 Agent 预设 · 只读浏览</span>
+        </div>
+        <div className="app-topbar-actions">
+          <MoreMenu className="app-more--top" />
         </div>
       </header>
 

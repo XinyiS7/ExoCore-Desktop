@@ -1,20 +1,12 @@
 import { resolveInitialSessionTarget, type ModelCatalog } from 'exo-shared/models';
-import { apiFetch } from 'exo-shared/api';
-import { useQuery } from '@tanstack/react-query';
-import { AppApiError } from '../api';
+import {
+  validateModelCatalog,
+  fetchModelCatalog,
+  useModelCatalogQuery,
+} from '../../../shared/modelCatalog';
 import type { AudioTarget } from '../attachments/types';
 
-/**
- * P1C Automatic Audio Target Gate (Task 3, §5.4).
- *
- * Resolves the CURRENT Conversation preset's `default_model` through the
- * live model catalog and validates that the resolved endpoint supports audio
- * (`audio` ability + `file_uri` attachment transport). It deliberately adds
- * NO selection UI — the target is automatic until P1D.
- *
- * Target statuses are explicit and retryable; a failure only disables
- * recording/audio upload, never text or ordinary file attachment flows.
- */
+export { validateModelCatalog, fetchModelCatalog, useModelCatalogQuery };
 
 export type AudioTargetGate =
   | { state: 'loading' }
@@ -30,61 +22,6 @@ export type AudioTargetUnsupportedReason =
   | 'endpoint_without_file_uri';
 
 export type AudioTargetUnavailableReason = 'not_ready' | 'catalog_fetch_failed';
-
-function isPositiveInteger(value: unknown): value is number {
-  return Number.isInteger(value) && (value as number) > 0;
-}
-
-/** Strict selector-facing validation; malformed catalog truth is never sendable. */
-export function validateModelCatalog(raw: unknown): ModelCatalog {
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-    throw new AppApiError('模型目录接口返回格式异常', { body: raw, code: 'CONTRACT' });
-  }
-  const catalog = raw as Partial<ModelCatalog>;
-  if (
-    !Array.isArray(catalog.models) ||
-    !Array.isArray(catalog.endpoints) ||
-    typeof catalog.roles !== 'object' ||
-    catalog.roles === null ||
-    !Array.isArray(catalog.roles.main)
-  ) {
-    throw new AppApiError('模型目录接口缺少 models、endpoints 或 main roles', { body: raw, code: 'CONTRACT' });
-  }
-  const modelsValid = catalog.models.every(
-    (model) =>
-      typeof model?.name === 'string' &&
-      model.name.trim().length > 0 &&
-      Array.isArray(model.abilities) &&
-      model.abilities.every((ability) => typeof ability === 'string') &&
-      Array.isArray(model.compatible_endpoint_ids) &&
-      model.compatible_endpoint_ids.every(isPositiveInteger),
-  );
-  const endpointsValid = catalog.endpoints.every(
-    (endpoint) =>
-      isPositiveInteger(endpoint?.id) &&
-      typeof endpoint.name === 'string' &&
-      typeof endpoint.configured === 'boolean' &&
-      typeof endpoint.enabled === 'boolean' &&
-      Array.isArray(endpoint.attachment_transports) &&
-      endpoint.attachment_transports.every((transport) => typeof transport === 'string'),
-  );
-  const rolesValid = catalog.roles.main.every(
-    (role) =>
-      typeof role?.model === 'string' &&
-      role.model.length > 0 &&
-      isPositiveInteger(role.default_endpoint),
-  );
-  if (!modelsValid || !endpointsValid || !rolesValid) {
-    throw new AppApiError('模型目录包含无效的模型、端点或主角色条目', { body: raw, code: 'CONTRACT' });
-  }
-  return catalog as ModelCatalog;
-}
-
-/** Fetch the live model catalog through the same-origin API. */
-export async function fetchModelCatalog(): Promise<ModelCatalog> {
-  const raw: unknown = await apiFetch('/api/core/model-catalog/', { method: 'GET' });
-  return validateModelCatalog(raw);
-}
 
 /**
  * Pure target resolution + validation. `preset` is the Conversation's
@@ -139,19 +76,6 @@ export function audioTargetUnsupportedText(reason: AudioTargetUnsupportedReason)
     default:
       return '当前目标不支持录音';
   }
-}
-
-/**
- * Live-catalog query for the audio target gate. One catalog fetch per mount
- * family; `retry` re-fetches after a transient failure without P1D controls.
- */
-export function useModelCatalogQuery() {
-  return useQuery({
-    queryKey: ['model-catalog'],
-    queryFn: fetchModelCatalog,
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-  });
 }
 
 /**
