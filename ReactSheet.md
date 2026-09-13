@@ -657,13 +657,158 @@ key_value write-only，响应不返回。last_four 自动提取。
 
 ## 第八篇  推送通知 (Push)
 
-### 8.1 Subscription
+> **B6 冻结契约（后端已交付）。** 每个 eligible 且已提交的 canonical assistant Message 恰好对应一个 durable `AssistantMessageArrival`，逻辑 dedupe key 恒为 `assistant-message:<message_id>`。前台 reconciliation 与 Web Push 都是该 arrival 的派生传输：两者都不决定 Message 是否存在，Push 失败也不回滚 Message。
+>
+> **Eligible producer 边界（两条分支）**：分支 A = ordinary Chat 的 direct 完成轮次（live SSE 与 async 视图消费同一个 `process_chat()` generator，因此 async 不是独立 producer）与 live managed-runtime 完成轮次；分支 B = `send_message` 工具，它从 `create_send_message()` 起步，不经过分支 A 的任何步骤。**排除判定按 Conversation ownership，不按客户端或 processor 名称**：`is_bridge=True` 或非空 `external_session_id`（由 WezTerm/agy pane 路径与 external-context injection 写入），以及 Council（phase0 / participant / synthesis）归属的会话不产生 arrival。所以 agy（wezterm processor）轮次被排除，而 opencode-/codex-（mcp-stdio processor，`_run_mcp_stdio`）的会话不带这些 flag，会与普通 direct 轮次一样正常产生 arrival。另外 replay/reconcile 复用底层 finalizer、从不调用 `record()`；failed/stopped 由调用方的完成门禁挡住（`record()` 自身不感知 run status，只校验正文与 ownership）；空正文与 tool-only 轮次则不过 `record()` 的内容门禁——这些同样不产生 arrival，但都不是「按客户端类型」屏蔽。排除生产者只跳过 arrival，不改变其既有 Message/trace/done 行为。
 
-**POST /api/push/subscribe/** — 注册设备 token
+### 8.1 Subscription — **POST /api/push/subscribe/**
 
-### 8.2 Notifications
+```ts
+type SubscribeRequest = {
+  subscription: {
+    endpoint: string;                        // 必填；DB 列上限 500
+    keys: { p256dh: string; auth: string };  // 必填；DB 列上限 255
+  };
+  device_name?: string;      // serializer 校验上限 200；仅显示标签，不作 identity
+  installation_id?: string;   // UUID；V4/P2D 必填，旧客户端缺省 null
+};
+```
 
-**GET /api/push/notifications/** — 待处理通知列表
+**201 Created**（仅在落库完成后返回）：
+
+```json
+{
+  "id": 15,
+  "endpoint": "https://push.example/...",
+  "p256dh": "B...",
+  "auth": "k...",
+  "user_agent": "...",
+  "device_name": "iPhone",
+  "installation_id": "9f0c1e2a-....",
+  "is_active": true,
+  "persisted": true,
+  "created_at": "2026-09-14T08:00:00Z",
+  "updated_at": "2026-09-14T08:00:00Z"
+}
+```
+
+规则：
+
+- `persisted: true` 是「后端已持久化」的唯一事实。前端必须把「浏览器存在 PushSubscription」与「后端 persisted=true」显示为两个不同状态；校验或 DB 失败绝不返回健康成功。
+- `endpoint` 仍全局唯一。**仅当 `installation_id` 是非 null UUID** 时才执行 installation 轮换：同一事务内先停用该 installation 的其它 active endpoint，再按 endpoint upsert 并显式恢复 `is_active=True`，使安装身份收敛、换 endpoint 不产生双推。显式传 `null` 只清空该 endpoint 自身的 `installation_id`，不触发兄弟 endpoint 停用。DB 侧另有条件唯一约束——非 null `installation_id` 同时至多一个 active 行。
+- 省略 `installation_id`：保留数据库现值；显式传 `null`：清空。不按 User-Agent / `device_name` 猜测合并设备；legacy `installation_id=null` 的历史多 endpoint 不做批量归并。
+- 长度归属：`device_name<=200` 由 serializer 校验（超长得到 400 字段错误）；`endpoint<=500` 与 `p256dh`/`auth<=255` 是 DB 列与客户端约束，不是 serializer 的 400 保证，不要假设任何超长请求都会得到下面的 DRF 400 示例。
+- **400**：DRF 字段错误对象，例如 `{"subscription": ["subscription.endpoint is required"]}`。
+
+**POST /api/push/unsubscribe/** — `{"endpoint": "..."}`，按 endpoint 幂等返回 **204**（未命中同样 204）。
+
+### 8.2 前台 reconciliation — **GET /api/push/assistant-arrivals/**
+
+有界 cursor 轮询，不新增 WebSocket / SSE fan-out，也不复用 chat SSE。该端点不依赖 Notification permission 或 PushSubscription：Push 被拒或过期不影响前台最终新鲜度。
+
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `after` | 十进制非负整数 | 否 | arrival cursor；缺省 = bootstrap |
+| `limit` | 整数 | 否 | 默认 50；必须落在 `1..100` |
+
+```ts
+type AssistantArrivalPage = {
+  events: AssistantMessageArrivedV1[];  // 按 event_id ASC
+  next_cursor: number;
+  has_more: boolean;
+};
+```
+
+- **bootstrap（缺省 `after`）**：`{"events": [], "next_cursor": <当前可访问 arrival 的 high-water id，无记录时为 0>, "has_more": false}`。不回放历史，前端以该 cursor 起步。
+- **增量**：返回 `id > after` 且按 `id ASC` 排序；`has_more=true` 表示应立即再取一页。有结果时 `next_cursor` 等于该页最后一个 `event_id`；空页保持请求 cursor 原值。
+- **可见性过滤在数据库完成**：queryset 先限定「assistant 角色 + Conversation 有可见 AgentPreset + 非 bridge-owned（`is_bridge=False` 且 `external_session_id` 为空）+ 非 Council」，再做 ordering 与 `limit + 1` 切片；不会先切片再在 Python 丢弃，因此 cursor 不会永久卡在被过滤 id 之前。Conversation/Message 删除（CASCADE）造成的 id 空洞天然被 `id > after` 跨越。
+- 目标不可访问时不猜「最近会话」、不返回替代目标。
+- **错误（禁止静默 clamp）**：
+  - `after` 为空串 / 非十进制 / 负数 → **400** `{"error": "after must be a non-negative integer", "code": "invalid_after"}`；超出运行时整数转换能力的超长值 → **400** `{"error": "after exceeds the supported integer representation", "code": "invalid_after"}`。
+  - `limit` 不是十进制语法（空串 / 负数 / 含非数字字符）→ **400** `{"error": "limit must be an integer", "code": "invalid_limit"}`。
+  - `limit` 是十进制数字但数值越界（`0` 或 `>100`，含任意长度的数字）→ **400** `{"error": "limit must be between 1 and 100", "code": "invalid_limit"}`。前导零不改变判定，例如 `000100` 合法、`000` 属越界。
+
+P2D 消费约束（前端侧，不在本仓施工）：visible 时有界轮询（建议 15s），并在 `visibilitychange -> visible`、`online` 与 app mount 时立即 reconcile；hidden 时停止普通轮询，交给 Push。打开精确 Conversation 才消费该 installation 的 unread，停留在其它页面不消费。
+
+### 8.3 `assistant-message-arrived.v1` canonical event
+
+`/api/push/assistant-arrivals/` 的 `events[]` 与 Web Push `data.event` 使用同一 serializer：
+
+```ts
+type AssistantMessageArrivedV1 = {
+  kind: "assistant-message-arrived";
+  version: 1;
+  event_id: number;
+  dedupe_key: string;
+  conversation_id: number;
+  message_id: number;
+  agent: { id: number; name: string };
+  preview: { policy: "bounded_text"; text: string; truncated: boolean };
+  target: {
+    kind: "conversation_message";
+    conversation_id: number;
+    message_id: number;
+  };
+  register_ack: { register_id: number; preset_id: number } | null;
+  title_hint: string | null;
+  committed_at: string;
+};
+```
+
+- `dedupe_key` 恒为 `assistant-message:<message_id>`，与 DB OneToOne 一致。前端以 `event_id` 推进 cursor、以 `dedupe_key` 去重（例如同一 arrival 已由 Push 处理）。
+- **`preview` 只从 canonical `Message.content` 派生**：内容过滤后折叠空白，最多 **160** 个 Unicode code point；`truncated` 表示过滤后文本超限。不读取 reasoning、`tool_calls`、私有语音指令或附件正文。锁屏沿用该 bounded preview。
+- `title_hint`：`send_message` 的 title 过滤后 <=200 字符；为 `null` 时前端以 `agent.name` 作标题。
+- `register_ack` 分传输语义：**前台 reconciliation** 只在该 arrival 至少一台设备 `sent` 时给出；**Web Push 的 `data.event`** 刻意以 pending-capable 上下文序列化，`send_message` 产生的 Register 在 provider 完成前就携带 `{register_id, preset_id}`，使「provider 已接受、终局更新前」到达的点击仍可安全 ACK。无 Register 时两种传输均为 `null`；点击引导统一使用该 `{register_id, preset_id}`，不要自行拼接。
+- `committed_at`：arrival 行与 canonical Message 已作为同一次 DB commit 对外可见的 UTC ISO-8601（`Z` 结尾），不是 provider 完成时间。
+- 连续多条 assistant Message 各自保留独立事件，不用 latest 覆盖 sibling。
+
+### 8.4 Web Push 载荷与 at-most-once 投递
+
+顶层载荷保留旧 service worker 可解析的 `title` / `body` / `data`：
+
+```ts
+type AssistantArrivalPush = {
+  title: string;   // title_hint ?? agent.name
+  body: string;    // preview.text
+  data: {
+    url: "/";      // 恒为安全 root，仅作兼容 fallback
+    event: AssistantMessageArrivedV1;
+    register_id: number | null;
+    preset_id: number;
+    sender_type: "agent";
+    sender_name: string;
+  };
+  tag: string;             // = dedupe_key
+  renotify: false;
+  requireInteraction: true;
+};
+```
+
+- **canonical identity 只在 `data.event`**。前端由 `target` 经 route adapter 映射前台地址；`data.url` 不得写死任何前台路由。
+- `tag = dedupe_key` 且 `renotify: false`：同一次投递重放不产生第二个系统弹窗。
+- **逐订阅至多一次**：`AssistantArrivalDelivery` 以 DB 唯一 `(arrival, subscription)` 作为 claim。已存在 claim 的订阅不再调用 provider；同一 installation 已有其它 endpoint 的投递时同样跳过（installation 级去重）。
+- 状态机 `claimed -> sent | failed | expired`：`410` 记为 `expired` 并软停用该订阅（`is_active=false`）。投递结果只统计真实 provider 结果，Push 成败不混入 Message 持久化事实。
+- **claim-before-send 的 at-most-once 取舍**：进程在 claim 之后、provider call 之前崩溃可能漏一条系统 Push（不重试、不双弹），前台 reconciliation 仍保证 Message 可见；provider 已接受但终结更新前崩溃时 delivery 保守保持 `claimed`，不重试也不猜 `sent`。
+- 派发只发生在 arrival 事务提交之后。投递事实的边界是 **durable claim**：只有取得 `AssistantArrivalDelivery` claim 之后的 provider 结果才终结为 `sent`/`failed`/`expired`；pre-claim、payload 构建、DB 与其它基础设施错误只被记录日志（ordinary 路径不产生投递事实，`send_message` 路径以工具层 `status=failed` 上抛），绝不伪造成功、不回滚 Message/arrival，也不把已完成的 chat 改成 error。
+
+### 8.5 Register ACK 兼容
+
+**POST /api/agents/registers/&lt;pk&gt;/ack/?preset_id=&lt;int&gt;** — 用户对通知的导航/忽略回执。
+
+```ts
+type RegisterAckRequest = {
+  action?: "navigate" | "dismiss";  // 默认 "navigate"
+  subscription_endpoint?: string;   // 可选，仅用于显示设备名
+};
+type RegisterAckResponse = { id: number; content: string };  // 200
+```
+
+- **200** `{id, content}`；**400** preset_id 缺失或非整数、action 非枚举，或**带 v1 marker 的通知数据自身损坏**；**404** 该 preset 下不存在此 Register。
+- 400 的边界：只有 malformed **versioned v1** 信封才是 400。不带 v1 marker 的其它/无法识别的 legacy 文本不会被当成错误：它保持 `content` 不变并仍返回 200（仅刷新 TTL），不猜测改写。
+- **幂等**：ACK 后 Register 转为「用户已处理」，并把 `expires_at` 刷新为 **now + 1 小时**（初始 claimed Register 的保留期是 12 小时）；重复 ACK 不覆盖既有已处理状态，稍后的投递摘要更新也不会把用户已点击改回未处理。
+- 兼容解析同时接受「投递状态待确认」与「已发送」两种信封。`send_message` 在派发前写入的 Register 已经完整、可解析、可 ACK，不依赖后续更新才合法。
+- 与 arrival 的衔接：`send_message` 的 Register 在至少一台设备 `sent` 后才完善为已发送摘要；**若已被用户处理则不覆盖**。零订阅 / 全部失败 / 过期时删除未被处理的 Register（`arrival.register` 随 SET_NULL 归空，Message 与 arrival 保留）；投递结果不确定（存在 `claimed`）时保守保留可 ACK 的 Register 直到其 12 小时 TTL。
+- ordinary Chat 的 arrival `register_ack` 恒为 `null`，绝不伪造 Register。
 
 ---
 
