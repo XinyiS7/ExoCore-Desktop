@@ -919,10 +919,9 @@ preset 的 live main Conversation 都可显示和领取结果。最新 user 请�
 
 ---
 
-## 第十篇  Tool Drawer 与 MCP 凭证管理（Frozen / Backend Pending）
+## 第十篇  Tool Drawer 与 MCP 凭证管理（Frozen）
 
-> 本篇是前后端施工契约，当前端点尚未实现。前端可以据此完成界面与 API wrapper，
-> 但在后端交付前必须正确展示 unavailable/error，不得伪造保存成功。
+> 本篇是前后端施工契约，后端接口已在 ExoCore 交付可用（参见 `agents/tests/test_drawer_mcp_api.py`）。
 
 ### 10.1 Drawer Catalog
 
