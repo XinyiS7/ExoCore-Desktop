@@ -441,37 +441,29 @@ describe('Phase 2C CP C-2 — Settings Shell, Appearance, Routine & Notification
     });
   });
 
-  // ── 4. Notifications Placeholder (Negative Invariants) ───────────────────────
-  describe('Notifications Placeholder Boundary & Negative Invariants', () => {
-    it('renders bounded placeholder surface explaining Phase 2D delivery', async () => {
+  // ── 4. Notifications Panel Delivery & Invariants ─────────────────────────
+  describe('Notifications Panel Delivery & Invariants', () => {
+    it('renders NotificationsPanel surface on /settings/notifications', async () => {
       renderApp(['/settings/notifications']);
 
       expect(await screen.findByRole('heading', { name: '通知设置' })).toBeInTheDocument();
-      expect(screen.getByText('Phase 2D 待交付')).toBeInTheDocument();
-      expect(screen.getByText('通知中心与推送订阅说明')).toBeInTheDocument();
-      expect(screen.getByText('浏览器原生权限管理')).toBeInTheDocument();
-      expect(screen.getByText('设备名称与 Web Push 凭证订阅')).toBeInTheDocument();
-      expect(screen.getByText('助手消息到达与统一未读流')).toBeInTheDocument();
+      expect(screen.getByText('推送服务状态')).toBeInTheDocument();
+      expect(screen.getByText('设备名称')).toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: '设备名称' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '保存设备名' })).toBeInTheDocument();
     });
 
-    it('strictly satisfies negative invariants: no PushManager, no Notification.permission, no pushApi', async () => {
+    it('strictly satisfies negative invariants on mount: no unprompted pushApi or subscription calls', async () => {
       renderApp(['/settings/notifications']);
 
       expect(await screen.findByRole('heading', { name: '通知设置' })).toBeInTheDocument();
 
-      // No push API calls were made
+      // No push API calls were made (subscription / device registration)
       const pushCalls = fetchMock.mock.calls.filter((call) => {
         const urlStr = typeof call[0] === 'string' ? call[0] : (call[0] as Request).url;
-        return urlStr.includes('/api/push');
+        return urlStr.includes('/api/push') && !urlStr.includes('/assistant-arrivals/');
       });
       expect(pushCalls.length).toBe(0);
-
-      // No device name stored or read
-      expect(localStorage.getItem('exo_push_device_name')).toBeNull();
-
-      // No permission toggle or subscription toggle buttons exist
-      expect(screen.queryByRole('button', { name: /启用通知|关闭通知|授权通知/i })).toBeNull();
-      expect(screen.queryByRole('textbox', { name: /设备名称/i })).toBeNull();
     });
   });
 });

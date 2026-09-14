@@ -254,7 +254,7 @@ describe('Agent Profile route states (P2A Stage A)', () => {
     renderApp(['/agents/abc']);
     await screen.findByText('无效的 Agent 地址');
     expect(screen.getByRole('link', { name: 'Agent Hub' }).getAttribute('href')).toBe('/agents');
-    expect(calls).toHaveLength(0);
+    expect(calls.filter((c) => !c.url.pathname.includes('/assistant-arrivals/'))).toHaveLength(0);
   });
 
   it('distinguishes 404 (hidden/absent preset) from malformed and network errors', async () => {

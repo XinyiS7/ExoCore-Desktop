@@ -16,7 +16,7 @@ import { AppearanceProvider } from '../app/AppearanceProvider';
 import { SettingsLayout } from '../features/settings/SettingsLayout';
 import { AppearancePanel } from '../features/settings/AppearancePanel';
 import { RoutinePanel } from '../features/settings/RoutinePanel';
-import { NotificationsPlaceholder } from '../features/settings/NotificationsPlaceholder';
+import { NotificationsPanel } from '../features/notifications/NotificationsPanel';
 import { KeysPanel } from '../features/settings/KeysPanel';
 import { ModelRolesPanel } from '../features/settings/ModelRolesPanel';
 import { McpPanel } from '../features/settings/McpPanel';
@@ -34,6 +34,10 @@ export interface MockRoute {
 
 export function jsonResponse(body: unknown, status: number | ResponseInit = 200): Response {
   const init: ResponseInit = typeof status === 'number' ? { status } : status;
+  const statusCode = typeof status === 'number' ? status : status.status ?? 200;
+  if (statusCode === 204 || statusCode === 205 || statusCode === 304) {
+    return new Response(null, init);
+  }
   return new Response(JSON.stringify(body), {
     ...init,
     headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) },
@@ -100,6 +104,9 @@ export function installFetch(routes: MockRoute[], fallback?: RouteHandler) {
       const methodOk = !route.method || (init?.method ?? 'GET') === route.method;
       const matched = typeof route.test === 'string' ? url.pathname === route.test : route.test.test(url.pathname);
       if (methodOk && matched) return route.handler(url, init);
+    }
+    if (url.pathname === '/api/push/assistant-arrivals/') {
+      return jsonResponse({ events: [], next_cursor: 0, has_more: false });
     }
     const handler = fallback ?? (() => jsonResponse({ error: 'unmocked request' }, 404));
     return handler(url, init);
@@ -210,7 +217,7 @@ export function renderApp(
                 <Route path="mcp" element={<McpPanel />} />
                 <Route path="appearance" element={<AppearancePanel />} />
                 <Route path="routine" element={<RoutinePanel />} />
-                <Route path="notifications" element={<NotificationsPlaceholder />} />
+                <Route path="notifications" element={<NotificationsPanel />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
               <Route path="*" element={<NotFoundPage />} />
