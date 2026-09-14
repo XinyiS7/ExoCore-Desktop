@@ -10,10 +10,15 @@
 - **CP D-1（前台刷新与到达状态）**：接入 B6 canonical arrival 契约，实现 15 秒前台增量轮询对齐、focused exact 会话原位无感刷新、未读计数与单一应用内浮条提示。
 - **CP D-2（通知设置与 Service Worker）**：完成五层事实通知设置面板、Web Push 后台弹窗、标签页前台抑制（foreground suppression）、warm/cold typed click 路由以及幂等 Register ACK 状态机。
 - **CP D-3（实机闭环与真实 Sandro 联调）**：
-  - 修复 `apiFetch` 显式 `Content-Type: application/json` 请求头，解决 Chrome 订阅登记 415 异常；
-  - 修复移动端 `.settings-layout` 竖向流排布，解决手机端横向遮挡缺陷；
-  - 桌面 Windows PWA 与手机 Android PWA 双端绑定独立 V4 Installation UUID 并通过 FCM 验证；
-  - 经 Alicia 授权与实机测试，真实 Sandro 成功执行 `send_message` 落入主会话 #95 并通过 Web Push 派发，前台原位刷新、前台其它轻量提示、后台与锁屏系统弹窗全场景验证通过。
+  - 修复 Chrome 订阅登记 415 异常：四个通知 POST 调用点改为向既有 `exo-shared/apiFetch` 传原生对象体（`apiFetch` 本身未改，由它序列化 JSON 并设置 `Content-Type: application/json`）；
+  - 修复移动端 `.settings-layout` 竖向流排布（<768px 单列，≥768px 桌面行排），解决手机端横向遮挡缺陷；
+  - 桌面 Windows PWA 与手机 Android PWA 双端绑定独立 V4 Installation UUID（证据仅保留脱敏前缀）；五条活跃订阅 `{21,32,49,51,52}` 经 Alicia 确认为刻意保留的当前/测试来源，Home-LAN 与 Tailscale 双来源重复弹窗为已接受的多来源行为；
+  - 真实 Sandro `send_message`（主会话 #95）：arrival 19 产生五条 `sent` 投递声明（69→21、70→32、71→49、72→51、73→52）——`sent` 为 provider 报告事实，OS 级呈现按已执行行单独陈述；前台原位刷新、前台其它轻量提示、后台系统弹窗为已执行观测行；Android visible-unfocused exact、锁屏（无逐行证据）、桌面多窗口、拒绝授权、断网恢复、renewal/repair、后端持久化失败、stale/deleted 目标、清站数据、OEM/DND 等行留待 R2 代码验收后的最终 smoke，不宣称已执行。
+- **CP D-3 R2（显式忽略契约修正，施工交付 READY FOR RECHECK）**：
+  - 按冻结 spec（后端已验收 `74802208`，文档 `f7bef663`）在 `packages/app` 落地 explicit-ignore 替换契约：OS 通知与 Shell 指示的「忽略」统一走 `POST /api/push/assistant-arrivals/<event_id>/ignore/`；body/查看/关闭零 Register ACK；删除 V4 全部 navigate/dismiss ACK 发送、重试、注册表、诊断 UI 与 SW ACK 消息；`ignore:{allowed:boolean}` typed 必填，`register_ack` 保留 required nullable legacy 且绝不用其推断 Ignore；
+  - 新增 D3-R1-04 回归（JSON 媒体类型/对象序列化 + 768px 断点）；构造测试 5 文件 81/81；tsc/eslint/build/产物检查全绿；冻结 D-1/D-2 acceptance 探针按施工包「temporarily excluded」（待 Acceptance 补丁后重新纳入）；
+  - 状态为 READY FOR RECHECK，未自评 PASS；Core C2 发布状态仍归 Acceptance 所有。
+- **CP D-3 R3（响应 R2 两 P1 修复）**：① 忽略响应收口——`ignoreAssistantArrival` 只接受五字段冻结真值（action/event_id 与请求匹配/正整数 message_id/conversation_id/boolean created），违约 2xx 一律可见可重试失败，无静默成功；② Shell Ignore 状态改为 event_id 绑定——旧请求完成不会关闭/标注/置忙新指示，同事件失败仍可显式重试；③ 移除三处临时排除，默认 typecheck/lint/test 重新纳入 amended D-1/D-2 与新增 D-3 冻结探针。三份 Acceptance 19/19 + Builder focused 5 文件 87/87，tsc/eslint/build/diff 全绿；全量与真机 smoke 按验收方顺序暂缓。
 
 ---
 

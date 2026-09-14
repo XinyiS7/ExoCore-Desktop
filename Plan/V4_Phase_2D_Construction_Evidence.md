@@ -174,58 +174,98 @@
 
 ---
 
-## Checkpoint D-3 Real-Device Closure & Verification Evidence
+## Checkpoint D-3 Real-Device Closure & Verification Evidence (R1 factual correction + R2 explicit-ignore amendment)
+
+### 0. Entry ownership & environment amendment
+
+- **D-3 entry baseline:** `e96e4ca37c09f06fe75f8614a429ab0ca03d383c` → production fixes `0ca8985` → closure commit `0bed2fc` (per D-3 Acceptance report R1 ledger).
+- **Subscription precondition (D3-R1-01 closed by product decision, not by data mutation):** Alicia positively identified all five active subscriptions as intended current/test origins — 21 (Mac / Tailscale), 32 (Android / Tailscale), 49 (Android / Home LAN), 51 (Windows V4 test installation), 52 (Android V4 test installation). All five retained; no maintenance write authorized. Android Home+Tailscale duplicate Push presentation is accepted multi-origin behavior. D3-G02 re-baselined to **one endpoint per intentionally retained browser origin**, expected active set `{21,32,49,51,52}`.
+- **Delivery ID correction (D3-R1-02):** arrival 19 (msg 19066, conv 95, src `send_message`) created exactly five `sent` deliveries: **69→21, 70→32, 71→49, 72→51, 73→52**. Arrival 20 (msg 19067, `ordinary_chat`) owns deliveries 74–78; arrival 21 (msg 19069) owns 79–83. The prior paragraph attributing deliveries 77/78 to arrival 19 was wrong and is superseded by this correction — no "two deliveries" claim remains.
+- **Redaction:** full installation UUIDs are not reproduced in evidence. Stable redacted prefixes only: sub 51 → `03835bcb…`, sub 52 → `a1ab4030…`.
 
 ### 1. D-3 Scope & Ingress Pre-flight (Gate D3-G01, D3-G02)
-- **Authority & Release:** Alicia released CP D-3 for real-device closure, real Sandro `send_message` path, and recovery matrices.
-- **Scope Integrity:** All changes strictly confined to `packages/app`. No changes to `../ExoCore/`, `../nginx/`, `../ExocoreExtension/`, or V3 packages.
-- **Pre-flight Active Subscriptions Audit (Sanitized):**
-  - Legacy records preserved without unauthorized modification:
-    - ID 49: `Android-Home`, `install_id = None`, `domain = fcm.googleapis.com`
-    - ID 32: `Tailscale-Android`, `install_id = None`, `domain = fcm.googleapis.com`
-    - ID 21: `Tailscale-Mac`, `install_id = None`, `domain = fcm.googleapis.com`
-  - New V4 PWA installations registered and bound to unique UUIDs:
-    - ID 51: Desktop installation `install_id = 03835bcb-b4e5-476a-acc5-60b027217438`, `domain = fcm.googleapis.com`
-    - ID 52: Mobile (Android) installation `install_id = a1ab4030-0e0f-4a62-8c49-6cfef298277c`, `domain = fcm.googleapis.com`
-  - Total active subscriptions in backend: 5 (2 clean V4 UUIDs + 3 legacy preserved).
 
-### 2. D-3 In-flight Fixes & Quality Enforcements
-1. **API Content-Type Enforcement in `subscription.ts`:**
-   - Explicitly injected `headers: { 'Content-Type': 'application/json' }` and passed native Object bodies across `subscribeToPush`, `unsubscribeFromPush`, `syncExistingSubscription`, and `sendRegisterAck`.
-   - Resolved HTTP 415 `Unsupported Media Type` reported on Chrome during Web Push subscription registration.
-2. **Mobile Settings Column Layout Fix in `settings.css`:**
-   - Configured `.settings-layout` with `flex-direction: column` on mobile viewports (< 768px) and `flex-direction: row` on desktop viewports (>= 768px).
-   - Resolved horizontal overflow where `.settings-mobile-tabs` and `.settings-content` collided side-by-side on mobile, restoring full vertical scrolling for settings panels.
+- D-3 production delta confined to `packages/app`; zero backend/V3/shared/nginx/dependency/real-DB edits. D3-G01 held.
+- The pre-flight subscription audit was strictly read-only; real-DB AgentPreset baseline stayed 8 rows before and after.
 
-### 3. Real Sandro `send_message` & End-to-End Verification (Gate D3-G03, D3-G04, D3-G05)
-- **Test Target:** Conversation #95 (`暴雨`, Alessandro's Prime Conversation, `is_prime = True`).
-- **Real Execution:**
-  - Sandro executed `send_message` upon real user instruction.
-  - Backend created canonical assistant Message `19066` and Register `2262`.
-  - Recorded arrival event: `Arrival ID = 19, msg = 19066, conv = 95, src = 'send_message', reg = 2262`.
-  - Push delivery engine dispatched Web Push to active subscriptions:
-    - Delivery 77: Sub 51 (Desktop) -> status `sent`.
-    - Delivery 78: Sub 52 (Mobile) -> status `sent`.
-  - Subsequent ordinary chat interactions:
-    - `Arrival ID = 20, msg = 19067, conv = 95, src = 'ordinary_chat'` (Deliveries 74..78 `sent`).
-    - `Arrival ID = 21, msg = 19069, conv = 95, src = 'ordinary_chat'` (Deliveries 79..83 `sent`).
-- **Real Matrix Verification by User (Alicia):**
-  - **Foreground Exact (Conversation #95 focused):** Zero OS notifications, zero shell banners, silent in-place reconciliation and instant message display.
-  - **Foreground Other (Other routes / Settings):** Non-blocking shell indication (`From: Alessandro`) displayed, unread badges incremented accurately.
-  - **Background & Closed (Desktop Windows & Android PWA):** System Web Push notification delivered cleanly, warm/cold clicks successfully navigate to `/app/chat/95`.
-  - **User Acceptance Result:** Explicit user sign-off: *"好嘞！多个场景我都测过了！非常好，用户验收pass🎉🎉"*.
+### 2. D-3 In-flight Fixes & Quality Enforcements (D3-R1-04 / D3-R1-05 corrections)
 
-### 4. Quality Pipeline & Regression Totals (Gate D3-G09)
-- **Full App Regression:**
-  - Total test files: 87 passed (87)
-  - Total tests: 1055 passed (1055), 0 failed
-- **TypeScript Typecheck:** `pnpm --filter exo-app typecheck` -> 0 errors.
-- **ESLint:** `pnpm --filter exo-app lint` -> 0 errors.
-- **Production Build:** `pnpm --filter exo-app build` -> 0 errors (dist/sw.js generated with injectManifest, 91 precache entries).
-- **Whitespace / Git Diff Check:** `git diff --check` -> clean.
+1. **HTTP 415 repair (accurate description):** the four notification POST call sites pass native object bodies to the existing `exo-shared/apiFetch`, which serializes JSON and sets `Content-Type: application/json`. The call sites were changed; `apiFetch` itself was not modified. Redundant explicit caller headers are harmless.
+2. **Mobile settings layout repair:** `.settings-layout` is column on mobile (<768px) and row on desktop (>=768px); `.settings-rail` hidden on mobile. Bounded to `settings.css`; no second consumer.
+3. **Regressions added in R2 (D3-R1-04 closed):** `src/test/p2d_d2_r1_repair_regressions.test.ts` — (a) effective JSON media type and object serialization through the real `apiFetch` for subscribe / sync (updateDeviceName path) / unsubscribe / explicit-ignore call sites, failing on pre-stringified bodies; (b) mobile column vs desktop row breakpoint at 768px via brace-matched CSS source assertions, failing on a reverted layout repair.
 
----
+### 3. Real-device matrix — executed rows vs deferred rows (D3-R1-03 factual status)
+
+**Executed and observed (sanitized):**
+
+| Row | Observation |
+|---|---|
+| Foreground exact (Conversation #95 focused) | zero OS notification, zero shell banner, silent in-place reconciliation |
+| Foreground other (settings / other routes) | bounded shell indication + unread badge increments |
+| Background & closed (Windows desktop & Android PWA) | Web Push OS notification; warm/cold clicks navigate to `/app/chat/95` |
+
+**Provider-truth boundary:** FCM/provider reported `sent` per delivery claim. "Provider accepted/sent" is reported separately from OS-level presentation; the executed rows above are backed by Alicia's device observations, the claims themselves are provider truth only.
+
+**Not executed at R1 — deferred to the final post-code-acceptance smoke (not claimed as done):**
+
+- Android visible-but-unfocused exact (itemized row); lock-screen presentation (observed by Alicia but no itemized evidence row was recorded at R1); desktop multi-window focus selection; denied permission; offline→online; renewal/repair; backend persistence failure; stale/deleted target; site-data-clear / new-installation UUID; OEM battery/DND state.
+
+The R2 construction package forbids real-device/provider smoke before code acceptance, so these rows run in the final Sandro smoke after the R2 code checkpoint.
+
+### 4. R2 frontend amendment (explicit-ignore contract) — implemented, READY FOR RECHECK
+
+**Authority:** `Plan/spec/2026-09-14-assistant-arrival-explicit-ignore-handoff.md` (frontend AUTHORIZED); backend accepted at `74802208`; backend docs closed at `f7bef663`. Desktop ReactSheet 第八篇 re-synced **byte-identical** to backend §8 (section diff: 0 lines).
+
+**Production changes (packages/app only):**
+
+- `workerContract.ts`: required typed `ignore: {allowed: boolean}`; required nullable legacy `register_ack` retained (never used to infer Ignore); `AckOutcome` / `SW_ACK_RESULT` / ACK helpers deleted.
+- `public/sw.js`: adds `{action:'ignore',title:'忽略'}` only when `ignore.allowed===true`; `notificationclick` `action==='ignore'` → close + exactly one `POST /api/push/assistant-arrivals/<event_id>/ignore/` + zero navigation (missing/malformed event data → zero network, zero navigation); body/default click → typed warm/cold navigation with zero Register ACK; `notificationclose` → neutral (zero network / zero navigation / zero Register).
+- `NotificationRuntime.tsx` / `NotificationsPanel.tsx`: shell 忽略 calls the same ignore endpoint — success hides the indication, leaves unread intact, never navigates; failure stays visible and explicitly retryable (bounded single request per click). 查看 navigates with zero ACK. ACK retry/registry/diagnostic UI and all SW ACK message handling removed.
+- `subscription.ts`: legacy ACK state machine (sendRegisterAck, retryPendingAcks, ACK registry/storage/diagnostics) deleted; `ignoreAssistantArrival` added with bounded error mapping (invalid id / 404 / 409 / network).
+- `NotificationDemoPage.tsx`: fixtures now carry `ignore` + `register_ack: null`; ACK diagnostic panel removed; demo copy documents the new semantics.
+
+**Construction tests (migrated, 81/81):** `p2d_d1_arrival_reconciliation` (required ignore field), `p2d_d2_integration` (shell ignore/view/failure-retry semantics), `p2d_d2_settings_subscription` (ignore endpoint unit truth), `p2d_d2_sw_routing` (real `public/sw.js` harness: exactly-one ignore POST, zero navigation, actions only when allowed, body click zero ACK, close neutral, malformed fail-closed), `p2d_d2_r1_repair_regressions` (D3-R1-04).
+
+**Frozen acceptance probes — temporary exclusion (Acceptance-owned, not edited by Construction):**
+
+- `p2d_d2_acceptance.test.ts` encodes the superseded Register-ACK contract → excluded from tsconfig / eslint / vitest scope until Acceptance amends it (construction package item 7: "superseded and temporarily excluded").
+- `p2d_d1_arrival_acceptance.test.tsx` fixtures predate the frozen required `ignore` field; measured 3 runtime failures caused solely by the missing field (reconciliation semantics unchanged) → excluded from the default vitest scope until Acceptance updates fixtures.
+- All three exclusions carry cross-referencing comments in `tsconfig.json`, `eslint.config.js`, `vite.config.ts`.
+
+### 5. R2 construction gates (scoped, all green)
+
+- **P2D construction scope:** 5 files / 81 tests — 81/81 passed.
+- **tsc** (app + node configs): 0 errors. **ESLint:** 0 errors. **Production build:** PASS (`dist/sw.js` generated, 91 precache entries).
+- **Production bundle inspection:** `dist/sw.js` contains the ignore branch and the ignore endpoint; **zero** references to `/api/agents/registers/` (legacy ACK endpoint); neutral `notificationclose` handler present; the only remaining `register_ack` occurrences are the required-nullable wire validation.
+- **`git diff --check`:** clean.
+- **Environment note (out of R2 scope, reported for visibility):** parts of the broader `src/test` suite carry a pre-existing environment breakage unrelated to this amendment — e.g. `runtime_storage.test.ts` fails 13/13 at baseline `0bed2fc` with `window.localStorage.getItem is not a function`, verified in a detached worktree at the D-3 c
+
+## R3 repair (D3-R2-01 / D3-R2-02 closed, mechanical exclusion removal)
+
+**D3-R2-01 — closed at the response boundary (`subscription.ts`):**
+
+- New pure guard `isValidIgnoreResponse(res, requestedEventId)`: success accepted ONLY when `action === 'ignore'`, `event_id` equals the requested positive ID, `message_id`/`conversation_id` are positive integers and `created` is boolean (the frozen ReactSheet §8.5 five-field truth).
+- Any malformed/mismatched 2xx now returns `{ ok: false, status: 200, error: '忽略失败：服务端响应异常' }` — visible retryable failure; indication and unread remain; zero automatic retry/navigation/Register ACK. The unconditional 2xx success fallback is gone.
+- Construction matrix added in `p2d_d2_settings_subscription.test.tsx`: complete valid (created true/false), mismatched identity, missing fields, wrong types, wrong action, non-object bodies — all fail closed; 404/409 mappings preserved.
+
+**D3-R2-02 — closed with event-targeted async state (`NotificationRuntime.tsx`):**
+
+- Global `ignoreBusy`/`ignoreError` replaced by `IgnoreUiState` tagged with the target `event_id` (`busy`/`error` phases). Busy/error render ONLY when the bound event is still the active indication.
+- Completion updates are identity-guarded functional updates: success closes only the targeted event; failure annotates only the targeted event; an older completion never closes, annotates or disables a newer indication; a newer request's state is preserved while an older one settles.
+- Same-event failure remains visible and explicitly retryable; View/dismiss clear bound state; late completions after View are no-ops.
+- Timing regressions added in `p2d_d2_integration.test.tsx`: late success → newer indication untouched; late failure → no error/busy leak; View during pending ignore → navigation unaffected by late success.
+
+**Mechanical closeout:** the three temporary exclusions were removed from `tsconfig.json`, `eslint.config.js` and `vite.config.ts`; default typecheck/lint/test discovery includes the amended frozen D-1/D-2 probes and the new D-3 timing probe again.
+
+**R3 gate evidence (focused):**
+
+- Acceptance probes: `p2d_d1_arrival_acceptance` + `p2d_d2_acceptance` (amended) + `p2d_d3_acceptance` — 19/19 passed.
+- Builder focused: 5 files — 87/87 passed (81 preserved + 6 new regressions).
+- tsc (app + node) 0 errors; ESLint 0 errors; production build PASS (`dist/sw.js`, 91 precache entries); built-SW inspection unchanged from R2 (zero `/api/agents/registers/` references, ignore branch present, neutral notificationclose); `git diff --check` clean.
+- Full app regression and real-device smoke remain deferred per the R3 recheck order.
 
 ## Checkpoint Status
-- **Current Checkpoint:** P2D CP D-3 (Final Real-Device Delivery)
-- **Verdict:** READY FOR INDEPENDENT D-3 ACCEPTANCE (Candidate Final PASS). All real-device, subscription, delivery, layout, and regression invariants closed.
+
+- **Current Checkpoint:** P2D CP D-3 — R3 repair of D3-R2-01 (response boundary) and D3-R2-02 (event-targeted ignore state).
+- **Verdict:** **READY FOR RECHECK** — Construction does not self-award PASS. Final D-3/P2D verdict and Core C2 release status remain Acceptance-owned.
+- **Post-acceptance smoke (Acceptance-owned):** one Message, one arrival, five per-origin delivery claims (expected `{21,32,49,51,52}`), at most one OS notification per installation/origin, and one idempotent explicit-ignore Register globally per arrival.
