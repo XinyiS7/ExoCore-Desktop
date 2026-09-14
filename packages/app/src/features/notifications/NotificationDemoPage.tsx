@@ -19,11 +19,7 @@ import {
   NOTIFICATIONS_STORAGE_KEY,
 } from './storage';
 import {
-  getAckDiagnostics,
-  retryPendingAcks,
-  ACK_STORAGE_KEY,
   getNotificationPermission,
-  type AckRecord,
 } from './subscription';
 
 interface ConversationOption {
@@ -43,8 +39,6 @@ export function NotificationDemoPage(): React.ReactElement {
 
   // Storage inspection state
   const [rawNotificationStorage, setRawNotificationStorage] = useState<string>('');
-  const [rawAckStorage, setRawAckStorage] = useState<string>('');
-  const [ackList, setAckList] = useState<AckRecord[]>([]);
   const [logMessages, setLogMessages] = useState<string[]>([]);
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(
     getNotificationPermission(),
@@ -66,10 +60,7 @@ export function NotificationDemoPage(): React.ReactElement {
   const refreshStorageView = useCallback(() => {
     try {
       const notifRaw = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY) || '（空）';
-      const ackRaw = localStorage.getItem(ACK_STORAGE_KEY) || '（空）';
       setRawNotificationStorage(notifRaw);
-      setRawAckStorage(ackRaw);
-      setAckList(getAckDiagnostics());
     } catch (e) {
       setRawNotificationStorage(`读取失败: ${String(e)}`);
     }
@@ -166,7 +157,7 @@ export function NotificationDemoPage(): React.ReactElement {
   };
 
   // Simulate notification click / cold or warm navigate to target conversation
-  const simulateNotificationNavigate = (conversationId: number, registerId: number) => {
+  const simulateNotificationNavigate = (conversationId: number) => {
     try {
       if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
         navigator.serviceWorker.dispatchEvent(
@@ -179,17 +170,10 @@ export function NotificationDemoPage(): React.ReactElement {
                 conversation_id: conversationId,
                 message_id: 999,
               },
-              register_ack: {
-                register_id: registerId,
-                preset_id: 1,
-              },
-              ack_outcome: {
-                status: 'sent',
-              },
             },
           }),
         );
-        addLog(`已触发通知点击导航: 唤醒会话 #${conversationId} (登记 #${registerId})`);
+        addLog(`已触发通知点击导航: 唤醒会话 #${conversationId}（无 Register ACK）`);
       } else {
         navigate(`/chat/${conversationId}`);
       }
@@ -226,10 +210,8 @@ export function NotificationDemoPage(): React.ReactElement {
       title_hint: `会话 #${targetConversationId}`,
       committed_at: new Date().toISOString(),
       dedupe_key: `sandro_${Date.now()}`,
-      register_ack: {
-        register_id: Math.floor(Math.random() * 900) + 100,
-        preset_id: 1,
-      },
+      ignore: { allowed: true },
+      register_ack: null,
     };
     dispatchArrival(ev);
     showNativeNotification('Alessandro', bodyText, targetConversationId);
@@ -262,10 +244,8 @@ export function NotificationDemoPage(): React.ReactElement {
       title_hint: `会话 #${targetConversationId}`,
       committed_at: new Date().toISOString(),
       dedupe_key: `alaric_${Date.now()}`,
-      register_ack: {
-        register_id: Math.floor(Math.random() * 900) + 200,
-        preset_id: 2,
-      },
+      ignore: { allowed: true },
+      register_ack: null,
     };
     dispatchArrival(ev);
     showNativeNotification('Alaric', bodyText, targetConversationId);
@@ -275,21 +255,12 @@ export function NotificationDemoPage(): React.ReactElement {
   const handleClearStorage = () => {
     try {
       localStorage.removeItem(NOTIFICATIONS_STORAGE_KEY);
-      localStorage.removeItem(ACK_STORAGE_KEY);
       window.dispatchEvent(new StorageEvent('storage', { key: NOTIFICATIONS_STORAGE_KEY }));
       refreshStorageView();
-      addLog('已清空本地通知与回执测试数据');
+      addLog('已清空本地通知测试数据');
     } catch (err) {
       addLog(`清理失败: ${String(err)}`);
     }
-  };
-
-  // Retry ACKs
-  const handleRetryPendingAcks = async () => {
-    addLog('正在触发未决 ACK 重发...');
-    await retryPendingAcks();
-    refreshStorageView();
-    addLog('未决 ACK 重发流程执行完毕');
   };
 
   return (
@@ -407,6 +378,9 @@ export function NotificationDemoPage(): React.ReactElement {
             </li>
             <li>
               <strong>前台免打扰 vs 后台桌面通知</strong>：当浏览器窗口在前台激活时，Service Worker 规范会抑制系统的重复弹窗，仅在网页右下角升起悬浮气泡；当窗口切至后台或最小化时，才会弹出系统的 OS 原生桌面通知。
+            </li>
+            <li>
+              <strong>显式「忽略」affordance</strong>：仅当到达事件携带 <code>ignore.allowed === true</code>（send_message）时，OS 通知（支持 action 的平台）与应用内气泡才会显示「忽略」按钮。点击后调用 <code>POST /api/push/assistant-arrivals/&lt;event_id&gt;/ignore/</code>，关闭提示但不导航、不清未读；失败时气泡保留并可直接重试。关闭通知（X/滑除）与点击查看均不会创建任何 Register。
             </li>
           </ul>
         </div>
@@ -692,7 +666,8 @@ export function NotificationDemoPage(): React.ReactElement {
                       title_hint: `会话 #${targetConversationId}`,
                       committed_at: new Date().toISOString(),
                       dedupe_key: `sandro_${Date.now()}`,
-                      register_ack: { register_id: Math.floor(Math.random() * 900) + 100, preset_id: 1 },
+                      ignore: { allowed: true },
+                      register_ack: null,
                     });
                   }}
                   style={{
@@ -810,7 +785,8 @@ export function NotificationDemoPage(): React.ReactElement {
                       title_hint: `会话 #${targetConversationId}`,
                       committed_at: new Date().toISOString(),
                       dedupe_key: `alaric_${Date.now()}`,
-                      register_ack: { register_id: Math.floor(Math.random() * 900) + 200, preset_id: 2 },
+                      ignore: { allowed: true },
+                      register_ack: null,
                     });
                   }}
                   style={{
@@ -836,7 +812,7 @@ export function NotificationDemoPage(): React.ReactElement {
           <button
             type="button"
             className="settings-btn"
-            onClick={() => simulateNotificationNavigate(targetConversationId, 101)}
+            onClick={() => simulateNotificationNavigate(targetConversationId)}
             style={{
               padding: '6px 12px',
               fontSize: '12px',
@@ -902,31 +878,14 @@ export function NotificationDemoPage(): React.ReactElement {
         </div>
       </div>
 
-      {/* ── 存储与回执实时巡检面板 ── */}
+      {/* ── 存储实时巡检面板 ── */}
       <div className="settings-card" style={{ padding: '18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <h3 style={{ fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <RefreshCw size={16} />
-            <span>底层存储与 ACK 诊断实时巡检</span>
+            <span>底层存储实时巡检</span>
           </h3>
           <div style={{ display: 'flex', gap: '8px' }}>
-            {ackList.length > 0 && (
-              <button
-                type="button"
-                onClick={handleRetryPendingAcks}
-                style={{
-                  background: 'var(--v4-panel-2, #2a2a2a)',
-                  border: '1px solid var(--v4-line, #333333)',
-                  color: 'var(--v4-text, #f0f0f0)',
-                  borderRadius: '4px',
-                  padding: '4px 8px',
-                  fontSize: '11px',
-                  cursor: 'pointer',
-                }}
-              >
-                重发待发回执
-              </button>
-            )}
             <button
               type="button"
               onClick={refreshStorageView}
@@ -968,29 +927,6 @@ export function NotificationDemoPage(): React.ReactElement {
               }}
             >
               {rawNotificationStorage}
-            </pre>
-          </div>
-
-          {/* ACKs raw storage */}
-          <div>
-            <div style={{ fontSize: '12px', color: 'var(--v4-text-mute, #888888)', marginBottom: '4px' }}>
-              ACK 回执登记簿 (<code>{ACK_STORAGE_KEY}</code>)
-            </div>
-            <pre
-              style={{
-                fontSize: '11px',
-                padding: '10px',
-                borderRadius: '4px',
-                background: 'var(--v4-panel-2, #2a2a2a)',
-                border: '1px solid var(--v4-line, #333333)',
-                color: 'var(--v4-text, #f0f0f0)',
-                maxHeight: '160px',
-                overflowY: 'auto',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-              }}
-            >
-              {rawAckStorage}
             </pre>
           </div>
         </div>

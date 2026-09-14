@@ -11,9 +11,6 @@ import {
   unsubscribeFromPush,
   updateDeviceName,
   syncExistingSubscription,
-  getAckDiagnostics,
-  retryPendingAcks,
-  type AckRecord,
 } from './subscription';
 
 export function NotificationsPanel(): React.ReactElement {
@@ -29,11 +26,7 @@ export function NotificationsPanel(): React.ReactElement {
   const [deviceName, setDeviceName] = useState<string>(() => getLocalDeviceName());
   const [busy, setBusy] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [ackDiagnostics, setAckDiagnostics] = useState<AckRecord[]>(() => getAckDiagnostics());
 
-  const refreshAckDiagnostics = useCallback(() => {
-    setAckDiagnostics(getAckDiagnostics());
-  }, []);
 
   // Refresh status on mount and focus WITHOUT requesting permission
   const refreshStatus = useCallback(async () => {
@@ -45,7 +38,6 @@ export function NotificationsPanel(): React.ReactElement {
     setPermission(currentPerm);
 
     const outcome = await getBrowserSubscriptionOutcome();
-    refreshAckDiagnostics();
 
     if (outcome.status === 'unsupported') {
       setPermission('unsupported');
@@ -82,7 +74,7 @@ export function NotificationsPanel(): React.ReactElement {
     } else {
       setBackendState('none');
     }
-  }, [refreshAckDiagnostics, setRepairNeeded]);
+  }, [setRepairNeeded]);
 
   useEffect(() => {
     void refreshStatus();
@@ -115,7 +107,6 @@ export function NotificationsPanel(): React.ReactElement {
 
     const result = await subscribeToPush(deviceName);
     setBusy(false);
-    refreshAckDiagnostics();
 
     if (result.ok) {
       setBrowserSub(result.browserSubscription);
@@ -141,7 +132,6 @@ export function NotificationsPanel(): React.ReactElement {
 
     const result = await unsubscribeFromPush();
     setBusy(false);
-    refreshAckDiagnostics();
 
     if (result.ok) {
       setBrowserSub(null);
@@ -172,7 +162,6 @@ export function NotificationsPanel(): React.ReactElement {
       setStatusMessage(null);
       const result = await updateDeviceName(trimmed);
       setBusy(false);
-      refreshAckDiagnostics();
 
       if (result.ok) {
         setBackendState('persisted');
@@ -191,7 +180,6 @@ export function NotificationsPanel(): React.ReactElement {
     setStatusMessage(null);
     const result = await subscribeToPush(deviceName);
     setBusy(false);
-    refreshAckDiagnostics();
 
     if (result.ok) {
       setBrowserSub(result.browserSubscription);
@@ -203,13 +191,6 @@ export function NotificationsPanel(): React.ReactElement {
       setBackendState('failed');
       setStatusMessage({ type: 'error', text: result.error });
     }
-  };
-
-  const handleRetryAcks = async () => {
-    setBusy(true);
-    await retryPendingAcks();
-    setBusy(false);
-    refreshAckDiagnostics();
   };
 
   return (
@@ -365,59 +346,6 @@ export function NotificationsPanel(): React.ReactElement {
           </button>
         </div>
       </div>
-
-      {/* ── 未决通知回执诊断 ── */}
-      {ackDiagnostics.length > 0 && (
-        <div className="settings-card" style={{ marginBottom: '16px', padding: '16px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <AlertTriangle size={16} color="var(--v4-warn, #f59e0b)" />
-            <span>通知到达回执诊断</span>
-          </h3>
-          <p style={{ fontSize: '12px', color: 'var(--v4-text-mute, #888888)', marginBottom: '12px' }}>
-            检测到未成功完成的通知到达回执。终端失败 (400/404) 不会再自动重试，可重试错误将在网络恢复时自动重新发送。
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
-            {ackDiagnostics.map((ack) => (
-              <div
-                key={ack.key}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  padding: '6px 8px',
-                  background: 'var(--v4-panel-2, #2a2a2a)',
-                  borderRadius: '4px',
-                }}
-              >
-                <span>
-                  [{ack.action}] 登记ID: {ack.register_id} (预设: {ack.preset_id})
-                </span>
-                <span style={{ color: ack.status === 'failed_terminal' ? 'var(--v4-danger, #ef4444)' : 'var(--v4-warn, #f59e0b)' }}>
-                  {ack.status === 'failed_terminal' ? `终端失败 (${ack.statusCode || 400})` : '等待重试'}
-                </span>
-              </div>
-            ))}
-          </div>
-          {ackDiagnostics.some((a) => a.status === 'failed_retryable') && (
-            <button
-              type="button"
-              className="settings-btn"
-              style={{
-                marginTop: '12px',
-                padding: '6px 12px',
-                fontSize: '12px',
-                border: '1px solid var(--v4-line, #333333)',
-                background: 'var(--v4-panel-2, #2a2a2a)',
-                color: 'var(--v4-text, #f0f0f0)',
-                cursor: busy ? 'not-allowed' : 'pointer',
-              }}
-              onClick={handleRetryAcks}
-              disabled={busy}
-            >
-              重试待发回执
-            </button>
-          )}
-        </div>
-      )}
 
       {/* ── 控制操作 ── */}
       <div className="settings-card" style={{ padding: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>

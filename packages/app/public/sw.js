@@ -12,11 +12,14 @@
  *     Sends typed ASSISTANT_ARRIVAL_HANDOFF without showing OS notification (showNotification = 0).
  *   - Out-of-scope clients (e.g. /chat/) do NOT suppress OS notification and receive no handoff.
  *   - Otherwise: displays bounded system notification with tag = dedupe_key (top-level tag cannot override).
+ *     When ignore.allowed === true, adds { action: 'ignore', title: '忽略' } OS notification action.
  *   - Malformed payload: displays generic ExoCore notification with no sensitive data or deeplinks.
  *   - Empty push: suppresses cleanly without displaying connection notices.
- * - Warm click: prioritizes focused > visible > any /app/ client, SW sends navigate ACK, sends NOTIFICATION_NAVIGATE and focuses.
- * - Cold click: SW does NOT send navigate ACK (fetch = 0); opens window with scope-derived route; Main canonical confirmation owns ACK.
- * - Register ACK on close: best-effort inside waitUntil; if window clients exist, broadcasts SW_ACK_RESULT.
+ * - Notification click:
+ *   - event.action === 'ignore': close notification; POST ignore endpoint; zero navigation.
+ *   - Body / default click: prioritizes focused > visible > any /app/ client, sends NOTIFICATION_NAVIGATE; zero ACK.
+ *   - Cold click: opens window with scope-derived route; zero ACK.
+ * - Notification close (system X / swipe): completely neutral. Zero network, zero navigation, zero Register.
  * - pushsubscriptionchange: renews browser subscription with VAPID key and sends SUBSCRIPTION_REPAIR_NEEDED to clients.
  */
 
@@ -100,7 +103,7 @@ self.addEventListener('push', (event) => {
         const title = validatedEvent.title_hint || validatedEvent.agent?.name || 'ExoCore';
         const body = validatedEvent.preview?.text || '收到新消息';
 
-        return self.registration.showNotification(title, {
+        const notifOptions = {
           body,
           tag: validatedEvent.dedupe_key,
           renotify: false,
@@ -110,7 +113,14 @@ self.addEventListener('push', (event) => {
           },
           icon: '/app/icon-192x192.png',
           badge: '/app/favicon.svg',
-        });
+        };
+
+        // Explicit ignore affordance: only for send_message arrivals
+        if (validatedEvent.ignore && validatedEvent.ignore.allowed === true) {
+          notifOptions.actions = [{ action: 'ignore', title: '忽略' }];
+        }
+
+        return self.registration.showNotification(title, notifOptions);
       }
 
       // Malformed / non-B6 payload: generic notification with zero sensitive info and no deeplink
@@ -128,7 +138,7 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// ── Notification Click (Warm & Cold Routing + Single ACK Owner) ─────────────
+// ── Notification Click (Ignore / Warm / Cold — Zero Register ACK) ───────────
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
@@ -136,6 +146,29 @@ self.addEventListener('notificationclick', (event) => {
   const parseResult = parseArrivalEvent(notifData?.event);
   const arrivalEvent = parseResult && parseResult.ok ? parseResult.value : null;
 
+  // EXPLICIT IGNORE BRANCH: event.action === 'ignore' — never navigates.
+  // If the event data is missing/malformed, there is no event_id to POST to:
+  // the click still only closes the notification (fail-closed, zero navigation).
+  if (event.action === 'ignore') {
+    if (arrivalEvent) {
+      event.waitUntil(
+        (async () => {
+          try {
+            await fetch(`/api/push/assistant-arrivals/${arrivalEvent.event_id}/ignore/`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({}),
+            });
+          } catch {
+            // Best-effort: stateless SW has no durable retry. Shell retries if client exists.
+          }
+        })(),
+      );
+    }
+    return;
+  }
+
+  // BODY / DEFAULT CLICK BRANCH: navigate to conversation
   event.waitUntil(
     (async () => {
       const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
@@ -150,50 +183,19 @@ self.addEventListener('notificationclick', (event) => {
         appClients[0];
 
       if (chosenClient && chosenClient.focus) {
-        // WARM CLICK BRANCH: SW owns navigate ACK and hands outcome off to chosen client
-        let ackOutcome = null;
-        const registerAck = arrivalEvent?.register_ack;
-        if (registerAck) {
-          try {
-            const sub = await self.registration.pushManager.getSubscription().catch(() => null);
-            const endpoint = sub ? sub.endpoint : undefined;
-            const ackUrl = `/api/agents/registers/${registerAck.register_id}/ack/?preset_id=${registerAck.preset_id}`;
-            const body = { action: 'navigate' };
-            if (endpoint) body.subscription_endpoint = endpoint;
-            const res = await fetch(ackUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(body),
-            });
-            if (res.ok) {
-              ackOutcome = { status: 'sent', statusCode: res.status };
-            } else {
-              ackOutcome = {
-                status: res.status === 400 || res.status === 404 ? 'failed_terminal' : 'failed_retryable',
-                statusCode: res.status,
-                error: `HTTP ${res.status}`,
-              };
-            }
-          } catch (err) {
-            ackOutcome = { status: 'failed_retryable', error: String(err) };
-          }
-        }
-
+        // WARM CLICK: focus existing client, send typed navigate message (zero ACK)
         await chosenClient.focus();
         if (arrivalEvent?.target) {
           chosenClient.postMessage({
             type: 'NOTIFICATION_NAVIGATE',
             version: 1,
             target: arrivalEvent.target,
-            register_ack: registerAck,
-            ack_outcome: ackOutcome,
           });
         }
         return;
       }
 
-      // COLD CLICK BRANCH: SW does NOT send navigate ACK! (fetch = 0)
-      // Main window confirms canonical arrival and sends exactly one ACK upon consume.
+      // COLD CLICK: open new window with scope-derived route (zero ACK)
       let targetPath = '';
       if (arrivalEvent?.target?.conversation_id) {
         targetPath = `chat/${arrivalEvent.target.conversation_id}`;
@@ -210,62 +212,11 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// ── Notification Close (Register ACK Dismiss - Best Effort) ─────────────────
-self.addEventListener('notificationclose', (event) => {
-  const notifData = event.notification.data;
-  const parseResult = parseArrivalEvent(notifData?.event);
-  const arrivalEvent = parseResult && parseResult.ok ? parseResult.value : null;
-  const registerAck = arrivalEvent?.register_ack;
-
-  if (registerAck) {
-    event.waitUntil(
-      (async () => {
-        let ackOutcome = null;
-        try {
-          const sub = await self.registration.pushManager.getSubscription().catch(() => null);
-          const endpoint = sub ? sub.endpoint : undefined;
-          const ackUrl = `/api/agents/registers/${registerAck.register_id}/ack/?preset_id=${registerAck.preset_id}`;
-          const body = { action: 'dismiss' };
-          if (endpoint) body.subscription_endpoint = endpoint;
-          const res = await fetch(ackUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          });
-          if (res.ok) {
-            ackOutcome = { status: 'sent', statusCode: res.status };
-          } else {
-            ackOutcome = {
-              status: res.status === 400 || res.status === 404 ? 'failed_terminal' : 'failed_retryable',
-              statusCode: res.status,
-              error: `HTTP ${res.status}`,
-            };
-          }
-        } catch (err) {
-          ackOutcome = { status: 'failed_retryable', error: String(err) };
-        }
-
-        // Best effort: if active clients exist, broadcast outcome to Main window
-        try {
-          const clients = await self.clients.matchAll({ type: 'window' });
-          const appClients = clients.filter(
-            (c) => typeof c.url === 'string' && c.url.startsWith(self.registration.scope),
-          );
-          for (const client of appClients) {
-            client.postMessage({
-              type: 'SW_ACK_RESULT',
-              version: 1,
-              register_ack: registerAck,
-              action: 'dismiss',
-              outcome: ackOutcome,
-            });
-          }
-        } catch {
-          // Gracefully complete without unhandled exception
-        }
-      })(),
-    );
-  }
+// ── Notification Close (Neutral — Zero Network, Zero Register) ──────────────
+// System X / swipe close is purely neutral. It must never be inferred as ignoring.
+// Zero network requests, zero navigation, zero Register creation.
+self.addEventListener('notificationclose', () => {
+  // Intentionally empty: closing a notification is not an action.
 });
 
 // ── Push Subscription Change (Renewal + Repair Notification) ────────────────

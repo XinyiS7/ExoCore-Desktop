@@ -25,6 +25,7 @@ export interface AssistantMessageArrivedV1 {
     conversation_id: number;
     message_id: number;
   };
+  ignore: { allowed: boolean };
   register_ack: {
     register_id: number;
     preset_id: number;
@@ -33,11 +34,6 @@ export interface AssistantMessageArrivedV1 {
   committed_at: string;
 }
 
-export interface AckOutcome {
-  status: 'sent' | 'failed_terminal' | 'failed_retryable';
-  statusCode?: number;
-  error?: string;
-}
 
 export type SwToClientMessage =
   | {
@@ -56,21 +52,6 @@ export type SwToClientMessage =
         conversation_id: number;
         message_id: number;
       };
-      register_ack: {
-        register_id: number;
-        preset_id: number;
-      } | null;
-      ack_outcome: AckOutcome | null;
-    }
-  | {
-      type: 'SW_ACK_RESULT';
-      version: 1;
-      register_ack: {
-        register_id: number;
-        preset_id: number;
-      };
-      action: 'navigate' | 'dismiss';
-      outcome: AckOutcome;
     }
   | {
       type: 'SUBSCRIPTION_REPAIR_NEEDED';
@@ -112,33 +93,6 @@ export function isPositiveInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value > 0;
 }
 
-export function isValidRegisterAck(
-  value: unknown,
-): value is { register_id: number; preset_id: number } {
-  return (
-    isRecord(value) &&
-    isPositiveInteger(value.register_id) &&
-    isPositiveInteger(value.preset_id)
-  );
-}
-
-export function isValidAckOutcome(value: unknown): value is AckOutcome {
-  if (!isRecord(value)) return false;
-  if (value.status !== 'sent' && value.status !== 'failed_terminal' && value.status !== 'failed_retryable') {
-    return false;
-  }
-  if ('statusCode' in value && value.statusCode !== undefined) {
-    if (typeof value.statusCode !== 'number' || !Number.isInteger(value.statusCode) || !Number.isFinite(value.statusCode)) {
-      return false;
-    }
-  }
-  if ('error' in value && value.error !== undefined) {
-    if (typeof value.error !== 'string') {
-      return false;
-    }
-  }
-  return true;
-}
 
 export type ParseArrivalResult =
   | { ok: true; value: AssistantMessageArrivedV1 }
@@ -196,6 +150,12 @@ export function parseArrivalEvent(raw: unknown): ParseArrivalResult {
   if (!isRecord(agent) || !isPositiveInteger(agent.id)) {
     return { ok: false, error: '到达事件 agent.id 必须为正整数' };
   }
+
+  // Explicit ignore permission validation (required, typed, closed)
+  if (!('ignore' in raw) || !isRecord(raw.ignore) || typeof raw.ignore.allowed !== 'boolean') {
+    return { ok: false, error: '到达事件缺少必需的 ignore.allowed 布尔字段' };
+  }
+  const normalizedIgnore: { allowed: boolean } = { allowed: raw.ignore.allowed };
 
   // Register ACK structure validation (Required nullable property, D2-R4-02)
   if (!('register_ack' in raw) || raw.register_ack === undefined) {
@@ -260,6 +220,7 @@ export function parseArrivalEvent(raw: unknown): ParseArrivalResult {
         conversation_id,
         message_id,
       },
+      ignore: normalizedIgnore,
       register_ack: normalizedRegisterAck,
       title_hint: normalizedTitleHint,
       committed_at: normalizedCommittedAt,

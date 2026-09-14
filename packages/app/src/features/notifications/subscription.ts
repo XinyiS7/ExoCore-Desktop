@@ -1,7 +1,7 @@
 /**
- * Push Notification Subscription & Acknowledgement Service
+ * Push Notification Subscription & Explicit Ignore Service
  *
- * Implements Plan D7, D8, §6.5, §6.7, and ReactSheet.md §8.1.
+ * Implements Plan D7, D8, §6.5, §6.7, and ReactSheet.md §8.1 / §8.5.
  *
  * Guarantees:
  * - Five-layer truth:
@@ -14,7 +14,9 @@
  * - Device name updates reuse existing browser subscription endpoint without rotating.
  * - Strict 201 backend response validation (id, endpoint, installation_id, is_active, persisted).
  * - Safe error sanitization without leaking sensitive URLs or authentication keys.
- * - Coherent Register ACK state machine (sent / failed_retryable / failed_terminal).
+ * - Explicit ignore: POST /api/push/assistant-arrivals/<event_id>/ignore/ with bounded retry.
+ *   Closing/viewing a notification never creates a Register; only the explicit
+ *   Ignore action does (legacy Register ACK state machine removed, Plan §8.5).
  */
 
 import { apiFetch } from 'exo-shared/api';
@@ -22,8 +24,7 @@ import {
   VAPID_PUBLIC_KEY,
   urlBase64ToUint8Array,
   isRecord,
-  isValidRegisterAck,
-  isValidAckOutcome,
+  isPositiveInteger,
 } from './workerContract';
 import { getInstallationId } from './storage';
 
@@ -526,382 +527,91 @@ export async function updateDeviceName(deviceNameInput: string): Promise<Subscri
   return syncExistingSubscription(deviceNameInput);
 }
 
-// ── Register ACK State Machine (Plan D7, D2-R1-04) ──────────────────────────
+// ── Explicit Ignore (Plan §8.5 amendment) ────────────────────────────────────
 
-export type AckStatus = 'idle' | 'pending' | 'sent' | 'failed_retryable' | 'failed_terminal';
-
-export interface AckRecord {
-  key: string;
-  register_id: number;
-  preset_id: number;
-  action: 'navigate' | 'dismiss';
-  status: AckStatus;
-  lastAttemptAt: number;
+export interface IgnoreResult {
+  ok: boolean;
+  status?: number;
   error?: string;
-  statusCode?: number;
+  created?: boolean;
 }
 
-export type AckStorageStatus = 'ok' | 'unavailable' | 'corrupted';
-
-export interface AckStorageDiagnostics {
-  status: AckStorageStatus;
-  error?: string;
-}
-
-export const ACK_STORAGE_KEY = 'exo:v4:ack_registry';
-
-const ackRegistry = new Map<string, AckRecord>();
-const inFlightAcks = new Map<
-  string,
-  Promise<{ ok: boolean; status?: number; error?: string; terminal?: boolean }>
->();
-
-let currentAckStorageStatus: AckStorageStatus = 'ok';
-let currentAckStorageError: string | undefined = undefined;
-
-export function getAckStorageDiagnostics(): AckStorageDiagnostics {
-  return {
-    status: currentAckStorageStatus,
-    error: currentAckStorageError,
-  };
-}
-
-function loadAckRegistry(): void {
-  try {
-    if (typeof localStorage === 'undefined') {
-      currentAckStorageStatus = 'unavailable';
-      currentAckStorageError = 'localStorage 不可用';
-      return;
-    }
-    const raw = localStorage.getItem(ACK_STORAGE_KEY);
-    if (!raw) {
-      currentAckStorageStatus = 'ok';
-      currentAckStorageError = undefined;
-      return;
-    }
-    let records: unknown;
-    try {
-      records = JSON.parse(raw);
-    } catch (parseErr) {
-      ackRegistry.clear();
-      currentAckStorageStatus = 'corrupted';
-      currentAckStorageError = 'ACK 注册表 JSON 损坏并隔离: ' + sanitizeErrorMessage(parseErr);
-      return;
-    }
-    if (!Array.isArray(records)) {
-      ackRegistry.clear();
-      currentAckStorageStatus = 'corrupted';
-      currentAckStorageError = 'ACK 注册表数据格式非法 (非数组)';
-      return;
-    }
-
-    const validatedRecords: AckRecord[] = [];
-    let hasCorruptedEntry = false;
-
-    for (const r of records) {
-      if (!isRecord(r)) {
-        hasCorruptedEntry = true;
-        break;
-      }
-      const { key, register_id, preset_id, action, status, lastAttemptAt, statusCode, error } = r;
-
-      if (
-        typeof register_id !== 'number' ||
-        !Number.isInteger(register_id) ||
-        register_id <= 0 ||
-        typeof preset_id !== 'number' ||
-        !Number.isInteger(preset_id) ||
-        preset_id <= 0 ||
-        (action !== 'navigate' && action !== 'dismiss') ||
-        (status !== 'sent' && status !== 'failed_terminal' && status !== 'failed_retryable') ||
-        typeof lastAttemptAt !== 'number' ||
-        !Number.isFinite(lastAttemptAt)
-      ) {
-        hasCorruptedEntry = true;
-        break;
-      }
-
-      const expectedKey = `${register_id}:${preset_id}:${action}`;
-      if (typeof key !== 'string' || key !== expectedKey) {
-        hasCorruptedEntry = true;
-        break;
-      }
-
-      if ('statusCode' in r && statusCode !== undefined) {
-        if (typeof statusCode !== 'number' || !Number.isInteger(statusCode) || !Number.isFinite(statusCode)) {
-          hasCorruptedEntry = true;
-          break;
-        }
-      }
-
-      if ('error' in r && error !== undefined) {
-        if (typeof error !== 'string') {
-          hasCorruptedEntry = true;
-          break;
-        }
-      }
-
-      validatedRecords.push({
-        key: expectedKey,
-        register_id,
-        preset_id,
-        action,
-        status,
-        lastAttemptAt,
-        statusCode: typeof statusCode === 'number' && Number.isInteger(statusCode) ? statusCode : undefined,
-        error: typeof error === 'string' ? error : undefined,
-      });
-    }
-
-    if (hasCorruptedEntry) {
-      ackRegistry.clear();
-      currentAckStorageStatus = 'corrupted';
-      currentAckStorageError = 'ACK 注册表包含非法格式条目并已隔离';
-    } else {
-      ackRegistry.clear();
-      for (const rec of validatedRecords) {
-        ackRegistry.set(rec.key, rec);
-      }
-      currentAckStorageStatus = 'ok';
-      currentAckStorageError = undefined;
-    }
-  } catch (err) {
-    ackRegistry.clear();
-    currentAckStorageStatus = 'unavailable';
-    currentAckStorageError = 'ACK 注册表读取异常: ' + sanitizeErrorMessage(err);
-  }
-}
-
-function persistAckRegistry(): void {
-  try {
-    if (typeof localStorage === 'undefined') {
-      currentAckStorageStatus = 'unavailable';
-      currentAckStorageError = 'localStorage 不可用';
-      return;
-    }
-    if (currentAckStorageStatus === 'corrupted') {
-      // Storage is quarantined as corrupted; do not overwrite corrupt state
-      return;
-    }
-    const records = Array.from(ackRegistry.values()).filter(
-      (r) => r.status === 'sent' || r.status === 'failed_terminal' || r.status === 'failed_retryable',
-    );
-    localStorage.setItem(ACK_STORAGE_KEY, JSON.stringify(records));
-    currentAckStorageStatus = 'ok';
-    currentAckStorageError = undefined;
-  } catch (err) {
-    currentAckStorageStatus = 'unavailable';
-    currentAckStorageError = 'ACK 注册表持久化失败 (配额超限或存储禁用): ' + sanitizeErrorMessage(err);
-  }
-}
-
-// Hydrate on module load
-if (typeof window !== 'undefined') {
-  loadAckRegistry();
-}
-
-export function getAckDiagnostics(): AckRecord[] {
-  const records = Array.from(ackRegistry.values()).filter(
-    (r) => r.status === 'failed_retryable' || r.status === 'failed_terminal',
-  );
-  if (currentAckStorageStatus !== 'ok' && currentAckStorageError) {
-    records.push({
-      key: `storage:${currentAckStorageStatus}`,
-      register_id: 0,
-      preset_id: 0,
-      action: 'navigate',
-      status: currentAckStorageStatus === 'corrupted' ? 'failed_terminal' : 'failed_retryable',
-      lastAttemptAt: Date.now(),
-      error: currentAckStorageError,
-    });
-  }
-  return records;
-}
-
-export function clearAckRegistryForTest(): void {
-  ackRegistry.clear();
-  inFlightAcks.clear();
-  currentAckStorageStatus = 'ok';
-  currentAckStorageError = undefined;
-  try {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(ACK_STORAGE_KEY);
-    }
-  } catch {
-    // Ignored
-  }
-}
-
-export function reloadAckRegistryForTest(): void {
-  ackRegistry.clear();
-  inFlightAcks.clear();
-  loadAckRegistry();
-}
-
-export function isAckSent(
-  registerAck: { register_id: number; preset_id: number } | null | undefined,
-  action: 'navigate' | 'dismiss',
-): boolean {
-  if (!registerAck) return false;
-  const key = `${registerAck.register_id}:${registerAck.preset_id}:${action}`;
-  const existing = ackRegistry.get(key);
-  return existing?.status === 'sent' || inFlightAcks.has(key);
-}
-
-export function recordAckOutcome(
-  registerAck: unknown,
-  action: unknown,
-  outcome: unknown,
-): void {
-  if (
-    !isValidRegisterAck(registerAck) ||
-    (action !== 'navigate' && action !== 'dismiss') ||
-    !isValidAckOutcome(outcome)
-  ) {
-    return;
-  }
-  const key = `${registerAck.register_id}:${registerAck.preset_id}:${action}`;
-  const record: AckRecord = {
-    key,
-    register_id: registerAck.register_id,
-    preset_id: registerAck.preset_id,
-    action,
-    status: outcome.status,
-    lastAttemptAt: Date.now(),
-    error: typeof outcome.error === 'string' ? outcome.error : undefined,
-    statusCode:
-      typeof outcome.statusCode === 'number' && Number.isInteger(outcome.statusCode)
-        ? outcome.statusCode
-        : undefined,
-  };
-  ackRegistry.set(key, record);
-  persistAckRegistry();
+export interface IgnoreSuccessResponse {
+  action: 'ignore';
+  event_id: number;
+  message_id: number;
+  conversation_id: number;
+  created: boolean;
 }
 
 /**
- * Sends Register ACK (navigate / dismiss) with coherent state machine truth.
+ * Pure closed guard for the frozen five-field ignore response truth (ReactSheet §8.5).
+ * Success is accepted ONLY when the response echoes the exact identity of the request:
+ * - action === 'ignore'
+ * - event_id equals the requested positive ID
+ * - message_id / conversation_id are positive integers
+ * - created is a boolean
+ * Any other 2xx body (missing field, wrong type, mismatched identity, wrong action)
+ * is a contract violation and must surface as visible retryable failure.
+ */
+export function isValidIgnoreResponse(
+  res: unknown,
+  requestedEventId: number,
+): res is IgnoreSuccessResponse {
+  if (!isRecord(res)) return false;
+  if (res.action !== 'ignore') return false;
+  if (!isPositiveInteger(res.event_id) || res.event_id !== requestedEventId) return false;
+  if (!isPositiveInteger(res.message_id)) return false;
+  if (!isPositiveInteger(res.conversation_id)) return false;
+  if (typeof res.created !== 'boolean') return false;
+  return true;
+}
+
+/**
+ * POST /api/push/assistant-arrivals/<event_id>/ignore/
  *
- * Guarantees:
- * - Only sent if register_ack is valid with positive integers.
- * - Idempotency: duplicate sends for identical event/action are suppressed once sent.
- * - In-flight joining: concurrent calls for identical event/action return the same pending promise.
- * - Terminal 400 / 404 errors stop auto-retries and never falsely report success.
- * - Non-blocking: failures do not throw or impede navigation or message displays.
- * - Obtains subscription_endpoint whenever obtainable.
+ * Calls the explicit ignore endpoint for a send_message arrival.
+ * - Success hides indication without consuming unread.
+ * - Failure remains visible and retryable.
+ * - No navigation, no unread consumption, no Register ACK.
+ * - Malformed/mismatched 2xx truth is failure, never silent success.
  */
-export async function sendRegisterAck(
-  registerAck: unknown,
-  action: 'navigate' | 'dismiss',
-  endpoint?: string,
-): Promise<{ ok: boolean; status?: number; error?: string; terminal?: boolean }> {
-  if (!isValidRegisterAck(registerAck) || (action !== 'navigate' && action !== 'dismiss')) {
-    return { ok: false, error: 'No valid register_ack provided' };
+export async function ignoreAssistantArrival(eventId: number): Promise<IgnoreResult> {
+  if (!Number.isInteger(eventId) || eventId <= 0) {
+    return { ok: false, error: '无效的到达事件 ID' };
   }
 
-  const key = `${registerAck.register_id}:${registerAck.preset_id}:${action}`;
+  try {
+    const res = await apiFetch(`/api/push/assistant-arrivals/${eventId}/ignore/`, {
+      method: 'POST',
+      body: {},
+    });
 
-  // 1. In-flight check: reuse pending request promise
-  const inFlight = inFlightAcks.get(key);
-  if (inFlight) {
-    return inFlight;
-  }
-
-  // 2. Existing settled check
-  const existing = ackRegistry.get(key);
-  if (existing?.status === 'sent') {
-    return { ok: true, status: 200 };
-  }
-  if (existing?.status === 'failed_terminal') {
-    return { ok: false, status: existing.statusCode, error: existing.error, terminal: true };
-  }
-
-  const record: AckRecord = {
-    key,
-    register_id: registerAck.register_id,
-    preset_id: registerAck.preset_id,
-    action,
-    status: 'pending',
-    lastAttemptAt: Date.now(),
-  };
-  ackRegistry.set(key, record);
-
-  const promise = (async () => {
-    // Attempt to resolve subscription_endpoint if not provided
-    let effectiveEndpoint = endpoint;
-    if (!effectiveEndpoint && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-      try {
-        const subOutcome = await getBrowserSubscriptionOutcome();
-        if (subOutcome.status === 'ok' && subOutcome.subscription) {
-          effectiveEndpoint = subOutcome.subscription.endpoint;
-        }
-      } catch {
-        // Ignored
-      }
+    if (isValidIgnoreResponse(res, eventId)) {
+      return {
+        ok: true,
+        status: 200,
+        created: res.created,
+      };
     }
 
-    try {
-      const url = `/api/agents/registers/${registerAck.register_id}/ack/?preset_id=${registerAck.preset_id}`;
-      const body: Record<string, string> = { action };
-      if (effectiveEndpoint) {
-        body.subscription_endpoint = effectiveEndpoint;
-      }
+    // Contract-violating 2xx: never fabricate success.
+    return { ok: false, status: 200, error: '忽略失败：服务端响应异常' };
+  } catch (err) {
+    const status =
+      err && typeof err === 'object' && 'status' in err && typeof (err as { status: unknown }).status === 'number'
+        ? (err as { status: number }).status
+        : undefined;
 
-      await apiFetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body,
-      });
+    const errorMsg = sanitizeErrorMessage(err);
 
-      record.status = 'sent';
-      record.error = undefined;
-      record.statusCode = 200;
-      ackRegistry.set(key, record);
-      persistAckRegistry();
-      return { ok: true, status: 200 };
-    } catch (err) {
-      const status =
-        err && typeof err === 'object' && 'status' in err && typeof (err as { status: unknown }).status === 'number'
-          ? (err as { status: number }).status
-          : undefined;
-
-      const errorMsg = sanitizeErrorMessage(err);
-      if (status === 400 || status === 404) {
-        record.status = 'failed_terminal';
-        record.statusCode = status;
-        record.error = errorMsg;
-        ackRegistry.set(key, record);
-        persistAckRegistry();
-        return { ok: false, status, error: errorMsg, terminal: true };
-      }
-
-      record.status = 'failed_retryable';
-      record.statusCode = status;
-      record.error = errorMsg;
-      ackRegistry.set(key, record);
-      persistAckRegistry();
-      return { ok: false, status, error: errorMsg, terminal: false };
-    } finally {
-      inFlightAcks.delete(key);
+    if (status === 404) {
+      return { ok: false, status, error: '到达事件不存在' };
     }
-  })();
-
-  inFlightAcks.set(key, promise);
-  return promise;
-}
-
-/**
- * Retries all pending retryable ACKs (called on reconnect or explicit user retry).
- */
-export async function retryPendingAcks(): Promise<number> {
-  let count = 0;
-  for (const record of ackRegistry.values()) {
-    if (record.status === 'failed_retryable') {
-      count++;
-      await sendRegisterAck(
-        { register_id: record.register_id, preset_id: record.preset_id },
-        record.action,
-      );
+    if (status === 409) {
+      return { ok: false, status, error: '此到达事件不支持忽略操作' };
     }
+
+    return { ok: false, status, error: errorMsg };
   }
-  return count;
 }

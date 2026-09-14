@@ -749,6 +749,7 @@ type AssistantMessageArrivedV1 = {
     conversation_id: number;
     message_id: number;
   };
+  ignore: { allowed: boolean };
   register_ack: { register_id: number; preset_id: number } | null;
   title_hint: string | null;
   committed_at: string;
@@ -758,7 +759,8 @@ type AssistantMessageArrivedV1 = {
 - `dedupe_key` 恒为 `assistant-message:<message_id>`，与 DB OneToOne 一致。前端以 `event_id` 推进 cursor、以 `dedupe_key` 去重（例如同一 arrival 已由 Push 处理）。
 - **`preview` 只从 canonical `Message.content` 派生**：内容过滤后折叠空白，最多 **160** 个 Unicode code point；`truncated` 表示过滤后文本超限。不读取 reasoning、`tool_calls`、私有语音指令或附件正文。锁屏沿用该 bounded preview。
 - `title_hint`：`send_message` 的 title 过滤后 <=200 字符；为 `null` 时前端以 `agent.name` 作标题。
-- `register_ack` 分传输语义：**前台 reconciliation** 只在该 arrival 至少一台设备 `sent` 时给出；**Web Push 的 `data.event`** 刻意以 pending-capable 上下文序列化，`send_message` 产生的 Register 在 provider 完成前就携带 `{register_id, preset_id}`，使「provider 已接受、终局更新前」到达的点击仍可安全 ACK。无 Register 时两种传输均为 `null`；点击引导统一使用该 `{register_id, preset_id}`，不要自行拼接。
+- `ignore`：typed、封闭的显式忽略许可指示，恒存在。仅 `source=send_message` 的 arrival 为 `{"allowed": true}`；ordinary Chat 恒为 `{"allowed": false}`。前端必须以该字段决定是否提供「忽略」affordance，禁止从 title/agent/`register_ack` 推断。该字段不随是否已忽略而变化（重复忽略幂等）。
+- `register_ack` 为 **legacy-only** 字段：仅当该 arrival 仍链接一个可解码的 v1 通知信封 Register（旧 `send_message` 流程遗留）且至少一台设备 `sent` 时给出 `{register_id, preset_id}`。新 `send_message` 不再预建 Register，两种传输均为 `null`；显式忽略产生的固定文案 Register **不是** ACK 目标（同样为 `null`）。
 - `committed_at`：arrival 行与 canonical Message 已作为同一次 DB commit 对外可见的 UTC ISO-8601（`Z` 结尾），不是 provider 完成时间。
 - 连续多条 assistant Message 各自保留独立事件，不用 latest 覆盖 sibling。
 
@@ -791,9 +793,9 @@ type AssistantArrivalPush = {
 - **claim-before-send 的 at-most-once 取舍**：进程在 claim 之后、provider call 之前崩溃可能漏一条系统 Push（不重试、不双弹），前台 reconciliation 仍保证 Message 可见；provider 已接受但终结更新前崩溃时 delivery 保守保持 `claimed`，不重试也不猜 `sent`。
 - 派发只发生在 arrival 事务提交之后。投递事实的边界是 **durable claim**：只有取得 `AssistantArrivalDelivery` claim 之后的 provider 结果才终结为 `sent`/`failed`/`expired`；pre-claim、payload 构建、DB 与其它基础设施错误只被记录日志（ordinary 路径不产生投递事实，`send_message` 路径以工具层 `status=failed` 上抛），绝不伪造成功、不回滚 Message/arrival，也不把已完成的 chat 改成 error。
 
-### 8.5 Register ACK 兼容
+### 8.5 Register ACK 兼容（legacy）与显式忽略
 
-**POST /api/agents/registers/&lt;pk&gt;/ack/?preset_id=&lt;int&gt;** — 用户对通知的导航/忽略回执。
+**POST /api/agents/registers/&lt;pk&gt;/ack/?preset_id=&lt;int&gt;** — 旧通知 Register 的导航/忽略回执（legacy-only）。
 
 ```ts
 type RegisterAckRequest = {
@@ -806,9 +808,27 @@ type RegisterAckResponse = { id: number; content: string };  // 200
 - **200** `{id, content}`；**400** preset_id 缺失或非整数、action 非枚举，或**带 v1 marker 的通知数据自身损坏**；**404** 该 preset 下不存在此 Register。
 - 400 的边界：只有 malformed **versioned v1** 信封才是 400。不带 v1 marker 的其它/无法识别的 legacy 文本不会被当成错误：它保持 `content` 不变并仍返回 200（仅刷新 TTL），不猜测改写。
 - **幂等**：ACK 后 Register 转为「用户已处理」，并把 `expires_at` 刷新为 **now + 1 小时**（初始 claimed Register 的保留期是 12 小时）；重复 ACK 不覆盖既有已处理状态，稍后的投递摘要更新也不会把用户已点击改回未处理。
-- 兼容解析同时接受「投递状态待确认」与「已发送」两种信封。`send_message` 在派发前写入的 Register 已经完整、可解析、可 ACK，不依赖后续更新才合法。
-- 与 arrival 的衔接：`send_message` 的 Register 在至少一台设备 `sent` 后才完善为已发送摘要；**若已被用户处理则不覆盖**。零订阅 / 全部失败 / 过期时删除未被处理的 Register（`arrival.register` 随 SET_NULL 归空，Message 与 arrival 保留）；投递结果不确定（存在 `claimed`）时保守保留可 ACK 的 Register 直到其 12 小时 TTL。
+- 兼容解析同时接受「投递状态待确认」与「已发送」两种信封。历史上 `send_message` 在派发前写入的 Register 已完整、可解析、可 ACK；显式忽略修订后此流程不再产生新行。
+- 与 arrival 的衔接（历史数据）：旧 Register 保持原样、自然过期，不迁移、不删除；投递摘要与已处理状态均只属 legacy 行。
 - ordinary Chat 的 arrival `register_ack` 恒为 `null`，绝不伪造 Register。
+
+**POST /api/push/assistant-arrivals/&lt;event_id&gt;/ignore/** — 显式「忽略」动作，唯一会创建 Register 的新路径。
+
+```ts
+type AssistantArrivalIgnoreResponse = {
+  action: "ignore";
+  event_id: number;       // = arrival id
+  message_id: number;
+  conversation_id: number;
+  created: boolean;       // 本次调用是否新建了 Register 行
+};  // 200
+```
+
+- 仅对 `source=send_message` 的 arrival 有效；请求 body 不参与身份判定，也不接受任何 Register 文本（客户端提交的 content/title/body 一律忽略）。
+- 事务 + arrival 行锁：首个有效调用创建并链接**一条** short Register（preset = 发送 preset，固定 server-owned 文本 `Alicia 已忽略你的消息`，`expires_at = now + 1 小时`）；重复/并发（多设备）返回同一逻辑结果，不产生 siblings。已链接行仅两类可处理：canonical 忽略 Register（short）→ 幂等仅刷新 TTL；可解码的 legacy v1 通知信封（short）→ 就地规范化（content/TTL/created_at），不新建第二行。其余链接行（任意同 preset 文本、malformed 信封、非 short 生命周期、异 preset）一律 409 且零变更。
+- 忽略不导航、不清除 installation-local unread，不产生服务端 unread/seen 状态。
+- **404** `{"error": "assistant arrival not found", "code": "arrival_not_found"}`（不存在/非法 id）；**409** `{"error": "explicit ignore is only available for send_message arrivals", "code": "ignore_not_allowed"}`（ordinary Chat arrival，或 linked register 不是 canonical 忽略 Register / 可解码 legacy 短信封——含异 preset、任意同 preset 文本、malformed 信封、非 short 生命周期，一律零变更）。
+- 离线/无 client 的 OS 动作回执仍是 best-effort（stateless SW 无持久重试队列）；前台 shell 忽略失败可见且可重试。
 
 ---
 

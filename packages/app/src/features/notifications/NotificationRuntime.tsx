@@ -26,12 +26,8 @@ import {
   StoredArrivalRecord,
 } from './storage';
 import {
-  isAckSent,
-  recordAckOutcome,
-  retryPendingAcks,
-  sendRegisterAck,
+  ignoreAssistantArrival,
 } from './subscription';
-import { isValidRegisterAck, isValidAckOutcome } from './workerContract';
 import { NotificationContext, NotificationContextValue } from './notificationContext';
 
 const POLL_INTERVAL_MS = 15000;
@@ -159,21 +155,9 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
           Number.isInteger(data.target.message_id) &&
           data.target.message_id > 0
         ) {
-          // Runtime ACK envelope validation: require paired valid register_ack and ack_outcome
-          if (isValidRegisterAck(data.register_ack) && isValidAckOutcome(data.ack_outcome)) {
-            recordAckOutcome(data.register_ack, 'navigate', data.ack_outcome);
-          }
           setActiveIndication(null);
           navigate(`/chat/${data.target.conversation_id}`);
         }
-      } else if (
-        data.type === 'SW_ACK_RESULT' &&
-        data.version === 1 &&
-        (data.action === 'navigate' || data.action === 'dismiss') &&
-        isValidRegisterAck(data.register_ack) &&
-        isValidAckOutcome(data.outcome)
-      ) {
-        recordAckOutcome(data.register_ack, data.action, data.outcome);
       } else if (data.type === 'SUBSCRIPTION_REPAIR_NEEDED' && data.version === 1) {
         setRepairNeeded(true);
       }
@@ -330,7 +314,6 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
     };
 
     const onOnline = () => {
-      void retryPendingAcks();
       if (document.visibilityState === 'visible') {
         void poll();
       }
@@ -355,33 +338,75 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
   const consumeExactArrivals = useCallback((conversationId: number, messageIds: Set<number>) => {
     if (messageIds.size === 0) return;
 
-    const matchingArrivals: AssistantMessageArrivedV1[] = [];
-    for (const record of Object.values(unreadMap)) {
-      if (record.event.conversation_id === conversationId && messageIds.has(record.event.message_id)) {
-        matchingArrivals.push(record.event);
-      }
-    }
-
     const res = consumeArrivalsByMessageIds(conversationId, messageIds);
     if (res.status === 'ok') {
       setUnreadMap(res.storage.unreadMap);
-      for (const ev of matchingArrivals) {
-        if (ev.register_ack && !isAckSent(ev.register_ack, 'navigate')) {
-          void sendRegisterAck(ev.register_ack, 'navigate');
-        }
-      }
     } else {
       setSyncError(`未读清理失败: ${res.error}`);
     }
-  }, [unreadMap]);
+  }, []);
 
-  // Dismiss shell indication
-  const dismissIndication = useCallback(() => {
-    if (activeIndication?.register_ack) {
-      void sendRegisterAck(activeIndication.register_ack, 'dismiss');
+  // Ignore shell indication (calls explicit ignore endpoint if allowed).
+  // UI state is bound to one target event identity (D3-R2-02): a newer indication
+  // never inherits a stale request's busy/error, and an older completion never
+  // closes or annotates the current indication.
+  type IgnoreUiState =
+    | { eventId: number; phase: 'busy' }
+    | { eventId: number; phase: 'error'; error: string };
+
+  const [ignoreState, setIgnoreState] = useState<IgnoreUiState | null>(null);
+
+  const handleIgnore = useCallback(async () => {
+    if (!activeIndication) return;
+    const target = activeIndication;
+    if (!target.ignore?.allowed) {
+      // Not eligible for ignore — just dismiss this specific indication silently
+      setActiveIndication((current) =>
+        current && current.event_id === target.event_id ? null : current,
+      );
+      setIgnoreState((prev) => (prev && prev.eventId === target.event_id ? null : prev));
+      return;
     }
-    setActiveIndication(null);
+
+    const eventId = target.event_id;
+    setIgnoreState({ eventId, phase: 'busy' });
+    const res = await ignoreAssistantArrival(eventId);
+
+    // Completion is identity-guarded: only the targeted event may be closed or
+    // annotated. A newer indication is never touched by this older request.
+    setActiveIndication((current) => {
+      if (current && current.event_id === eventId && res.ok) {
+        return null;
+      }
+      return current;
+    });
+    setIgnoreState((prev) => {
+      if (prev && prev.eventId !== eventId) {
+        // A newer request owns the slot; preserve its state untouched.
+        return prev;
+      }
+      if (res.ok) {
+        return null;
+      }
+      return { eventId, phase: 'error', error: res.error || '忽略失败' };
+    });
   }, [activeIndication]);
+
+  // Dismiss without ignore (just hide indication)
+  const dismissIndication = useCallback(() => {
+    setActiveIndication(null);
+    setIgnoreState(null);
+  }, []);
+
+  // Ignore UI state projections, rendered only when bound to the ACTIVE indication
+  const ignoreBusy =
+    ignoreState?.phase === 'busy' &&
+    ignoreState.eventId === activeIndication?.event_id;
+  const ignoreError =
+    ignoreState?.phase === 'error' &&
+    ignoreState.eventId === activeIndication?.event_id
+      ? ignoreState.error
+      : null;
 
   // Computed projections
   const unreadCount = useMemo(() => Object.keys(unreadMap).length, [unreadMap]);
@@ -458,25 +483,40 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
           <div className="shell-indication-body">
             {activeIndication.preview.text}
           </div>
+          {ignoreError ? (
+            <div className="shell-indication-error" role="status">
+              <span>{ignoreError}</span>
+            </div>
+          ) : null}
           <div className="shell-indication-actions">
-            <button
-              type="button"
-              className="shell-indication-btn"
-              aria-label="忽略通知"
-              onClick={dismissIndication}
-            >
-              忽略
-            </button>
+            {activeIndication.ignore?.allowed ? (
+              <button
+                type="button"
+                className="shell-indication-btn"
+                aria-label="忽略通知"
+                disabled={ignoreBusy}
+                onClick={() => void handleIgnore()}
+              >
+                {ignoreBusy ? '处理中...' : '忽略'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="shell-indication-btn"
+                aria-label="关闭提示"
+                onClick={dismissIndication}
+              >
+                关闭
+              </button>
+            )}
             <button
               type="button"
               className="shell-indication-btn shell-indication-btn--primary"
               aria-label="查看通知"
               onClick={() => {
                 const targetConvId = activeIndication.conversation_id;
-                if (activeIndication.register_ack) {
-                  void sendRegisterAck(activeIndication.register_ack, 'navigate');
-                }
                 setActiveIndication(null);
+                setIgnoreState(null);
                 navigate(`/chat/${targetConvId}`);
               }}
             >
