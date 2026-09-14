@@ -13,11 +13,6 @@ import {
 import { NotificationRuntime } from '../features/notifications/NotificationRuntime';
 import { useNotifications } from '../features/notifications/notificationContext';
 import { NotificationsPanel } from '../features/notifications/NotificationsPanel';
-import {
-  clearAckRegistryForTest,
-  isAckSent,
-  getAckDiagnostics,
-} from '../features/notifications/subscription';
 
 // In-memory mock for localStorage in Vitest environment
 class MockLocalStorage {
@@ -71,7 +66,8 @@ function makeValidEvent(overrides: Partial<AssistantMessageArrivedV1> = {}): Ass
     agent: { id: 7, name: 'Alessandro' },
     preview: { policy: 'bounded_text', text: 'Hello Alicia, this is Sandro.', truncated: false },
     target: { kind: 'conversation_message', conversation_id: cid, message_id: mid },
-    register_ack: { register_id: 55, preset_id: 7 },
+    register_ack: null,
+    ignore: { allowed: true },
     title_hint: 'Greetings',
     committed_at: '2026-09-13T20:00:00Z',
     ...overrides,
@@ -124,7 +120,7 @@ function TestHarness({
   );
 }
 
-describe('P2D D-2 Section C: SW Ingestion, Focus Matrix & Register ACK Integration', () => {
+describe('P2D D-2 Section C: SW Ingestion, Focus Matrix & Explicit Ignore Integration', () => {
   const originalFetch = globalThis.fetch;
   let mockSw: MockServiceWorkerContainer;
   let postCalls: { url: string; body: unknown }[] = [];
@@ -148,6 +144,19 @@ describe('P2D D-2 Section C: SW Ingestion, Focus Matrix & Register ACK Integrati
 
       if (url.pathname === '/api/push/assistant-arrivals/') {
         return jsonResponse({ events: [], next_cursor: 10, has_more: false });
+      }
+
+      const ignoreMatch = url.pathname.match(/^\/api\/push\/assistant-arrivals\/(\d+)\/ignore\/$/);
+      if (ignoreMatch && method === 'POST') {
+        const body = init?.body ? JSON.parse(String(init.body)) : null;
+        postCalls.push({ url: urlStr, body });
+        return jsonResponse({
+          action: 'ignore',
+          event_id: Number(ignoreMatch[1]),
+          message_id: 999,
+          conversation_id: 42,
+          created: true,
+        });
       }
 
       if (url.pathname.includes('/ack/') && method === 'POST') {
@@ -206,14 +215,14 @@ describe('P2D D-2 Section C: SW Ingestion, Focus Matrix & Register ACK Integrati
     expect(screen.getByRole('button', { name: '查看通知' })).toBeTruthy();
   });
 
-  it('clicking "忽略" sends dismiss Register ACK without clearing unread count and closes banner', async () => {
+  it('clicking "忽略" calls the explicit ignore endpoint without clearing unread, without navigation, and closes banner', async () => {
     render(<TestHarness initialRoute="/settings/notifications" />);
 
     const ev = makeValidEvent({
       conversation_id: 42,
       message_id: 202,
       dedupe_key: 'assistant-message:202',
-      register_ack: { register_id: 88, preset_id: 7 },
+      event_id: 202,
     });
 
     mockSw.postMessageToPage({
@@ -234,28 +243,30 @@ describe('P2D D-2 Section C: SW Ingestion, Focus Matrix & Register ACK Integrati
       expect(screen.queryByRole('alert')).toBeNull();
     });
 
-    // Unread count is preserved (Plan D9: 不清除未读徽标)
+    // Unread count is preserved (explicit ignore never clears unread)
     expect(screen.getByTestId('total-unread').textContent).toBe('1');
 
-    // Register ACK was dispatched with action: dismiss
+    // No navigation happened
+    expect(screen.getByTestId('location-display').textContent).toBe('/settings/notifications');
+
+    // Exactly one explicit ignore request to the canonical endpoint; zero Register ACK
     await waitFor(() => {
-      expect(postCalls.length).toBeGreaterThanOrEqual(1);
+      expect(postCalls.length).toBe(1);
     });
-    const ackCall = postCalls.find((c) => c.url.includes('/api/agents/registers/88/ack/'));
-    expect(ackCall).toBeTruthy();
-    expect(ackCall?.body).toMatchObject({
-      action: 'dismiss',
-    });
+    const ignoreCalls = postCalls.filter((c) =>
+      c.url.includes('/api/push/assistant-arrivals/202/ignore/'),
+    );
+    expect(ignoreCalls).toHaveLength(1);
+    expect(postCalls.filter((c) => c.url.includes('/api/agents/registers/'))).toHaveLength(0);
   });
 
-  it('clicking "查看" sends navigate Register ACK, navigates to conversation, and closes banner', async () => {
+  it('clicking "查看" navigates to the conversation with zero Register ACK and zero ignore request', async () => {
     render(<TestHarness initialRoute="/settings/notifications" />);
 
     const ev = makeValidEvent({
       conversation_id: 42,
       message_id: 203,
       dedupe_key: 'assistant-message:203',
-      register_ack: { register_id: 99, preset_id: 7 },
     });
 
     mockSw.postMessageToPage({
@@ -276,15 +287,262 @@ describe('P2D D-2 Section C: SW Ingestion, Focus Matrix & Register ACK Integrati
       expect(screen.getByTestId('location-display').textContent).toBe('/chat/42');
     });
 
-    // Register ACK was dispatched with action: navigate
+    // Zero Register ACK, zero explicit ignore request
+    expect(postCalls.filter((c) => c.url.includes('/api/agents/registers/'))).toHaveLength(0);
+    expect(postCalls.filter((c) => c.url.includes('/ignore/'))).toHaveLength(0);
+  });
+
+  it('ignore failure stays visible with bounded retry and never duplicates uncontrolled calls', async () => {
+    let ignoreAttempts = 0;
+    const customFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(String(input), 'http://localhost');
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (url.pathname === '/api/push/assistant-arrivals/') {
+        return jsonResponse({ events: [], next_cursor: 10, has_more: false });
+      }
+      const ignoreMatch = url.pathname.match(/^\/api\/push\/assistant-arrivals\/(\d+)\/ignore\/$/);
+      if (ignoreMatch && method === 'POST') {
+        ignoreAttempts++;
+        if (ignoreAttempts === 1) {
+          return jsonResponse({ error: 'assistant arrival not found', code: 'arrival_not_found' }, 404);
+        }
+        return jsonResponse({
+          action: 'ignore',
+          event_id: Number(ignoreMatch[1]),
+          message_id: 404,
+          conversation_id: 42,
+          created: true,
+        });
+      }
+      if (url.pathname === '/api/push/subscriptions/') {
+        return jsonResponse([]);
+      }
+      return jsonResponse({ error: 'not found' }, 404);
+    });
+    globalThis.fetch = customFetch as unknown as typeof fetch;
+
+    render(<TestHarness initialRoute="/settings/notifications" />);
+
+    const ev = makeValidEvent({
+      conversation_id: 42,
+      message_id: 404,
+      dedupe_key: 'assistant-message:404',
+      event_id: 404,
+    });
+
+    mockSw.postMessageToPage({
+      type: 'ASSISTANT_ARRIVAL_HANDOFF',
+      version: 1,
+      event: ev,
+    });
+
+    await screen.findByRole('alert');
+
+    // First attempt fails: indication stays, error is visible
+    fireEvent.click(screen.getByRole('button', { name: '忽略通知' }));
     await waitFor(() => {
-      expect(postCalls.length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText(/到达事件不存在/)).toBeTruthy();
     });
-    const ackCall = postCalls.find((c) => c.url.includes('/api/agents/registers/99/ack/'));
-    expect(ackCall).toBeTruthy();
-    expect(ackCall?.body).toMatchObject({
-      action: 'navigate',
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(ignoreAttempts).toBe(1);
+
+    // Explicit retry succeeds: exactly one more request, indication closes
+    fireEvent.click(screen.getByRole('button', { name: '忽略通知' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('alert')).toBeNull();
     });
+    expect(ignoreAttempts).toBe(2);
+    expect(screen.getByTestId('total-unread').textContent).toBe('1');
+    expect(screen.getByTestId('location-display').textContent).toBe('/settings/notifications');
+  });
+
+  it('late ignore success for an older event cannot close a newer indication (event-bound completion)', async () => {
+    const pending = new Map<number, { resolve: (r: Response) => void }>();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), 'http://localhost');
+      if (url.pathname === '/api/push/assistant-arrivals/') {
+        return jsonResponse({ events: [], next_cursor: 10, has_more: false });
+      }
+      const m = url.pathname.match(/^\/api\/push\/assistant-arrivals\/(\d+)\/ignore\/$/);
+      if (m) {
+        const id = Number(m[1]);
+        return new Promise<Response>((resolve) => {
+          pending.set(id, { resolve });
+        });
+      }
+      if (url.pathname === '/api/push/subscriptions/') {
+        return jsonResponse([]);
+      }
+      return jsonResponse({ error: 'not found' }, 404);
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    render(<TestHarness initialRoute="/settings/notifications" />);
+
+    // Event A (older) arrives and its ignore request goes in flight
+    mockSw.postMessageToPage({
+      type: 'ASSISTANT_ARRIVAL_HANDOFF',
+      version: 1,
+      event: makeValidEvent({
+        conversation_id: 42,
+        message_id: 701,
+        dedupe_key: 'assistant-message:701',
+        event_id: 701,
+        preview: { policy: 'bounded_text', text: 'older indication', truncated: false },
+      }),
+    });
+    await screen.findByText('older indication');
+    fireEvent.click(screen.getByRole('button', { name: '忽略通知' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '忽略通知' })).toBeDisabled();
+    });
+
+    // Event B (newer) replaces the bounded indication
+    mockSw.postMessageToPage({
+      type: 'ASSISTANT_ARRIVAL_HANDOFF',
+      version: 1,
+      event: makeValidEvent({
+        conversation_id: 42,
+        message_id: 702,
+        dedupe_key: 'assistant-message:702',
+        event_id: 702,
+        preview: { policy: 'bounded_text', text: 'newer indication', truncated: false },
+      }),
+    });
+    await screen.findByText('newer indication');
+    expect(screen.queryByText('older indication')).toBeNull();
+
+    // B must NOT inherit A's busy state
+    expect(screen.getByRole('button', { name: '忽略通知' })).not.toBeDisabled();
+
+    // A settles with success — it must not close or alter B
+    pending.get(701)?.resolve(jsonResponse({
+      action: 'ignore', event_id: 701, message_id: 701, conversation_id: 42, created: true,
+    }));
+    await waitFor(() => {
+      expect(screen.getByText('newer indication')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '忽略通知' })).not.toBeDisabled();
+    });
+    expect(screen.queryByText('older indication')).toBeNull();
+    expect(screen.getByTestId('total-unread').textContent).toBe('2');
+  });
+
+  it('late ignore failure for an older event cannot attach its error or busy state to a newer indication', async () => {
+    const pending = new Map<number, { reject: (e: Error) => void }>();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), 'http://localhost');
+      if (url.pathname === '/api/push/assistant-arrivals/') {
+        return jsonResponse({ events: [], next_cursor: 10, has_more: false });
+      }
+      const m = url.pathname.match(/^\/api\/push\/assistant-arrivals\/(\d+)\/ignore\/$/);
+      if (m) {
+        const id = Number(m[1]);
+        return new Promise<Response>((_resolve, reject) => {
+          pending.set(id, { reject });
+        });
+      }
+      if (url.pathname === '/api/push/subscriptions/') {
+        return jsonResponse([]);
+      }
+      return jsonResponse({ error: 'not found' }, 404);
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    render(<TestHarness initialRoute="/settings/notifications" />);
+
+    // Event A (older) arrives and its ignore request goes in flight
+    mockSw.postMessageToPage({
+      type: 'ASSISTANT_ARRIVAL_HANDOFF',
+      version: 1,
+      event: makeValidEvent({
+        conversation_id: 42,
+        message_id: 801,
+        dedupe_key: 'assistant-message:801',
+        event_id: 801,
+        preview: { policy: 'bounded_text', text: 'old request', truncated: false },
+      }),
+    });
+    await screen.findByText('old request');
+    fireEvent.click(screen.getByRole('button', { name: '忽略通知' }));
+
+    // Event B (newer) replaces the bounded indication
+    mockSw.postMessageToPage({
+      type: 'ASSISTANT_ARRIVAL_HANDOFF',
+      version: 1,
+      event: makeValidEvent({
+        conversation_id: 42,
+        message_id: 802,
+        dedupe_key: 'assistant-message:802',
+        event_id: 802,
+        preview: { policy: 'bounded_text', text: 'fresh arrival', truncated: false },
+      }),
+    });
+    await screen.findByText('fresh arrival');
+
+    // A settles with failure — B must stay clean and enabled
+    pending.get(801)?.reject(new Error('offline'));
+    await waitFor(() => {
+      expect(screen.getByText('fresh arrival')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '忽略通知' })).not.toBeDisabled();
+    });
+    expect(screen.queryByText(/offline/)).toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('viewing during a pending ignore navigates normally and a later completion changes nothing', async () => {
+    const pending = new Map<number, { resolve: (r: Response) => void }>();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), 'http://localhost');
+      if (url.pathname === '/api/push/assistant-arrivals/') {
+        return jsonResponse({ events: [], next_cursor: 10, has_more: false });
+      }
+      const m = url.pathname.match(/^\/api\/push\/assistant-arrivals\/(\d+)\/ignore\/$/);
+      if (m) {
+        const id = Number(m[1]);
+        return new Promise<Response>((resolve) => {
+          pending.set(id, { resolve });
+        });
+      }
+      if (url.pathname === '/api/push/subscriptions/') {
+        return jsonResponse([]);
+      }
+      return jsonResponse({ error: 'not found' }, 404);
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    render(<TestHarness initialRoute="/settings/notifications" />);
+
+    mockSw.postMessageToPage({
+      type: 'ASSISTANT_ARRIVAL_HANDOFF',
+      version: 1,
+      event: makeValidEvent({
+        conversation_id: 42,
+        message_id: 901,
+        dedupe_key: 'assistant-message:901',
+        event_id: 901,
+        preview: { policy: 'bounded_text', text: 'pending view target', truncated: false },
+      }),
+    });
+    await screen.findByText('pending view target');
+    fireEvent.click(screen.getByRole('button', { name: '忽略通知' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '忽略通知' })).toBeDisabled();
+    });
+
+    // View while the ignore request is still in flight
+    fireEvent.click(screen.getByRole('button', { name: '查看通知' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('location-display').textContent).toBe('/chat/42');
+    });
+
+    // Late success must not resurrect or alter anything
+    pending.get(901)?.resolve(jsonResponse({
+      action: 'ignore', event_id: 901, message_id: 901, conversation_id: 42, created: true,
+    }));
+    await waitFor(() => {
+      expect(screen.queryByRole('alert')).toBeNull();
+    });
+    expect(screen.getByTestId('location-display').textContent).toBe('/chat/42');
   });
 
   it('SW handoff when already on the exact conversation does not display in-app banner', async () => {
@@ -505,14 +763,15 @@ describe('P2D D-2 Section C: SW Ingestion, Focus Matrix & Register ACK Integrati
     });
   });
 
-  it('NOTIFICATION_NAVIGATE: malformed ACK metadata or pairing does not break valid target navigation, and does not contaminate ACK registry', async () => {
-    clearAckRegistryForTest();
+  it('NOTIFICATION_NAVIGATE: legacy register_ack/ack_outcome fields are ignored entirely — navigation succeeds with zero ACK', async () => {
     render(<TestHarness initialRoute="/" />);
 
     await screen.findByTestId('location-display');
     expect(screen.getByTestId('location-display').textContent).toBe('/');
 
-    // Send NOTIFICATION_NAVIGATE with valid target but malformed ACK fields (negative ID and string statusCode)
+    // Send NOTIFICATION_NAVIGATE with a valid target plus obsolete legacy ACK fields
+    // (negative register_id and malformed statusCode). The V4 runtime no longer
+    // reads these fields; they must neither block navigation nor trigger any network ACK.
     mockSw.postMessageToPage({
       type: 'NOTIFICATION_NAVIGATE',
       version: 1,
@@ -522,12 +781,12 @@ describe('P2D D-2 Section C: SW Ingestion, Focus Matrix & Register ACK Integrati
         message_id: 1,
       },
       register_ack: {
-        register_id: -5, // invalid negative ID!
+        register_id: -5, // legacy invalid negative ID!
         preset_id: 1,
       },
       ack_outcome: {
         status: 'sent',
-        statusCode: '200' as unknown as number, // invalid string statusCode!
+        statusCode: '200' as unknown as number, // legacy invalid string statusCode!
       },
     });
 
@@ -536,43 +795,8 @@ describe('P2D D-2 Section C: SW Ingestion, Focus Matrix & Register ACK Integrati
       expect(screen.getByTestId('location-display').textContent).toBe('/chat/99');
     });
 
-    // Malformed ACK must NOT be persisted or recorded
-    expect(isAckSent({ register_id: -5, preset_id: 1 }, 'navigate')).toBe(false);
-    expect(getAckDiagnostics()).toHaveLength(0);
-  });
-
-  it('SW_ACK_RESULT: requires valid pairing, positive IDs, and valid optional types to record in ACK registry', async () => {
-    clearAckRegistryForTest();
-    render(<TestHarness initialRoute="/" />);
-
-    // 1. Invalid status code type -> ignored
-    mockSw.postMessageToPage({
-      type: 'SW_ACK_RESULT',
-      version: 1,
-      action: 'dismiss',
-      register_ack: { register_id: 50, preset_id: 1 },
-      outcome: { status: 'sent', statusCode: 'invalid_code' },
-    });
-    expect(isAckSent({ register_id: 50, preset_id: 1 }, 'dismiss')).toBe(false);
-
-    // 2. Non-positive ID -> ignored
-    mockSw.postMessageToPage({
-      type: 'SW_ACK_RESULT',
-      version: 1,
-      action: 'dismiss',
-      register_ack: { register_id: 0, preset_id: 1 },
-      outcome: { status: 'sent', statusCode: 200 },
-    });
-    expect(isAckSent({ register_id: 0, preset_id: 1 }, 'dismiss')).toBe(false);
-
-    // 3. Valid envelope -> recorded!
-    mockSw.postMessageToPage({
-      type: 'SW_ACK_RESULT',
-      version: 1,
-      action: 'dismiss',
-      register_ack: { register_id: 50, preset_id: 1 },
-      outcome: { status: 'sent', statusCode: 200 },
-    });
-    expect(isAckSent({ register_id: 50, preset_id: 1 }, 'dismiss')).toBe(true);
+    // Zero Register ACK network requests were issued
+    expect(postCalls.filter((c) => c.url.includes('/api/agents/registers/'))).toHaveLength(0);
+    expect(postCalls).toHaveLength(0);
   });
 });

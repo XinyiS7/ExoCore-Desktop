@@ -66,6 +66,7 @@ function makeValidEvent(overrides: Partial<AssistantMessageArrivedV1> = {}): Ass
     preview: { policy: 'bounded_text', text: 'Hello Alicia', truncated: false },
     target: { kind: 'conversation_message', conversation_id: 1, message_id: 42 },
     register_ack: null,
+    ignore: { allowed: true },
     title_hint: 'Greetings',
     committed_at: '2026-09-13T20:00:00Z',
     ...overrides,

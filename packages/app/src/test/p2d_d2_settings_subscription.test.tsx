@@ -4,15 +4,8 @@ import { jsonResponse } from './helpers';
 import { NotificationsPanel } from '../features/notifications/NotificationsPanel';
 import {
   isPushSupported,
-  sendRegisterAck,
+  ignoreAssistantArrival,
   unsubscribeFromPush,
-  clearAckRegistryForTest,
-  reloadAckRegistryForTest,
-  recordAckOutcome,
-  retryPendingAcks,
-  getAckDiagnostics,
-  getAckStorageDiagnostics,
-  ACK_STORAGE_KEY,
   PUSH_DEVICE_NAME_STORAGE_KEY,
 } from '../features/notifications/subscription';
 
@@ -369,33 +362,97 @@ describe('P2D D-2 Section A: Settings Panel & Subscription Truth', () => {
     expect(html).not.toContain('tBHItJI5svbpez7KI4CCXg');
   });
 
-  it('sends Register ACK idempotently and handles terminal errors (400, 404) gracefully', async () => {
+  it('ignoreAssistantArrival: posts to the explicit ignore endpoint once and parses the bounded truth', async () => {
     let callCount = 0;
-    globalThis.fetch = vi.fn().mockImplementation(async (url: RequestInfo | URL) => {
+    let lastUrl = '';
+    globalThis.fetch = vi.fn().mockImplementation(async (url: RequestInfo | URL, init?: RequestInit) => {
       callCount++;
-      const urlStr = String(url);
-      if (urlStr.includes('/ack/')) {
-        return jsonResponse({ id: 99, content: 'ACKed' }, 200);
+      lastUrl = String(url);
+      if (lastUrl.includes('/ignore/')) {
+        expect(init?.method).toBe('POST');
+        return jsonResponse({ action: 'ignore', event_id: 101, message_id: 9, conversation_id: 42, created: true });
       }
       return jsonResponse({});
     });
 
-    const ack = { register_id: 101, preset_id: 1 };
-
-    // First call: succeeds
-    const res1 = await sendRegisterAck(ack, 'navigate');
-    expect(res1.ok).toBe(true);
+    const res = await ignoreAssistantArrival(101);
+    expect(res.ok).toBe(true);
+    expect(res.created).toBe(true);
     expect(callCount).toBe(1);
+    expect(lastUrl).toContain('/api/push/assistant-arrivals/101/ignore/');
+  });
 
-    // Second call for identical event & action: deduplicated in-memory!
-    const res2 = await sendRegisterAck(ack, 'navigate');
-    expect(res2.ok).toBe(true);
-    expect(callCount).toBe(1); // Not called twice!
+  it('ignoreAssistantArrival: invalid/zero/negative event ids reject without any network request', async () => {
+    const fetchSpy = vi.fn();
+    globalThis.fetch = fetchSpy;
 
-    // Null register_ack safely no-ops without calling fetch
-    const resNull = await sendRegisterAck(null, 'dismiss');
-    expect(resNull.ok).toBe(false);
-    expect(callCount).toBe(1);
+    expect((await ignoreAssistantArrival(0)).ok).toBe(false);
+    expect((await ignoreAssistantArrival(-7)).ok).toBe(false);
+    expect((await ignoreAssistantArrival(1.5)).ok).toBe(false);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('ignoreAssistantArrival: maps 404 and 409 to bounded visible errors without leaking endpoints', async () => {
+    globalThis.fetch = vi.fn().mockImplementation(async () => {
+      const err = new Error('API 404: Not Found');
+      (err as unknown as { status: number }).status = 404;
+      (err as unknown as { body: unknown }).body = { error: 'assistant arrival not found', code: 'arrival_not_found' };
+      throw err;
+    });
+
+    const res404 = await ignoreAssistantArrival(101);
+    expect(res404.ok).toBe(false);
+    expect(res404.status).toBe(404);
+    expect(res404.error).toBe('到达事件不存在');
+  });
+
+  it('ignoreAssistantArrival: complete valid five-field response is the only success truth', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(jsonResponse({
+      action: 'ignore', event_id: 101, message_id: 9, conversation_id: 42, created: true,
+    }));
+    const res = await ignoreAssistantArrival(101);
+    expect(res.ok).toBe(true);
+    expect(res.status).toBe(200);
+    expect(res.created).toBe(true);
+
+    globalThis.fetch = vi.fn().mockResolvedValue(jsonResponse({
+      action: 'ignore', event_id: 101, message_id: 9, conversation_id: 42, created: false,
+    }));
+    const resNoCreate = await ignoreAssistantArrival(101);
+    expect(resNoCreate.ok).toBe(true);
+    expect(resNoCreate.created).toBe(false);
+  });
+
+  it('ignoreAssistantArrival: mismatched event identity in a 2xx body is visible retryable failure', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(jsonResponse({
+      action: 'ignore', event_id: 999, message_id: 9, conversation_id: 42, created: true,
+    }));
+    const res = await ignoreAssistantArrival(101);
+    expect(res.ok).toBe(false);
+    expect(res.status).toBe(200);
+    expect(res.error).toBeTruthy();
+  });
+
+  it('ignoreAssistantArrival: missing fields, wrong types, wrong action and non-object 2xx all fail closed', async () => {
+    const cases: unknown[] = [
+      { action: 'ignore' }, // missing everything else
+      { action: 'ignore', event_id: 101, message_id: 9, conversation_id: 42 }, // missing created
+      { action: 'ignore', event_id: 101, message_id: 9, conversation_id: 42, created: 'yes' }, // created wrong type
+      { action: 'ignore', event_id: 101, message_id: -9, conversation_id: 42, created: true }, // non-positive message_id
+      { action: 'ignore', event_id: 101, message_id: 9, conversation_id: 0, created: true }, // non-positive conversation_id
+      { action: 'ignore', event_id: '101', message_id: 9, conversation_id: 42, created: true }, // event_id wrong type
+      { action: 'ack', event_id: 101, message_id: 9, conversation_id: 42, created: true }, // wrong action
+      'not an object',
+      null,
+      [],
+    ];
+
+    for (const body of cases) {
+      globalThis.fetch = vi.fn().mockResolvedValue(jsonResponse(body));
+      const res = await ignoreAssistantArrival(101);
+      expect(res.ok, `case ${JSON.stringify(body)} must fail`).toBe(false);
+      expect(res.error).toBeTruthy();
+    }
   });
 
   it('browser subscription inspection failure in unsubscribeFromPush reports failure and does not show success', async () => {
@@ -421,208 +478,4 @@ describe('P2D D-2 Section A: Settings Panel & Subscription Truth', () => {
     }
   });
 
-  it('concurrent in-flight calls to sendRegisterAck join the same request promise', async () => {
-    clearAckRegistryForTest();
-    let settle!: (res: Response) => void;
-    const responsePromise = new Promise<Response>((resolve) => {
-      settle = resolve;
-    });
-
-    const fetchSpy = vi.fn().mockReturnValue(responsePromise);
-    globalThis.fetch = fetchSpy;
-
-    const ack = { register_id: 202, preset_id: 1 };
-    const p1 = sendRegisterAck(ack, 'navigate', 'https://push.example.com/test');
-    const p2 = sendRegisterAck(ack, 'navigate', 'https://push.example.com/test');
-
-    settle(jsonResponse({ id: 202, content: 'ACK' }, 200));
-    const [res1, res2] = await Promise.all([p1, p2]);
-
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(res1.ok).toBe(true);
-    expect(res2.ok).toBe(true);
-  });
-
-  it('recordAckOutcome: typed runtime validation rejects invalid shapes and records valid inputs', () => {
-    clearAckRegistryForTest();
-
-    // Invalid register_id
-    recordAckOutcome({ register_id: -1, preset_id: 1 }, 'navigate', { status: 'sent' });
-    expect(getAckDiagnostics()).toHaveLength(0);
-
-    // Invalid preset_id
-    recordAckOutcome({ register_id: 10, preset_id: 0 }, 'navigate', { status: 'sent' });
-    expect(getAckDiagnostics()).toHaveLength(0);
-
-    // Invalid action
-    recordAckOutcome({ register_id: 10, preset_id: 1 }, 'invalid_action', { status: 'sent' });
-    expect(getAckDiagnostics()).toHaveLength(0);
-
-    // Valid failed_retryable record
-    recordAckOutcome({ register_id: 101, preset_id: 2 }, 'navigate', {
-      status: 'failed_retryable',
-      error: 'Network timeout',
-    });
-    const diags = getAckDiagnostics();
-    expect(diags).toHaveLength(1);
-    expect(diags[0].register_id).toBe(101);
-    expect(diags[0].preset_id).toBe(2);
-    expect(diags[0].status).toBe('failed_retryable');
-  });
-
-  it('ACK storage corruption isolation: corrupted JSON isolates corruption without crashing', () => {
-    clearAckRegistryForTest();
-    localStorage.setItem(ACK_STORAGE_KEY, '{ broken-json-syntax');
-
-    reloadAckRegistryForTest();
-
-    const storageDiag = getAckStorageDiagnostics();
-    expect(storageDiag.status).toBe('corrupted');
-    expect(storageDiag.error).toContain('ACK 注册表 JSON 损坏并隔离');
-
-    const diags = getAckDiagnostics();
-    expect(diags.some((d) => d.status === 'failed_terminal')).toBe(true);
-  });
-
-  it('ACK storage quota resilience: localStorage QuotaExceeded sets status unavailable without throw', () => {
-    clearAckRegistryForTest();
-
-    const originalSetItem = localStorage.setItem.bind(localStorage);
-    localStorage.setItem = () => {
-      throw new Error('QuotaExceededError: storage quota exceeded');
-    };
-
-    try {
-      recordAckOutcome({ register_id: 10, preset_id: 1 }, 'navigate', {
-        status: 'failed_retryable',
-        error: 'Network error',
-      });
-      const diag = getAckStorageDiagnostics();
-      expect(diag.status).toBe('unavailable');
-      expect(diag.error).toContain('配额超限或存储禁用');
-    } finally {
-      localStorage.setItem = originalSetItem;
-    }
-  });
-
-  it('sendRegisterAck: independently rejects non-positive IDs (<= 0) without issuing network fetch', async () => {
-    const fetchSpy = vi.fn();
-    globalThis.fetch = fetchSpy;
-
-    // Negative register_id
-    const resNeg = await sendRegisterAck({ register_id: -7, preset_id: 1 }, 'navigate');
-    expect(resNeg.ok).toBe(false);
-    expect(fetchSpy).not.toHaveBeenCalled();
-
-    // Zero register_id
-    const resZero = await sendRegisterAck({ register_id: 0, preset_id: 1 }, 'navigate');
-    expect(resZero.ok).toBe(false);
-    expect(fetchSpy).not.toHaveBeenCalled();
-
-    // Zero preset_id
-    const resZeroPreset = await sendRegisterAck({ register_id: 10, preset_id: 0 }, 'navigate');
-    expect(resZeroPreset.ok).toBe(false);
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
-  it('ACK hydration: isolates corrupted/negative/mismatched/NaN entries and halts all network retries', async () => {
-    clearAckRegistryForTest();
-
-    // Store array with negative ID, mismatched key, NaN timestamp, malformed optional field, alongside one valid
-    const mixedRecords = [
-      {
-        key: '1:1:navigate',
-        register_id: 1,
-        preset_id: 1,
-        action: 'navigate',
-        status: 'failed_retryable',
-        lastAttemptAt: 1000,
-      },
-      {
-        key: '-7:1:navigate',
-        register_id: -7, // invalid negative ID!
-        preset_id: 1,
-        action: 'navigate',
-        status: 'failed_retryable',
-        lastAttemptAt: 1000,
-      },
-      {
-        key: 'wrong_key', // mismatched key!
-        register_id: 2,
-        preset_id: 1,
-        action: 'navigate',
-        status: 'failed_retryable',
-        lastAttemptAt: 1000,
-      },
-      {
-        key: '3:1:navigate',
-        register_id: 3,
-        preset_id: 1,
-        action: 'navigate',
-        status: 'failed_retryable',
-        lastAttemptAt: NaN, // non-finite timestamp!
-      },
-      {
-        key: '4:1:navigate',
-        register_id: 4,
-        preset_id: 1,
-        action: 'navigate',
-        status: 'failed_retryable',
-        lastAttemptAt: 1000,
-        statusCode: 'invalid_string_status', // malformed optional field!
-      },
-    ];
-    localStorage.setItem(ACK_STORAGE_KEY, JSON.stringify(mixedRecords));
-
-    reloadAckRegistryForTest();
-
-    const storageDiag = getAckStorageDiagnostics();
-    expect(storageDiag.status).toBe('corrupted');
-    expect(storageDiag.error).toContain('包含非法格式条目并已隔离');
-
-    // Network retry attempt must be completely halted (0 network calls)
-    const fetchSpy = vi.fn();
-    globalThis.fetch = fetchSpy;
-
-    await retryPendingAcks();
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
-  it('ACK hydration: reloads valid retryable records and successfully executes network retry', async () => {
-    clearAckRegistryForTest();
-
-    const validRecords = [
-      {
-        key: '10:1:navigate',
-        register_id: 10,
-        preset_id: 1,
-        action: 'navigate',
-        status: 'failed_retryable',
-        lastAttemptAt: 1000,
-      },
-    ];
-    localStorage.setItem(ACK_STORAGE_KEY, JSON.stringify(validRecords));
-
-    reloadAckRegistryForTest();
-
-    const storageDiag = getAckStorageDiagnostics();
-    expect(storageDiag.status).toBe('ok');
-
-    const fetchSpy = vi.fn().mockResolvedValue(jsonResponse({ id: 10, content: 'ACK' }, 200));
-    globalThis.fetch = fetchSpy;
-
-    await retryPendingAcks();
-
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      expect.stringContaining('/api/agents/registers/10/ack/?preset_id=1'),
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ action: 'navigate' }),
-      }),
-    );
-
-    const diags = getAckDiagnostics();
-    expect(diags).toHaveLength(0); // All retries cleared to 'sent'
-  });
 });

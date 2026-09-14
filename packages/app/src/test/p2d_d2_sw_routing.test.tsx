@@ -97,6 +97,7 @@ describe('P2D D-2 Section B: Service Worker Push, Focus Matrix & Routing (Actual
     agent: { id: 1, name: 'Alessandro' },
     preview: { policy: 'bounded_text', text: 'Hello Alicia, this is Sandro.', truncated: false },
     target: { kind: 'conversation_message', conversation_id: 42, message_id: 999 },
+    ignore: { allowed: true },
     register_ack: { register_id: 55, preset_id: 1 },
     title_hint: 'Sandro Update',
     committed_at: '2026-09-13T22:30:00Z',
@@ -374,7 +375,7 @@ describe('P2D D-2 Section B: Service Worker Push, Focus Matrix & Routing (Actual
     }));
   });
 
-  it('notificationclick warm: prioritizes existing visible/focused /app/ client, navigates and focuses', async () => {
+  it('notificationclick warm: focuses existing /app/ client and sends typed navigation with zero Register ACK', async () => {
     const mockFocus = vi.fn().mockResolvedValue(undefined);
     const mockPostMessage = vi.fn();
     const existingClient: MockClient = {
@@ -402,25 +403,15 @@ describe('P2D D-2 Section B: Service Worker Push, Focus Matrix & Routing (Actual
 
     expect(notifClose).toHaveBeenCalled();
     expect(mockFocus).toHaveBeenCalled();
-    expect(mockPostMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'NOTIFICATION_NAVIGATE',
-        version: 1,
-        target: validB6Event.target,
-        register_ack: validB6Event.register_ack,
-        ack_outcome: { status: 'sent', statusCode: 200 },
-      }),
-    );
+    expect(mockPostMessage).toHaveBeenCalledWith({
+      type: 'NOTIFICATION_NAVIGATE',
+      version: 1,
+      target: validB6Event.target,
+    });
     expect(openWindow).not.toHaveBeenCalled();
 
-    // Verify ACK dispatched with subscription_endpoint
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      '/api/agents/registers/55/ack/?preset_id=1',
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ action: 'navigate', subscription_endpoint: 'https://push.example.com/v1/sub-active-99' }),
-      }),
-    );
+    // Zero Register ACK: body click performs no network request at all
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
   it('notificationclick cold: opens new window with scope-correct URL when no client exists', async () => {
@@ -445,29 +436,24 @@ describe('P2D D-2 Section B: Service Worker Push, Focus Matrix & Routing (Actual
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
-  it('notificationclose: best-effort without window clients survives network failure without uncaught errors', async () => {
-    globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network offline'));
-    const { listeners } = loadProductionWorker({ clients: [] });
+  it('notificationclick action=ignore: closes, posts explicit ignore exactly once, and never navigates', async () => {
+    const mockFocus = vi.fn().mockResolvedValue(undefined);
+    const mockPostMessage = vi.fn();
+    const existingClient: MockClient = {
+      url: 'https://exocore.example.com/app/chat/10',
+      visibilityState: 'visible',
+      focused: true,
+      focus: mockFocus,
+      postMessage: mockPostMessage,
+    };
+    const { listeners, openWindow } = loadProductionWorker({ clients: [existingClient] });
 
+    const notifClose = vi.fn();
     let lifetime: Promise<unknown> | undefined;
-    listeners.notificationclose({
+    listeners.notificationclick({
+      action: 'ignore',
       notification: {
-        data: { event: validB6Event },
-      },
-      waitUntil: (p: Promise<unknown>) => {
-        lifetime = p;
-      },
-    });
-
-    await expect(lifetime).resolves.not.toThrow();
-  });
-
-  it('notificationclose ACK: sends dismiss Register ACK within event.waitUntil with subscription_endpoint', async () => {
-    const { listeners } = loadProductionWorker();
-
-    let lifetime: Promise<unknown> | undefined;
-    listeners.notificationclose({
-      notification: {
+        close: notifClose,
         data: { event: validB6Event },
       },
       waitUntil: (p: Promise<unknown>) => {
@@ -477,13 +463,110 @@ describe('P2D D-2 Section B: Service Worker Push, Focus Matrix & Routing (Actual
 
     await lifetime;
 
+    // Notification closed
+    expect(notifClose).toHaveBeenCalled();
+
+    // Exactly one explicit ignore request, zero Register ACK requests
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      '/api/agents/registers/55/ack/?preset_id=1',
+      '/api/push/assistant-arrivals/101/ignore/',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ action: 'dismiss', subscription_endpoint: 'https://push.example.com/v1/sub-active-99' }),
+        body: JSON.stringify({}),
       }),
     );
+
+    // Zero navigation: no focus, no handoff, no window open
+    expect(mockFocus).not.toHaveBeenCalled();
+    expect(mockPostMessage).not.toHaveBeenCalled();
+    expect(openWindow).not.toHaveBeenCalled();
+  });
+
+  it('notificationclick action=ignore with malformed/missing event data still never navigates and posts nothing (fail-closed)', async () => {
+    const mockPostMessage = vi.fn();
+    const existingClient: MockClient = {
+      url: 'https://exocore.example.com/app/chat/10',
+      visibilityState: 'visible',
+      focused: true,
+      focus: vi.fn(),
+      postMessage: mockPostMessage,
+    };
+    const { listeners, openWindow } = loadProductionWorker({ clients: [existingClient] });
+
+    let lifetime: Promise<unknown> | undefined;
+    listeners.notificationclick({
+      action: 'ignore',
+      notification: {
+        close: vi.fn(),
+        data: { event: { ...validB6Event, message_id: -1 } }, // malformed event
+      },
+      waitUntil: (p: Promise<unknown>) => {
+        lifetime = p;
+      },
+    });
+
+    await lifetime;
+
+    // No event_id to post to: zero network, zero navigation
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(mockPostMessage).not.toHaveBeenCalled();
+    expect(openWindow).not.toHaveBeenCalled();
+  });
+
+  it('push: exposes the 忽略 action only when ignore.allowed === true', async () => {
+    const { listeners, showNotification } = loadProductionWorker();
+
+    let lifetime: Promise<unknown> | undefined;
+    listeners.push({
+      data: {
+        json: () => ({
+          title: 'Sandro Update',
+          body: 'Hello Alicia, this is Sandro.',
+          data: { event: validB6Event },
+        }),
+      },
+      waitUntil: (p: Promise<unknown>) => {
+        lifetime = p;
+      },
+    });
+
+    await lifetime;
+
+    expect(showNotification).toHaveBeenCalledWith('Sandro Update', expect.objectContaining({
+      actions: [{ action: 'ignore', title: '忽略' }],
+    }));
+  });
+
+  it('push: omits the ignore action when ignore.allowed === false (ordinary chat)', async () => {
+    const { listeners, showNotification } = loadProductionWorker();
+
+    const ordinaryEvent = {
+      ...validB6Event,
+      ignore: { allowed: false },
+      register_ack: null,
+      title_hint: 'Ordinary Reply',
+    };
+
+    let lifetime: Promise<unknown> | undefined;
+    listeners.push({
+      data: {
+        json: () => ({
+          title: 'Ordinary Reply',
+          body: 'A normal chat completion.',
+          data: { event: ordinaryEvent },
+        }),
+      },
+      waitUntil: (p: Promise<unknown>) => {
+        lifetime = p;
+      },
+    });
+
+    await lifetime;
+
+    expect(showNotification).toHaveBeenCalledTimes(1);
+    const [title, options] = (showNotification as ReturnType<typeof vi.fn>).mock.calls[0] as [string, { actions?: unknown }];
+    expect(title).toBe('Ordinary Reply');
+    expect(options.actions).toBeUndefined();
   });
 
   it('pushsubscriptionchange: renews subscription with VAPID key and broadcasts SUBSCRIPTION_REPAIR_NEEDED', async () => {
@@ -550,7 +633,7 @@ describe('P2D D-2 Section B: Service Worker Push, Focus Matrix & Routing (Actual
     expect(openWindow).toHaveBeenCalledWith(`${customScope}chat/42`);
   });
 
-  it('notificationclose: transmits SW_ACK_RESULT to clients with dismiss action and outcome', async () => {
+  it('notificationclose: completely neutral — zero network, zero navigation, zero Register even with clients present', async () => {
     const mockPostMessage = vi.fn();
     const windowClient = {
       url: 'https://exocore.example.com/app/chat/1',
@@ -575,13 +658,8 @@ describe('P2D D-2 Section B: Service Worker Push, Focus Matrix & Routing (Actual
 
     await lifetime;
 
-    expect(mockPostMessage).toHaveBeenCalledWith({
-      type: 'SW_ACK_RESULT',
-      version: 1,
-      register_ack: validB6Event.register_ack,
-      action: 'dismiss',
-      outcome: { status: 'sent', statusCode: 200 },
-    });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(mockPostMessage).not.toHaveBeenCalled();
   });
 
   it('push: rejects malformed target ID mismatch and falls back to generic notice', async () => {
@@ -620,6 +698,44 @@ describe('P2D D-2 Section B: Service Worker Push, Focus Matrix & Routing (Actual
     expect(content).not.toContain('function validateWorkerArrivalEvent');
     expect(content).not.toContain('isPositiveInt');
     expect(content).toContain('parseArrivalEvent');
+  });
+
+  it('arrival contract: enforces required typed ignore.allowed (missing/undefined/non-boolean fail; true/false pass)', () => {
+    // 1. Missing property -> fail closed
+    const { ignore: _omitted, ...missingIgnore } = validB6Event;
+    const resMissing = parseArrivalEvent(missingIgnore);
+    expect(resMissing.ok).toBe(false);
+    if (!resMissing.ok) {
+      expect(resMissing.error).toContain('ignore');
+    }
+
+    // 2. Explicit undefined -> fail closed
+    const resUndefined = parseArrivalEvent({ ...validB6Event, ignore: undefined });
+    expect(resUndefined.ok).toBe(false);
+
+    // 3. Non-boolean allowed -> fail closed
+    const resString = parseArrivalEvent({ ...validB6Event, ignore: { allowed: 'true' } });
+    expect(resString.ok).toBe(false);
+    const resMissingKey = parseArrivalEvent({ ...validB6Event, ignore: {} });
+    expect(resMissingKey.ok).toBe(false);
+
+    // 4. allowed=true -> valid
+    const resTrue = parseArrivalEvent({ ...validB6Event, ignore: { allowed: true } });
+    expect(resTrue.ok).toBe(true);
+    if (resTrue.ok) {
+      expect(resTrue.value.ignore).toEqual({ allowed: true });
+    }
+
+    // 5. allowed=false (ordinary chat) -> valid and must never infer from register_ack
+    const resFalse = parseArrivalEvent({
+      ...validB6Event,
+      ignore: { allowed: false },
+      register_ack: { register_id: 88, preset_id: 2 }, // legacy ACK present but ignore stays false!
+    });
+    expect(resFalse.ok).toBe(true);
+    if (resFalse.ok) {
+      expect(resFalse.value.ignore).toEqual({ allowed: false });
+    }
   });
 
   it('arrival contract: enforces required nullable register_ack (missing/undefined fail, null/object pass)', () => {
