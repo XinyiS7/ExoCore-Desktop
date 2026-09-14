@@ -16,6 +16,7 @@ import MessageBubble from './MessageBubble';
 import BranchSessionModal from '../modals/BranchSessionModal';
 import ContextCacheIndicator from './ContextCacheIndicator';
 import { usePollingChat } from '../../hooks/usePollingChat';
+import { applyDeltaToMessage } from './applyDeltaMessage';
 import { useAudioRecorder } from '../../hooks/useAudioRecorder';
 import {
  audioRecoveryInitial,
@@ -35,29 +36,6 @@ import { DEFAULT_PALETTE_ID, THEME_DEFAULT_LIGHT, THEME_DEFAULT_DARK, getPalette
 import AutocompletePopup from './AutocompletePopup';
 
 const MSGS_PER_PAGE = 50;
-
-/** Apply a streaming delta to a message object (mutates and returns the message). */
-const applyDeltaToMessage = (msg, text, eventType) => {
- if (eventType === 'thinking') {
- msg.reasoning_content = (msg.reasoning_content || '') + text;
- msg.status_text = null;
- } else if (eventType === 'reasoning') {
- const steps = [...(msg.reasoning_steps || [])];
- if (steps.length === 0 || steps[steps.length - 1] !== text) steps.push(text);
- msg.reasoning_steps = steps;
- } else if (eventType === 'status') {
- msg.status_text = text;
- } else if (eventType === 'anchor_created') {
- try {
-  const parsed = typeof text === 'string' ? JSON.parse(text) : text;
-  msg.new_anchors = [...(msg.new_anchors || []), parsed];
- } catch(e) {}
- } else {
- msg.content = (msg.content || '') + text;
- msg.status_text = null;
- }
- return msg;
-};
 
 const MOCK_CATALOG = {
   models: [
@@ -692,6 +670,27 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     abortControllerRef.current.signal,
     (text, type) => {
     if (loadGenRef.current !== loadGen) return;
+    if (type === 'telemetry') {
+     // Same handling as SSE mode: update telemetry panel, never touch the message body
+     try {
+      const t = typeof text === 'string' ? JSON.parse(text) : text;
+      setLastTelemetry(t);
+      const acc = sessionTelemetryRef.current;
+      acc.totalInput += t.input_chars ?? 0;
+      acc.totalOutput += t.output_chars ?? 0;
+      acc.totalCached += t.cached_input_chars ?? 0;
+      acc.totalTools += t.tool_calls ?? 0;
+      acc.requests += 1;
+     } catch { /* ignore malformed telemetry */ }
+     return;
+    }
+    if (type === 'cache_skipped') {
+     try {
+      const cs = typeof text === 'string' ? JSON.parse(text) : text;
+      setCacheSkippedToast(cs.reason);
+     } catch { /* ignore malformed cache_skipped */ }
+     return;
+    }
     setMessages(prev => {
      const newMsgs = [...prev];
      const lastMsg = { ...newMsgs[newMsgs.length - 1] };
@@ -999,6 +998,27 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   if (chatMode === 'async') {
   const payload = bodyData;
   await sendMessageAsync(payload, activeSessionId, abortControllerRef.current.signal, (text, type) => {
+   if (type === 'telemetry') {
+    // Same handling as SSE mode: update telemetry panel, never touch the message body
+    try {
+     const t = typeof text === 'string' ? JSON.parse(text) : text;
+     setLastTelemetry(t);
+     const acc = sessionTelemetryRef.current;
+     acc.totalInput += t.input_chars ?? 0;
+     acc.totalOutput += t.output_chars ?? 0;
+     acc.totalCached += t.cached_input_chars ?? 0;
+     acc.totalTools += t.tool_calls ?? 0;
+     acc.requests += 1;
+    } catch { /* ignore malformed telemetry */ }
+    return;
+   }
+   if (type === 'cache_skipped') {
+    try {
+     const cs = typeof text === 'string' ? JSON.parse(text) : text;
+     setCacheSkippedToast(cs.reason);
+    } catch { /* ignore malformed cache_skipped */ }
+    return;
+   }
    setMessages(prev => {
    const newMsgs = [...prev];
    const lastMsg = { ...newMsgs[newMsgs.length - 1] };

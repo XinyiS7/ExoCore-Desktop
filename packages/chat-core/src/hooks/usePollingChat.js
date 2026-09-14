@@ -46,7 +46,11 @@ export const usePollingChat = () => {
           let totalDeltaLen = 0;
           events.forEach(ev => {
             const deltaStr = ev.delta || '';
-            totalDeltaLen += deltaStr.length;
+            // Only string deltas count toward cursor math; dict deltas (telemetry etc.)
+            // are still forwarded to onDelta but must not poison totalDeltaLen with NaN.
+            if (typeof deltaStr === 'string') {
+              totalDeltaLen += deltaStr.length;
+            }
             if (deltaStr) {
               onDelta(deltaStr, ev.event_type || 'content');
             }
