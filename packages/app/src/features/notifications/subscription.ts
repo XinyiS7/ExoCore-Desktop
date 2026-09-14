@@ -314,14 +314,15 @@ export async function subscribeToPush(deviceNameInput?: string): Promise<Subscri
   try {
     const res = (await apiFetch('/api/push/subscribe/', {
       method: 'POST',
-      body: JSON.stringify({
+      headers: { 'Content-Type': 'application/json' },
+      body: {
         subscription: {
           endpoint,
           keys: { p256dh, auth },
         },
         device_name: trimmedDeviceName || undefined,
         installation_id: installationId,
-      }),
+      },
     })) as unknown;
 
     if (!isValidBackendSubscribeResponse(res, endpoint, installationId)) {
@@ -387,7 +388,8 @@ export async function unsubscribeFromPush(): Promise<UnsubscribeResult> {
   try {
     await apiFetch('/api/push/unsubscribe/', {
       method: 'POST',
-      body: JSON.stringify({ endpoint }),
+      headers: { 'Content-Type': 'application/json' },
+      body: { endpoint },
     });
   } catch (err) {
     return {
@@ -476,14 +478,15 @@ export async function syncExistingSubscription(deviceNameInput?: string): Promis
   try {
     const res = (await apiFetch('/api/push/subscribe/', {
       method: 'POST',
-      body: JSON.stringify({
+      headers: { 'Content-Type': 'application/json' },
+      body: {
         subscription: {
           endpoint,
           keys: { p256dh, auth },
         },
         device_name: trimmedDeviceName || undefined,
         installation_id: installationId,
-      }),
+      },
     })) as unknown;
 
     if (!isValidBackendSubscribeResponse(res, endpoint, installationId)) {
@@ -845,7 +848,8 @@ export async function sendRegisterAck(
 
       await apiFetch(url, {
         method: 'POST',
-        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' },
+        body,
       });
 
       record.status = 'sent';
