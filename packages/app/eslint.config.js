@@ -42,4 +42,12 @@ export default [
       ],
     },
   },
+  {
+    files: ['src/**/*.{test,spec}.{ts,tsx}', 'src/acceptance/**/*.{ts,tsx}', 'src/test/**/*.{ts,tsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
 ];

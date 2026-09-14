@@ -6,6 +6,7 @@ import { toAppApiError } from './api';
 import { ConversationDeleteMenu } from './ConversationDeleteMenu';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
 import { formatDateTime } from './time';
+import { useNotifications } from '../notifications/notificationContext';
 
 function identityLabel(presetId: number | null, presetName: string | undefined): string {
   if (presetId === null || presetId === undefined) return '未知 Agent';
@@ -23,6 +24,7 @@ export interface RecentConversationListProps {
 }
 
 export function RecentConversationList({ onRequestCreate, onDeletedConversation }: RecentConversationListProps) {
+  const { unreadByConversation } = useNotifications();
   const conversationsQuery = useConversationsQuery();
   const presetsQuery = useVisiblePresetsQuery();
 
@@ -92,6 +94,11 @@ export function RecentConversationList({ onRequestCreate, onDeletedConversation 
                 <span className={`app-chip${conversation.projectId === null ? ' app-chip--drift' : ''}`}>
                   {conversation.projectName ?? 'Drift'}
                 </span>
+                {unreadByConversation[conversation.id] > 0 ? (
+                  <span className="nav-badge recent-conversation-badge">
+                    {unreadByConversation[conversation.id] > 99 ? '99+' : unreadByConversation[conversation.id]}
+                  </span>
+                ) : null}
               </span>
             </Link>
             <ConversationDeleteMenu

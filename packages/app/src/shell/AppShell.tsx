@@ -1,5 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { MoreMenu, PrimaryNavigation } from './PrimaryNavigation';
+import { NotificationRuntime } from '../features/notifications/NotificationRuntime';
+import '../features/notifications/notifications.css';
 
 const DETAIL_PATH = /^\/chat\/\d+$|^\/agents\/[1-9]\d*$|^\/projects\/[1-9]\d*$|^\/account$|^\/settings(?:\/.*)?$/;
 
@@ -22,25 +24,27 @@ export function AppShell() {
   const isDetail = DETAIL_PATH.test(pathname);
 
   return (
-    <div className="app-shell">
-      <aside className="app-sidebar">
-        <div className="app-brand">
-          <span className="app-brand-mark" aria-hidden="true" />
-          <span className="app-brand-name">ExoCore V4</span>
+    <NotificationRuntime>
+      <div className="app-shell">
+        <aside className="app-sidebar">
+          <div className="app-brand">
+            <span className="app-brand-mark" aria-hidden="true" />
+            <span className="app-brand-name">ExoCore V4</span>
+          </div>
+          <PrimaryNavigation variant="sidebar" />
+          <MoreMenu className="app-more--sidebar" />
+        </aside>
+
+        <div className={`app-main${isDetail ? '' : ' app-main--bb'}`}>
+          <Outlet />
         </div>
-        <PrimaryNavigation variant="sidebar" />
-        <MoreMenu className="app-more--sidebar" />
-      </aside>
 
-      <div className={`app-main${isDetail ? '' : ' app-main--bb'}`}>
-        <Outlet />
+        {!isDetail ? (
+          <nav className="app-bottombar" aria-label="主导航">
+            <PrimaryNavigation variant="bottom" />
+          </nav>
+        ) : null}
       </div>
-
-      {!isDetail ? (
-        <nav className="app-bottombar" aria-label="主导航">
-          <PrimaryNavigation variant="bottom" />
-        </nav>
-      ) : null}
-    </div>
+    </NotificationRuntime>
   );
 }

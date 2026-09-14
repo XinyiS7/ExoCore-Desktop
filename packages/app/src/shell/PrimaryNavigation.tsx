@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Bell, Settings, User } from 'lucide-react';
 import { useUserAvatar } from '../shared/userAvatar';
 import { isChatActive, NAV_ITEMS, type NavItem } from './navigation';
+import { useNotifications } from '../features/notifications/notificationContext';
 
 /**
  * Desktop sidebar + mobile bottom bar projections of the one canonical
@@ -11,6 +12,7 @@ import { isChatActive, NAV_ITEMS, type NavItem } from './navigation';
 
 function NavItemRow({ item }: { item: NavItem }) {
   const { pathname } = useLocation();
+  const { unreadCount } = useNotifications();
   const Icon = item.icon;
   if (item.enabled && item.to !== undefined) {
     const active = item.id === 'chat' && isChatActive(pathname);
@@ -22,6 +24,9 @@ function NavItemRow({ item }: { item: NavItem }) {
       >
         <Icon size={18} aria-hidden="true" />
         <span className="app-nav-label">{item.label}</span>
+        {item.id === 'chat' && unreadCount > 0 ? (
+          <span className="nav-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+        ) : null}
       </Link>
     );
   }

@@ -12,10 +12,11 @@ import { AccountPage } from '../features/account/AccountPage';
 import { SettingsLayout } from '../features/settings/SettingsLayout';
 import { AppearancePanel } from '../features/settings/AppearancePanel';
 import { RoutinePanel } from '../features/settings/RoutinePanel';
-import { NotificationsPlaceholder } from '../features/settings/NotificationsPlaceholder';
 import { KeysPanel } from '../features/settings/KeysPanel';
 import { ModelRolesPanel } from '../features/settings/ModelRolesPanel';
 import { McpPanel } from '../features/settings/McpPanel';
+import { NotificationsPanel } from '../features/notifications/NotificationsPanel';
+import { NotificationDemoPage } from '../features/notifications/NotificationDemoPage';
 
 // Vite BASE_URL: "/" in dev, "/app/" in production build → basename "" / "/app".
 // Browser refresh and nginx fallback preserve the same detail route (Plan §5.4).
@@ -53,10 +54,13 @@ export const router = createBrowserRouter(
             { path: 'mcp', element: <McpPanel /> },
             { path: 'appearance', element: <AppearancePanel /> },
             { path: 'routine', element: <RoutinePanel /> },
-            { path: 'notifications', element: <NotificationsPlaceholder /> },
+            { path: 'notifications', element: <NotificationsPanel /> },
             { path: '*', element: <NotFoundPage /> },
           ],
         },
+        // Interactive demo & lab for notifications (P2D).
+        { path: 'demo/notifications', element: <NotificationDemoPage /> },
+        { path: 'demo', element: <Navigate to="/demo/notifications" replace /> },
         // Real not-found state (no masquerading empty page).
         { path: '*', element: <NotFoundPage /> },
       ],

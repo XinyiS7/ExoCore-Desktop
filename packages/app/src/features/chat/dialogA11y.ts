@@ -28,6 +28,8 @@ export function useDialogA11y(
   // without requiring an effect re-run.
   const optsRef = useRef(opts);
   optsRef.current = opts;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -56,7 +58,7 @@ export function useDialogA11y(
           return;
         }
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== 'Tab') return;
@@ -85,7 +87,7 @@ export function useDialogA11y(
       returnFocusRef.current?.focus?.();
       returnFocusRef.current = null;
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   return dialogRef;
 }

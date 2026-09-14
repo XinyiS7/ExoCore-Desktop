@@ -15,12 +15,16 @@ import {
   useConversationQuery,
   useMessagePagesQuery,
   useVisiblePresetsQuery,
+  fetchFreshWindow,
+  applyFreshWindow,
 } from './queries';
 import { MessageTimeline } from './MessageTimeline';
 import type { MessageView } from './types';
+import { useQueryClient } from '@tanstack/react-query';
 import { MoreMenu } from '../../shell/PrimaryNavigation';
 import { useDocumentTitle } from '../../shared/useDocumentTitle';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
+import { useNotifications } from '../notifications/notificationContext';
 import { useChatRuntime } from './runtime/useChatRuntime';
 import { ChatComposer } from './ChatComposer';
 import { RuntimeStatusBanner } from './RuntimeStatusBanner';
@@ -73,9 +77,17 @@ function ErrorDetail({ error }: { error: unknown }) {
 export function ConversationPage() {
   const { conversationId } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { pendingArrivalsByConversation, consumeExactArrivals } = useNotifications();
 
   const invalid = !isValidConversationId(conversationId);
   const id = invalid ? 0 : Number(conversationId);
+
+  const pendingArrivals = useMemo(
+    () => pendingArrivalsByConversation[id] ?? [],
+    [pendingArrivalsByConversation, id],
+  );
+  const hasPendingArrivals = pendingArrivals.length > 0;
 
   const conversationQuery = useConversationQuery(id);
   const conv = conversationQuery.data;
@@ -160,6 +172,7 @@ export function ConversationPage() {
   const projectInsertKeyRef = useRef(0);
   const [projectDrawerOpen, setProjectDrawerOpen] = useState(false);
   const [hudOpen, setHudOpen] = useState(false);
+  const handleCloseHud = useCallback(() => setHudOpen(false), []);
   const [controlNotice, setControlNotice] = useState<string | null>(null);
   const [pendingProjectInsert, setPendingProjectInsert] = useState<{
     key: number;
@@ -365,6 +378,61 @@ export function ConversationPage() {
     pendingAnchor.current = null;
   }, [pagesQuery.isFetchingNextPage, pagesQuery.data?.pageCount]);
 
+  // Fresh window fetch & apply helper for arrival reconciliation (D5, D1-R1-04)
+  const performFreshReconciliation = useCallback(async () => {
+    if (id <= 0) return;
+    try {
+      const freshPage = await fetchFreshWindow(id);
+      applyFreshWindow(queryClient, id, freshPage, false);
+    } catch {
+      // Retains pending unread arrivals on fetch failure; allows later retry
+    }
+  }, [id, queryClient]);
+
+  // Reader near-bottom + runtime idle: automatically fetch newest window
+  useEffect(() => {
+    if (hasPendingArrivals && isNearBottomRef.current && !busy && !controlsPending) {
+      const currentRows = merged?.rows ?? [];
+      const hasUnmergedArrival = pendingArrivals.some(
+        (arrival) => !currentRows.some((row) => row.id === arrival.message_id),
+      );
+      if (hasUnmergedArrival) {
+        void performFreshReconciliation();
+      }
+    }
+  }, [hasPendingArrivals, pendingArrivals, busy, controlsPending, merged?.rows, performFreshReconciliation]);
+
+  // Canonical row confirmation & consumption (focus-guarded, D1-R1-04)
+  const checkAndConsumeConfirmedArrivals = useCallback(() => {
+    if (id <= 0 || pendingArrivals.length === 0 || !merged?.rows) return;
+    if (!document.hasFocus()) return; // Visible-unfocused exact remains unread
+
+    const confirmedIds = new Set<number>();
+    for (const arrival of pendingArrivals) {
+      if (merged.rows.some((row) => row.id === arrival.message_id)) {
+        confirmedIds.add(arrival.message_id);
+      }
+    }
+
+    if (confirmedIds.size > 0) {
+      consumeExactArrivals(id, confirmedIds);
+    }
+  }, [id, pendingArrivals, merged?.rows, consumeExactArrivals]);
+
+  // Check whenever canonical rows update or pending arrivals change
+  useEffect(() => {
+    checkAndConsumeConfirmedArrivals();
+  }, [checkAndConsumeConfirmedArrivals]);
+
+  // Check whenever window gains focus
+  useEffect(() => {
+    const onFocus = () => {
+      checkAndConsumeConfirmedArrivals();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [checkAndConsumeConfirmedArrivals]);
+
   if (invalid) return <InvalidConversationState />;
 
   const conversation = conversationQuery.data;
@@ -402,6 +470,7 @@ export function ConversationPage() {
     isNearBottomRef.current = true;
     setIsAwayFromBottom(false);
     if (hasPendingReconcile) await applyPendingReconcile();
+    if (hasPendingArrivals) await performFreshReconciliation();
   };
 
   // Request-side action-target guards (§5.1/§5.5, C1B-R1-05): every
@@ -620,10 +689,18 @@ export function ConversationPage() {
               type="button"
               className="app-scroll-latest"
               onClick={() => void handleScrollToLatest()}
-              aria-label="返回最新消息"
-              title="返回最新消息"
+              aria-label={hasPendingArrivals ? '有新消息，点击返回最新' : '返回最新消息'}
+              title={hasPendingArrivals ? '有新消息，点击返回最新' : '返回最新消息'}
             >
               <ArrowDown size={17} aria-hidden="true" />
+              {hasPendingArrivals ? (
+                <span
+                  className="nav-badge"
+                  style={{ position: 'absolute', top: -6, right: -6 }}
+                >
+                  {pendingArrivals.length > 99 ? '99+' : pendingArrivals.length}
+                </span>
+              ) : null}
             </button>
           ) : null}
         </div>
@@ -693,7 +770,7 @@ export function ConversationPage() {
       <TacticalHud
         key={id}
         open={hudOpen}
-        onClose={() => setHudOpen(false)}
+        onClose={handleCloseHud}
         runtimeUncertain={busy || audioRecovery.isUploading() || controlsPending}
         target={controls.target}
         onTargetChange={controls.setTarget}

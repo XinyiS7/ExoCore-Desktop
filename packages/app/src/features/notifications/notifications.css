@@ -1,0 +1,154 @@
+/* ExoCore V4 — Notifications Styling (P2D CP D-1) */
+
+.shell-indication {
+  position: fixed;
+  bottom: 84px;
+  right: 20px;
+  max-width: 360px;
+  width: calc(100vw - 40px);
+  background: var(--v4-panel, #1e1e1e);
+  color: var(--v4-text, #f0f0f0);
+  border: 1px solid var(--v4-line, #333333);
+  border-radius: var(--v4-radius, 8px);
+  padding: 14px 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+  animation: shell-indication-fade-in 0.2s ease-out;
+}
+
+@keyframes shell-indication-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.shell-indication-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  color: var(--v4-text-mute, #888888);
+}
+
+.shell-indication-agent {
+  font-weight: 600;
+  color: var(--v4-accent, #4f8cff);
+}
+
+.shell-indication-body {
+  font-size: calc(13px * var(--exo-font-scale, 1));
+  line-height: 1.45;
+  color: var(--v4-text, #f0f0f0);
+  word-break: break-word;
+}
+
+.shell-indication-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.shell-indication-btn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--v4-line, #333333);
+  background: var(--v4-panel-2, #2a2a2a);
+  color: var(--v4-text, #f0f0f0);
+  transition: all 0.15s ease;
+}
+
+.shell-indication-btn:hover {
+  background: var(--v4-hover-overlay, rgba(255, 255, 255, 0.08));
+}
+
+.shell-indication-btn--primary {
+  background: var(--v4-accent, #4f8cff);
+  border-color: var(--v4-accent, #4f8cff);
+  color: #ffffff;
+}
+
+.shell-indication-btn--primary:hover {
+  opacity: 0.9;
+}
+
+/* Badge for navigation and recent items */
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--v4-accent, #4f8cff);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  height: 16px;
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  margin-left: auto;
+  line-height: 1;
+}
+
+.recent-conversation-badge {
+  margin-left: 6px;
+}
+
+/* Non-blocking Shell Sync Banner (D4, D1-R2-01) */
+.shell-sync-banner {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  max-width: 380px;
+  width: calc(100vw - 40px);
+  background: var(--v4-panel, #1e1e1e);
+  color: var(--v4-text, #f0f0f0);
+  border: 1px solid var(--v4-warn, #f59e0b);
+  border-radius: var(--v4-radius, 8px);
+  padding: 10px 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 9998;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  animation: shell-indication-fade-in 0.2s ease-out;
+}
+
+.shell-sync-banner__message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--v4-text, #f0f0f0);
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.shell-sync-banner__retry {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--v4-line, #333333);
+  background: var(--v4-panel-2, #2a2a2a);
+  color: var(--v4-text, #f0f0f0);
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.shell-sync-banner__retry:hover {
+  background: var(--v4-hover-overlay, rgba(255, 255, 255, 0.08));
+}
+
