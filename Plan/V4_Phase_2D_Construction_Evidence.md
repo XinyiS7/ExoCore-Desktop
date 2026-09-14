@@ -174,6 +174,58 @@
 
 ---
 
+## Checkpoint D-3 Real-Device Closure & Verification Evidence
+
+### 1. D-3 Scope & Ingress Pre-flight (Gate D3-G01, D3-G02)
+- **Authority & Release:** Alicia released CP D-3 for real-device closure, real Sandro `send_message` path, and recovery matrices.
+- **Scope Integrity:** All changes strictly confined to `packages/app`. No changes to `../ExoCore/`, `../nginx/`, `../ExocoreExtension/`, or V3 packages.
+- **Pre-flight Active Subscriptions Audit (Sanitized):**
+  - Legacy records preserved without unauthorized modification:
+    - ID 49: `Android-Home`, `install_id = None`, `domain = fcm.googleapis.com`
+    - ID 32: `Tailscale-Android`, `install_id = None`, `domain = fcm.googleapis.com`
+    - ID 21: `Tailscale-Mac`, `install_id = None`, `domain = fcm.googleapis.com`
+  - New V4 PWA installations registered and bound to unique UUIDs:
+    - ID 51: Desktop installation `install_id = 03835bcb-b4e5-476a-acc5-60b027217438`, `domain = fcm.googleapis.com`
+    - ID 52: Mobile (Android) installation `install_id = a1ab4030-0e0f-4a62-8c49-6cfef298277c`, `domain = fcm.googleapis.com`
+  - Total active subscriptions in backend: 5 (2 clean V4 UUIDs + 3 legacy preserved).
+
+### 2. D-3 In-flight Fixes & Quality Enforcements
+1. **API Content-Type Enforcement in `subscription.ts`:**
+   - Explicitly injected `headers: { 'Content-Type': 'application/json' }` and passed native Object bodies across `subscribeToPush`, `unsubscribeFromPush`, `syncExistingSubscription`, and `sendRegisterAck`.
+   - Resolved HTTP 415 `Unsupported Media Type` reported on Chrome during Web Push subscription registration.
+2. **Mobile Settings Column Layout Fix in `settings.css`:**
+   - Configured `.settings-layout` with `flex-direction: column` on mobile viewports (< 768px) and `flex-direction: row` on desktop viewports (>= 768px).
+   - Resolved horizontal overflow where `.settings-mobile-tabs` and `.settings-content` collided side-by-side on mobile, restoring full vertical scrolling for settings panels.
+
+### 3. Real Sandro `send_message` & End-to-End Verification (Gate D3-G03, D3-G04, D3-G05)
+- **Test Target:** Conversation #95 (`暴雨`, Alessandro's Prime Conversation, `is_prime = True`).
+- **Real Execution:**
+  - Sandro executed `send_message` upon real user instruction.
+  - Backend created canonical assistant Message `19066` and Register `2262`.
+  - Recorded arrival event: `Arrival ID = 19, msg = 19066, conv = 95, src = 'send_message', reg = 2262`.
+  - Push delivery engine dispatched Web Push to active subscriptions:
+    - Delivery 77: Sub 51 (Desktop) -> status `sent`.
+    - Delivery 78: Sub 52 (Mobile) -> status `sent`.
+  - Subsequent ordinary chat interactions:
+    - `Arrival ID = 20, msg = 19067, conv = 95, src = 'ordinary_chat'` (Deliveries 74..78 `sent`).
+    - `Arrival ID = 21, msg = 19069, conv = 95, src = 'ordinary_chat'` (Deliveries 79..83 `sent`).
+- **Real Matrix Verification by User (Alicia):**
+  - **Foreground Exact (Conversation #95 focused):** Zero OS notifications, zero shell banners, silent in-place reconciliation and instant message display.
+  - **Foreground Other (Other routes / Settings):** Non-blocking shell indication (`From: Alessandro`) displayed, unread badges incremented accurately.
+  - **Background & Closed (Desktop Windows & Android PWA):** System Web Push notification delivered cleanly, warm/cold clicks successfully navigate to `/app/chat/95`.
+  - **User Acceptance Result:** Explicit user sign-off: *"好嘞！多个场景我都测过了！非常好，用户验收pass🎉🎉"*.
+
+### 4. Quality Pipeline & Regression Totals (Gate D3-G09)
+- **Full App Regression:**
+  - Total test files: 87 passed (87)
+  - Total tests: 1055 passed (1055), 0 failed
+- **TypeScript Typecheck:** `pnpm --filter exo-app typecheck` -> 0 errors.
+- **ESLint:** `pnpm --filter exo-app lint` -> 0 errors.
+- **Production Build:** `pnpm --filter exo-app build` -> 0 errors (dist/sw.js generated with injectManifest, 91 precache entries).
+- **Whitespace / Git Diff Check:** `git diff --check` -> clean.
+
+---
+
 ## Checkpoint Status
-- **Current Checkpoint:** P2D CP D-2 (R5 Delivery)
-- **Verdict:** READY FOR ACCEPTANCE (Candidate R5 PASS). All D2-R4-01..05 findings decisively and cleanly resolved.
+- **Current Checkpoint:** P2D CP D-3 (Final Real-Device Delivery)
+- **Verdict:** READY FOR INDEPENDENT D-3 ACCEPTANCE (Candidate Final PASS). All real-device, subscription, delivery, layout, and regression invariants closed.

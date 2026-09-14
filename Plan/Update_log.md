@@ -2,6 +2,21 @@
 
 ---
 
+## 2026-09-14 — V4 Phase 2D：助手消息到达通知与实机多端闭环
+
+**署名：** `[Alaric / gemini-3.8-flash; Alicia approved user acceptance]`
+
+### 成果与交付
+- **CP D-1（前台刷新与到达状态）**：接入 B6 canonical arrival 契约，实现 15 秒前台增量轮询对齐、focused exact 会话原位无感刷新、未读计数与单一应用内浮条提示。
+- **CP D-2（通知设置与 Service Worker）**：完成五层事实通知设置面板、Web Push 后台弹窗、标签页前台抑制（foreground suppression）、warm/cold typed click 路由以及幂等 Register ACK 状态机。
+- **CP D-3（实机闭环与真实 Sandro 联调）**：
+  - 修复 `apiFetch` 显式 `Content-Type: application/json` 请求头，解决 Chrome 订阅登记 415 异常；
+  - 修复移动端 `.settings-layout` 竖向流排布，解决手机端横向遮挡缺陷；
+  - 桌面 Windows PWA 与手机 Android PWA 双端绑定独立 V4 Installation UUID 并通过 FCM 验证；
+  - 经 Alicia 授权与实机测试，真实 Sandro 成功执行 `send_message` 落入主会话 #95 并通过 Web Push 派发，前台原位刷新、前台其它轻量提示、后台与锁屏系统弹窗全场景验证通过。
+
+---
+
 ## 2026-09-12 — V4 Phase 2 路线调整：Message TTS、统一消息到达通知、Groups 后移
 
 **署名：** `[gpt-5.6-sol / Solaire; Alicia approved]`
