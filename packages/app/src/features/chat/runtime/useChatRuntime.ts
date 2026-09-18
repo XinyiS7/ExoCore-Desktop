@@ -1444,7 +1444,27 @@ export function useChatRuntime({
       // `undefined` is a compatibility seam for pre-P1D isolated runtime
       // harnesses. Production passes either a validated settings object or
       // explicit null; null fails closed before any durable marker or POST.
-      const effectiveSettings = turn.dispatchSettings ?? dispatchSettings;
+      //
+      // Precedence: the page-validated CURRENT selection outranks a replayed
+      // attempt's captured snapshot. A stale snapshot must never silently
+      // dispatch the target the user has since switched away from — an AGY
+      // selection would otherwise replay as the old direct endpoint and reach
+      // the wire as a plain disconnect. `null` still fails closed; the
+      // snapshot only covers a null current selection (audio retry/recovery),
+      // and the legacy `undefined` harness keeps its old behavior.
+      const currentSettings = dispatchSettings;
+      const replayedSettings = turn.dispatchSettings;
+      const effectiveSettings =
+        currentSettings === undefined
+          ? replayedSettings
+          : currentSettings ?? replayedSettings ?? null;
+      const staleReplayTarget =
+        currentSettings &&
+        replayedSettings &&
+        (replayedSettings.model !== currentSettings.model ||
+          replayedSettings.endpoint !== currentSettings.endpoint)
+          ? { replayed: replayedSettings, current: currentSettings }
+          : null;
       if (effectiveSettings === null) {
         setTransientError({
           code: 'TARGET_UNRESOLVED',
@@ -1560,7 +1580,26 @@ export function useChatRuntime({
       setTransientError(null);
       setStopError(null);
       setProtocolWarning(null);
-      setRuntimeNotice(null);
+      // A stale replay target is replaced (not replayed) and made visible here,
+      // after the notice reset, so the divergence is diagnosable without log
+      // archaeology.
+      setRuntimeNotice(
+        staleReplayTarget
+          ? `已按当前选择派发（${staleReplayTarget.current.model} @ 端点 ${staleReplayTarget.current.endpoint}）；重放快照中的旧目标（${staleReplayTarget.replayed.model} @ 端点 ${staleReplayTarget.replayed.endpoint}）已过期`
+          : null,
+      );
+      if (staleReplayTarget) {
+        console.warn('[V4Runtime] stale replay target replaced by current selection', {
+          replayed: {
+            model: staleReplayTarget.replayed.model,
+            endpoint: staleReplayTarget.replayed.endpoint,
+          },
+          current: {
+            model: staleReplayTarget.current.model,
+            endpoint: staleReplayTarget.current.endpoint,
+          },
+        });
+      }
 
       // 1) Durable pending against verified ABSENCE before any POST.
       const pendingOutcome = persistRuntimeLease(null, pendingSnapshot);
