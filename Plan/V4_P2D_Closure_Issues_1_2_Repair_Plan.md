@@ -1,7 +1,7 @@
 # V4 P2D Closure — Issues #1 / #2 Repair Plan
 
-**状态：** 施工授权（Alicia 已授权；pane 5 / Solaire 转达）。  
-**仓库：** `ExoCore-Desktop` / `packages/app`  
+**状态：** #1/#2 与 A+ 跨仓代码验收 PASS（Backend `aaae1336`、Desktop `dad2af0`）；targeted PC/Android device matrix 与 P2D Final/Core C2 结论仍待完成。
+**仓库：** `ExoCore-Desktop` / `packages/app`；配套后端契约由独立仓 `../ExoCore/` 实现
 **基线：** `01118cfdaaadabdc68edccd99cb46fa01c6ad547`（已推送 `origin/main`）  
 **问题：** [#1 historical unread arrivals can remain permanently stuck](https://github.com/XinyiS7/ExoCore-Desktop/issues/1)；[#2 latest user message can render twice while a generation is in flight](https://github.com/XinyiS7/ExoCore-Desktop/issues/2)  
 **产品语义：** `[human / Alicia]`  
@@ -45,11 +45,14 @@
 
 冻结规则：
 
-- canonical 对应项尚未出现时，optimistic 行继续提供即时发送反馈；
-- canonical 对应项出现后，只绘制 canonical 用户行，optimistic 副本立即停止绘制；
+- ordinary send 在派发前生成一个全局唯一的 `client_turn_id`，optimistic 行与 POST 携带同一值；它仅是本次 optimistic→canonical 的相关性证明，不替代 canonical `Message.id` 或 `(conversation_id, index_in_session)`；
+- 后端把该值持久绑定到本次 ordinary send 创建的 canonical user Message，history GET 在该行返回同一值；旧消息、非 V4 来源、assistant/system/developer 行及不新建 ordinary optimistic user 的操作返回 `null`；
+- canonical 对应项尚未出现时，optimistic 行继续提供即时发送反馈；canonical user 行的 `client_turn_id` 与当前 optimistic 精确相等后，只绘制 canonical 行；
+- history query 是否加载不得阻止发送，也不得参与匹配；GET、SSE、async 的网络先后顺序不得影响交接；
 - 助手生成 overlay、流式内容和终止状态不受影响；
-- 不使用正文、时间戳或附件列表进行模糊匹配；
-- edit、regenerate、失败恢复和 uncertain 生命周期不得被本修复重写。
+- 不使用正文、时间戳、附件列表、`indexInSession` 推断或“最新 user row”进行模糊匹配；
+- 本轮不新增 SSE/async ACK 事件，也不把 `client_turn_id` 扩张为幂等协议；现有 uncertain/no-duplicate-POST 生命周期保持权威；
+- edit、regenerate、branch 不创建新的 ordinary optimistic user 身份。
 
 ## 3. 已核实的源码事实
 
@@ -66,8 +69,10 @@
 - `ConversationPage.tsx::handleScrollToLatest()` 可在 operation 尚未释放时应用 pending reconcile 或 fresh newest-window reconciliation。
 - `MessageTimeline.tsx` 当前无条件先绘制 canonical `messages`，再绘制 `optimisticUser`。
 - canonical 窗口一旦包含刚发送的正式用户消息，而 optimistic 尚未释放，两行会同时出现。
-- `MessageView.indexInSession` 是 canonical 会话内严格递增顺序；项目现有 audio recovery 已使用“是否存在更晚 user index”作为后续用户轮次的证明。
+- `MessageView.indexInSession` 是 canonical 会话内严格递增顺序，但发送前无法在 history 未加载、跨标签写入或 assistant 插入时预测本次 user index；它只能定位已经存在的 canonical 行，不能证明 optimistic 与该行的对应关系。
 - async ack 的 `message_id` 是 opaque runtime token，不是 timeline canonical row ID，不得拿来伪装精确消息身份。
+- 现有 POST、SSE、async polling 与 assistant arrival 均不返回本次 canonical user Message 的精确身份；纯前端 boundary/latch/readiness 方案因此不可完备。
+- 后端 canonical `Message` 位于 `memory.models.Message`，由 `memory.serializers.MessageSerializer` 投影；ordinary Chat direct 与 managed-runtime 分支最终都创建该实体。A+ 的冻结跨仓契约见 `Plan/spec/2026-09-20-v4-client-turn-correlation-handoff.md`。
 
 ## 4. 设计与实现边界
 
@@ -89,41 +94,48 @@
 
 持久状态增量：**零**。允许 route effect 内部使用局部闭包变量防止一次进入重复执行，但不得演化为第二套 notification 状态机。
 
-### 4.2 修复 #2：canonical user index proof
+### 4.2 修复 #2：A+ exact client-turn correlation
 
-责任位置：
+责任位置分为两个独立仓库：
 
-- `packages/app/src/features/chat/runtime/types.ts`
-- `packages/app/src/features/chat/runtime/useChatRuntime.ts`
-- `packages/app/src/features/chat/MessageTimeline.tsx`
+- Backend `../ExoCore/`：按 `Plan/spec/2026-09-20-v4-client-turn-correlation-handoff.md` 增加 nullable/unique UUID 绑定、POST 校验与 history serializer 投影；pane 12 必须先在 Backend `Plan/` 留施工 trace，再实现并提交。
+- Desktop：`features/chat/types.ts`、`api.ts`、`runtime/client.ts`、`runtime/types.ts`、`runtime/useChatRuntime.ts`、`MessageTimeline.tsx` 及聚焦 construction regression；仅在后端契约提交后恢复 pane 8。
 
 实现约束：
 
-1. ordinary send 创建 `optimisticUser` 时，从 `persistedRowsRef.current` 捕获发送前最后一个 canonical user `indexInSession`；空会话使用明确的无前序边界表达。
-2. `OptimisticUserRow` 仅增加一个内部顺序边界字段；不得增加 React state、持久化字段或后端字段。
-3. Timeline 使用纯判断：当前 canonical rows 中存在 user row 且其 `indexInSession` 晚于发送前边界时，视为 canonical replacement 已出现。
-4. replacement 已出现时不绘制 optimistic 用户行；canonical rows 始终按现有逻辑绘制。
-5. runtime assistant overlay 不参加该判断，生成中状态继续显示。
-6. 不提前修改 runtime operation phase；隐藏 optimistic 只改变展示投影，现有 `releaseUi()` 仍负责最终生命周期清理。
-7. 只有 ordinary send 创建此边界；edit/regenerate/branch 不引入新的 optimistic-user 行为。
+1. ordinary send 在创建 optimistic row 前生成一次 `crypto.randomUUID()`；同一个值写入 `OptimisticUserRow.clientTurnId` 并以 wire 字段 `client_turn_id` 放入该次 POST。
+2. 该 UUID 按一次 ordinary POST attempt/optimistic row 生成。现有 runtime 内部 transport continuation 不重新生成；由既有安全恢复明确发起的全新 ordinary POST 可生成新值。不得顺手实现幂等重放状态机。
+3. Desktop wire normalization 把 history row 的 `client_turn_id` 规范化为 `MessageView.clientTurnId: string | null`；缺失/`null` 视为 `null`，present-but-malformed 必须在 API boundary fail-closed，不得参与交接。
+4. Timeline 使用纯 exact 判断：仅当 canonical `role === 'user'` 且 `clientTurnId === optimisticUser.clientTurnId` 时抑制 optimistic；canonical rows 与 runtime assistant overlay 沿用现有投影。
+5. 删除 `priorUserIndexInSession`、dispatch-time history snapshot/readiness gate、unknown/latch 及其注释/测试 IR；不得保留 index/content/time fallback。
+6. 不提前修改 runtime operation phase；现有 `releaseUi()` 仍负责 terminal 清理。若 correlation 永未从 history 出现，optimistic 保持至该清理点，不猜测对应项。
+7. Backend 不新增 SSE/async ACK；`client_turn_id` 不改变 async opaque token、lease、stop/reconcile 或 assistant arrival contract。
 
-持久状态增量：**零**。内部临时元数据增量：**一个 canonical user 顺序边界字段**。
+持久状态增量：Backend `Message` 一个 nullable unique UUID 字段；旧行不回填。Desktop 不新增持久状态，仅给当前 optimistic 与 canonical read model 增加一个相关性字段。
 
 ## 5. 文件范围
 
 ### 5.1 允许修改
 
-生产代码：
+Desktop 生产代码：
 
 - `packages/app/src/features/notifications/NotificationRuntime.tsx`
+- `packages/app/src/features/chat/types.ts`
+- `packages/app/src/features/chat/api.ts`
+- `packages/app/src/features/chat/runtime/client.ts`
 - `packages/app/src/features/chat/runtime/types.ts`
 - `packages/app/src/features/chat/runtime/useChatRuntime.ts`
 - `packages/app/src/features/chat/MessageTimeline.tsx`
+- `packages/app/src/features/chat/ConversationPage.tsx`（`[human / Alicia]` 批准的 A+ 必要扩围：history pending/error 时仍挂载 runtime overlay；不得改动其它页面行为）
+- `ReactSheet.md`（仅同步已落地的 Desktop/backend contract）
+
+Backend 文件范围由 pane 12 在其仓库 Plan 中按 handoff spec 与真实调用链冻结，不在 Desktop 仓跨界编辑。
 
 施工回归：
 
 - #1 优先落在现有 `packages/app/src/test/p2d_d1_arrival_reconciliation.test.tsx`；
 - #2 新增聚焦 canonical/optimistic replacement 的 `packages/app/src/test/p2d_optimistic_canonical_replacement.test.tsx`；避免把 P2D 修复塞进无关 P2T 或历史 action 测试。
+- `[human / Alicia]` 批准 A+ 类型契约机械同步：因 `MessageView.clientTurnId: string | null` 转为必有字段而直接编译失败的既有测试 fixture 可补 `clientTurnId: null`，限 Builder 已申报的 `api.test.ts`、`p1c_runtime_attachment_integration.test.tsx`、`p1c_historical_rendering.test.tsx`、`p1c_audio_recovery.test.tsx`、`p1d_force_cache_runtime.test.tsx`、`p2t_voice_control.test.tsx` 与本轮 `p2d_optimistic_canonical_replacement.test.tsx`；不得改断言或顺手重构。
 
 交付记录：
 
@@ -132,8 +144,8 @@
 
 ### 5.2 明确禁止修改
 
-- `../ExoCore/` 后端、数据库、arrival API 与 SSE/poll wire contract；
-- `ReactSheet.md`；
+- Desktop Builder 跨界编辑 `../ExoCore/`；Backend 改动必须由 pane 12 在独立仓完成；
+- SSE/poll event shape、assistant arrival API；
 - 当前 staged 的 `packages/app/src/acceptance/**`；
 - 当前 staged 的既有 P2D Plan/report/spec 文件；
 - V3、P2G、River、Memo；
@@ -158,12 +170,14 @@
 
 | ID | 目标 |
 |---|---|
-| D-01 | canonical replacement 尚未出现时，optimistic 用户行显示一次。 |
-| D-02 | generation 仍在进行、canonical later-user row 出现后，同一用户消息仅保留 canonical 行。 |
+| D-01 | ordinary send 的 optimistic row 与 POST 携带同一合法 UUID correlation；history 未加载也不阻止发送。 |
+| D-02 | generation 仍在进行、同一 `clientTurnId` 的 canonical user row 出现后，同一用户消息仅保留 canonical 行。 |
 | D-03 | D-02 时 runtime assistant overlay 仍然存在并继续显示生成状态。 |
-| D-04 | 只有旧于或等于发送前边界的 canonical rows 时，不得隐藏 optimistic 行。 |
-| D-05 | 空会话首发可以从“无前序 user”正确切换到第一条 canonical user。 |
-| D-06 | operation 最终释放后，历史中仍只有一条正式用户消息。 |
+| D-04 | 任意旧 user row、相邻 assistant/send_message 插入、相同正文/附件/时间或不同/缺失 correlation 均不得隐藏 optimistic。 |
+| D-05 | 空会话、已有历史、history pending/error、GET 先于其他 transport 观察到 canonical 的时序均按 exact ID 交接，不预测 `indexInSession`。 |
+| D-06 | operation 最终释放后，历史中仍只有一条正式用户消息；correlation 永未出现时由既有 `releaseUi()` 收尾。 |
+| D-07 | 后端 direct 与 managed-runtime ordinary send 均把请求 UUID绑定到实际 canonical user Message；旧行及其他角色保持 `null`。 |
+| D-08 | 缺失 `client_turn_id` 保持兼容；present-but-invalid 请求在任何消息/运行副作用前返回 400；重复 UUID 不创建第二条绑定消息。 |
 
 测试实现细节不在本 Plan 冻结；Builder 必须以生产行为和现有真实接口为依据，不得针对 acceptance 文件断言硬编码。
 
@@ -198,8 +212,10 @@ pnpm --filter exo-app build
 
 1. `docs(plan): add P2D issues 1 and 2 closure repair plan`
 2. `fix(app): consume conversation unread snapshot on focused entry`（#1 + construction regression）
-3. `fix(app): replace optimistic user row after canonical arrival`（#2 + construction regression）
-4. 独立验收通过后，由 closure owner 收编既有 staged acceptance 资产及最终报告；Builder 不抢跑。
+3. `fix(app): replace optimistic user row after canonical arrival`（旧 index 方案，现由 A+ 后续提交取代）
+4. Backend 独立提交：migration/model + POST→ordinary user persistence + serializer/contract/tests；不得与 Desktop 混仓提交。
+5. Desktop A+ 提交：移除 boundary/readiness 方案并接入 exact correlation contract。
+6. 独立验收通过后，由 closure owner 收编既有 staged acceptance 资产及最终报告；Builder 不抢跑。
 
 提交前后必须核对：
 
@@ -213,8 +229,9 @@ pnpm --filter exo-app build
 
 - **删除 read-frontier / 滚动到底判定：** Alicia 已确认“进入会话即已读”；继续追踪滚动位置只会制造竞态。
 - **删除新 storage schema / per-conversation cursor：** installation-local exact snapshot 足以解决当前缺陷。
-- **删除后端改动：** 两条问题均由 Desktop 现有状态投影造成，后端契约无需扩张。
-- **删除内容/时间戳模糊匹配：** 已有 canonical `indexInSession` 顺序事实，不应使用脆弱启发式。
+- **删除纯前端 index/readiness 证明：** 冷 history 下本次 canonical user 的 index 不可预测；阻止发送把 UI cache 错误耦合到核心发送能力。
+- **保留最小后端扩张：** 只增加一个 nullable exact correlation 字段及 POST→history round-trip；不新增 ACK event、幂等重放协议或生命周期状态机。
+- **删除内容/时间戳/附件/index 模糊匹配：** exact correlation 已提供，不保留降级猜测。
 - **删除 optimistic 生命周期重构：** 只需抑制重复展示；不重写 runtime phase/lease/recovery。
 - **删除无关 hardening：** 不新增跨设备统一已读、全局清除、遥测、依赖或 UI 改版。
 
