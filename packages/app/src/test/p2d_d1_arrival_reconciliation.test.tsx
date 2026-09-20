@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 import {
   AssistantMessageArrivedV1,
   validateArrivalEvent,
@@ -20,6 +20,7 @@ import {
   NOTIFICATIONS_STORAGE_KEY,
 } from '../features/notifications/storage';
 import { NotificationRuntime } from '../features/notifications/NotificationRuntime';
+import { useNotifications } from '../features/notifications/notificationContext';
 
 
 // In-memory mock for localStorage in Vitest environment
@@ -522,6 +523,270 @@ describe('P2D D-1: Polling Runtime & Error State Matrix (D1-R2-01, D1-R2-02)', (
 
     await screen.findByText('消息同步暂不可用: 本地缓存已损坏并隔离');
     expect(screen.getByRole('button', { name: '重试同步' })).toBeTruthy();
+  });
+});
+
+// ── P2D closure #1: route-entry unread snapshot ────────────────────────────
+
+function renderRuntimeAt(route: string, children: ReactNode = <div>App Content</div>) {
+  const qc = makeTestQueryClient();
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={[route]}>
+        <NotificationRuntime>{children}</NotificationRuntime>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+function arrivalFor(conversationId: number, messageId: number, eventId: number): AssistantMessageArrivedV1 {
+  return makeValidEvent({
+    event_id: eventId,
+    message_id: messageId,
+    conversation_id: conversationId,
+    dedupe_key: `assistant-message:${messageId}`,
+    target: { kind: 'conversation_message', conversation_id: conversationId, message_id: messageId },
+  });
+}
+
+function seedUnread(events: AssistantMessageArrivedV1[], cursor: number): void {
+  const init = initializeStorage();
+  if (init.status !== 'ok') throw new Error('seed: storage init failed');
+  const res = ingestArrivals(events, 'poll', cursor);
+  if (res.status !== 'ok') throw new Error('seed: ingest failed');
+}
+
+function storedUnreadKeys(): string[] {
+  const load = loadInstallationStorage();
+  if (load.status !== 'ok') throw new Error('storage not ok');
+  return Object.keys(load.storage.unreadMap).sort();
+}
+
+function stubEmptyArrivalsFetch() {
+  const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+    events: [],
+    next_cursor: 5,
+    has_more: false,
+  }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
+const settleTick = () => new Promise((resolve) => setTimeout(resolve, 30));
+
+function UnreadProbe({
+  confirmTarget,
+}: {
+  confirmTarget?: { conversationId: number; messageId: number };
+}) {
+  const { unreadCount, unreadByConversation, consumeExactArrivals } = useNotifications();
+  return (
+    <div>
+      <span data-testid="probe-total">{unreadCount}</span>
+      {Object.entries(unreadByConversation).map(([cid, count]) => (
+        <span key={cid} data-testid={`probe-conv-${cid}`}>{count}</span>
+      ))}
+      {confirmTarget ? (
+        <button
+          type="button"
+          onClick={() =>
+            consumeExactArrivals(confirmTarget.conversationId, new Set([confirmTarget.messageId]))
+          }
+        >
+          模拟 canonical 精确确认
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function RouteNavProbe() {
+  const navigate = useNavigate();
+  return (
+    <div>
+      <button type="button" onClick={() => navigate('/chat/2')}>去会话 2</button>
+      <button type="button" onClick={() => navigate('/chat/1')}>回会话 1</button>
+    </div>
+  );
+}
+
+describe('P2D closure #1: route-entry unread snapshot (U-01..U-07)', () => {
+  beforeEach(() => {
+    mockStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    vi.stubGlobal('localStorage', mockStorage);
+  });
+
+  it('U-01 consumes the pre-entry snapshot for the exact conversation without canonical rows', async () => {
+    stubEmptyArrivalsFetch();
+    seedUnread([arrivalFor(1, 101, 11)], 11);
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+
+    renderRuntimeAt('/chat/1', <UnreadProbe />);
+
+    await waitFor(() => expect(storedUnreadKeys()).toEqual([]));
+    await waitFor(() => expect(screen.getByTestId('probe-total').textContent).toBe('0'));
+  });
+
+  it('U-02 keeps the other conversation snapshot untouched', async () => {
+    stubEmptyArrivalsFetch();
+    seedUnread([arrivalFor(1, 101, 11), arrivalFor(2, 201, 12)], 12);
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+
+    renderRuntimeAt('/chat/1', <UnreadProbe />);
+
+    await waitFor(() => expect(storedUnreadKeys()).toEqual(['assistant-message:201']));
+    await waitFor(() => expect(screen.getByTestId('probe-conv-2').textContent).toBe('1'));
+    expect(screen.queryByTestId('probe-conv-1')).toBeNull();
+    expect(screen.getByTestId('probe-total').textContent).toBe('1');
+  });
+
+  it('U-03 does not consume an arrival ingested after a completed entry', async () => {
+    stubEmptyArrivalsFetch();
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+
+    renderRuntimeAt('/chat/1', <UnreadProbe />);
+    await settleTick();
+
+    ingestArrivals([arrivalFor(1, 102, 13)], 'poll');
+    window.dispatchEvent(new Event('focus'));
+    await settleTick();
+
+    expect(storedUnreadKeys()).toEqual(['assistant-message:102']);
+  });
+
+  it('U-04 defers an unfocused entry and consumes the backlog on first focus', async () => {
+    stubEmptyArrivalsFetch();
+    seedUnread([arrivalFor(1, 101, 11)], 11);
+
+    renderRuntimeAt('/chat/1', <UnreadProbe />);
+    await settleTick();
+    expect(storedUnreadKeys()).toEqual(['assistant-message:101']);
+
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    window.dispatchEvent(new Event('focus'));
+
+    await waitFor(() => expect(storedUnreadKeys()).toEqual([]));
+    await waitFor(() => expect(screen.getByTestId('probe-total').textContent).toBe('0'));
+  });
+
+  it('U-05a surfaces a storage read failure, preserves unread, and retries on later focus', async () => {
+    stubEmptyArrivalsFetch();
+    seedUnread([arrivalFor(1, 101, 11)], 11);
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+
+    const getItemSpy = vi.spyOn(mockStorage, 'getItem').mockImplementation(() => {
+      throw new Error('storage denied');
+    });
+
+    renderRuntimeAt('/chat/1', <UnreadProbe />);
+    await screen.findByText('消息同步暂不可用: 本地存储不可用');
+
+    getItemSpy.mockRestore();
+    expect(storedUnreadKeys()).toEqual(['assistant-message:101']);
+
+    window.dispatchEvent(new Event('focus'));
+    await waitFor(() => expect(storedUnreadKeys()).toEqual([]));
+  });
+
+  it('U-05b surfaces a consume write failure, preserves unread, and retries on later focus', async () => {
+    const fetchMock = stubEmptyArrivalsFetch();
+    seedUnread([arrivalFor(1, 101, 11)], 11);
+
+    renderRuntimeAt('/chat/1', <UnreadProbe />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    await settleTick(); // bootstrap poll fully settled before the write failure is installed
+
+    const setItemSpy = vi.spyOn(mockStorage, 'setItem').mockImplementation(() => {
+      throw new Error('quota exceeded');
+    });
+
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    window.dispatchEvent(new Event('focus'));
+
+    await screen.findByText(/消息同步暂不可用: 未读清理失败/);
+    expect(storedUnreadKeys()).toEqual(['assistant-message:101']);
+
+    setItemSpy.mockRestore();
+    window.dispatchEvent(new Event('focus'));
+    await waitFor(() => expect(storedUnreadKeys()).toEqual([]));
+  });
+
+  it('U-06 consumes post-entry arrivals through the existing canonical exact-confirmation path', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), 'http://localhost');
+      if (url.searchParams.get('after') === null) {
+        return new Response(JSON.stringify({ events: [], next_cursor: 10, has_more: false }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({
+        events: [arrivalFor(1, 102, 12)],
+        next_cursor: 12,
+        has_more: false,
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+
+    renderRuntimeAt('/chat/1', <UnreadProbe confirmTarget={{ conversationId: 1, messageId: 102 }} />);
+    await waitFor(() => {
+      const load = loadInstallationStorage();
+      if (load.status !== 'ok') throw new Error('storage not ok');
+      expect(load.storage.lastContiguousCursor).toBe(10); // bootstrap poll settled
+    });
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    await waitFor(() => expect(screen.getByTestId('probe-total').textContent).toBe('1'));
+    expect(storedUnreadKeys()).toEqual(['assistant-message:102']);
+
+    fireEvent.click(screen.getByRole('button', { name: '模拟 canonical 精确确认' }));
+    await waitFor(() => expect(storedUnreadKeys()).toEqual([]));
+    await waitFor(() => expect(screen.getByTestId('probe-total').textContent).toBe('0'));
+  });
+
+  it('U-07 a later blur → arrival → refocus never re-snapshots after a successful entry', async () => {
+    stubEmptyArrivalsFetch();
+    seedUnread([arrivalFor(1, 101, 11)], 11);
+    const focusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+
+    renderRuntimeAt('/chat/1', <UnreadProbe />);
+    await waitFor(() => expect(storedUnreadKeys()).toEqual([]));
+
+    focusSpy.mockReturnValue(false);
+    ingestArrivals([arrivalFor(1, 103, 14)], 'poll');
+    focusSpy.mockReturnValue(true);
+    window.dispatchEvent(new Event('focus'));
+    await settleTick();
+
+    expect(storedUnreadKeys()).toEqual(['assistant-message:103']);
+  });
+
+  it('re-entering the same route after leaving is a fresh entry that consumes a new backlog', async () => {
+    stubEmptyArrivalsFetch();
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+
+    renderRuntimeAt('/chat/1', (
+      <div>
+        <UnreadProbe />
+        <RouteNavProbe />
+      </div>
+    ));
+    await settleTick();
+    expect(storedUnreadKeys()).toEqual([]);
+
+    fireEvent.click(screen.getByRole('button', { name: '去会话 2' }));
+    await settleTick();
+    ingestArrivals([arrivalFor(1, 104, 15)], 'poll');
+    expect(storedUnreadKeys()).toEqual(['assistant-message:104']);
+
+    fireEvent.click(screen.getByRole('button', { name: '回会话 1' }));
+    await waitFor(() => expect(storedUnreadKeys()).toEqual([]));
   });
 });
 

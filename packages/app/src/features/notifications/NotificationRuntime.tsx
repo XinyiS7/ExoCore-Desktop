@@ -346,6 +346,71 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Route-entry unread snapshot (P2D closure #1): entering an exact
+  // conversation route with document focus consumes that conversation's
+  // durable unread snapshot as of the first focused moment of this entry —
+  // independent of whether the arrival message IDs are still inside the
+  // canonical newest window. The entry reaches its terminal state as soon as
+  // one attempt completes successfully (including an empty snapshot); only
+  // failures keep the focus retry alive. Leaving and re-entering the route is
+  // a fresh entry. Persisted state delta: zero — the only state is a closure
+  // flag scoped to this effect run.
+  useEffect(() => {
+    if (currentConversationId === null) return;
+    const entryConversationId = currentConversationId;
+    let settled = false;
+
+    function settle() {
+      settled = true;
+      window.removeEventListener('focus', attempt);
+    }
+
+    function attempt() {
+      if (settled) return;
+      if (!document.hasFocus()) return;
+
+      const loadOutcome = loadInstallationStorage();
+      if (loadOutcome.status === 'unavailable') {
+        setSyncError('本地存储不可用');
+        return;
+      }
+      if (loadOutcome.status === 'corrupted') {
+        setSyncError('本地缓存已损坏并隔离');
+        return;
+      }
+      if (loadOutcome.status === 'absent') {
+        settle(); // Nothing durable exists yet; this entry is complete.
+        return;
+      }
+
+      const snapshotMessageIds = new Set<number>();
+      for (const record of Object.values(loadOutcome.storage.unreadMap)) {
+        if (record.event.conversation_id === entryConversationId) {
+          snapshotMessageIds.add(record.event.message_id);
+        }
+      }
+      if (snapshotMessageIds.size === 0) {
+        settle();
+        return;
+      }
+
+      // The exact-consume mutation re-reads the latest storage internally and
+      // removes only these snapshot message IDs; arrivals ingested meanwhile
+      // keep their distinct IDs and stay unread.
+      const consumeRes = consumeArrivalsByMessageIds(entryConversationId, snapshotMessageIds);
+      if (consumeRes.status === 'ok') {
+        settle();
+        setUnreadMap(consumeRes.storage.unreadMap);
+      } else {
+        setSyncError(`未读清理失败: ${consumeRes.error}`);
+      }
+    }
+
+    window.addEventListener('focus', attempt);
+    attempt();
+    return () => settle();
+  }, [currentConversationId]);
+
   // Ignore shell indication (calls explicit ignore endpoint if allowed).
   // UI state is bound to one target event identity (D3-R2-02): a newer indication
   // never inherits a stale request's busy/error, and an older completion never
