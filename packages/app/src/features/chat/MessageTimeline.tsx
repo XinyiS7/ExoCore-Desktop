@@ -27,6 +27,25 @@ const ROLE_LABELS: Record<MessageRole, string> = {
   developer: 'Developer',
 };
 
+/**
+ * Issue #2 closure: a canonical user row strictly later than the last user turn
+ * observed before dispatch means the canonical history owns the sent message,
+ * so the optimistic copy stops being drawn. Pure projection — the runtime
+ * lifecycle (`releaseUi`) still owns the final cleanup.
+ */
+function hasCanonicalUserReplacement(
+  messages: MessageView[],
+  optimisticUser: OptimisticUserRow | null | undefined,
+): boolean {
+  if (!optimisticUser) return false;
+  const boundary = optimisticUser.priorUserIndexInSession;
+  return messages.some(
+    (message) =>
+      message.role === 'user' &&
+      (boundary === null || message.indexInSession > boundary),
+  );
+}
+
 export interface MessageTimelineProps {
   messages: MessageView[];
   /**
@@ -185,6 +204,13 @@ export function MessageTimeline({
 
   const realtimeTrace = runtimeAssistant ? runtimeTraceProjection(runtimeAssistant) : null;
 
+  // Issue #2 closure: once the canonical replacement exists, the optimistic
+  // user row is no longer drawn (canonical rows keep rendering as before).
+  const shownOptimisticUser =
+    optimisticUser && !hasCanonicalUserReplacement(messages, optimisticUser)
+      ? optimisticUser
+      : null;
+
   return (
     <div className="app-timeline">
       {hasOlder ? (
@@ -215,24 +241,24 @@ export function MessageTimeline({
       ))}
 
       {/* Optimistic User Message Overlay (§6.4) */}
-      {optimisticUser ? (
+      {shownOptimisticUser ? (
         <article
-          key={optimisticUser.clientKey}
+          key={shownOptimisticUser.clientKey}
           className="app-msg app-msg--user app-msg--optimistic"
           data-role="user"
         >
           <header className="app-msg-head">
             <span className="app-msg-role">你</span>
-            <span className="app-msg-time">{formatTimeOfDay(optimisticUser.createdAt)}</span>
+            <span className="app-msg-time">{formatTimeOfDay(shownOptimisticUser.createdAt)}</span>
             <span className="app-muted" style={{ fontSize: '10.5px' }}>
               （发送中…）
             </span>
           </header>
           <div className="app-msg-body">
-            {optimisticUser.content ? <MessageContent content={optimisticUser.content} /> : null}
-            {optimisticUser.pendingAttachmentIds.length > 0 ? (
+            {shownOptimisticUser.content ? <MessageContent content={shownOptimisticUser.content} /> : null}
+            {shownOptimisticUser.pendingAttachmentIds.length > 0 ? (
               <span className="app-deferred-chip">
-                待发送附件 {optimisticUser.pendingAttachmentIds.length} 个
+                待发送附件 {shownOptimisticUser.pendingAttachmentIds.length} 个
               </span>
             ) : null}
           </div>

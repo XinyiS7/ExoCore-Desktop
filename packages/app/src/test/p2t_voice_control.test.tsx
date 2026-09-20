@@ -194,6 +194,7 @@ describe('T5 — voice lifecycle stays click-driven', () => {
         content: 'pending question',
         createdAt: '2026-09-12T10:00:01Z',
         pendingAttachmentIds: [],
+        priorUserIndexInSession: null,
       },
     });
     expect(screen.getAllByRole('button', { name: '朗读此条消息' }).length).toBe(1);

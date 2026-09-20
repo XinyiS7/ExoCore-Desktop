@@ -203,6 +203,13 @@ export interface OptimisticUserRow {
   /** Honest local summary only; these are attachment IDs accepted for dispatch,
    * never fabricated persisted Message bindings. */
   pendingAttachmentIds: number[];
+  /**
+   * Issue #2 closure: last canonical user `indexInSession` observed before this
+   * dispatch; `null` means no prior user row was known at send time (empty
+   * conversation). The timeline stops drawing this optimistic row once a
+   * canonical user row with a strictly later `indexInSession` exists.
+   */
+  priorUserIndexInSession: number | null;
 }
 
 export interface RuntimeAssistantTrace {

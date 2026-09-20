@@ -1560,12 +1560,28 @@ export function useChatRuntime({
         : null;
 
       if (operation === 'send') {
+        // Issue #2 closure: capture the last canonical user turn observed
+        // before this dispatch so the timeline hands the optimistic bubble
+        // over to its canonical row exactly once. `null` = no prior user row
+        // was known at send time (empty conversation).
+        let priorUserIndexInSession: number | null = null;
+        const priorRows = persistedRows?.current;
+        if (priorRows) {
+          for (let i = priorRows.length - 1; i >= 0; i -= 1) {
+            const row = priorRows[i];
+            if (row.role === 'user' && typeof row.indexInSession === 'number') {
+              priorUserIndexInSession = row.indexInSession;
+              break;
+            }
+          }
+        }
         setOptimisticUser({
           kind: 'client_user',
           clientKey: `user:${epoch}`,
           content: trimmedContent,
           createdAt: new Date().toISOString(),
           pendingAttachmentIds: [...pendingAttachments],
+          priorUserIndexInSession,
         });
       } else {
         setOptimisticUser(null);
