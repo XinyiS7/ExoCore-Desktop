@@ -28,33 +28,23 @@ const ROLE_LABELS: Record<MessageRole, string> = {
 };
 
 /**
- * Issue #2 closure: canonical replacement proof over the `indexInSession`
- * order. A numeric pre-send boundary hands over on any strictly later user
- * row. `null` (the dispatch-time snapshot was loaded and contained no user
- * turn) can only prove the session's first user turn — an unresolved history
- * never reaches this projection because the dispatch is rejected first.
- * Pure projection — the runtime lifecycle still owns the final cleanup.
+ * A+ closure: canonical handover proof over the exact `clientTurnId`
+ * correlation. Only a drawn `role === 'user'` row carrying the same non-null
+ * UUID as this optimistic row counts; content, timestamps, attachments,
+ * `indexInSession` and row position are banned as identity evidence. Pure
+ * projection — the runtime lifecycle still owns the final cleanup.
  */
-function hasCanonicalUserReplacement(
+function hasExactCanonicalUser(
   messages: MessageView[],
   optimisticUser: OptimisticUserRow | null | undefined,
 ): boolean {
   if (!optimisticUser) return false;
-  const boundary = optimisticUser.priorUserIndexInSession;
-  if (boundary !== null) {
-    return messages.some(
-      (message) => message.role === 'user' && message.indexInSession > boundary,
-    );
-  }
-  // `null`: the only provable replacement is the session's first user turn —
-  // every visible user row must be that first turn (`indexInSession` 0).
-  let sawUserTurn = false;
-  for (const message of messages) {
-    if (message.role !== 'user') continue;
-    sawUserTurn = true;
-    if (message.indexInSession !== 0) return false;
-  }
-  return sawUserTurn;
+  return messages.some(
+    (message) =>
+      message.role === 'user' &&
+      typeof message.clientTurnId === 'string' &&
+      message.clientTurnId === optimisticUser.clientTurnId,
+  );
 }
 
 export interface MessageTimelineProps {
@@ -215,10 +205,11 @@ export function MessageTimeline({
 
   const realtimeTrace = runtimeAssistant ? runtimeTraceProjection(runtimeAssistant) : null;
 
-  // Issue #2 closure: once the canonical replacement exists, the optimistic
-  // user row is no longer drawn (canonical rows keep rendering as before).
+  // A+ closure: once the canonical row carrying this attempt's exact
+  // correlation is drawn, the optimistic copy is suppressed (canonical rows
+  // keep rendering as before; the runtime overlay/lifecycle is untouched).
   const shownOptimisticUser =
-    optimisticUser && !hasCanonicalUserReplacement(messages, optimisticUser)
+    optimisticUser && !hasExactCanonicalUser(messages, optimisticUser)
       ? optimisticUser
       : null;
 

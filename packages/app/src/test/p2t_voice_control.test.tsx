@@ -75,6 +75,7 @@ const msg = (id: number, over: Partial<MessageView> = {}): MessageView => ({
   attachmentIds: [],
   attachmentsMeta: [],
   createdAt: '2026-09-12T10:00:00Z',
+  clientTurnId: null,
   voice: voiceFor(),
   ...over,
 });
@@ -194,7 +195,7 @@ describe('T5 — voice lifecycle stays click-driven', () => {
         content: 'pending question',
         createdAt: '2026-09-12T10:00:01Z',
         pendingAttachmentIds: [],
-        priorUserIndexInSession: null,
+        clientTurnId: '123e4567-e89b-42d3-a456-4266141740aa',
       },
     });
     expect(screen.getAllByRole('button', { name: '朗读此条消息' }).length).toBe(1);

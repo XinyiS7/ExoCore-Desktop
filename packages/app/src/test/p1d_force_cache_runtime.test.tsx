@@ -142,6 +142,7 @@ describe('P1D Force Cache Send — runtime capture (SSE + async share semantics)
       attachmentIds: [11, 22],
       attachmentsMeta: null,
       createdAt: '2026-09-07T00:00:00Z',
+      clientTurnId: null,
     }];
     const { calls } = installFetch([
       { test: '/api/agents/chat/42/', method: 'POST', handler: () => sseDone() },

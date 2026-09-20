@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   type AttemptPersistence,
   type BlockedReason,
@@ -47,7 +47,7 @@ import {
   postChatStop,
   postConversationBranch,
 } from './client';
-import { applyFreshWindow, fetchFreshWindow, findPersistedMessage, mergeMessagePages, queryKeys } from '../queries';
+import { applyFreshWindow, fetchFreshWindow, findPersistedMessage } from '../queries';
 import { AppApiError } from '../api';
 import type { MessagePage } from '../types';
 import { classifyAudioAttemptPage } from './attemptPersistence';
@@ -177,6 +177,21 @@ function blockedCode(reason: BlockedReason): string {
     case 'reconcile_failed':
       return 'RECONCILE_FAILED';
   }
+}
+
+/** A+ capability gate: the canonical UUID source must exist before a send. */
+function hasRandomUuidCapability(): boolean {
+  return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function';
+}
+
+/**
+ * A+ ordinary-send correlation id: exactly one canonical UUID per POST
+ * attempt. Capability is validated before the epoch/optimistic/lease/POST;
+ * without the canonical source the dispatch fails closed instead of minting
+ * a speculative non-globally-unique id.
+ */
+function generateClientTurnId(): string {
+  return crypto.randomUUID();
 }
 
 function makeLease(
@@ -1490,38 +1505,6 @@ export function useChatRuntime({
         setTransientError({ code: 'ATTACHMENT_INVALID', message: '附件参数包含无效编号。', retryClass: 'safe' });
         return 'rejected';
       }
-      // Issue #2 closure: an ordinary send may only dispatch with a trustworthy
-      // pre-send boundary. Readiness and the boundary derive ATOMICALLY from the
-      // same message-history cache state; a REGISTERED history without data yet
-      // (pending/error) is rejected here — before epoch/overlay/lease/
-      // attachment transfer/POST — with a visible retryable error while the
-      // draft stays with the user. An unregistered history query (no history
-      // contract in this runtime instance) keeps the legacy standalone seam and
-      // dispatches with the snapshot-consistent `null` boundary.
-      let priorUserIndexInSession: number | null = null;
-      if (operation === 'send') {
-        const messagesState = queryClient.getQueryState<InfiniteData<MessagePage, number>>(
-          queryKeys.messages(activeConversationIdRef.current),
-        );
-        if (messagesState !== undefined && messagesState.data === undefined) {
-          setTransientError({
-            code: 'HISTORY_NOT_READY',
-            message: '消息历史尚未加载完成，发送已取消；加载完成后请重试。',
-            retryClass: 'safe',
-          });
-          return 'rejected';
-        }
-        if (messagesState?.data !== undefined) {
-          for (const row of mergeMessagePages(messagesState.data.pages).rows) {
-            if (
-              row.role === 'user' &&
-              (priorUserIndexInSession === null || row.indexInSession > priorUserIndexInSession)
-            ) {
-              priorUserIndexInSession = row.indexInSession;
-            }
-          }
-        }
-      }
       const destructive = operation === 'edit' || operation === 'regenerate';
       let predispatchPersistence: AttemptPersistence = { kind: 'proven_absent' };
 
@@ -1562,6 +1545,19 @@ export function useChatRuntime({
       // replays the exact already-bound snapshot.
       if (destructive && pendingAttachments.length > 0 && !turn.attemptKey) return 'rejected';
 
+      // A+ closure: an ordinary-send correlation id requires the platform's
+      // canonical UUID source. Without it the send fails closed here — before
+      // the epoch, optimistic row, lease or POST — with a visible retryable
+      // error while the draft stays with the user.
+      if (operation === 'send' && !hasRandomUuidCapability()) {
+        setTransientError({
+          code: 'CLIENT_TURN_ID_UNAVAILABLE',
+          message: '当前环境缺少安全随机数能力（crypto.randomUUID 不可用），消息未发送；请升级浏览器或改用安全上下文后重试。',
+          retryClass: 'safe',
+        });
+        return 'rejected';
+      }
+
       cancelLocalReaders();
       epochRef.current += 1;
       const epoch = epochRef.current;
@@ -1591,14 +1587,19 @@ export function useChatRuntime({
           }
         : null;
 
+      // A+ closure: each ordinary send attempt mints exactly one correlation
+      // id here — shared by the optimistic row and this attempt's POST — so
+      // the canonical handover rests purely on exact history-row equality.
+      let clientTurnIdForPost: string | undefined;
       if (operation === 'send') {
+        clientTurnIdForPost = generateClientTurnId();
         setOptimisticUser({
           kind: 'client_user',
           clientKey: `user:${epoch}`,
           content: trimmedContent,
           createdAt: new Date().toISOString(),
           pendingAttachmentIds: [...pendingAttachments],
-          priorUserIndexInSession,
+          clientTurnId: clientTurnIdForPost,
         });
       } else {
         setOptimisticUser(null);
@@ -1654,6 +1655,7 @@ export function useChatRuntime({
             sessionType: capturedSettings?.sessionType,
             memoryInjectionEnabled: capturedSettings?.memoryInjectionEnabled,
             editMessageId: destructive ? editMessageId : undefined,
+            clientTurnId: clientTurnIdForPost,
             pendingAttachments: pendingAttachments.length > 0 ? pendingAttachments : undefined,
             forceCacheRebuild,
             signal: abortControllerRef.current.signal,
@@ -1699,6 +1701,7 @@ export function useChatRuntime({
           sessionType: capturedSettings?.sessionType,
           memoryInjectionEnabled: capturedSettings?.memoryInjectionEnabled,
           editMessageId: destructive ? editMessageId : undefined,
+          clientTurnId: clientTurnIdForPost,
           pendingAttachments: pendingAttachments.length > 0 ? pendingAttachments : undefined,
           forceCacheRebuild,
           signal: abortControllerRef.current.signal,
@@ -1749,7 +1752,6 @@ export function useChatRuntime({
       startPollingLoop,
       attemptDraftClear,
       phaseNow,
-      queryClient,
     ],
   );
 

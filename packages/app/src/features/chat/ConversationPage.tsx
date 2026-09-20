@@ -682,6 +682,30 @@ export function ConversationPage() {
                 />
               )
             ) : null}
+
+            {/* A+ closure: an accepted ordinary send (or the streaming
+                assistant overlay) must stay visible while the history is
+                still pending or has failed. The overlay-only list mounts
+                with an empty canonical set — stale cached rows are never
+                exposed by the error path — and is mutually exclusive with
+                the canonical timeline above (merged undefined vs defined,
+                isError vs not). */}
+            {(pagesQuery.isPending || pagesQuery.isError) &&
+            (optimisticUser || runtimeAssistant) ? (
+              <MessageTimeline
+                conversationId={id}
+                messages={[]}
+                hasOlder={false}
+                loadingMore={false}
+                onLoadMore={handleLoadMore}
+                optimisticUser={optimisticUser}
+                runtimeAssistant={runtimeAssistant}
+                isRunActive={busy || controlsPending}
+                onEditMessage={handleEditMessage}
+                onRegenerateMessage={handleRegenerateMessage}
+                onBranchMessage={handleBranchMessage}
+              />
+            ) : null}
           </div>
 
           {isAwayFromBottom ? (

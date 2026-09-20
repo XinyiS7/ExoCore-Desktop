@@ -31,6 +31,7 @@ const message = (id: number, indexInSession: number, attachmentIds: number[]): M
   attachmentIds,
   attachmentsMeta: null,
   createdAt: '2026-09-07T00:00:00Z',
+  clientTurnId: null,
 });
 
 function recoveryState(persistence: ReturnType<typeof classifyAudioAttemptPersistence>): AudioRecoveryState {

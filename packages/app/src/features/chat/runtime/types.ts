@@ -204,18 +204,13 @@ export interface OptimisticUserRow {
    * never fabricated persisted Message bindings. */
   pendingAttachmentIds: number[];
   /**
-   * Issue #2 closure — pre-send canonical user-turn boundary, derived from the
-   * SAME dispatch-time message-history snapshot that gates send readiness:
-   * - `number`: the newest canonical user turn in that snapshot; the optimistic
-   *   row hands over once a canonical user row with a strictly later
-   *   `indexInSession` exists.
-   * - `null`: the snapshot was loaded and contained no user turn (first-send
-   *   ownership); the only provable replacement is the session's first user
-   *   turn (`indexInSession` 0).
-   * An unresolved history never reaches this boundary: the dispatch is rejected
-   * before any epoch/overlay/lease/POST.
+   * A+ exact ordinary-send correlation: exactly one UUID generated per POST
+   * attempt and shared with that request's `client_turn_id`. The optimistic
+   * row hands over only when a drawn canonical `role === 'user'` row carries
+   * this exact value — never by content, timestamps, attachments or
+   * `indexInSession`, and never via transport/GET/ACK ordering.
    */
-  priorUserIndexInSession: number | null;
+  clientTurnId: string;
 }
 
 export interface RuntimeAssistantTrace {

@@ -1,5 +1,5 @@
 import { getCsrfToken } from 'exo-shared/api';
-import { AppApiError } from '../api';
+import { AppApiError, isValidClientTurnId } from '../api';
 import type {
   AsyncAckResponse,
   BranchResponse,
@@ -28,6 +28,12 @@ export interface PostChatOptions {
   /** Present only for g045. */
   memoryInjectionEnabled?: boolean;
   editMessageId?: number;
+  /**
+   * A+ exact correlation for ordinary sends: exactly one freshly generated
+   * UUID per POST attempt, shared with that attempt's optimistic user row.
+   * Serialized as `client_turn_id`; never set for edit/regenerate.
+   */
+  clientTurnId?: string;
   /**
    * P1C: validated positive attachment IDs to attach to this turn
    * (serialized as `pending_attachments`, Task 1.5). Omitted for text-only.
@@ -105,6 +111,15 @@ function buildChatBody(options: PostChatOptions): Record<string, unknown> {
       throw new AppApiError('无效的消息编号', { code: 'VALIDATION' });
     }
     body.edit_message_id = options.editMessageId;
+  }
+  if (options.clientTurnId !== undefined) {
+    // A+ ordinary-send correlation: one canonical UUID per POST attempt. A
+    // malformed value is a contract violation, never silently dropped,
+    // coerced, or replaced by a fallback id.
+    if (!isValidClientTurnId(options.clientTurnId)) {
+      throw new AppApiError('消息相关性标识格式异常', { code: 'VALIDATION' });
+    }
+    body.client_turn_id = options.clientTurnId;
   }
   if (options.pendingAttachments !== undefined) {
     // Task 1.5: serialize only after integer/positive validation; a malformed

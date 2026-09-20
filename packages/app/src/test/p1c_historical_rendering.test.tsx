@@ -82,6 +82,7 @@ const msg = (id: number, over: Partial<MessageView> = {}): MessageView => ({
   attachmentIds: [1],
   attachmentsMeta: [],
   createdAt: '2026-09-01T10:00:00Z',
+  clientTurnId: null,
   ...over,
 });
 

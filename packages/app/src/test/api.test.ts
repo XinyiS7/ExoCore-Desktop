@@ -249,6 +249,7 @@ describe('mergeMessagePages — paging invariant', () => {
     attachmentIds: [],
     attachmentsMeta: null,
     createdAt: '2026-09-01T10:00:00Z',
+    clientTurnId: null,
   });
 
   it('merges newest-first pages into ascending unique rows', () => {

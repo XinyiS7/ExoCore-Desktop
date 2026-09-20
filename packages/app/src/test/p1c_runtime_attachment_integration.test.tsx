@@ -98,6 +98,7 @@ describe('P1C C1B runtime bridge', () => {
       attachmentIds: [11, 22],
       attachmentsMeta: null,
       createdAt: '2026-09-07T00:00:00Z',
+      clientTurnId: null,
     }];
     const { calls } = installFetch([
       {
@@ -143,6 +144,7 @@ describe('P1C C1B runtime bridge', () => {
       attachmentIds: [11, 22],
       attachmentsMeta: null,
       createdAt: '2026-09-07T00:00:00Z',
+      clientTurnId: null,
     }];
     const { result } = renderHook(() => {
       const persistedRowsRef = useRef<ReadonlyArray<MessageView>>(persisted);

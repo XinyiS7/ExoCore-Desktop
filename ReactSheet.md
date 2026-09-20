@@ -153,6 +153,27 @@ type AssistantRunTraceProjection =
 - 读取兼容：合法 Recorder 输出经 MessageSerializer 原样回传（round-trip 不变，不解析/不重写/不重新授权历史工具）；仅做根级 fail-closed 兼容检查——非 dict / `version != 1` / `availability` 不符 / `items` 非 list 的存储值回落 `legacy_unavailable`。
 - `reasoning_content` 与 `tool_calls` 字段语义不变。
 
+### 1.3.2 client_turn_id — ordinary send 的乐观行相关性（V4，additive）
+
+**请求字段：** `POST /api/agents/chat/<session_id>/` 可选 body 字段 `client_turn_id`（UUID 字符串）。前端在每次 ordinary send 派发前生成一个（每次 POST attempt 一个值），与本地乐观临时行共享同一值。
+
+- 缺省保持兼容：不带该字段的 POST 行为不变，本次创建的 user 行 `client_turn_id = null`。
+- present-but-empty / 非字符串 / 非法 UUID → `400 {"code": "invalid_client_turn_id", "error": "..."}`，发生在会话偏好写入、Message 落盘、runtime 预留、附件 finalization 与 generation 之前。
+- 与 `edit_message_id` 同时出现 → `400 {"code": "client_turn_id_not_allowed_for_edit", "error": "..."}`：edit/regenerate 不创建新的 ordinary optimistic user 行，因此不接受该字段。
+- 同一 UUID 已绑定过其他消息 → `409 {"code": "client_turn_id_conflict", "error": "..."}`，不重放为幂等成功、不静默改派；数据库层非 NULL 唯一约束是并发下的最终兜底（任何情况下都不会出现第二条绑定行）。
+
+**持久语义：** 合法 ordinary send 把该 UUID 绑定到本次真正创建的 canonical user `Message`：direct/provider 的文本行与附件（audio）锚点行、以及 managed/subscription-runtime 在原子 user-message创建 seam 内的 user 行同规则。assistant/system/developer 行、历史行、edit/regenerate 与其他 Message 生产者（bridge / groupchat / background / push 等）恒为 `null`（由数据库 check 约束强制，不是前端约定）。
+
+**读取字段：** history `GET /api/agents/chat/<session_id>/`（分页与 legacy 全量数组共用 `MessageSerializer`）的消息行新增只读字段：
+
+```ts
+client_turn_id: string | null
+```
+
+已绑定 user 行返回该 UUID 的 canonical 字符串；未绑定/旧行/非 user 行返回 `null`。前端只在 `role === "user"` 且该值与本轮乐观行精确相等时抑制乐观行；不得用正文/时间戳/附件/`index_in_session` 推断对应关系。
+
+**明确不包含：** 不新增 SSE/poll 事件、响应头或 async ACK；async `message_id` 仍是 opaque token，不是消息身份；不引入幂等重放协议、history gate 或发送前历史就绪门。
+
 ### 1.4 Superior Session — Agent 自主调度
 
 **POST /api/agents/sessions/init/** — 创建 Conversation（Standard / Superior(g045) 通用）

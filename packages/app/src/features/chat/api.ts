@@ -233,6 +233,24 @@ export function normalizeVoiceProjection(value: unknown): VoiceProjection | null
   return { available, directed, cached };
 }
 
+/** Canonical UUID string (case-insensitive; backend emits lowercase). */
+const CLIENT_TURN_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A+ wire validity predicate; shared by the read normalizer and the POST builder. */
+export function isValidClientTurnId(value: unknown): value is string {
+  return typeof value === 'string' && CLIENT_TURN_ID_PATTERN.test(value);
+}
+
+/**
+ * A+ ordinary-send correlation, fail-closed: an absent/null row stays `null`
+ * and a malformed value never participates in the optimistic-row handoff
+ * (exact non-null equality is the only accepted proof).
+ */
+export function normalizeClientTurnId(value: unknown): string | null {
+  return isValidClientTurnId(value) ? value : null;
+}
+
 function normalizeMessageRow(row: MessageRow): MessageView {
   return {
     id: row.id,
@@ -242,6 +260,7 @@ function normalizeMessageRow(row: MessageRow): MessageView {
     assistantRunTrace:
       row.role === 'assistant' ? normalizeAssistantRunTrace(row.assistant_run_trace) : null,
     voice: row.role === 'assistant' ? normalizeVoiceProjection(row.voice) : null,
+    clientTurnId: normalizeClientTurnId(row.client_turn_id),
     platform: row.platform,
     modelVersion: row.model_version,
     tokenCount: row.token_count,

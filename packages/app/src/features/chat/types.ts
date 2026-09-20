@@ -98,6 +98,11 @@ export interface MessageRow {
   assistant_run_trace?: unknown;
   /** B5 additive voice projection; normalized fail-closed at the API boundary. */
   voice?: unknown;
+  /**
+   * A+ additive ordinary-send correlation; normalized fail-closed at the API
+   * boundary (absent / null / malformed never participate in the handoff).
+   */
+  client_turn_id?: unknown;
   platform: string | null;
   model_version: string | null;
   token_count: number | null;
@@ -161,6 +166,12 @@ export interface MessageView {
   assistantRunTrace?: AssistantRunTraceProjection | null;
   /** `null` means absent, malformed or non-assistant voice data. */
   voice?: VoiceProjection | null;
+  /**
+   * A+ exact ordinary-send correlation; normalization always emits it.
+   * `null` means absent, malformed or unbound — only a canonical UUID string
+   * can ever match an optimistic row.
+   */
+  clientTurnId: string | null;
   platform: string | null;
   modelVersion: string | null;
   tokenCount: number | null;
