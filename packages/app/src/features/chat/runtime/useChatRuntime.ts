@@ -47,7 +47,7 @@ import {
   postChatStop,
   postConversationBranch,
 } from './client';
-import { applyFreshWindow, fetchFreshWindow, findPersistedMessage } from '../queries';
+import { applyFreshWindow, fetchFreshWindow, findPersistedMessage, queryKeys } from '../queries';
 import { AppApiError } from '../api';
 import type { MessagePage } from '../types';
 import { classifyAudioAttemptPage } from './attemptPersistence';
@@ -271,6 +271,42 @@ export function useChatRuntime({
 
   const isNearBottomRefLocal = isNearBottomRef;
   const persistedRows = persistedRowsRef;
+
+  /**
+   * Issue #2 closure: an ordinary send that raced an unresolved history arms
+   * this ref with its optimistic clientKey; the render-phase adjustment below
+   * resolves the explicit `'unknown'` boundary from the first post-send rows
+   * that expose a user turn.
+   *
+   * Resolving from those rows is sound for the handover proof: a stale
+   * (pre-send) window yields the true pre-send maximum, so the later canonical
+   * turn still proves itself by index; a window that already contains the sent
+   * turn yields its own newest index and therefore only defers the handover to
+   * `releaseUi` instead of hiding early. Same-component render-phase state
+   * adjustment keeps the projection consistent within a single commit — the
+   * optimistic row is never committed against a stale boundary.
+   */
+  const pendingUnknownBoundaryRef = useRef<string | null>(null);
+  if (
+    optimisticUser !== null &&
+    optimisticUser.priorUserIndexInSession === 'unknown' &&
+    pendingUnknownBoundaryRef.current === optimisticUser.clientKey
+  ) {
+    let maxUserIndex = -1;
+    for (const row of persistedRows?.current ?? []) {
+      if (
+        row.role === 'user' &&
+        typeof row.indexInSession === 'number' &&
+        row.indexInSession > maxUserIndex
+      ) {
+        maxUserIndex = row.indexInSession;
+      }
+    }
+    if (maxUserIndex >= 0) {
+      pendingUnknownBoundaryRef.current = null;
+      setOptimisticUser({ ...optimisticUser, priorUserIndexInSession: maxUserIndex });
+    }
+  }
 
   /** Identity recheck: captured {epoch, conversationId} must still be current. */
   const isCurrentIdentity = useCallback(
@@ -1560,21 +1596,28 @@ export function useChatRuntime({
         : null;
 
       if (operation === 'send') {
-        // Issue #2 closure: capture the last canonical user turn observed
-        // before this dispatch so the timeline hands the optimistic bubble
-        // over to its canonical row exactly once. `null` = no prior user row
-        // was known at send time (empty conversation).
-        let priorUserIndexInSession: number | null = null;
+        // Issue #2 closure: capture the pre-send canonical user-turn boundary.
+        // A visible user turn is a concrete boundary; a loaded history without
+        // any visible user turn is first-send ownership (`null`); an unresolved
+        // history must stay explicitly `'unknown'` so late-loaded pre-send rows
+        // can never masquerade as the canonical replacement — the render-phase
+        // resolution above arms from the first post-send rows.
+        let lastVisibleUserIndex: number | null = null;
         const priorRows = persistedRows?.current;
         if (priorRows) {
           for (let i = priorRows.length - 1; i >= 0; i -= 1) {
             const row = priorRows[i];
             if (row.role === 'user' && typeof row.indexInSession === 'number') {
-              priorUserIndexInSession = row.indexInSession;
+              lastVisibleUserIndex = row.indexInSession;
               break;
             }
           }
         }
+        const historyLoaded = queryClient.getQueryData(queryKeys.messages(convId)) !== undefined;
+        const priorUserIndexInSession: number | 'unknown' | null =
+          lastVisibleUserIndex !== null ? lastVisibleUserIndex : historyLoaded ? null : 'unknown';
+        pendingUnknownBoundaryRef.current =
+          priorUserIndexInSession === 'unknown' ? `user:${epoch}` : null;
         setOptimisticUser({
           kind: 'client_user',
           clientKey: `user:${epoch}`,
@@ -1732,6 +1775,7 @@ export function useChatRuntime({
       startPollingLoop,
       attemptDraftClear,
       phaseNow,
+      queryClient,
     ],
   );
 

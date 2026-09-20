@@ -28,10 +28,13 @@ const ROLE_LABELS: Record<MessageRole, string> = {
 };
 
 /**
- * Issue #2 closure: a canonical user row strictly later than the last user turn
- * observed before dispatch means the canonical history owns the sent message,
- * so the optimistic copy stops being drawn. Pure projection — the runtime
- * lifecycle (`releaseUi`) still owns the final cleanup.
+ * Issue #2 closure: canonical replacement proof over the `indexInSession`
+ * order. A numeric pre-send boundary hands over on any strictly later user
+ * row. `null` (history loaded without a visible user turn at send) can only
+ * prove the session's first user turn. `'unknown'` (history unresolved at
+ * send) never hides here: late-loaded pre-send rows must not masquerade as the
+ * replacement — the runtime resolves the boundary or `releaseUi` cleans up.
+ * Pure projection — the runtime lifecycle still owns the final cleanup.
  */
 function hasCanonicalUserReplacement(
   messages: MessageView[],
@@ -39,11 +42,21 @@ function hasCanonicalUserReplacement(
 ): boolean {
   if (!optimisticUser) return false;
   const boundary = optimisticUser.priorUserIndexInSession;
-  return messages.some(
-    (message) =>
-      message.role === 'user' &&
-      (boundary === null || message.indexInSession > boundary),
-  );
+  if (typeof boundary === 'number') {
+    return messages.some(
+      (message) => message.role === 'user' && message.indexInSession > boundary,
+    );
+  }
+  if (boundary === 'unknown') return false;
+  // `null`: the only provable replacement is the session's first user turn —
+  // every visible user row must be that first turn (`indexInSession` 0).
+  let sawUserTurn = false;
+  for (const message of messages) {
+    if (message.role !== 'user') continue;
+    sawUserTurn = true;
+    if (message.indexInSession !== 0) return false;
+  }
+  return sawUserTurn;
 }
 
 export interface MessageTimelineProps {

@@ -33,7 +33,7 @@ const viewMsg = (
   createdAt: '2026-09-14T10:00:00Z',
 });
 
-const optimistic = (content: string, priorUserIndexInSession: number | null): OptimisticUserRow => ({
+const optimistic = (content: string, priorUserIndexInSession: number | 'unknown' | null): OptimisticUserRow => ({
   kind: 'client_user',
   clientKey: 'user:1',
   content,
@@ -50,11 +50,11 @@ const streamingAssistant = (content: string): RuntimeAssistantRow => ({
   isStreaming: true,
 });
 
-function renderTimeline(
+function timelineElement(
   messages: MessageView[],
   extras: { optimisticUser?: OptimisticUserRow | null; runtimeAssistant?: RuntimeAssistantRow | null } = {},
 ) {
-  return render(
+  return (
     <MessageTimeline
       messages={messages}
       hasOlder={false}
@@ -62,8 +62,15 @@ function renderTimeline(
       onLoadMore={() => undefined}
       optimisticUser={extras.optimisticUser ?? null}
       runtimeAssistant={extras.runtimeAssistant ?? null}
-    />,
+    />
   );
+}
+
+function renderTimeline(
+  messages: MessageView[],
+  extras: { optimisticUser?: OptimisticUserRow | null; runtimeAssistant?: RuntimeAssistantRow | null } = {},
+) {
+  return render(timelineElement(messages, extras));
 }
 
 // ── live-seam fixtures ─────────────────────────────────────────────────────
@@ -175,6 +182,34 @@ describe('P2D closure #2: optimistic → canonical user row replacement (timelin
       optimisticUser: optimistic('第一句', null),
     });
     expect(screen.queryByText('（发送中…）')).toBeNull();
+    expect(screen.getAllByText('第一句')).toHaveLength(1);
+  });
+
+  it('D-07 keeps the optimistic row when only late-loaded pre-send history appears (R1-01 mirror)', () => {
+    const view = renderTimeline([], { optimisticUser: optimistic('新的问题', null) });
+    expect(screen.getByText('（发送中…）')).toBeTruthy();
+
+    view.rerender(
+      timelineElement([viewMsg(8, 'user', '更早的问题', 4)], {
+        optimisticUser: optimistic('新的问题', null),
+      }),
+    );
+    expect(screen.getByText('（发送中…）')).toBeTruthy();
+    expect(screen.getAllByText('新的问题')).toHaveLength(1);
+  });
+
+  it('D-08 an unknown boundary never hands over by index, while null hands over on the first user turn', () => {
+    const unknownView = renderTimeline([viewMsg(10, 'user', '第一句', 0)], {
+      optimisticUser: optimistic('新的问题', 'unknown'),
+    });
+    expect(screen.getByText('（发送中…）')).toBeTruthy();
+    unknownView.unmount();
+
+    renderTimeline([viewMsg(10, 'user', '第一句', 0)], {
+      optimisticUser: optimistic('新的问题', null),
+    });
+    expect(screen.queryByText('（发送中…）')).toBeNull();
+    expect(screen.queryByText('新的问题')).toBeNull();
     expect(screen.getAllByText('第一句')).toHaveLength(1);
   });
 });
@@ -294,5 +329,113 @@ describe('P2D closure #2: canonical replacement at the live runtime seam', () =>
     expect(screen.getAllByText('你好呀')).toHaveLength(1);
     expect(document.querySelector('.app-msg--optimistic')).toBeNull();
     expect(screen.getByText('稍后完整回答')).toBeTruthy();
+  });
+
+  it('R1-01 regression: a send that raced unresolved history keeps the optimistic row through late pre-send rows and hands over on the later canonical window', async () => {
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+
+    let resolveInitialWindow: (response: Response) => void = () => {
+      throw new Error('initial window resolver not ready');
+    };
+    const initialWindowGate = new Promise<Response>((resolve) => {
+      resolveInitialWindow = resolve;
+    });
+    let windowCalls = 0;
+    let streamController: ReadableStreamDefaultController<Uint8Array> | null = null;
+    const encoder = new TextEncoder();
+
+    const finishStream = () => {
+      if (!streamController) throw new Error('SSE stream controller is not ready');
+      streamController.enqueue(encoder.encode('event: done\ndata: [DONE]\n\n'));
+      streamController.close();
+    };
+
+    installRuntimeFetch([
+      { test: '/api/agents/presets/', handler: () => jsonResponse([runtimeTestPreset(5)]) },
+      { test: '/api/agents/conversations/42/', handler: () => jsonResponse(conversationRow(42)) },
+      {
+        test: '/api/agents/conversations/42/cache/',
+        handler: () => jsonResponse({ active: false, platform: null, has_snapshot: false }),
+      },
+      {
+        test: '/api/agents/chat/42/',
+        handler: (_url, init) => {
+          if (init?.method === 'POST') {
+            const stream = new ReadableStream<Uint8Array>({
+              start(controller) {
+                streamController = controller;
+                controller.enqueue(encoder.encode('event: content\ndata: 边说边想\n\n'));
+              },
+            });
+            return new Response(stream, {
+              status: 200,
+              headers: { 'Content-Type': 'text/event-stream' },
+            });
+          }
+          windowCalls += 1;
+          if (windowCalls === 1) return initialWindowGate; // pre-send window resolves late
+          return jsonResponse({
+            messages: [
+              liveMsg(800, 'user', '旧的问题', 4),
+              liveMsg(801, 'assistant', '旧的回答', 5),
+              liveMsg(900, 'user', '你好呀', 6),
+              liveMsg(999, 'assistant', '稍后完整回答', 7),
+            ],
+            total_count: 4,
+            has_more: false,
+          });
+        },
+      },
+      {
+        test: '/api/push/assistant-arrivals/',
+        handler: (url) =>
+          url.searchParams.get('after') === null
+            ? jsonResponse({ events: [], next_cursor: 10, has_more: false })
+            : jsonResponse({ events: [arrivalFrame(999)], next_cursor: 11, has_more: false }),
+      },
+    ]);
+
+    renderApp(['/chat/42']);
+
+    // R1-01 seam: the composer is available while the message history is still pending.
+    const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
+    await screen.findByText('正在加载消息…');
+
+    const scroller = document.querySelector('.app-scroll') as HTMLElement;
+    Object.defineProperty(scroller, 'scrollHeight', { configurable: true, get: () => 1000 });
+    Object.defineProperty(scroller, 'clientHeight', { configurable: true, get: () => 300 });
+    Object.defineProperty(scroller, 'scrollTop', { configurable: true, writable: true, value: 0 });
+    fireEvent.scroll(scroller);
+    await screen.findByRole('button', { name: /返回最新/ });
+
+    fireEvent.change(textbox, { target: { value: '你好呀' } });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
+    await screen.findByRole('button', { name: /停止生成/ });
+
+    // The gated pre-send window finally resolves with ONLY older history.
+    resolveInitialWindow(jsonResponse({
+      messages: [liveMsg(800, 'user', '旧的问题', 4), liveMsg(801, 'assistant', '旧的回答', 5)],
+      total_count: 2,
+      has_more: false,
+    }));
+    await screen.findByText('旧的问题');
+    // R1-01: late pre-send history must never hide the optimistic row.
+    expect(screen.getByText('（发送中…）')).toBeTruthy();
+    expect(screen.getAllByText('你好呀')).toHaveLength(1);
+
+    // Arrival + return to latest: the actual canonical window arrives mid-generation.
+    document.dispatchEvent(new Event('visibilitychange'));
+    await screen.findByRole('button', { name: /有新消息/ });
+    fireEvent.click(screen.getByRole('button', { name: /有新消息/ }));
+    await screen.findByText('稍后完整回答');
+
+    await waitFor(() => expect(screen.queryByText('（发送中…）')).toBeNull());
+    expect(screen.getAllByText('你好呀')).toHaveLength(1);
+    expect(screen.getByText('边说边想')).toBeTruthy();
+
+    finishStream();
+    await waitFor(() => expect(screen.queryByText('边说边想')).toBeNull());
+    expect(screen.getAllByText('你好呀')).toHaveLength(1);
+    expect(document.querySelector('.app-msg--optimistic')).toBeNull();
   });
 });

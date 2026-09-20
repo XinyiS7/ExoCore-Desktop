@@ -204,12 +204,18 @@ export interface OptimisticUserRow {
    * never fabricated persisted Message bindings. */
   pendingAttachmentIds: number[];
   /**
-   * Issue #2 closure: last canonical user `indexInSession` observed before this
-   * dispatch; `null` means no prior user row was known at send time (empty
-   * conversation). The timeline stops drawing this optimistic row once a
-   * canonical user row with a strictly later `indexInSession` exists.
+   * Issue #2 closure — pre-send canonical user-turn boundary:
+   * - `number`: indexInSession of the last canonical user turn visible before
+   *   dispatch; the optimistic row hands over once a canonical user row with a
+   *   strictly later index exists.
+   * - `null`: history was already loaded and showed no user turn at send time
+   *   (first-send ownership); the only provable replacement is the session's
+   *   first user turn (`indexInSession` 0).
+   * - `'unknown'`: history had not resolved at send time (still loading or
+   *   errored). The runtime resolves it from the first post-send rows that
+   *   expose a user turn; until then it is never treated as a replacement.
    */
-  priorUserIndexInSession: number | null;
+  priorUserIndexInSession: number | 'unknown' | null;
 }
 
 export interface RuntimeAssistantTrace {
