@@ -33,7 +33,7 @@ const viewMsg = (
   createdAt: '2026-09-14T10:00:00Z',
 });
 
-const optimistic = (content: string, priorUserIndexInSession: number | 'unknown' | null): OptimisticUserRow => ({
+const optimistic = (content: string, priorUserIndexInSession: number | null): OptimisticUserRow => ({
   kind: 'client_user',
   clientKey: 'user:1',
   content,
@@ -197,21 +197,6 @@ describe('P2D closure #2: optimistic → canonical user row replacement (timelin
     expect(screen.getByText('（发送中…）')).toBeTruthy();
     expect(screen.getAllByText('新的问题')).toHaveLength(1);
   });
-
-  it('D-08 an unknown boundary never hands over by index, while null hands over on the first user turn', () => {
-    const unknownView = renderTimeline([viewMsg(10, 'user', '第一句', 0)], {
-      optimisticUser: optimistic('新的问题', 'unknown'),
-    });
-    expect(screen.getByText('（发送中…）')).toBeTruthy();
-    unknownView.unmount();
-
-    renderTimeline([viewMsg(10, 'user', '第一句', 0)], {
-      optimisticUser: optimistic('新的问题', null),
-    });
-    expect(screen.queryByText('（发送中…）')).toBeNull();
-    expect(screen.queryByText('新的问题')).toBeNull();
-    expect(screen.getAllByText('第一句')).toHaveLength(1);
-  });
 });
 
 // ── D-02 / D-03 / D-06: the live runtime seam ──────────────────────────────
@@ -331,7 +316,44 @@ describe('P2D closure #2: canonical replacement at the live runtime seam', () =>
     expect(screen.getByText('稍后完整回答')).toBeTruthy();
   });
 
-  it('R1-01 regression: a send that raced unresolved history keeps the optimistic row through late pre-send rows and hands over on the later canonical window', async () => {
+  it('R2-01 regression: an unresolved history rejects before lease/POST and preserves the draft', async () => {
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+
+    const unresolvedHistory = new Promise<Response>(() => undefined);
+    const { calls } = installRuntimeFetch([
+      { test: '/api/agents/presets/', handler: () => jsonResponse([runtimeTestPreset(5)]) },
+      { test: '/api/agents/conversations/42/', handler: () => jsonResponse(conversationRow(42)) },
+      {
+        test: '/api/agents/conversations/42/cache/',
+        handler: () => jsonResponse({ active: false, platform: null, has_snapshot: false }),
+      },
+      { test: '/api/agents/chat/42/', method: 'GET', handler: () => unresolvedHistory },
+      {
+        test: '/api/agents/chat/42/',
+        method: 'POST',
+        handler: () => jsonResponse({ error: 'POST must not occur before history readiness' }, 500),
+      },
+    ]);
+
+    renderApp(['/chat/42']);
+    const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
+    await screen.findByText('正在加载消息…');
+
+    fireEvent.change(textbox, { target: { value: '保留这句话' } });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
+
+    await screen.findByText(/消息历史尚未加载完成/);
+    expect((textbox as HTMLTextAreaElement).value).toBe('保留这句话');
+    expect(
+      calls.filter(
+        (call) => call.url.pathname === '/api/agents/chat/42/' && call.init?.method === 'POST',
+      ),
+    ).toHaveLength(0);
+    expect(window.localStorage.getItem('exo:v4:chat-runtime:42')).toBeNull();
+    expect(screen.queryByText('（发送中…）')).toBeNull();
+  });
+
+  it('R2-01 regression: retries after history readiness and hands over exactly once using the snapshot boundary', async () => {
     vi.spyOn(document, 'hasFocus').mockReturnValue(true);
 
     let resolveInitialWindow: (response: Response) => void = () => {
@@ -397,7 +419,7 @@ describe('P2D closure #2: canonical replacement at the live runtime seam', () =>
 
     renderApp(['/chat/42']);
 
-    // R1-01 seam: the composer is available while the message history is still pending.
+    // The composer is available while the message history is still pending.
     const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
     await screen.findByText('正在加载消息…');
 
@@ -408,19 +430,23 @@ describe('P2D closure #2: canonical replacement at the live runtime seam', () =>
     fireEvent.scroll(scroller);
     await screen.findByRole('button', { name: /返回最新/ });
 
+    // Pre-readiness send: rejected with the draft preserved — retryable.
     fireEvent.change(textbox, { target: { value: '你好呀' } });
     fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
-    await screen.findByRole('button', { name: /停止生成/ });
+    await screen.findByText(/消息历史尚未加载完成/);
+    expect((textbox as HTMLTextAreaElement).value).toBe('你好呀');
 
-    // The gated pre-send window finally resolves with ONLY older history.
+    // History resolves with pre-send rows only; the next send uses its snapshot boundary.
     resolveInitialWindow(jsonResponse({
       messages: [liveMsg(800, 'user', '旧的问题', 4), liveMsg(801, 'assistant', '旧的回答', 5)],
       total_count: 2,
       has_more: false,
     }));
     await screen.findByText('旧的问题');
-    // R1-01: late pre-send history must never hide the optimistic row.
-    expect(screen.getByText('（发送中…）')).toBeTruthy();
+
+    fireEvent.change(textbox, { target: { value: '你好呀' } });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
+    await screen.findByText('（发送中…）');
     expect(screen.getAllByText('你好呀')).toHaveLength(1);
 
     // Arrival + return to latest: the actual canonical window arrives mid-generation.

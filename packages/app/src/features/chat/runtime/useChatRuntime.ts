@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import {
   type AttemptPersistence,
   type BlockedReason,
@@ -47,7 +47,7 @@ import {
   postChatStop,
   postConversationBranch,
 } from './client';
-import { applyFreshWindow, fetchFreshWindow, findPersistedMessage, queryKeys } from '../queries';
+import { applyFreshWindow, fetchFreshWindow, findPersistedMessage, mergeMessagePages, queryKeys } from '../queries';
 import { AppApiError } from '../api';
 import type { MessagePage } from '../types';
 import { classifyAudioAttemptPage } from './attemptPersistence';
@@ -271,42 +271,6 @@ export function useChatRuntime({
 
   const isNearBottomRefLocal = isNearBottomRef;
   const persistedRows = persistedRowsRef;
-
-  /**
-   * Issue #2 closure: an ordinary send that raced an unresolved history arms
-   * this ref with its optimistic clientKey; the render-phase adjustment below
-   * resolves the explicit `'unknown'` boundary from the first post-send rows
-   * that expose a user turn.
-   *
-   * Resolving from those rows is sound for the handover proof: a stale
-   * (pre-send) window yields the true pre-send maximum, so the later canonical
-   * turn still proves itself by index; a window that already contains the sent
-   * turn yields its own newest index and therefore only defers the handover to
-   * `releaseUi` instead of hiding early. Same-component render-phase state
-   * adjustment keeps the projection consistent within a single commit — the
-   * optimistic row is never committed against a stale boundary.
-   */
-  const pendingUnknownBoundaryRef = useRef<string | null>(null);
-  if (
-    optimisticUser !== null &&
-    optimisticUser.priorUserIndexInSession === 'unknown' &&
-    pendingUnknownBoundaryRef.current === optimisticUser.clientKey
-  ) {
-    let maxUserIndex = -1;
-    for (const row of persistedRows?.current ?? []) {
-      if (
-        row.role === 'user' &&
-        typeof row.indexInSession === 'number' &&
-        row.indexInSession > maxUserIndex
-      ) {
-        maxUserIndex = row.indexInSession;
-      }
-    }
-    if (maxUserIndex >= 0) {
-      pendingUnknownBoundaryRef.current = null;
-      setOptimisticUser({ ...optimisticUser, priorUserIndexInSession: maxUserIndex });
-    }
-  }
 
   /** Identity recheck: captured {epoch, conversationId} must still be current. */
   const isCurrentIdentity = useCallback(
@@ -1526,6 +1490,38 @@ export function useChatRuntime({
         setTransientError({ code: 'ATTACHMENT_INVALID', message: '附件参数包含无效编号。', retryClass: 'safe' });
         return 'rejected';
       }
+      // Issue #2 closure: an ordinary send may only dispatch with a trustworthy
+      // pre-send boundary. Readiness and the boundary derive ATOMICALLY from the
+      // same message-history cache state; a REGISTERED history without data yet
+      // (pending/error) is rejected here — before epoch/overlay/lease/
+      // attachment transfer/POST — with a visible retryable error while the
+      // draft stays with the user. An unregistered history query (no history
+      // contract in this runtime instance) keeps the legacy standalone seam and
+      // dispatches with the snapshot-consistent `null` boundary.
+      let priorUserIndexInSession: number | null = null;
+      if (operation === 'send') {
+        const messagesState = queryClient.getQueryState<InfiniteData<MessagePage, number>>(
+          queryKeys.messages(activeConversationIdRef.current),
+        );
+        if (messagesState !== undefined && messagesState.data === undefined) {
+          setTransientError({
+            code: 'HISTORY_NOT_READY',
+            message: '消息历史尚未加载完成，发送已取消；加载完成后请重试。',
+            retryClass: 'safe',
+          });
+          return 'rejected';
+        }
+        if (messagesState?.data !== undefined) {
+          for (const row of mergeMessagePages(messagesState.data.pages).rows) {
+            if (
+              row.role === 'user' &&
+              (priorUserIndexInSession === null || row.indexInSession > priorUserIndexInSession)
+            ) {
+              priorUserIndexInSession = row.indexInSession;
+            }
+          }
+        }
+      }
       const destructive = operation === 'edit' || operation === 'regenerate';
       let predispatchPersistence: AttemptPersistence = { kind: 'proven_absent' };
 
@@ -1596,28 +1592,6 @@ export function useChatRuntime({
         : null;
 
       if (operation === 'send') {
-        // Issue #2 closure: capture the pre-send canonical user-turn boundary.
-        // A visible user turn is a concrete boundary; a loaded history without
-        // any visible user turn is first-send ownership (`null`); an unresolved
-        // history must stay explicitly `'unknown'` so late-loaded pre-send rows
-        // can never masquerade as the canonical replacement — the render-phase
-        // resolution above arms from the first post-send rows.
-        let lastVisibleUserIndex: number | null = null;
-        const priorRows = persistedRows?.current;
-        if (priorRows) {
-          for (let i = priorRows.length - 1; i >= 0; i -= 1) {
-            const row = priorRows[i];
-            if (row.role === 'user' && typeof row.indexInSession === 'number') {
-              lastVisibleUserIndex = row.indexInSession;
-              break;
-            }
-          }
-        }
-        const historyLoaded = queryClient.getQueryData(queryKeys.messages(convId)) !== undefined;
-        const priorUserIndexInSession: number | 'unknown' | null =
-          lastVisibleUserIndex !== null ? lastVisibleUserIndex : historyLoaded ? null : 'unknown';
-        pendingUnknownBoundaryRef.current =
-          priorUserIndexInSession === 'unknown' ? `user:${epoch}` : null;
         setOptimisticUser({
           kind: 'client_user',
           clientKey: `user:${epoch}`,

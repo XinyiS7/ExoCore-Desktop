@@ -204,18 +204,18 @@ export interface OptimisticUserRow {
    * never fabricated persisted Message bindings. */
   pendingAttachmentIds: number[];
   /**
-   * Issue #2 closure — pre-send canonical user-turn boundary:
-   * - `number`: indexInSession of the last canonical user turn visible before
-   *   dispatch; the optimistic row hands over once a canonical user row with a
-   *   strictly later index exists.
-   * - `null`: history was already loaded and showed no user turn at send time
-   *   (first-send ownership); the only provable replacement is the session's
-   *   first user turn (`indexInSession` 0).
-   * - `'unknown'`: history had not resolved at send time (still loading or
-   *   errored). The runtime resolves it from the first post-send rows that
-   *   expose a user turn; until then it is never treated as a replacement.
+   * Issue #2 closure — pre-send canonical user-turn boundary, derived from the
+   * SAME dispatch-time message-history snapshot that gates send readiness:
+   * - `number`: the newest canonical user turn in that snapshot; the optimistic
+   *   row hands over once a canonical user row with a strictly later
+   *   `indexInSession` exists.
+   * - `null`: the snapshot was loaded and contained no user turn (first-send
+   *   ownership); the only provable replacement is the session's first user
+   *   turn (`indexInSession` 0).
+   * An unresolved history never reaches this boundary: the dispatch is rejected
+   * before any epoch/overlay/lease/POST.
    */
-  priorUserIndexInSession: number | 'unknown' | null;
+  priorUserIndexInSession: number | null;
 }
 
 export interface RuntimeAssistantTrace {

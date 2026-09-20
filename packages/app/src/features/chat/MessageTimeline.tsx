@@ -30,10 +30,9 @@ const ROLE_LABELS: Record<MessageRole, string> = {
 /**
  * Issue #2 closure: canonical replacement proof over the `indexInSession`
  * order. A numeric pre-send boundary hands over on any strictly later user
- * row. `null` (history loaded without a visible user turn at send) can only
- * prove the session's first user turn. `'unknown'` (history unresolved at
- * send) never hides here: late-loaded pre-send rows must not masquerade as the
- * replacement — the runtime resolves the boundary or `releaseUi` cleans up.
+ * row. `null` (the dispatch-time snapshot was loaded and contained no user
+ * turn) can only prove the session's first user turn — an unresolved history
+ * never reaches this projection because the dispatch is rejected first.
  * Pure projection — the runtime lifecycle still owns the final cleanup.
  */
 function hasCanonicalUserReplacement(
@@ -42,12 +41,11 @@ function hasCanonicalUserReplacement(
 ): boolean {
   if (!optimisticUser) return false;
   const boundary = optimisticUser.priorUserIndexInSession;
-  if (typeof boundary === 'number') {
+  if (boundary !== null) {
     return messages.some(
       (message) => message.role === 'user' && message.indexInSession > boundary,
     );
   }
-  if (boundary === 'unknown') return false;
   // `null`: the only provable replacement is the session's first user turn —
   // every visible user row must be that first turn (`indexInSession` 0).
   let sawUserTurn = false;
