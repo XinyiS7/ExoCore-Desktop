@@ -355,22 +355,31 @@ describe('P2D closure #2: exact canonical handover at the live runtime seam', ()
     expect(screen.getByText('（发送中…）')).toBeTruthy();
     expect(screen.getAllByText('你好呀')).toHaveLength(1);
 
-    // Arrival + return to latest: the canonical window carries this attempt's
-    // exact UUID and takes over the bubble exactly once, mid-generation.
+    // Arrival + return to latest, mid-generation: the click still jumps the
+    // sole scroll owner to its bottom, but the active-operation gate holds —
+    // the pending arrival is never applied early, so exactly one runtime
+    // assistant is drawn and the arrival stays unread.
     document.dispatchEvent(new Event('visibilitychange'));
     await screen.findByRole('button', { name: /有新消息/ });
+    const readsBeforeClick = windowCalls;
     fireEvent.click(screen.getByRole('button', { name: /有新消息/ }));
-    await screen.findByText('稍后完整回答');
-
-    await waitFor(() => expect(screen.queryByText('（发送中…）')).toBeNull());
+    expect(scroller.scrollTop).toBe(1000);
+    // A full macrotask proves nothing was dispatched for the pending arrival.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await waitFor(() => expect(screen.queryByRole('button', { name: /有新消息/ })).toBeNull());
+    // The active-operation gate is what keeps the canonical window out here.
+    expect(windowCalls).toBe(readsBeforeClick);
+    expect(screen.queryByText('稍后完整回答')).toBeNull();
+    expect(screen.getByText('（发送中…）')).toBeTruthy();
     expect(screen.getAllByText('你好呀')).toHaveLength(1);
-    expect(document.querySelector('.app-msg--optimistic')).toBeNull();
     expect(screen.getByText('边说边想')).toBeTruthy();
     expect(screen.getAllByText('生成中…').length).toBeGreaterThan(0);
 
-    // Complete the stream and let the operation release.
+    // The reader now sits at its bottom: the terminal reconcile owns the
+    // canonical apply and hands this attempt's exact UUID over exactly once.
     finishStream();
     await waitFor(() => expect(screen.queryByText('边说边想')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('（发送中…）')).toBeNull());
 
     // D-06: history still contains exactly one persisted user message and the
     // optimistic overlay is gone for good.
@@ -385,6 +394,7 @@ describe('P2D closure #2: exact canonical handover at the live runtime seam', ()
     let streamController: ReadableStreamDefaultController<Uint8Array> | null = null;
     const encoder = new TextEncoder();
     let postAccepted = false;
+    let windowReads = 0;
 
     const finishStream = () => {
       if (!streamController) throw new Error('SSE stream controller is not ready');
@@ -415,6 +425,7 @@ describe('P2D closure #2: exact canonical handover at the live runtime seam', ()
               headers: { 'Content-Type': 'text/event-stream' },
             });
           }
+          windowReads += 1;
           return jsonResponse({
             messages: postAccepted
               ? [
@@ -459,16 +470,25 @@ describe('P2D closure #2: exact canonical handover at the live runtime seam', ()
 
     document.dispatchEvent(new Event('visibilitychange'));
     await screen.findByRole('button', { name: /有新消息/ });
+    const readsBeforeClick = windowReads;
     fireEvent.click(screen.getByRole('button', { name: /有新消息/ }));
-    await screen.findByText('别人同步进来的问题');
 
-    // The tentative window has no exact correlation: the optimistic bubble must
-    // survive until its own canonical row (or terminal release) arrives.
+    // Mid-generation the active-operation gate holds: the uncorrelated window
+    // is never pulled in by the arrival click, and the optimistic bubble stays
+    // alone while the runtime still owns the timeline.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(windowReads).toBe(readsBeforeClick);
+    expect(screen.queryByText('别人同步进来的问题')).toBeNull();
     expect(screen.getByText('（发送中…）')).toBeTruthy();
     expect(screen.getAllByText('你好呀')).toHaveLength(1);
 
     finishStream();
     await waitFor(() => expect(screen.queryByText('边说边想')).toBeNull());
+    // The terminal apply is the only path that brings the uncorrelated row in;
+    // it was never our handover target and the canonical assistant is drawn
+    // exactly once.
+    await screen.findByText('别人同步进来的问题');
+    expect(screen.getAllByText('稍后完整回答')).toHaveLength(1);
     // Terminal release clears the optimistic overlay itself; it never guesses
     // the correlation, so no duplicate ever flashes after cleanup.
     expect(screen.queryByText('（发送中…）')).toBeNull();
@@ -592,5 +612,302 @@ describe('P2D closure #2: exact canonical handover at the live runtime seam', ()
     ).toHaveLength(0);
     expect(window.localStorage.getItem('exo:v4:chat-runtime:42')).toBeNull();
     expect(screen.queryByText('（发送中…）')).toBeNull();
+  });
+});
+
+// ── Issue #2: return-to-latest never bypasses the active-operation gate ────
+
+describe('P2D issue #2: return-to-latest arrival apply honours the active-operation gate', () => {
+  beforeEach(() => {
+    ensureTestLocalStorage();
+    window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    unmockFetch();
+    window.localStorage.clear();
+  });
+
+  const scrollOwner = () => {
+    const scroller = document.querySelector('.app-scroll') as HTMLElement;
+    Object.defineProperty(scroller, 'scrollHeight', { configurable: true, get: () => 1000 });
+    Object.defineProperty(scroller, 'clientHeight', { configurable: true, get: () => 300 });
+    Object.defineProperty(scroller, 'scrollTop', { configurable: true, writable: true, value: 0 });
+    return scroller;
+  };
+
+  it('A-01/A-02: an active stream click scrolls to the bottom, applies no canonical window, and keeps the arrival unread', async () => {
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+
+    let streamController: ReadableStreamDefaultController<Uint8Array> | null = null;
+    const encoder = new TextEncoder();
+    let windowReads = 0;
+    let postClientTurnId: string | null = null;
+
+    const finishStream = () => {
+      if (!streamController) throw new Error('SSE stream controller is not ready');
+      streamController.enqueue(encoder.encode('event: done\ndata: [DONE]\n\n'));
+      streamController.close();
+    };
+
+    installRuntimeFetch([
+      { test: '/api/agents/presets/', handler: () => jsonResponse([runtimeTestPreset(5)]) },
+      { test: '/api/agents/conversations/42/', handler: () => jsonResponse(conversationRow(42)) },
+      {
+        test: '/api/agents/conversations/42/cache/',
+        handler: () => jsonResponse({ active: false, platform: null, has_snapshot: false }),
+      },
+      {
+        test: '/api/agents/chat/42/',
+        handler: (_url, init) => {
+          if (init?.method === 'POST') {
+            const body = JSON.parse(String(init.body)) as { client_turn_id?: string };
+            postClientTurnId = body.client_turn_id ?? null;
+            const stream = new ReadableStream<Uint8Array>({
+              start(controller) {
+                streamController = controller;
+                controller.enqueue(encoder.encode('event: content\ndata: 边说边想\n\n'));
+              },
+            });
+            return new Response(stream, {
+              status: 200,
+              headers: { 'Content-Type': 'text/event-stream' },
+            });
+          }
+          windowReads += 1;
+          const messages = [
+            liveMsg(800, 'user', '旧的问题', 4),
+            liveMsg(801, 'assistant', '旧的回答', 5),
+          ];
+          if (windowReads > 1) {
+            messages.push(
+              liveMsg(900, 'user', '你好呀', 6, postClientTurnId),
+              liveMsg(999, 'assistant', '稍后完整回答', 7),
+            );
+          }
+          return jsonResponse({ messages, total_count: messages.length, has_more: false });
+        },
+      },
+      {
+        test: '/api/push/assistant-arrivals/',
+        handler: (url) =>
+          url.searchParams.get('after') === null
+            ? jsonResponse({ events: [], next_cursor: 10, has_more: false })
+            : jsonResponse({ events: [arrivalFrame(999)], next_cursor: 11, has_more: false }),
+      },
+    ]);
+
+    renderApp(['/chat/42']);
+    const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
+    await screen.findByText('旧的问题');
+
+    const scroller = scrollOwner();
+    fireEvent.scroll(scroller);
+    await screen.findByRole('button', { name: /返回最新/ });
+
+    fireEvent.change(textbox, { target: { value: '你好呀' } });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
+    await screen.findByText('（发送中…）');
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    await screen.findByRole('button', { name: /有新消息/ });
+
+    const readsBeforeClick = windowReads;
+    fireEvent.click(screen.getByRole('button', { name: /有新消息/ }));
+
+    // A-01: the sole scroll owner still reaches its CURRENT bottom at once.
+    expect(scroller.scrollTop).toBe(1000);
+    // …but the active operation owns canonical application: no fresh window is
+    // fetched and no second assistant is painted into the live timeline.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(windowReads).toBe(readsBeforeClick);
+    await waitFor(() => expect(screen.queryByRole('button', { name: /有新消息/ })).toBeNull());
+    expect(screen.queryByText('稍后完整回答')).toBeNull();
+    expect(screen.getByText('（发送中…）')).toBeTruthy();
+    expect(screen.getAllByText('你好呀')).toHaveLength(1);
+    expect(screen.getAllByText('边说边想')).toHaveLength(1);
+
+    // A-02: the arrival stays pending/unread — leaving the bottom repaints the
+    // unread prompt with its badge instead of silently consuming it.
+    scroller.scrollTop = 0;
+    fireEvent.scroll(scroller);
+    const unreadPrompt = await screen.findByRole('button', { name: /有新消息/ });
+    expect(unreadPrompt.textContent).toContain('1');
+
+    // The near-bottom terminal reconcile remains the ordered owner: it lands
+    // exactly one canonical assistant and consumes the arrival by exact id.
+    fireEvent.click(unreadPrompt);
+    finishStream();
+    await waitFor(() => expect(screen.queryByText('（发送中…）')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('边说边想')).toBeNull());
+    expect(screen.getAllByText('稍后完整回答')).toHaveLength(1);
+    expect(screen.getAllByText('你好呀')).toHaveLength(1);
+    expect(document.querySelector('.app-msg--optimistic')).toBeNull();
+    scroller.scrollTop = 0;
+    fireEvent.scroll(scroller);
+    await screen.findByRole('button', { name: /返回最新/ });
+    expect(screen.queryByRole('button', { name: /有新消息/ })).toBeNull();
+  });
+
+  it('A-03: the terminal pending reconcile still applies its offset-0 canonical window on click and releases the overlay once', async () => {
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+
+    let streamController: ReadableStreamDefaultController<Uint8Array> | null = null;
+    const encoder = new TextEncoder();
+    const offsets: Array<number | null> = [];
+    let postClientTurnId: string | null = null;
+
+    const finishStream = () => {
+      if (!streamController) throw new Error('SSE stream controller is not ready');
+      streamController.enqueue(encoder.encode('event: done\ndata: [DONE]\n\n'));
+      streamController.close();
+    };
+
+    installRuntimeFetch([
+      { test: '/api/agents/presets/', handler: () => jsonResponse([runtimeTestPreset(5)]) },
+      { test: '/api/agents/conversations/42/', handler: () => jsonResponse(conversationRow(42)) },
+      {
+        test: '/api/agents/conversations/42/cache/',
+        handler: () => jsonResponse({ active: false, platform: null, has_snapshot: false }),
+      },
+      {
+        test: '/api/agents/chat/42/',
+        handler: (url, init) => {
+          if (init?.method === 'POST') {
+            const body = JSON.parse(String(init.body)) as { client_turn_id?: string };
+            postClientTurnId = body.client_turn_id ?? null;
+            const stream = new ReadableStream<Uint8Array>({
+              start(controller) {
+                streamController = controller;
+                controller.enqueue(encoder.encode('event: content\ndata: 边说边想\n\n'));
+              },
+            });
+            return new Response(stream, {
+              status: 200,
+              headers: { 'Content-Type': 'text/event-stream' },
+            });
+          }
+          offsets.push(url.searchParams.get('offset') === null ? null : Number(url.searchParams.get('offset')));
+          const messages = [
+            liveMsg(800, 'user', '旧的问题', 4),
+            liveMsg(801, 'assistant', '旧的回答', 5),
+          ];
+          if (offsets.length > 1) {
+            messages.push(
+              liveMsg(900, 'user', '你好呀', 6, postClientTurnId),
+              liveMsg(999, 'assistant', '稍后完整回答', 7),
+            );
+          }
+          return jsonResponse({ messages, total_count: messages.length, has_more: false });
+        },
+      },
+      {
+        test: '/api/push/assistant-arrivals/',
+        handler: (url) =>
+          url.searchParams.get('after') === null
+            ? jsonResponse({ events: [], next_cursor: 10, has_more: false })
+            : jsonResponse({ events: [arrivalFrame(999)], next_cursor: 11, has_more: false }),
+      },
+    ]);
+
+    renderApp(['/chat/42']);
+    const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
+    await screen.findByText('旧的问题');
+
+    const scroller = scrollOwner();
+    fireEvent.scroll(scroller);
+    await screen.findByRole('button', { name: /返回最新/ });
+
+    fireEvent.change(textbox, { target: { value: '你好呀' } });
+    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
+    await screen.findByText('（发送中…）');
+
+    // The arrival lands while the reader is away, then the terminal arrives:
+    // the ordered apply is held pending for the return-to-latest click.
+    document.dispatchEvent(new Event('visibilitychange'));
+    await screen.findByRole('button', { name: /有新消息/ });
+    finishStream();
+    const readsBeforeClick = offsets.length;
+
+    fireEvent.click(screen.getByRole('button', { name: /有新消息/ }));
+    await waitFor(() => expect(offsets.length).toBeGreaterThan(readsBeforeClick));
+
+    // A-03: the pending reconcile completed its canonical apply + overlay
+    // release; exactly one canonical assistant and one user bubble remain.
+    await waitFor(() => expect(screen.queryByText('边说边想')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('（发送中…）')).toBeNull());
+    expect(screen.getAllByText('稍后完整回答')).toHaveLength(1);
+    expect(screen.getAllByText('你好呀')).toHaveLength(1);
+    expect(document.querySelector('.app-msg--optimistic')).toBeNull();
+    expect(offsets.filter((offset) => offset !== null && offset > 0)).toHaveLength(0);
+  });
+
+  it('A-04: an idle click still fetches and exact-consumes the pending arrival', async () => {
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+
+    let windowReads = 0;
+
+    installRuntimeFetch([
+      { test: '/api/agents/presets/', handler: () => jsonResponse([runtimeTestPreset(5)]) },
+      { test: '/api/agents/conversations/42/', handler: () => jsonResponse(conversationRow(42)) },
+      {
+        test: '/api/agents/conversations/42/cache/',
+        handler: () => jsonResponse({ active: false, platform: null, has_snapshot: false }),
+      },
+      {
+        test: '/api/agents/chat/42/',
+        handler: () => {
+          windowReads += 1;
+          return windowReads === 1
+            ? jsonResponse({
+                messages: [liveMsg(800, 'user', '旧的问题', 4), liveMsg(801, 'assistant', '旧的回答', 5)],
+                total_count: 2,
+                has_more: false,
+              })
+            : jsonResponse({
+                messages: [
+                  liveMsg(800, 'user', '旧的问题', 4),
+                  liveMsg(801, 'assistant', '旧的回答', 5),
+                  liveMsg(999, 'assistant', '稍后完整回答', 6),
+                ],
+                total_count: 3,
+                has_more: false,
+              });
+        },
+      },
+      {
+        test: '/api/push/assistant-arrivals/',
+        handler: (url) =>
+          url.searchParams.get('after') === null
+            ? jsonResponse({ events: [], next_cursor: 10, has_more: false })
+            : jsonResponse({ events: [arrivalFrame(999)], next_cursor: 11, has_more: false }),
+      },
+    ]);
+
+    renderApp(['/chat/42']);
+    await screen.findByText('旧的问题');
+
+    const scroller = scrollOwner();
+    fireEvent.scroll(scroller);
+    await screen.findByRole('button', { name: /返回最新/ });
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    await screen.findByRole('button', { name: /有新消息/ });
+
+    // Idle: the click still fetches/apply the newest window and exact-consumes
+    // the arrival by canonical message id.
+    const readsBeforeClick = windowReads;
+    fireEvent.click(screen.getByRole('button', { name: /有新消息/ }));
+    await screen.findByText('稍后完整回答');
+    expect(windowReads).toBeGreaterThan(readsBeforeClick);
+    expect(screen.getAllByText('稍后完整回答')).toHaveLength(1);
+    expect(screen.getAllByText('旧的回答')).toHaveLength(1);
+
+    // The arrival was consumed exactly once: leaving the bottom again shows a
+    // plain return prompt without the unread badge.
+    scroller.scrollTop = 0;
+    fireEvent.scroll(scroller);
+    await screen.findByRole('button', { name: /返回最新/ });
+    expect(screen.queryByRole('button', { name: /有新消息/ })).toBeNull();
   });
 });

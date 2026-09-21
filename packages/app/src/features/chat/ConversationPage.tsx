@@ -470,7 +470,13 @@ export function ConversationPage() {
     isNearBottomRef.current = true;
     setIsAwayFromBottom(false);
     if (hasPendingReconcile) await applyPendingReconcile();
-    if (hasPendingArrivals) await performFreshReconciliation();
+    // Issue #2: an active operation owns canonical application. Pulling a
+    // pending arrival in here would apply the canonical assistant while the
+    // live runtime overlay is still drawn and paint it twice; the arrival
+    // stays unread and the idle auto effect (or a later click) fetches it.
+    if (hasPendingArrivals && !busy && !controlsPending) {
+      await performFreshReconciliation();
+    }
   };
 
   // Request-side action-target guards (§5.1/§5.5, C1B-R1-05): every
