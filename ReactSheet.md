@@ -174,6 +174,14 @@ client_turn_id: string | null
 
 **明确不包含：** 不新增 SSE/poll 事件、响应头或 async ACK；async `message_id` 仍是 opaque token，不是消息身份；不引入幂等重放协议、history gate 或发送前历史就绪门。
 
+### 1.3.3 Managed Runtime regenerate — 用户确认放弃旧执行
+
+V4 重新生成仍使用现有 Chat POST 形状：选择 managed/subscription-runtime endpoint，并传入持久化 user Message 的 `edit_message_id`；纯 redo 的 `content` 可为空，编辑后重试则传新正文。不新增请求字段。
+
+该动作表示用户明确放弃该 user Message 的旧回复或未决执行，只接受当前 canonical 上下文下的新执行。后端保留并复用同一条 canonical user Message，不创建重复 user 行；旧 RuntimeTurn 保留为审计历史。若旧请求可能已抵达 provider（包括 `indeterminate` / `recovery_required`），后端须先验证退役旧 generation，再创建 N+1 generation：replacement bootstrap 严格结束于目标 user Message 之前，目标正文仅作为新 TurnRequest 的 current input 发送一次。退役失败或结果不确定时不得 supersede 旧 turn、不得创建 replacement、不得发送重试。
+
+Runtime regenerate 当前仅支持 text-only 目标；目标 Message 自带附件时在 canonical edit/truncate 之前显式拒绝。Direct/API edit/regenerate 语义不变。
+
 ### 1.4 Superior Session — Agent 自主调度
 
 **POST /api/agents/sessions/init/** — 创建 Conversation（Standard / Superior(g045) 通用）
