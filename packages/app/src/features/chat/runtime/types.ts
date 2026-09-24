@@ -392,7 +392,12 @@ export type ConstrainedAfter =
        *  after a later clear-retry succeeds. */
       callerToken?: { revoked: boolean };
     }
-  | { kind: 'unlock' };
+  | {
+      kind: 'unlock';
+      /** D-F01: sanitized in-memory stopped trace projection carried across
+       *  clear-retry; applied only after successful clear. */
+      retainedTrace?: RuntimeAssistantTrace;
+    };
 
 export type RecoveryDescriptor =
   | { kind: 'reread' }

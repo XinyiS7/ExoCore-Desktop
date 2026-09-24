@@ -24,7 +24,7 @@ function optionalNonnegative(value: unknown): number | undefined | 'invalid' {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 'invalid';
 }
 
-function applyAssistantTraceEvent(
+export function applyAssistantTraceEvent(
   current: RuntimeAssistantTrace | undefined,
   event: AssistantTraceEvent,
 ): { trace?: RuntimeAssistantTrace; warning?: string } {

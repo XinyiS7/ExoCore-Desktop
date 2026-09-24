@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  type AssistantTraceEvent,
   type AttemptPersistence,
   type BlockedReason,
   type CallbackIdentity,
@@ -18,6 +19,7 @@ import {
   type RecoveryDescriptor,
   type ReconcileContext,
   type RuntimeAssistantRow,
+  type RuntimeAssistantTrace,
   type RuntimeAttemptOutcome,
   type RuntimeStatus,
   type RuntimeTelemetry,
@@ -28,7 +30,7 @@ import {
   type V4RuntimeLease,
 } from './types';
 import { SSEFrameDecoder, normalizePollingEvent, normalizeSSEEvent, parseRawSSEFrame } from './sse';
-import { applyNormalizedEvent, normalizeRuntimeTelemetry } from './events';
+import { applyAssistantTraceEvent, applyNormalizedEvent, normalizeRuntimeTelemetry } from './events';
 import {
   clearConversationDraft,
   clearRuntimeLease,
@@ -234,6 +236,7 @@ export function useChatRuntime({
   // ── Presentation-only state (overlay rows / warnings / safe errors) ──────
   const [optimisticUser, setOptimisticUser] = useState<OptimisticUserRow | null>(null);
   const [runtimeAssistant, setRuntimeAssistant] = useState<RuntimeAssistantRow | null>(null);
+  const activeTraceRef = useRef<RuntimeAssistantTrace | null>(null);
   const [telemetryProjection, setTelemetryProjection] = useState<ConversationTelemetryProjection>(
     emptyTelemetryProjection,
   );
@@ -383,26 +386,45 @@ export function useChatRuntime({
    * the operation unlock — it is cleared only by its own successful retry or
    * by a fresh route entry. */
   const releaseUi = useCallback(
-    (identity: CallbackIdentity, options?: { retainStoppedTrace?: boolean }): boolean => {
+    (
+      identity: CallbackIdentity,
+      options?: { retainStoppedTrace?: boolean; retainedTrace?: RuntimeAssistantTrace },
+    ): boolean => {
       if (!isCurrentIdentity(identity.epoch, identity.stableOwner.conversationId)) return false;
       setOptimisticUser(null);
-      if (options?.retainStoppedTrace) {
+      if (options?.retainedTrace && options.retainedTrace.items.length > 0) {
+        activeTraceRef.current = options.retainedTrace;
+        setRuntimeAssistant({
+          kind: 'client_assistant',
+          clientKey: `assistant:${identity.epoch}`,
+          content: '',
+          statusText: '已停止生成',
+          thinking: '',
+          assistantTrace: options.retainedTrace,
+          isStreaming: false,
+          terminalKind: 'stopped',
+        });
+      } else if (options?.retainStoppedTrace) {
         setRuntimeAssistant((prev) => {
-          if (prev?.assistantTrace && prev.assistantTrace.items.length > 0) {
+          const traceToRetain = options?.retainedTrace ?? prev?.assistantTrace ?? activeTraceRef.current;
+          if (traceToRetain && traceToRetain.items.length > 0) {
+            activeTraceRef.current = traceToRetain;
             return {
               kind: 'client_assistant',
-              clientKey: prev.clientKey,
+              clientKey: prev?.clientKey ?? `assistant:${identity.epoch}`,
               content: '',
               statusText: '已停止生成',
               thinking: '',
-              assistantTrace: prev.assistantTrace,
+              assistantTrace: traceToRetain,
               isStreaming: false,
               terminalKind: 'stopped',
             };
           }
+          activeTraceRef.current = null;
           return null;
         });
       } else {
+        activeTraceRef.current = null;
         setRuntimeAssistant(null);
       }
       setProtocolWarning(null);
@@ -536,7 +558,7 @@ export function useChatRuntime({
       const inRecovery = cur.phase === 'blocked' || cur.phase === 'storage_blocked_read';
       switch (after.kind) {
         case 'unlock': {
-          releaseUi(identity);
+          releaseUi(identity, after.retainedTrace ? { retainedTrace: after.retainedTrace } : undefined);
           break;
         }
         case 'continue-live': {
@@ -804,6 +826,18 @@ export function useChatRuntime({
         return;
       }
       if (clearOut.state === 'mutation_unavailable') {
+        // D-F01: capture sanitized stopped trace before dropping overlay rows
+        const currentTrace = activeTraceRef.current;
+        const retainedTrace: RuntimeAssistantTrace | undefined =
+          ctx.outcome === 'stopped' && currentTrace && currentTrace.items.length > 0
+            ? {
+                runId: currentTrace.runId,
+                lastSequence: currentTrace.lastSequence,
+                items: currentTrace.items.map((item) => ({ ...item })),
+              }
+            : undefined;
+
+        activeTraceRef.current = null;
         // Canonical data applied: drop the noncanonical overlay (R2-01) but the
         // lock is carried by the union — never by stale overlay rows.
         setOptimisticUser(null);
@@ -815,7 +849,11 @@ export function useChatRuntime({
           reason: 'clear_blocked',
           snapshot,
           message: '无法清除上次运行标记（浏览器存储不可用）。请重试清理后再继续，避免重复发送。',
-          recovery: { kind: 'clear-retry', expectedPrior: snapshot, onCleared: { kind: 'unlock' } },
+          recovery: {
+            kind: 'clear-retry',
+            expectedPrior: snapshot,
+            onCleared: retainedTrace ? { kind: 'unlock', retainedTrace } : { kind: 'unlock' },
+          },
         });
         return;
       }
@@ -911,6 +949,15 @@ export function useChatRuntime({
         const normalized = normalizePollingEvent(item);
         if (normalized.event === 'done' || normalized.event === 'stopped' || normalized.event === 'error') {
           continue;
+        }
+        if (normalized.event === 'assistant_trace' && normalized.parsedData) {
+          const applied = applyAssistantTraceEvent(
+            activeTraceRef.current ?? undefined,
+            normalized.parsedData as AssistantTraceEvent,
+          );
+          if (applied.trace) {
+            activeTraceRef.current = applied.trace;
+          }
         }
         if (normalized.event === 'telemetry') {
           const telemetry = normalizeRuntimeTelemetry(normalized.parsedData);
@@ -1078,6 +1125,15 @@ export function useChatRuntime({
             classifyRuntimeError(normalized.parsedData ?? normalized.data, 'terminal_persisted'),
           );
           return true;
+        }
+        if (normalized.event === 'assistant_trace' && normalized.parsedData) {
+          const applied = applyAssistantTraceEvent(
+            activeTraceRef.current ?? undefined,
+            normalized.parsedData as AssistantTraceEvent,
+          );
+          if (applied.trace) {
+            activeTraceRef.current = applied.trace;
+          }
         }
         if (normalized.event === 'telemetry') {
           const telemetry = normalizeRuntimeTelemetry(normalized.parsedData);
@@ -1622,6 +1678,7 @@ export function useChatRuntime({
       } else {
         setOptimisticUser(null);
       }
+      activeTraceRef.current = null;
       setRuntimeAssistant({
         kind: 'client_assistant',
         clientKey: `assistant:${epoch}`,
@@ -2385,6 +2442,7 @@ export function useChatRuntime({
     setOpState({ phase: 'idle' });
     setOptimisticUser(null);
     setRuntimeAssistant(null);
+    activeTraceRef.current = null;
     lastCountedTelemetryRef.current = null;
     setTelemetryProjection(emptyTelemetryProjection());
     setProtocolWarning(null);
