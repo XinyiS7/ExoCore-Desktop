@@ -103,7 +103,8 @@ async 轮询携带同一对象：`{"event_type":"assistant_trace","delta":{...}}
 规则：
 - `sequence` 从 0 开始、单次 run 内严格递增，是 SSE 与 async 的唯一服务端顺序。`assistant_trace` 对 P1D 排序具备权威性；既有 `thinking` 事件继续保留（V3 兼容）且文本一致。
 - 连续 Thinking delta 共享同一 `item_id`；ToolCall 之后恢复的 Thinking 使用新 `item_id`。
-- ToolCall：`started` 在 execute 前发出（且仅在经由声明授权后），至多一次 terminal（`succeeded`/`failed`），`call_id`/`item_id` 全程稳定。同一 `call_id` 二次调用 `tool_finished` 幂等（不产生第二个 terminal）。未收到 terminal 的 tool 在历史投影中为 `incomplete`，后端不伪造成功。未授权工具完全不产生 trace 事件。
+- ToolCall 有两类来源：direct-tool 的 `started` 在 ExoCore execute 前、且仅在声明授权后发出；managed-runtime provider tool 则只投影 Runtime 已验证并持久观察到的 bounded lifecycle，ExoCore 不重新执行、也不声称重新授权该工具。两类都至多一次 terminal（`succeeded`/`failed`），`call_id`/`item_id` 全程稳定；managed-runtime 以 provider `step_index` 仅作本轮内部配对，同一 ACTIVE/terminal 重复帧幂等，terminal-only 不伪造 started，terminal 名称退化时仍保留 started 名称。未收到 terminal 的 tool 在历史投影中为 `incomplete`，后端不伪造成功。
+- managed-runtime provider tool 只接收 `tool_name`、状态和可选 provider duration；`argument_preview` / `result_summary` / `error_summary` 恒为 `null`，raw args/result/error body 不进入该 trace。客户端仍只接收既有 `assistant_trace`，不存在 `lifecycle` SSE 事件。
 - 安全（frozen §3，后端不负责任何用户侧 redaction）：
   - `run_id`/`item_id`/`call_id`/`tool_name` ≤ 128 字符；`tool_name` 还会做控制字符剥离/空白折叠，超长以 `…` 限长（identity 靠 `call_id`）；
   - `argument_preview` ≤ 500 字符，且只由**封闭 enum/boolean 词表**字段构造——free-form/路径/指令字段（query、content、target、message、skill_name、drawer/tool_name 等）以及词表外值（即使出现在 enum 位置）一律省略；
@@ -149,6 +150,7 @@ type AssistantRunTraceProjection =
 - 非 assistant 行：`assistant_run_trace` 恒为 `null`（统一行为）。
 - assistant 行无存储投影（旧行 / wezterm bridge / 非 chat 执行等未记录 trace 的路径）→ `legacy_unavailable`（不根据 `reasoning_content` + `tool_calls` 推断交错）。
 - 新 trace-capable run 即使空（无 thinking/工具）也返回 `available` 且 `items: []`。
+- managed-runtime 仅在 `completed` 时随 canonical assistant Message 持久化该投影；`stopped` / `failed` 不创建仅供轨迹使用的 assistant Message，也不新增后端持久化字段。stopped 的已发生轨迹只在 Desktop 当前页面作为非 canonical trace-only 投影保留，刷新或重新进入会话后不由 backend/localStorage 重建；无 trace 时不保留空行。
 - 投影上限：200 items；序列化 JSON ≤ 64 KiB（按含 `"truncated": true` 指示位的**最终负载**计量，指示位本身计入预算）；超限截尾并附加安全指示符 `"truncated": true`（frozen §3.5 要求的显式截断指示，为 DTO 的唯一 additive 可选字段；前端需归一化）。
 - 读取兼容：合法 Recorder 输出经 MessageSerializer 原样回传（round-trip 不变，不解析/不重写/不重新授权历史工具）；仅做根级 fail-closed 兼容检查——非 dict / `version != 1` / `availability` 不符 / `items` 非 list 的存储值回落 `legacy_unavailable`。
 - `reasoning_content` 与 `tool_calls` 字段语义不变。

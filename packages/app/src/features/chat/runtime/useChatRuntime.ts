@@ -383,10 +383,28 @@ export function useChatRuntime({
    * the operation unlock — it is cleared only by its own successful retry or
    * by a fresh route entry. */
   const releaseUi = useCallback(
-    (identity: CallbackIdentity): boolean => {
+    (identity: CallbackIdentity, options?: { retainStoppedTrace?: boolean }): boolean => {
       if (!isCurrentIdentity(identity.epoch, identity.stableOwner.conversationId)) return false;
       setOptimisticUser(null);
-      setRuntimeAssistant(null);
+      if (options?.retainStoppedTrace) {
+        setRuntimeAssistant((prev) => {
+          if (prev?.assistantTrace && prev.assistantTrace.items.length > 0) {
+            return {
+              kind: 'client_assistant',
+              clientKey: prev.clientKey,
+              content: '',
+              statusText: '已停止生成',
+              thinking: '',
+              assistantTrace: prev.assistantTrace,
+              isStreaming: false,
+              terminalKind: 'stopped',
+            };
+          }
+          return null;
+        });
+      } else {
+        setRuntimeAssistant(null);
+      }
       setProtocolWarning(null);
       setTransientError(null);
       setStopError(null);
@@ -782,7 +800,7 @@ export function useChatRuntime({
       const clearOut = clearRuntimeLease(snapshot);
       if (clearOut.state === 'cleared') {
         // 4) RELEASE — completeness: only after the exact marker cleared.
-        releaseUi(identity);
+        releaseUi(identity, { retainStoppedTrace: ctx.outcome === 'stopped' });
         return;
       }
       if (clearOut.state === 'mutation_unavailable') {
