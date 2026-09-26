@@ -291,4 +291,32 @@ describe('P1D Force Cache Send — composer entry & guards (V3 capability recove
 
     expect(compose.addFiles).toHaveBeenCalledWith([wav]);
   });
+
+  it('leaves non-file drops to native composer behavior', () => {
+    const compose = composeStub();
+    renderComposer({ compose });
+    const event = new Event('drop', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'dataTransfer', {
+      value: { files: [], types: ['text/plain'] },
+    });
+
+    screen.getByRole('textbox', { name: '消息输入框' }).dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(compose.addFiles).not.toHaveBeenCalled();
+  });
+
+  it('blocks native navigation for an empty file-typed drop without uploading', () => {
+    const compose = composeStub();
+    renderComposer({ compose });
+    const event = new Event('drop', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'dataTransfer', {
+      value: { files: [], types: ['Files'] },
+    });
+
+    screen.getByLabelText('消息输入区域').dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(compose.addFiles).not.toHaveBeenCalled();
+  });
 });

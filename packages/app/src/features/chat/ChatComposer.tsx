@@ -338,10 +338,15 @@ export function ChatComposer({
   };
 
   const handleFileDrop = (event: DragEvent<HTMLElement>) => {
-    event.preventDefault();
-    if (attachmentInputDisabled) return;
     const selectedFiles = Array.from(event.dataTransfer.files ?? []);
-    if (selectedFiles.length > 0) void compose.addFiles(selectedFiles);
+    const isFileDrop =
+      selectedFiles.length > 0 || event.dataTransfer.types.includes('Files');
+    if (!isFileDrop) return;
+
+    event.preventDefault();
+    if (!attachmentInputDisabled && selectedFiles.length > 0) {
+      void compose.addFiles(selectedFiles);
+    }
   };
 
   const recordToggle = () => {
