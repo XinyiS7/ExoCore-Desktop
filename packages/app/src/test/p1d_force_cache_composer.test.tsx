@@ -268,4 +268,27 @@ describe('P1D Force Cache Send — composer entry & guards (V3 capability recove
     expect(props.onConfirmEdit).toHaveBeenCalledWith('changed');
     expect(onSend).not.toHaveBeenCalled();
   });
+
+  it('routes ordinary file-picker WAV input through compose.addFiles', () => {
+    const compose = composeStub();
+    renderComposer({ compose });
+    const inputs = document.querySelectorAll<HTMLInputElement>('input[type="file"]');
+    const wav = new File(['wav'], 'voice.wav', { type: 'audio/wav' });
+
+    fireEvent.change(inputs[1], { target: { files: [wav] } });
+
+    expect(compose.addFiles).toHaveBeenCalledWith([wav]);
+  });
+
+  it('routes dropped WAV files through the same compose.addFiles seam', () => {
+    const compose = composeStub();
+    renderComposer({ compose });
+    const wav = new File(['wav'], 'voice.wav', { type: 'audio/wav' });
+
+    fireEvent.drop(screen.getByLabelText('消息输入区域'), {
+      dataTransfer: { files: [wav], types: ['Files'] },
+    });
+
+    expect(compose.addFiles).toHaveBeenCalledWith([wav]);
+  });
 });

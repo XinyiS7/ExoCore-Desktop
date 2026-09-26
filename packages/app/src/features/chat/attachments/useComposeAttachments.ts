@@ -4,6 +4,7 @@ import { uploadAttachments } from './api';
 import type {
   AttachmentDiagnostic,
   AttachmentUploadOutcome,
+  AudioTarget,
   ComposeAttachmentEntry,
 } from './types';
 
@@ -72,12 +73,17 @@ export interface ComposeAttachmentApi {
   clearCompose: () => void;
 }
 
-export function useComposeAttachments(conversationId: number): ComposeAttachmentApi {
+export function useComposeAttachments(
+  conversationId: number,
+  uploadTarget: AudioTarget | null = null,
+): ComposeAttachmentApi {
   const [entries, setEntries] = useState<ComposeAttachmentEntry[]>([]);
   const epochRef = useRef(0);
   const batchRef = useRef<ActiveBatch | null>(null);
   const conversationIdRef = useRef(conversationId);
   conversationIdRef.current = conversationId;
+  const uploadTargetRef = useRef<AudioTarget | null>(uploadTarget);
+  uploadTargetRef.current = uploadTarget;
   const purgedIdsRef = useRef<Set<number>>(new Set());
 
   const clearAll = useCallback(() => {
@@ -137,7 +143,9 @@ export function useComposeAttachments(conversationId: number): ComposeAttachment
       }));
       setEntries((prev) => [...prev, ...newEntries]);
 
-      const target = null; // compose-level ordinary files; audio goes via recorder path
+      // Snapshot the same Conversation-local target used by the recorder.
+      // A later HUD switch affects the next batch, never this in-flight one.
+      const target = uploadTargetRef.current;
       let outcome: AttachmentUploadOutcome;
       try {
         outcome = await uploadAttachments(convId, files, target, controller.signal);

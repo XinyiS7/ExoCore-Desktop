@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react';
 import { FilePlus2, ImagePlus, Mic, MicOff, Send, Snowflake, Square, X } from 'lucide-react';
 import type {
   ChatTurnInput,
@@ -320,11 +320,27 @@ export function ChatComposer({
     }
   };
 
+  const attachmentInputDisabled =
+    busy || runActive || audioRecovery.uploading || attachmentManager.deletePending;
+
   const pickFiles = (input: HTMLInputElement | null, files: FileList | null) => {
     // FileList is live in real browsers: copy it before resetting the input,
     // otherwise clearing value can erase the selection before upload starts.
     const selectedFiles = files ? Array.from(files) : [];
     if (input) input.value = '';
+    if (!attachmentInputDisabled && selectedFiles.length > 0) {
+      void compose.addFiles(selectedFiles);
+    }
+  };
+
+  const handleFileDragOver = (event: DragEvent<HTMLElement>) => {
+    if (event.dataTransfer.types.includes('Files')) event.preventDefault();
+  };
+
+  const handleFileDrop = (event: DragEvent<HTMLElement>) => {
+    event.preventDefault();
+    if (attachmentInputDisabled) return;
+    const selectedFiles = Array.from(event.dataTransfer.files ?? []);
     if (selectedFiles.length > 0) void compose.addFiles(selectedFiles);
   };
 
@@ -347,7 +363,12 @@ export function ChatComposer({
     recorder.status === 'recording';
 
   return (
-    <footer className="app-composer-wrap" aria-label="消息输入区域">
+    <footer
+      className="app-composer-wrap"
+      aria-label="消息输入区域"
+      onDragOver={handleFileDragOver}
+      onDrop={handleFileDrop}
+    >
       {editingTarget ? (
         <div className="app-composer-editbar" role="status">
           <span className="app-composer-editbar-title">正在编辑历史消息 #{editingTarget.id}</span>
@@ -508,7 +529,7 @@ export function ChatComposer({
               type="button"
               className="app-btn app-btn-ghost app-btn-sm app-composer-tool-btn"
               onClick={() => imageInputRef.current?.click()}
-              disabled={busy || runActive || audioRecovery.uploading || attachmentManager.deletePending}
+              disabled={attachmentInputDisabled}
               title="选择图片附件"
               aria-label="选择图片附件"
             >
@@ -518,7 +539,7 @@ export function ChatComposer({
               type="button"
               className="app-btn app-btn-ghost app-btn-sm app-composer-tool-btn"
               onClick={() => fileInputRef.current?.click()}
-              disabled={busy || runActive || audioRecovery.uploading || attachmentManager.deletePending}
+              disabled={attachmentInputDisabled}
               title="选择文件附件"
               aria-label="选择文件附件"
             >

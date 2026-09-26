@@ -37,6 +37,82 @@ afterEach(() => {
 });
 
 describe('P1C compose coordinator (Task 2, §5.3/Gate C)', () => {
+  it('forwards the selected API target for a mixed image + WAV batch', async () => {
+    const { calls } = installFetch([
+      { test: ROUTE(), method: 'POST', handler: () => jsonResponse(okBody([9, 10]), 201) },
+    ]);
+    const target = { model: 'gemini-2.5-flash', endpoint: 7 };
+    const { result } = renderHook(() => useComposeAttachments(42, target));
+
+    await act(async () => {
+      await result.current.addFiles([
+        fileOf('image.png'),
+        fileOf('voice.wav', 'audio/wav'),
+      ]);
+    });
+
+    const form = calls[0].init?.body as FormData;
+    expect(form.getAll('files')).toHaveLength(2);
+    expect(form.get('model')).toBe(target.model);
+    expect(form.get('endpoint')).toBe(String(target.endpoint));
+    expect(result.current.successfulIds).toEqual([9, 10]);
+  });
+
+  it('uses the newly selected target for the next upload batch', async () => {
+    const { calls } = installFetch([
+      { test: ROUTE(), method: 'POST', handler: () => jsonResponse(okBody([11]), 201) },
+      { test: ROUTE(), method: 'POST', handler: () => jsonResponse(okBody([12]), 201) },
+    ]);
+    const { result, rerender } = renderHook(
+      ({ target }) => useComposeAttachments(42, target),
+      { initialProps: { target: { model: 'gemini-2.5-flash', endpoint: 7 } } },
+    );
+    await act(async () => {
+      await result.current.addFiles([fileOf('first.wav', 'audio/wav')]);
+    });
+
+    rerender({ target: { model: 'gemini-3.1-flash-lite', endpoint: 8 } });
+    await act(async () => {
+      await result.current.addFiles([fileOf('second.wav', 'audio/x-wav')]);
+    });
+
+    const first = calls[0].init?.body as FormData;
+    const second = calls[1].init?.body as FormData;
+    expect([first.get('model'), first.get('endpoint')]).toEqual(['gemini-2.5-flash', '7']);
+    expect([second.get('model'), second.get('endpoint')]).toEqual(['gemini-3.1-flash-lite', '8']);
+  });
+
+  it('keeps a backend typed audio rejection visible and non-sendable', async () => {
+    installFetch([
+      {
+        test: ROUTE(),
+        method: 'POST',
+        handler: () => jsonResponse({
+          attachments: [],
+          failures: [{ input_index: 0, code: 'audio_model_unsupported' }],
+          results: [resultsRow(0, 'failed', null, [{
+            stage: 'preflight',
+            code: 'audio_model_unsupported',
+            level: 'error',
+            message: 'selected model does not support audio',
+          }])],
+          error: 'all attachments failed',
+        }, 422),
+      },
+    ]);
+    const { result } = renderHook(() =>
+      useComposeAttachments(42, { model: 'text-only-model', endpoint: 7 }),
+    );
+
+    await act(async () => {
+      await result.current.addFiles([fileOf('voice.wave', 'audio/wave')]);
+    });
+
+    expect(result.current.entries[0].status).toBe('failed');
+    expect(result.current.entries[0].diagnostics[0]?.code).toBe('audio_model_unsupported');
+    expect(result.current.successfulIds).toEqual([]);
+  });
+
   it('creates uploading entries with image previews and maps ordered results by input_index', async () => {
     installFetch([
       { test: ROUTE(), method: 'POST', handler: () => jsonResponse(okBody([11, 12]), 201) },

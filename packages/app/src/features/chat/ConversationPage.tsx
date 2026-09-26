@@ -107,21 +107,6 @@ export function ConversationPage() {
   const pagesQuery = useMessagePagesQuery(id);
   const merged = pagesQuery.data;
 
-  // P1C: compose attachment lifecycle (Task 2) — conversation-keyed so route
-  // departure clears entries, aborts uploads and revokes previews.
-  const compose = useComposeAttachments(id);
-  const audioRecovery = useAudioRecovery(id, merged?.rows ?? []);
-  // P1C: the manager's 204 callback synchronously purges both sendable owners
-  // before history/list refresh. This closes the Phase A cross-owner seam.
-  const attachmentManager = useUserAttachmentManager(id, {
-    onDeleted: (attachmentId) => {
-      compose.purgeAttachmentId(attachmentId);
-      audioRecovery.purgeAttachmentId(attachmentId);
-    },
-    isDeleteBlocked: audioRecovery.isUploading,
-  });
-  // P1C: recorder lifecycle (AUD-F, Task 3).
-  const recorder = useAudioRecorder();
   // P1D: one live catalog and one Conversation-local control owner. The
   // ref-backed lock closes same-tick HUD changes at runtime/audio boundaries.
   const catalogQuery = useModelCatalogQuery();
@@ -144,6 +129,27 @@ export function ConversationPage() {
     thinkingOperationPendingRef,
   });
   const audioGate = useAudioTargetGate(catalogQuery.data, controls.target);
+  const composeUploadTarget =
+    controls.target?.model &&
+    Number.isInteger(controls.target.endpoint) &&
+    (controls.target.endpoint as number) > 0
+      ? { model: controls.target.model, endpoint: controls.target.endpoint as number }
+      : null;
+  // P1C: ordinary file selection/drop shares the selected Conversation target
+  // with the recorder, while backend preflight remains the capability owner.
+  const compose = useComposeAttachments(id, composeUploadTarget);
+  const audioRecovery = useAudioRecovery(id, merged?.rows ?? []);
+  // P1C: the manager's 204 callback synchronously purges both sendable owners
+  // before history/list refresh. This closes the Phase A cross-owner seam.
+  const attachmentManager = useUserAttachmentManager(id, {
+    onDeleted: (attachmentId) => {
+      compose.purgeAttachmentId(attachmentId);
+      audioRecovery.purgeAttachmentId(attachmentId);
+    },
+    isDeleteBlocked: audioRecovery.isUploading,
+  });
+  // P1C: recorder lifecycle (AUD-F, Task 3).
+  const recorder = useAudioRecorder();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const pendingAnchor = useRef<{ top: number; height: number } | null>(null);
