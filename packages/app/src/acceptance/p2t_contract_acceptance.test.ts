@@ -15,8 +15,8 @@ const read = readMessageVoiceRender;
 
 it('T1 real read boundary preserves text and strips malformed/private voice fields', async () => {
   const voices = [
-    { available: true, directed: false, cached: true, emotion: 'private' },
-    { available: true, directed: 'false', cached: true },
+    { available: true, directed: 'stale', cached: true, emotion: 'private' },
+    { available: true, cached: 'yes' },
     null,
     { available: true, directed: true, cached: false },
   ];
@@ -26,8 +26,9 @@ it('T1 real read boundary preserves text and strips malformed/private voice fiel
   })), total_count: 4, has_more: false });
   const page = await fetchMessagePage(19, 0);
   expect(page.messages.map(m => m.content)).toEqual(voices.map((_, i) => `canonical-${i}`));
+  // CP-B F-B1: the dead `directed` key is inert; a malformed `cached` still nulls.
   expect(page.messages.map(m => m.voice)).toEqual([
-    { available: true, directed: false, cached: true }, null, null, null,
+    { available: true, cached: true }, null, null, null,
   ]);
 });
 
@@ -44,12 +45,13 @@ it.each([['POST', start], ['GET', read]] as const)('T2 %s identity and signal tr
 
 it.each([
   [200, { status: 'playable', content_url: '/api/voice.wav', duration_ms: 0 }, 'playable', undefined],
+  [202, { status: 'warming', retry_after_ms: 1500 }, 'warming', undefined],
   [202, { status: 'generating', retry_after_ms: 2700 }, 'generating', undefined],
   [200, { status: 'idle' }, 'idle', undefined],
   [404, { status: 'playable', content_url: '/wrong.wav', error: 'not_found' }, 'unavailable', 'not_found'],
   [422, { error: 'ineligible_message' }, 'unavailable', 'ineligible_message'],
   [422, { error: 'no_active_profile' }, 'unavailable', 'no_active_profile'],
-  [503, { code: 'runtime_offline' }, 'failed_retryable', 'runtime_offline'],
+  [503, { status: 'unavailable', code: 'runtime_unavailable', message: 'TTS service is temporarily unavailable.' }, 'failed_retryable', 'runtime_unavailable'],
   [504, { code: 'generation_timeout' }, 'failed_retryable', 'generation_timeout'],
   [500, { code: 'generation_failed' }, 'failed_retryable', 'generation_failed'],
   [200, { status: 'playable', content_url: 42 }, 'failed_retryable', 'contract'],
@@ -60,6 +62,7 @@ it.each([
   const result = await read(19, 71);
   expect(result.phase).toBe(phase);
   if (code) expect(result).toMatchObject({ code });
+  if (phase === 'warming') expect(result).toMatchObject({ retryAfterMs: 1500 });
   if (phase === 'generating') expect(result).toMatchObject({ retryAfterMs: 2700 });
   if (phase === 'playable') expect(result).toMatchObject({ playable: { contentUrl: '/api/voice.wav', durationMs: 0 } });
 });

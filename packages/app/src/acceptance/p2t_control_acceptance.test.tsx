@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react
 import { MessageVoiceControl } from '../features/chat/tts/MessageVoiceControl';
 import { globalAudioPlaybackManager } from '../features/chat/audio/audioPlaybackManager';
 import { installFetch, jsonResponse, renderV4 } from '../test/helpers';
+import type { VoiceProjection } from '../features/chat/types';
 
 function playableTransport() {
   return installFetch([{
@@ -32,9 +33,9 @@ function mediaHarness(playResult?: () => Promise<void>) {
   return { play, pause };
 }
 
-function control(messageId: number, directed = false) {
+function control(messageId: number) {
   return <MessageVoiceControl conversationId={7} messageId={messageId}
-    voice={{ available: true, directed, cached: true }} />;
+    voice={{ available: true, cached: true }} />;
 }
 
 afterEach(() => {
@@ -55,18 +56,22 @@ describe('P2T CP2 independent control invariants', () => {
     expect(play).not.toHaveBeenCalled();
   });
 
-  it('directed changes only the existing button modifier, not its semantics or tree', () => {
+  it('a stale directed key is inert: same tree, semantics and modifiers', () => {
     playableTransport();
     mediaHarness();
-    const ordinary = renderV4(control(71, false));
+    const ordinary = renderV4(control(71));
     const a = ordinary.getByRole('button', { name: '朗读此条消息' });
     const ordinaryShape = { text: a.textContent, title: a.getAttribute('title'), aria: a.getAttribute('aria-label'), children: a.childElementCount };
     ordinary.unmount();
-    const directed = renderV4(control(72, true));
-    const b = directed.getByRole('button', { name: '朗读此条消息' });
+    // CP-B F-B1 removed the modifier; a legacy payload carrying the dead key
+    // must not change the rendered tree or add any class.
+    const stale = renderV4(
+      <MessageVoiceControl conversationId={7} messageId={72}
+        voice={{ available: true, cached: true, directed: true } as VoiceProjection} />,
+    );
+    const b = stale.getByRole('button', { name: '朗读此条消息' });
     expect({ text: b.textContent, title: b.getAttribute('title'), aria: b.getAttribute('aria-label'), children: b.childElementCount }).toEqual(ordinaryShape);
-    expect(a.className).not.toContain('--directed');
-    expect(b.className).toContain('--directed');
+    expect(b.className).not.toContain('--directed');
   });
 
   it('two voice rows have one playback owner and the second pauses the first', async () => {

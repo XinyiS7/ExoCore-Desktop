@@ -22,8 +22,8 @@ const audio=wav();
 const preset={id:5,name:'Fixture',description:null,agent_type:'standard',default_model:'deepseek-v4-flash',system_prompt:null,is_visible:true};
 const catalog={models:[{name:'deepseek-v4-flash',family:'deepseek',abilities:[],compatible_endpoint_ids:[7]}],endpoints:[{id:7,name:'Fixture',provider:'deepseek',execution_type:'direct_api',execution_adapter:'internal_http',payload_format:'openai',cache_transport:'inline_chunk',attachment_transports:[],configured:true,enabled:true}],roles:{main:[{model:'deepseek-v4-flash',default_endpoint:7}],support:{}},providers:[]};
 const conv={id:7,name:'P2T independent geometry',created_at:'2026-09-01T00:00:00Z',frozen_project_ids:[],project:0,project_name:null,agent_type:'standard',agent_preset_id:5,last_message_at:null,thinking_level:'auto',memory_injection_enabled:null};
-const msg=(id,text,directed=false)=>({id,role:'assistant',content:text,reasoning_content:null,platform:'deepseek',model_version:'v4-flash',token_count:null,index_in_session:id,attachment_ids:[],attachments_meta:null,created_at:'2026-09-12T10:00:00Z',voice:{available:true,directed,cached:id===72}});
-const rows=[msg(71,'未生成入口。'),msg(72,'可播放并验证 Range 拖动。',true),msg(73,'生成中。'),msg(74,'失败状态必须显示真实原因。')];
+const msg=(id,text)=>({id,role:'assistant',content:text,reasoning_content:null,platform:'deepseek',model_version:'v4-flash',token_count:null,index_in_session:id,attachment_ids:[],attachments_meta:null,created_at:'2026-09-12T10:00:00Z',voice:{available:true,cached:id===72}});
+const rows=[msg(71,'未生成入口。'),msg(72,'可播放并验证 Range 拖动。'),msg(73,'生成中。'),msg(74,'失败状态必须显示真实原因。')];
 const requests=[];const responses=[];
 const server=createServer((req,res)=>{try{
   const path=new URL(req.url,`http://127.0.0.1:${PORT}`).pathname;
@@ -35,7 +35,7 @@ const server=createServer((req,res)=>{try{
     else if(path==='/api/agents/chat/7/') body={messages:rows,total_count:rows.length,has_more:false};
     else if(path==='/api/agents/conversations/7/messages/72/tts/'&&req.method==='POST') body={status:'playable',content_url:'/api/agents/conversations/7/messages/72/tts/content/',duration_ms:4000};
     else if(path==='/api/agents/conversations/7/messages/73/tts/'&&req.method==='POST'){status=202;body={status:'generating',retry_after_ms:60000};}
-    else if(path==='/api/agents/conversations/7/messages/74/tts/'&&req.method==='POST'){status=503;body={status:'failed_retryable',code:'runtime_offline',message:'Voice runtime is offline.'};}
+    else if(path==='/api/agents/conversations/7/messages/74/tts/'&&req.method==='POST'){status=503;body={status:'unavailable',code:'runtime_unavailable',message:'TTS service is temporarily unavailable.'};}
     else if(path==='/api/agents/conversations/7/messages/72/tts/content/'){
       const range=req.headers.range;let start=0,end=audio.length-1,responseStatus=200;
       const match=typeof range==='string'?/^bytes=([0-9]*)-([0-9]*)$/.exec(range):null;
