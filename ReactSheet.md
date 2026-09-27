@@ -289,6 +289,7 @@ Runtime regenerate 当前仅支持 text-only 目标；目标 Message 自带附�
 **多模态传输策略与 Explicit Cache Promotion**：
 - **普通发送（Ordinary Send）**：所有受支持模态附件（文本/代码、PDF 二进制文档、图片、音频等）严格走请求级内联传输（`inline_text`、`inline_document`、`inline_image`、`inline_audio`），任何文件大小均不触发 Provider Files API。
 - **显式 🧊 Cache Send（`force_cache_rebuild`）**：仅在用户显式触发 Cache Send 时，附件提升为 Provider File 引用（如 Gemini `file_uri`），并连同历史上下文冻结进 Remote Context Cache。Cache 命中轮次中，已被 Cache 覆盖的附件 Part 在发送时自动从当前轮 Part 5 剔除；已冻结在活跃 Cache 中的附件禁止单体物理删除。
+- **Managed Runtime 当前轮附件（握手声明）**：订阅 Runtime 的当前轮附件能力由 Runtime 握手声明——`GET /v2/health` 的 `capabilities` 必须包含 `turn_attachments`（exact-list 校验即握手，mixed-version 不受支持）；`Endpoint.attachment_transports` 保持 `()`，不得据 transport 表或静态配置假定 managed endpoint 支持附件。本地 pre-seam 还要求所选 model 具备 `vision`，否则该轮以 `runtime_attachment_capability_unavailable` 终止、不创建 provider 输入。
 
 成功/失败响应均不暴露 `storage_path`（HTTP formatter 仅输出前端契约字段，不输出 PC 路径）。
 
