@@ -11,7 +11,7 @@
  * - HTTP status is the primary discriminator because B5 error bodies use
  *   `error` for 404/422 and `code` for `failed_retryable`. `machineCodeOf`
  *   is deliberately NOT reused (it ignores the string `error` key).
- * - A `generating` body must carry a positive finite `retry_after_ms`; when
+ * - A `warming`/`generating` body must carry a positive finite `retry_after_ms`; when
  *   the required timing is malformed the 2xx fails closed as `contract`
  *   (D3) — the client never invents an observation schedule.
  */
@@ -23,14 +23,17 @@ import type { TtsErrorCode, TtsOutcome } from './types';
 const ttsPath = (conversationId: number, messageId: number) =>
   `/api/agents/conversations/${conversationId}/messages/${messageId}/tts/`;
 
-/** The bounded taxonomy this adapter is allowed to surface. */
+/** The bounded taxonomy this adapter is allowed to surface (CP-B backend set). */
 const TTS_ERROR_CODES: ReadonlySet<string> = new Set([
   'not_found',
   'ineligible_message',
   'no_active_profile',
-  'runtime_offline',
+  'runtime_unavailable',
+  'engine_unavailable',
+  'unauthorized',
   'generation_timeout',
   'generation_failed',
+  'synthesis_failed',
   'audio_artifact_missing',
   'contract',
   'network',
@@ -93,7 +96,7 @@ function outcomeFromHttpError(status: number, body: unknown): TtsOutcome {
   const explicit = codeFromBody(body);
   if (status === 404) return { phase: 'unavailable', code: explicit ?? 'not_found' };
   if (status === 422) return { phase: 'unavailable', code: explicit ?? 'contract' };
-  if (status === 503) return retryable(explicit ?? 'runtime_offline', messageOf(body));
+  if (status === 503) return retryable(explicit ?? 'runtime_unavailable', messageOf(body));
   if (status === 504) return retryable(explicit ?? 'generation_timeout', messageOf(body));
   if (status >= 500) return retryable(explicit ?? 'generation_failed', messageOf(body));
   // Unexpected non-2xx (no invented permission state — Plan §3.1).
@@ -115,6 +118,12 @@ function outcomeFromSuccessBody(body: unknown): TtsOutcome {
     }
     case 'idle':
       return { phase: 'idle' };
+    case 'warming': {
+      const retryAfterMs = retryAfterOf(body.retry_after_ms);
+      return retryAfterMs === null
+        ? contractFailure()
+        : { phase: 'warming', retryAfterMs };
+    }
     case 'generating': {
       const retryAfterMs = retryAfterOf(body.retry_after_ms);
       return retryAfterMs === null

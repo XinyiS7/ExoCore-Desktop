@@ -1,9 +1,11 @@
 /**
- * P2T message voice control (Plan §7 CP 2T-2, D4–D9).
+ * P2T message voice control (Plan §7 CP 2T-2, D4–D9; CP-B repair F-B1).
  *
- * Compact actions-cluster leaf that renders the five frozen states:
+ * Compact actions-cluster leaf that renders the six states:
  * - `unavailable` renders nothing (the read model said there is no target);
  * - `idle` exposes the entry; the row never auto-requests (D11);
+ * - `warming` announces the engine cold start (`aria-busy`, “启动中”,
+ *   aria-label “声音正在启动”) — distinct from `generating`, never collapsed;
  * - `generating` is announced (`aria-busy`) with no percentage, no cancel
  *   and no fabricated timeline (D8, INV-3);
  * - `playable` expands the same button into play/pause + a slim slider whose
@@ -12,8 +14,7 @@
  *
  * Playback ownership is shared with the attachment player through
  * `globalAudioPlaybackManager` (D4/INV-6); the content URL must pass the
- * same-origin validator before it ever reaches `<audio>` (D10). `directed`
- * only tints the existing button — no extra text, node, title or ARIA (D9).
+ * same-origin validator before it ever reaches `<audio>` (D10).
  */
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { Loader2, Pause, Play, RefreshCw, Volume2 } from 'lucide-react';
@@ -33,9 +34,12 @@ const FAILURE_COPY: Record<TtsErrorCode, string> = {
   not_found: '语音目标不存在',
   ineligible_message: '该消息不支持朗读',
   no_active_profile: '未配置声线',
-  runtime_offline: '语音服务未就绪',
+  runtime_unavailable: '语音服务未就绪',
+  engine_unavailable: '语音引擎未就绪',
+  unauthorized: '语音服务未授权',
   generation_timeout: '语音生成超时',
   generation_failed: '语音生成失败',
+  synthesis_failed: '语音生成失败',
   audio_artifact_missing: '音频加载失败',
   contract: '语音服务响应异常',
   network: '网络连接失败',
@@ -259,9 +263,6 @@ export function MessageVoiceControl({
 
   if (phase === 'unavailable') return null;
 
-  // `directed` is a visual-only modifier on the existing button (D9).
-  const buttonClass = voice.directed ? 'app-voice-btn app-voice-btn--directed' : 'app-voice-btn';
-
   if (phase === 'playable') {
     const progressPercent =
       totalSeconds > 0 ? Math.min(100, (currentTime / totalSeconds) * 100) : 0;
@@ -270,7 +271,7 @@ export function MessageVoiceControl({
         <audio ref={audioRef} src={contentUrl ?? undefined} preload="metadata" aria-hidden="true" />
         <button
           type="button"
-          className={buttonClass}
+          className="app-voice-btn"
           onClick={togglePlay}
           aria-label={isPlaying ? '暂停朗读' : '播放朗读'}
         >
@@ -304,12 +305,29 @@ export function MessageVoiceControl({
     );
   }
 
+  if (phase === 'warming') {
+    return (
+      <div className="app-voice-control">
+        <button
+          type="button"
+          className="app-voice-btn"
+          disabled
+          aria-busy="true"
+          aria-label="声音正在启动"
+        >
+          <Loader2 size={12} className="app-voice-spin" aria-hidden="true" />
+          启动中
+        </button>
+      </div>
+    );
+  }
+
   if (phase === 'generating') {
     return (
       <div className="app-voice-control">
         <button
           type="button"
-          className={buttonClass}
+          className="app-voice-btn"
           disabled
           aria-busy="true"
           aria-label="语音生成中"
@@ -325,14 +343,11 @@ export function MessageVoiceControl({
     const copy = outcome?.phase === 'failed_retryable' ? FAILURE_COPY[outcome.code] : FAILURE_COPY.contract;
     // The bounded whitelist reason is real UI text (D3/D6): the state modifier
     // exists so narrow layouts can keep it readable instead of hiding it.
-    const failureClass = voice.directed
-      ? 'app-voice-btn app-voice-btn--failure app-voice-btn--directed'
-      : 'app-voice-btn app-voice-btn--failure';
     return (
       <div className="app-voice-control">
         <button
           type="button"
-          className={failureClass}
+          className="app-voice-btn app-voice-btn--failure"
           onClick={request}
           aria-label="重试生成语音"
           title={copy}
@@ -346,7 +361,7 @@ export function MessageVoiceControl({
 
   return (
     <div className="app-voice-control">
-      <button type="button" className={buttonClass} onClick={request} aria-label="朗读此条消息">
+      <button type="button" className="app-voice-btn" onClick={request} aria-label="朗读此条消息">
         <Volume2 size={12} aria-hidden="true" />
         朗读
       </button>

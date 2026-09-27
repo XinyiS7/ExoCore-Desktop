@@ -216,21 +216,18 @@ export function normalizeAssistantRunTrace(value: unknown): AssistantRunTracePro
 }
 
 /**
- * Fail-closed message voice projection (B5 read model). Only three strict
- * booleans survive; unknown extra keys are ignored and malformed additive
- * data returns `null` without ever touching canonical content.
+ * Fail-closed message voice projection (CP-B B5 read model). Only the two
+ * strict booleans the backend emits survive; unknown extra keys are ignored
+ * and malformed additive data returns `null` without ever touching canonical
+ * content. The former `directed` flag was removed with the CP-B read model.
  */
 export function normalizeVoiceProjection(value: unknown): VoiceProjection | null {
   if (!isRecord(value)) return null;
-  const { available, directed, cached } = value;
-  if (
-    typeof available !== 'boolean' ||
-    typeof directed !== 'boolean' ||
-    typeof cached !== 'boolean'
-  ) {
+  const { available, cached } = value;
+  if (typeof available !== 'boolean' || typeof cached !== 'boolean') {
     return null;
   }
-  return { available, directed, cached };
+  return { available, cached };
 }
 
 /** Canonical UUID string (case-insensitive; backend emits lowercase). */

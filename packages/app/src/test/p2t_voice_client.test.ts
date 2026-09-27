@@ -109,6 +109,20 @@ describe('P2T voice client — D3 outcome matrix', () => {
       expected: { phase: 'playable', playable: { contentUrl: CONTENT_URL, durationMs: 0 } },
     },
     {
+      name: 'POST 202 warming stays a distinct warming phase',
+      method: 'POST',
+      status: 202,
+      body: { status: 'warming', retry_after_ms: 1500 },
+      expected: { phase: 'warming', retryAfterMs: 1500 },
+    },
+    {
+      name: 'GET 202 warming stays a distinct warming phase',
+      method: 'GET',
+      status: 202,
+      body: { status: 'warming', retry_after_ms: 900 },
+      expected: { phase: 'warming', retryAfterMs: 900 },
+    },
+    {
       name: 'POST 202 generating honors retry_after_ms',
       method: 'POST',
       status: 202,
@@ -165,18 +179,25 @@ describe('P2T voice client — D3 outcome matrix', () => {
       expected: { phase: 'unavailable', code: 'no_active_profile' },
     },
     {
-      name: '503 runtime_offline is retryable with backend copy',
+      name: 'POST 503 unavailable/runtime_unavailable is retryable with backend copy',
       method: 'POST',
       status: 503,
-      body: { status: 'failed_retryable', code: 'runtime_offline', message: 'Voice runtime is offline.' },
-      expected: { phase: 'failed_retryable', code: 'runtime_offline', message: 'Voice runtime is offline.' },
+      body: { status: 'unavailable', code: 'runtime_unavailable', message: 'TTS service is temporarily unavailable.' },
+      expected: { phase: 'failed_retryable', code: 'runtime_unavailable', message: 'TTS service is temporarily unavailable.' },
     },
     {
-      name: 'GET 503 runtime_offline is retryable',
+      name: 'GET 503 unavailable/engine_unavailable is retryable',
       method: 'GET',
       status: 503,
-      body: { status: 'failed_retryable', code: 'runtime_offline', message: 'Voice runtime is offline.' },
-      expected: { phase: 'failed_retryable', code: 'runtime_offline', message: 'Voice runtime is offline.' },
+      body: { status: 'unavailable', code: 'engine_unavailable', message: 'TTS engine is temporarily unavailable.' },
+      expected: { phase: 'failed_retryable', code: 'engine_unavailable', message: 'TTS engine is temporarily unavailable.' },
+    },
+    {
+      name: 'POST 503 unavailable/unauthorized stays distinguishable',
+      method: 'POST',
+      status: 503,
+      body: { status: 'unavailable', code: 'unauthorized', message: 'TTS service authentication failed.' },
+      expected: { phase: 'failed_retryable', code: 'unauthorized', message: 'TTS service authentication failed.' },
     },
     {
       name: '504 generation_timeout is retryable',
@@ -191,6 +212,13 @@ describe('P2T voice client — D3 outcome matrix', () => {
       status: 500,
       body: { status: 'failed_retryable', code: 'generation_failed', message: 'Voice generation failed.' },
       expected: { phase: 'failed_retryable', code: 'generation_failed', message: 'Voice generation failed.' },
+    },
+    {
+      name: '500 synthesis_failed stays a bounded known code',
+      method: 'POST',
+      status: 500,
+      body: { status: 'failed_retryable', code: 'synthesis_failed', message: 'Voice generation failed. Please retry.' },
+      expected: { phase: 'failed_retryable', code: 'synthesis_failed', message: 'Voice generation failed. Please retry.' },
     },
     {
       name: 'unknown backend code degrades to the status-implied code',
@@ -231,8 +259,8 @@ describe('P2T voice client — D3 outcome matrix', () => {
       name: 'a 2xx failed_retryable body is never painted as success',
       method: 'GET',
       status: 200,
-      body: { status: 'failed_retryable', code: 'runtime_offline', message: 'Voice runtime is offline.' },
-      expected: { phase: 'failed_retryable', code: 'runtime_offline', message: 'Voice runtime is offline.' },
+      body: { status: 'failed_retryable', code: 'runtime_unavailable', message: 'TTS service is temporarily unavailable.' },
+      expected: { phase: 'failed_retryable', code: 'runtime_unavailable', message: 'TTS service is temporarily unavailable.' },
     },
   ];
 
@@ -284,16 +312,22 @@ describe('P2T voice client — F1 malformed required generating timing', () => {
   // Generalized beyond the original five reports: every malformed shape is
   // swept across BOTH actions because start/read share one decoder.
   const malformed = [
-    { label: 'missing', wire: '{"status":"generating"}' },
-    { label: 'null', wire: '{"status":"generating","retry_after_ms":null}' },
-    { label: 'wrong type (string)', wire: '{"status":"generating","retry_after_ms":"1500"}' },
-    { label: 'wrong type (boolean)', wire: '{"status":"generating","retry_after_ms":true}' },
-    { label: 'zero', wire: '{"status":"generating","retry_after_ms":0}' },
-    { label: 'negative', wire: '{"status":"generating","retry_after_ms":-250}' },
-    { label: 'nonfinite', wire: '{"status":"generating","retry_after_ms":1e999}' },
+    { label: 'missing', wire: (status: string) => `{"status":"${status}"}` },
+    { label: 'null', wire: (status: string) => `{"status":"${status}","retry_after_ms":null}` },
+    { label: 'wrong type (string)', wire: (status: string) => `{"status":"${status}","retry_after_ms":"1500"}` },
+    { label: 'wrong type (boolean)', wire: (status: string) => `{"status":"${status}","retry_after_ms":true}` },
+    { label: 'zero', wire: (status: string) => `{"status":"${status}","retry_after_ms":0}` },
+    { label: 'negative', wire: (status: string) => `{"status":"${status}","retry_after_ms":-250}` },
+    { label: 'nonfinite', wire: (status: string) => `{"status":"${status}","retry_after_ms":1e999}` },
   ];
   const cases = (['POST', 'GET'] as const).flatMap((method) =>
-    malformed.map((entry) => ({ name: `${method} ${entry.label}`, method, wire: entry.wire })),
+    (['generating', 'warming'] as const).flatMap((status) =>
+      malformed.map((entry) => ({
+        name: `${method} ${status} ${entry.label}`,
+        method,
+        wire: entry.wire(status),
+      })),
+    ),
   );
 
   it.each(cases)('$name → failed_retryable/contract with no invented schedule', async ({ method, wire }) => {
@@ -310,18 +344,20 @@ describe('P2T voice client — F1 malformed required generating timing', () => {
     expect(calls).toHaveLength(1);
   });
 
-  it.each(['POST', 'GET'] as const)(
-    'keeps an arbitrary positive finite interval (%s)',
-    async (method) => {
-      installFetch([
-        {
-          test: PATH,
-          method,
-          handler: () => jsonResponse({ status: 'generating', retry_after_ms: 2700 }, 202),
-        },
-      ]);
-      const call = method === 'POST' ? startMessageVoiceRender(5, 42) : readMessageVoiceRender(5, 42);
-      await expect(call).resolves.toEqual({ phase: 'generating', retryAfterMs: 2700 });
-    },
-  );
+  it.each([
+    ['POST', 'generating'],
+    ['GET', 'generating'],
+    ['POST', 'warming'],
+    ['GET', 'warming'],
+  ] as const)('keeps an arbitrary positive finite interval (%s %s)', async (method, status) => {
+    installFetch([
+      {
+        test: PATH,
+        method,
+        handler: () => jsonResponse({ status, retry_after_ms: 2700 }, 202),
+      },
+    ]);
+    const call = method === 'POST' ? startMessageVoiceRender(5, 42) : readMessageVoiceRender(5, 42);
+    await expect(call).resolves.toEqual({ phase: status, retryAfterMs: 2700 });
+  });
 });

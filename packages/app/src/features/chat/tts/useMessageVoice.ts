@@ -2,13 +2,14 @@
  * P2T message-voice lifecycle state machine (Plan §7 CP 2T-2, D1/D2/D3).
  *
  * One hook instance owns exactly one Message row's voice lifecycle:
- * - the five-state lifecycle lives in local React state, never in the
- *   `queryKeys.messages` family and never in a new Query key (D1);
+ * - the six-state lifecycle (CP-B adds `warming`) lives in local React state,
+ *   never in the `queryKeys.messages` family and never in a new Query key (D1);
  * - a click is the only trigger: POST, then observe GET per the backend's
  *   `retry_after_ms` until a terminal truth (D2/D3) — GET never starts work
  *   and the client never invents a state;
- * - the observation window is bounded (90s from the click); when it expires
- *   the flow stops observing and stays truthfully retryable;
+ * - the observation window is bounded (aligned with the backend job budget,
+ *   960 s by default); when it expires the flow stops observing and stays
+ *   truthfully retryable;
  * - every async continuation carries its flow id: message-identity changes
  *   and unmount abort the controller and drop late responses, so a stale
  *   conversation can never write into the current one (D1/T5);
@@ -28,8 +29,13 @@ export interface MessageVoiceAdapters {
   read: (conversationId: number, messageId: number, signal?: AbortSignal) => Promise<TtsOutcome>;
 }
 
-/** Client observation bound measured from the click (D3). */
-export const MESSAGE_VOICE_OBSERVATION_LIMIT_MS = 90_000;
+/**
+ * Client observation bound measured from the click (D3). Aligned with the
+ * backend budget: `TTS_JOB_TIMEOUT_SECONDS` defaults to 900 s and the backend
+ * owns the first `generation_timeout` truth at that budget, so the client adds
+ * only a 60 s margin instead of pre-empting backend truth with a false timeout.
+ */
+export const MESSAGE_VOICE_OBSERVATION_LIMIT_MS = 960_000;
 
 export interface UseMessageVoiceOptions {
   conversationId: number;
@@ -242,7 +248,7 @@ export function useMessageVoice(options: UseMessageVoiceOptions): MessageVoiceAp
         for (;;) {
           if (flowIdRef.current !== flowId) return;
           settle(outcome);
-          if (outcome.phase !== 'generating') return;
+          if (outcome.phase !== 'generating' && outcome.phase !== 'warming') return;
           if (now() >= deadline) {
             settle(timeoutOutcome());
             return;

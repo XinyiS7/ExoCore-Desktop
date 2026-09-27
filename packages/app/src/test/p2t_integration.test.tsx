@@ -16,9 +16,13 @@ import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-libra
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { render } from '@testing-library/react';
-import { installFetch, jsonResponse, unmockFetch, type MockRoute } from './helpers';
+import { ensureTestLocalStorage, installFetch, jsonResponse, unmockFetch, type MockRoute } from './helpers';
 import { ConversationPage } from '../features/chat/ConversationPage';
 import { globalAudioPlaybackManager } from '../features/chat/audio/audioPlaybackManager';
+
+// Node's experimental WebStorage global shadows jsdom's localStorage under
+// vitest 4; install the in-memory guard before any storage read (see helpers).
+ensureTestLocalStorage();
 
 // ── jsdom media stubs (copied from the P1C suite on purpose) ────────────────
 
@@ -83,8 +87,8 @@ const conversation = (id: number) => ({
   last_message_at: null, thinking_level: 'auto', memory_injection_enabled: null,
 });
 
-const voice = (over: { available?: boolean; directed?: boolean; cached?: boolean } = {}) => ({
-  available: true, directed: false, cached: false, ...over,
+const voice = (over: { available?: boolean; cached?: boolean } = {}) => ({
+  available: true, cached: false, ...over,
 });
 
 const mkMsg = (id: number, role: 'user' | 'assistant', content: string, voicePayload?: unknown) => ({

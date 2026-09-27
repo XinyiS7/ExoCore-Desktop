@@ -36,12 +36,6 @@
   cursor: not-allowed;
 }
 
-/* `directed` authoring choice — visual only, same button, no extra copy. */
-.app-voice-btn--directed {
-  color: var(--v4-accent);
-  text-shadow: 0 0 8px rgba(79, 140, 255, 0.45);
-}
-
 .app-voice-spin {
   animation: app-voice-spin 0.8s linear infinite;
 }

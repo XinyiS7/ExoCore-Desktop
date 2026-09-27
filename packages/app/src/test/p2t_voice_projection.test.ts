@@ -33,24 +33,24 @@ function respondWith(row: Record<string, unknown>) {
 }
 
 describe('P2T voice projection — normalizeVoiceProjection fail-closed rules', () => {
-  it('keeps a valid boolean projection and ignores unknown extra keys', () => {
+  it('keeps the two-boolean projection and ignores unknown extra keys', () => {
     const view = normalizeVoiceProjection({
       available: true,
-      directed: false,
       cached: true,
-      // Private authoring details must never survive into the UI model.
+      // The dead `directed` field and private authoring details must never
+      // survive into the UI model.
+      directed: false,
       emotion: 'whisper',
       target: 'last',
       segments: 3,
     });
-    expect(view).toEqual({ available: true, directed: false, cached: true });
-    expect(Object.keys(view as object).sort()).toEqual(['available', 'cached', 'directed']);
+    expect(view).toEqual({ available: true, cached: true });
+    expect(Object.keys(view as object).sort()).toEqual(['available', 'cached']);
   });
 
   it('keeps a truthful unavailable projection (available=false is valid data)', () => {
-    expect(normalizeVoiceProjection({ available: false, directed: false, cached: false })).toEqual({
+    expect(normalizeVoiceProjection({ available: false, cached: false })).toEqual({
       available: false,
-      directed: false,
       cached: false,
     });
   });
@@ -59,13 +59,12 @@ describe('P2T voice projection — normalizeVoiceProjection fail-closed rules', 
     { label: 'null', value: null },
     { label: 'string', value: 'available' },
     { label: 'number', value: 1 },
-    { label: 'array', value: [{ available: true, directed: false, cached: false }] },
-    { label: 'missing directed', value: { available: true, cached: false } },
-    { label: 'missing cached', value: { available: true, directed: false } },
-    { label: 'missing available', value: { directed: false, cached: false } },
-    { label: 'string boolean', value: { available: 'true', directed: false, cached: false } },
-    { label: 'numeric boolean', value: { available: 1, directed: 0, cached: 0 } },
-    { label: 'nested boolean', value: { available: { ok: true }, directed: false, cached: false } },
+    { label: 'array', value: [{ available: true, cached: false }] },
+    { label: 'missing cached', value: { available: true } },
+    { label: 'missing available', value: { cached: false } },
+    { label: 'string boolean', value: { available: 'true', cached: false } },
+    { label: 'numeric boolean', value: { available: 1, cached: 0 } },
+    { label: 'nested boolean', value: { available: { ok: true }, cached: false } },
   ])('rejects malformed voice payload ($label) to null', ({ value }) => {
     expect(normalizeVoiceProjection(value)).toBeNull();
   });
@@ -73,10 +72,10 @@ describe('P2T voice projection — normalizeVoiceProjection fail-closed rules', 
 
 describe('P2T voice projection — read adapter boundary', () => {
   it('projects a valid assistant voice row through fetchMessagePage', async () => {
-    respondWith(messageRow({ voice: { available: true, directed: true, cached: false } }));
+    respondWith(messageRow({ voice: { available: true, cached: false } }));
     const page = await fetchMessagePage(5, 0);
     expect(page.messages).toHaveLength(1);
-    expect(page.messages[0].voice).toEqual({ available: true, directed: true, cached: false });
+    expect(page.messages[0].voice).toEqual({ available: true, cached: false });
   });
 
   it('keeps voice null for an assistant row without the field (legacy payload)', async () => {
@@ -87,7 +86,7 @@ describe('P2T voice projection — read adapter boundary', () => {
 
   it('drops malformed assistant voice without altering canonical content', async () => {
     respondWith(
-      messageRow({ content: '纯净正文', voice: { available: 'yes', directed: null, cached: 3 } }),
+      messageRow({ content: '纯净正文', voice: { available: 'yes', cached: 3 } }),
     );
     const page = await fetchMessagePage(5, 0);
     expect(page.messages[0].voice).toBeNull();
@@ -102,8 +101,8 @@ describe('P2T voice projection — read adapter boundary', () => {
         handler: () =>
           jsonResponse({
             messages: [
-              messageRow({ id: 1, role: 'user', content: '你好', voice: { available: true, directed: true, cached: true } }),
-              messageRow({ id: 2, role: 'system', content: 'sys', voice: { available: false, directed: false, cached: false } }),
+              messageRow({ id: 1, role: 'user', content: '你好', voice: { available: true, cached: true } }),
+              messageRow({ id: 2, role: 'system', content: 'sys', voice: { available: false, cached: false } }),
               messageRow({ id: 3, voice: null }),
             ],
             total_count: 3,
@@ -123,9 +122,9 @@ describe('P2T voice projection — read adapter boundary', () => {
         handler: () =>
           jsonResponse({
             messages: [
-              messageRow({ id: 1, content: '第一条', voice: { available: true, directed: false, cached: true } }),
+              messageRow({ id: 1, content: '第一条', voice: { available: true, cached: true } }),
               messageRow({ id: 2, content: '第二条', voice: 'garbage' }),
-              messageRow({ id: 3, content: '第三条', voice: { available: false, directed: false, cached: false } }),
+              messageRow({ id: 3, content: '第三条', voice: { available: false, cached: false } }),
             ],
             total_count: 3,
             has_more: false,
@@ -133,9 +132,9 @@ describe('P2T voice projection — read adapter boundary', () => {
       },
     ]);
     const page = await fetchMessagePage(5, 0);
-    expect(page.messages[0].voice).toEqual({ available: true, directed: false, cached: true });
+    expect(page.messages[0].voice).toEqual({ available: true, cached: true });
     expect(page.messages[1].voice).toBeNull();
     expect(page.messages[1].content).toBe('第二条');
-    expect(page.messages[2].voice).toEqual({ available: false, directed: false, cached: false });
+    expect(page.messages[2].voice).toEqual({ available: false, cached: false });
   });
 });

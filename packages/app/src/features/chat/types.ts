@@ -148,12 +148,12 @@ export interface ConversationSummary {
 }
 
 /**
- * B5 message-level voice read model: availability, blind-box direction and a
- * consultative cache snapshot (validity itself stays backend-owned, D10).
+ * B5 message-level voice read model: availability and a consultative cache
+ * snapshot (validity itself stays backend-owned, D10). `directed` was removed
+ * with the CP-B backend read model.
  */
 export interface VoiceProjection {
   available: boolean;
-  directed: boolean;
   cached: boolean;
 }
 

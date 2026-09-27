@@ -7,21 +7,33 @@
  * consumed by the (later) voice control state machine.
  */
 
-/** Frontend five-state lifecycle (Plan D3). */
-export type TtsPhase = 'unavailable' | 'idle' | 'generating' | 'playable' | 'failed_retryable';
+/** Frontend six-state lifecycle (Plan D3; CP-B adds `warming`). */
+export type TtsPhase =
+  | 'unavailable'
+  | 'idle'
+  | 'warming'
+  | 'generating'
+  | 'playable'
+  | 'failed_retryable';
 
 /**
  * Bounded B5 error taxonomy. Mapping is HTTP-status first with `code` / string
  * `error` as bounded secondary discriminators; an unknown backend code
  * degrades to the status-implied code instead of leaking an open-ended set.
+ * CP-B renamed `runtime_offline` to the backend's `runtime_unavailable` and
+ * adds the distinguishable `engine_unavailable` / `unauthorized` /
+ * `synthesis_failed` codes the backend now emits.
  */
 export type TtsErrorCode =
   | 'not_found'
   | 'ineligible_message'
   | 'no_active_profile'
-  | 'runtime_offline'
+  | 'runtime_unavailable'
+  | 'engine_unavailable'
+  | 'unauthorized'
   | 'generation_timeout'
   | 'generation_failed'
+  | 'synthesis_failed'
   | 'audio_artifact_missing'
   | 'contract'
   | 'network';
@@ -39,6 +51,7 @@ export interface TtsPlayable {
 export type TtsOutcome =
   | { phase: 'unavailable'; code: TtsErrorCode }
   | { phase: 'idle' }
+  | { phase: 'warming'; retryAfterMs: number }
   | { phase: 'generating'; retryAfterMs: number }
   | { phase: 'playable'; playable: TtsPlayable }
   | { phase: 'failed_retryable'; code: TtsErrorCode; message: string | null };

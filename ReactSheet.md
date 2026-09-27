@@ -1309,14 +1309,13 @@ shared server 冻结，不代表 Moonlight 已接入。
     "content": "台词正文...",
     "voice": {
       "available": true,
-      "directed": false,
       "cached": false
     }
   }
   ```
   - `available`: 该会话所属 AgentPreset 是否绑定了活跃声线（`active_voice_profile`）且本消息包含非空可朗读台词（剥离单星号动作 `*...*` 后）；
-  - `directed`: **听觉盲盒标志**。仅在消息的私有 `tool_calls` 中包含合法的 `voice_emotion` 工具调用时为 `true`。响应绝对不包含任何 emotion 文本、目标句或分段数细节；
   - `cached`: 后端是否已成功生成并持久化音频文件（true 时客户端点击秒播）。
+  - CP-B 收口：旧 `directed` 字段已随后端读模型删除；客户端必须把该键视为惰性未知字段（既不要求存在、也不影响任何渲染），不得恢复旧字段或据其推导盲盒语义。
 
 ### 12.2 点播触发与状态轮询
 
@@ -1335,16 +1334,27 @@ shared server 冻结，不代表 Moonlight 已接入。
 - **Cache Miss / In-Flight**（HTTP 202 Accepted）：后台线程池已排队或正在生成：
   ```json
   {
-    "status": "generating",
+    "status": "warming" | "generating",
     "retry_after_ms": 1500
   }
   ```
-- **异常 / 失败**（HTTP 503 / 504 / 500）：
+  - `warming`：TTS 引擎冷启动/加载中（真机冷加载约 54 秒）；客户端展示“启动中”（`aria-busy`，aria-label“声音正在启动”）并继续按 `retry_after_ms` 观测；
+  - `generating`：引擎已就绪、正在渲染；客户端展示“生成中”；
+  - 两个状态都必须携带正有限 `retry_after_ms`；缺失或畸形按契约失败处理，客户端不得发明轮询间隔。
+- **不可用**（HTTP 503，`status: "unavailable"`）：
+  ```json
+  {
+    "status": "unavailable",
+    "code": "runtime_unavailable" | "engine_unavailable" | "unauthorized",
+    "message": "TTS service is temporarily unavailable."
+  }
+  ```
+- **失败可重试**（HTTP 504 / 500，`status: "failed_retryable"`）：
   ```json
   {
     "status": "failed_retryable",
-    "code": "runtime_offline",
-    "message": "Voice runtime is offline."
+    "code": "generation_timeout" | "generation_failed" | "synthesis_failed",
+    "message": "Voice generation failed. Please retry."
   }
   ```
 
@@ -1354,10 +1364,11 @@ shared server 冻结，不代表 Moonlight 已接入。
 
 - 未触发点播时：`200 {"status": "idle"}`
 - 物理文件缺失/过期/损坏时：`GET /tts/` 状态查询自动检测并稳定幂等返回 `200 {"status": "idle"}`，支持客户端重新发起 `POST` 生成；
-- 渲染中：`202 {"status": "generating", "retry_after_ms": 1500}`
+- 渲染中：`202 {"status": "warming" | "generating", "retry_after_ms": 1500}`
 - 已就绪：`200 {"status": "playable", "content_url": "...", "duration_ms": 3200}`
-- 假死超时（超过 60 秒未完成）：`504 {"status": "failed_retryable", "code": "generation_timeout", "message": "Voice generation timed out. Please retry."}`
-- 失败状态：`503/500 {"status": "failed_retryable", "code": "...", "message": "..."}`（消息使用白名单公网安全文案，绝不泄露内部私有指令或异常堆栈）
+- 假死超时（超过后端 job 预算未完成；`TTS_JOB_TIMEOUT_SECONDS` 默认 900 秒）：`504 {"status": "failed_retryable", "code": "generation_timeout", "message": "Voice generation timed out. Please retry."}`
+- 不可用：`503 {"status": "unavailable", "code": "runtime_unavailable" | "engine_unavailable" | "unauthorized", "message": "..."}`（白名单公网安全文案）
+- 失败状态：`500 {"status": "failed_retryable", "code": "generation_failed" | "synthesis_failed", "message": "..."}`（消息使用白名单公网安全文案，绝不泄露内部私有指令或异常堆栈）
 
 ### 12.3 音频流式分发
 
@@ -1375,14 +1386,17 @@ shared server 冻结，不代表 Moonlight 已接入。
 
 ### 12.4 前端 5 态生命周期映射与错误矩阵
 
-前端状态机统一收敛为 5 态：
+前端状态机统一收敛为 6 态（CP-B 增加 `warming`）：
 ```text
 unavailable       -> 控件不展示或禁用（role!=assistant / 无声线或非激活 / 空台词 / 权限不足）
 idle              -> 控件就绪待播放（available=true, cached=false）
+warming           -> 引擎冷启动中（展示“启动中” + `aria-busy`，aria-label“声音正在启动”，无取消/百分比）
 generating        -> 渲染生成中（展示局部 loading / pulse 动画）
 playable          -> 渲染完成可播放（挂载 content_url，支持播放进度条）
 failed_retryable  -> 生成失败可重试（保留播放控件，展示重试按钮）
 ```
+
+观测窗口：客户端点击后最长观测 960 秒（后端 job 预算 900 秒 + 60 秒余量；`MESSAGE_VOICE_OBSERVATION_LIMIT_MS`），到期按“生成超时/可重试”收口，不发明状态；观测间隔由后端 `retry_after_ms` 驱动（当前为 1.5 秒），客户端不得自造轮询节奏。
 
 **错误分类与客户端行为矩阵 (Error / Action Matrix)**：
 
@@ -1391,9 +1405,11 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 | `ineligible_message` | 422 | `unavailable` | 隐藏或禁用播放控件；不可重试 |
 | `no_active_profile` | 422 | `unavailable` | 声线未绑定或非激活状态；隐藏或禁用播放控件；不可重试 |
 | `not_found` / `audio_artifact_missing` | 404 | `unavailable` | 会话/消息不存在或音频文件丢失/过期；content 端点返回 404；status 轮询自动降级为 idle |
-| `runtime_offline` | 503 | `failed_retryable` | 保留控件，显示重试入口；提示“语音服务未就绪” |
+| `runtime_unavailable` | 503 | `failed_retryable` | 保留控件，显示重试入口；提示“语音服务未就绪” |
+| `engine_unavailable` | 503 | `failed_retryable` | 保留控件，显示重试入口；提示“语音引擎未就绪” |
+| `unauthorized` | 503 | `failed_retryable` | 保留控件，显示重试入口；提示“语音服务未授权” |
 | `generation_timeout` | 504 | `failed_retryable` | 保留控件，显示重试入口；提示“生成超时，点击重试” |
-| `generation_failed` | 500 | `failed_retryable` | 保留控件，显示重试入口；提示“生成异常，点击重试” |
+| `generation_failed` / `synthesis_failed` | 500 | `failed_retryable` | 保留控件，显示重试入口；提示“生成异常，点击重试” |
 
 ---
 

@@ -1,11 +1,12 @@
 /**
- * P2T CP 2T-2 construction tests — control, playback and `directed` visuals.
+ * P2T CP 2T-2 construction tests — control, playback and the CP-B states.
  *
- * Frozen gates: acceptance spec T5–T8 and Plan §7 CP2. The transport is
- * driven through the real adapter boundary (mocked `fetch`); the observation
- * loop additionally gets a direct harness so the 90-second bound can be
- * exercised without waiting for wall-clock minutes. `stubMedia` is copied
- * from the P1C suite on purpose — that file must not be modified.
+ * Frozen gates: acceptance spec T5–T8 and Plan §7 CP2 (CP-B repair F-B1 adds
+ * `warming` and drops `directed`). The transport is driven through the real
+ * adapter boundary (mocked `fetch`); the observation loop additionally gets a
+ * direct harness so the observation bound can be exercised without waiting
+ * for wall-clock minutes. `stubMedia` is copied from the P1C suite on purpose
+ * — that file must not be modified.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
@@ -58,7 +59,6 @@ const TTS_PATH = /^\/api\/agents\/conversations\/7\/messages\/\d+\/tts\/$/;
 
 const voiceFor = (over: Partial<VoiceProjection> = {}): VoiceProjection => ({
   available: true,
-  directed: false,
   cached: false,
   ...over,
 });
@@ -439,7 +439,7 @@ describe('T5 — observation bound and retry truth', () => {
       start: vi.fn(async (): Promise<TtsOutcome> => {
         runs += 1;
         return runs === 1
-          ? { phase: 'failed_retryable', code: 'runtime_offline', message: null }
+          ? { phase: 'failed_retryable', code: 'runtime_unavailable', message: null }
           : { phase: 'playable', playable: { contentUrl: SAME_ORIGIN_AUDIO, durationMs: null } };
       }),
       read: vi.fn(async (): Promise<TtsOutcome> => ({ phase: 'idle' })),
@@ -481,11 +481,26 @@ describe('T6 — truthful states and failure copy', () => {
     // modifier is what keeps it readable when narrow layouts hide the idle and
     // generating labels (F4 rework).
     expect(retry.className).toContain('app-voice-btn--failure');
-    expect(retry.className).not.toContain('--directed');
 
     fireEvent.click(retry);
     await screen.findByRole('button', { name: '播放朗读' });
     expect(posts).toBe(2);
+  });
+
+  it('announces engine warming as its own state, never as generating', async () => {
+    stubMedia();
+    ttsFetch(
+      () => jsonResponse({ status: 'warming', retry_after_ms: 15 }, 202),
+      () => jsonResponse({ status: 'playable', content_url: SAME_ORIGIN_AUDIO }),
+    );
+    renderControl();
+
+    fireEvent.click(screen.getByRole('button', { name: '朗读此条消息' }));
+    const warming = await screen.findByRole('button', { name: '声音正在启动' });
+    expect((warming as HTMLButtonElement).disabled).toBe(true);
+    expect(warming.textContent).toContain('启动中');
+    // Warming keeps observing until a terminal truth arrives.
+    await screen.findByRole('button', { name: '播放朗读' });
   });
 
   it('never invents a generation percentage or a cancel affordance', async () => {
@@ -574,41 +589,9 @@ describe('T6 — truthful states and failure copy', () => {
   });
 });
 
-// ── T7 — compact player and directing ───────────────────────────────────────
+// ── T7 — compact player ─────────────────────────────────────────────────────
 
-describe('T7 — compact player and `directed` visuals', () => {
-  it('adds only a visual modifier for directed rows', () => {
-    ttsFetch(() => jsonResponse({ status: 'idle' }));
-    renderTimeline([
-      msg(71, { voice: voiceFor({ directed: false }) }),
-      msg(72, { voice: voiceFor({ directed: true }) }),
-    ]);
-
-    const buttons = screen.getAllByRole('button', { name: '朗读此条消息' });
-    expect(buttons.length).toBe(2);
-    const [plain, directed] = buttons;
-    expect(plain.className).toBe('app-voice-btn');
-    expect(directed.className).toBe('app-voice-btn app-voice-btn--directed');
-    expect(directed.outerHTML.replace(' app-voice-btn--directed', '')).toBe(plain.outerHTML);
-  });
-
-  it('keeps directed visual-only in the retryable failure state too', async () => {
-    stubMedia();
-    ttsFetch(() => jsonResponse({ detail: 'runtime offline' }, 503));
-    const { unmount } = renderControl({ voice: voiceFor({ directed: false }) });
-    fireEvent.click(screen.getByRole('button', { name: '朗读此条消息' }));
-    const plain = await screen.findByRole('button', { name: '重试生成语音' });
-    const plainHtml = plain.outerHTML;
-    expect(plain.className).toBe('app-voice-btn app-voice-btn--failure');
-    unmount();
-
-    renderControl({ voice: voiceFor({ directed: true }) });
-    fireEvent.click(screen.getByRole('button', { name: '朗读此条消息' }));
-    const directed = await screen.findByRole('button', { name: '重试生成语音' });
-    expect(directed.className).toBe('app-voice-btn app-voice-btn--failure app-voice-btn--directed');
-    expect(directed.outerHTML.replace(' app-voice-btn--directed', '')).toBe(plainHtml);
-  });
-
+describe('T7 — compact player', () => {
   it('seeks the real media element by pointer and keyboard under the frozen slider name', async () => {
     stubMedia();
     ttsFetch(
