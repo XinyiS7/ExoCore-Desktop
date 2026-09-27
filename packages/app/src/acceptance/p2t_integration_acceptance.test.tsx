@@ -4,7 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ConversationPage } from '../features/chat/ConversationPage';
 import { globalAudioPlaybackManager } from '../features/chat/audio/audioPlaybackManager';
-import { installFetch, jsonResponse, type MockRoute } from '../test/helpers';
+import { ensureTestLocalStorage, installFetch, jsonResponse, type MockRoute } from '../test/helpers';
+
+ensureTestLocalStorage();
 
 const preset = { id: 5, name: 'Fixture', description: null, agent_type: 'standard', default_model: 'deepseek-v4-flash', system_prompt: null, is_visible: true };
 const catalog = { models: [{ name: 'deepseek-v4-flash', family: 'deepseek', abilities: [], compatible_endpoint_ids: [7] }], endpoints: [{ id: 7, name: 'Fixture', provider: 'deepseek', execution_type: 'direct_api', execution_adapter: 'internal_http', payload_format: 'openai', cache_transport: 'inline_chunk', attachment_transports: [], configured: true, enabled: true }], roles: { main: [{ model: 'deepseek-v4-flash', default_endpoint: 7 }], support: {} }, providers: [] };
