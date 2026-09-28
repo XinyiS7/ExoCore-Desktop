@@ -1,4 +1,5 @@
 import { apiFetch } from 'exo-shared/api';
+import { normalizeVoiceToolErrorList } from './voice/contract';
 import type {
   AgentPresetRow,
   AssistantRunTraceItem,
@@ -257,6 +258,8 @@ function normalizeMessageRow(row: MessageRow): MessageView {
     assistantRunTrace:
       row.role === 'assistant' ? normalizeAssistantRunTrace(row.assistant_run_trace) : null,
     voice: row.role === 'assistant' ? normalizeVoiceProjection(row.voice) : null,
+    voiceToolErrors:
+      row.role === 'assistant' ? normalizeVoiceToolErrorList(row.voice_tool_errors) : [],
     clientTurnId: normalizeClientTurnId(row.client_turn_id),
     platform: row.platform,
     modelVersion: row.model_version,

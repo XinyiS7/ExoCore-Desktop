@@ -1,4 +1,5 @@
-import type { AssistantRunTraceItem, AssistantRunTraceToolItem } from '../types';
+import type { AssistantRunTraceItem, AssistantRunTraceToolItem, VoiceToolError } from '../types';
+import { mergeVoiceToolErrors } from '../voice/contract';
 import type {
   AssistantTraceEvent,
   CacheSkippedPayload,
@@ -198,6 +199,18 @@ export function applyNormalizedEvent(
       }
       const row = prev ?? baseRow(clientKey);
       return { next: { ...row, cacheSkippedReason: payload.reason } };
+    }
+
+    case 'voice_tool_error': {
+      const payload = ev.parsedData as VoiceToolError | undefined;
+      if (!payload) return { next: prev, warning: 'voice_tool_error 事件字段无效（已隔离）' };
+      const row = prev ?? baseRow(clientKey);
+      return {
+        next: {
+          ...row,
+          voiceToolErrors: mergeVoiceToolErrors(row.voiceToolErrors, payload),
+        },
+      };
     }
 
     case 'unknown':

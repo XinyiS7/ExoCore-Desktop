@@ -7,6 +7,7 @@ import type {
   TelemetryPayload,
   TypedBackendErrorPayload,
 } from './types';
+import { normalizeVoiceToolError } from '../voice/contract';
 
 /**
  * Incremental SSE Frame Decoder & Event Normalizer
@@ -18,6 +19,7 @@ import type {
  * - Normalizes payloads by event kind:
  *   - 'content', 'thinking', 'status' -> strings (never [object Object]);
  *   - 'telemetry', 'stopped', 'cache_skipped' -> parsed objects/fallback strings;
+ *   - 'assistant_trace', 'voice_tool_error' -> strict bounded DTOs;
  *   - 'error' -> parsed object or safe fallback text;
  *   - 'done' -> literal string '[DONE]';
  * - Malformed canonical payloads surface as event 'malformed' with a visible
@@ -257,6 +259,13 @@ export function normalizeSSEEvent(event: string, data: string): NormalizedSSEEve
         : malformed('assistant_trace', data, '字段、边界或生命周期无效');
     }
 
+    case 'voice_tool_error': {
+      const error = normalizeVoiceToolError(parsed);
+      return error
+        ? { event: 'voice_tool_error', data: '', parsedData: error }
+        : malformed('voice_tool_error', data, '字段、边界或错误码无效');
+    }
+
     case 'done': {
       return { event: 'done', data: '[DONE]' };
     }
@@ -359,6 +368,13 @@ export function normalizePollingEvent(item: PollingEventItem): NormalizedSSEEven
       return trace
         ? { event: 'assistant_trace', data: '', parsedData: trace }
         : malformed('assistant_trace', JSON.stringify(item.delta), '字段、边界或生命周期无效');
+    }
+
+    case 'voice_tool_error': {
+      const error = normalizeVoiceToolError(item.delta);
+      return error
+        ? { event: 'voice_tool_error', data: '', parsedData: error }
+        : malformed('voice_tool_error', JSON.stringify(item.delta), '字段、边界或错误码无效');
     }
 
     case 'stopped': {

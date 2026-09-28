@@ -6,6 +6,7 @@ import { formatTimeOfDay } from './time';
 import { MessageAttachments } from './attachments/MessageAttachments';
 import { AssistantRunTrace } from './trace/AssistantRunTrace';
 import { MessageVoiceControl } from './tts/MessageVoiceControl';
+import { VoiceToolErrors } from './voice/VoiceToolErrors';
 
 function runtimeTraceProjection(row: RuntimeAssistantRow): AssistantRunTraceProjection | null {
   if (!row.assistantTrace) return null;
@@ -89,6 +90,8 @@ function MessageRowItem({
   const hasReasoning = Boolean(message.reasoningContent);
   const hasContentText = Boolean(message.content?.trim());
   const hasAttachments = attachmentsMeta.length > 0;
+  const voiceToolErrors = isAssistant ? message.voiceToolErrors ?? [] : [];
+  const hasVoiceToolErrors = voiceToolErrors.length > 0;
 
   return (
     <article className={`app-msg app-msg--${message.role}`} data-role={message.role}>
@@ -171,10 +174,11 @@ function MessageRowItem({
         ) : null}
         {hasContentText ? (
           <MessageContent content={message.content} />
-        ) : hasAttachments ? null : (
+        ) : hasAttachments || hasVoiceToolErrors ? null : (
           <span className="app-muted">（空消息）</span>
         )}
         {hasAttachments ? <MessageAttachments meta={attachmentsMeta} /> : null}
+        {hasVoiceToolErrors ? <VoiceToolErrors errors={voiceToolErrors} /> : null}
       </div>
     </article>
   );
@@ -204,6 +208,7 @@ export function MessageTimeline({
   }
 
   const realtimeTrace = runtimeAssistant ? runtimeTraceProjection(runtimeAssistant) : null;
+  const runtimeVoiceErrors = runtimeAssistant?.voiceToolErrors ?? [];
 
   // A+ closure: once the canonical row carrying this attempt's exact
   // correlation is drawn, the optimistic copy is suppressed (canonical rows
@@ -291,9 +296,12 @@ export function MessageTimeline({
             />
             {runtimeAssistant.content ? (
               <MessageContent content={runtimeAssistant.content} />
-            ) : runtimeAssistant.thinking || (realtimeTrace?.availability === 'available' && realtimeTrace.items.length) ? null : (
+            ) : runtimeAssistant.thinking ||
+              (realtimeTrace?.availability === 'available' && realtimeTrace.items.length) ||
+              runtimeVoiceErrors.length > 0 ? null : (
               <span className="app-spinner-inline" aria-label="等待回答" />
             )}
+            {runtimeVoiceErrors.length > 0 ? <VoiceToolErrors errors={runtimeVoiceErrors} /> : null}
             {runtimeAssistant.error ? (
               <div className="app-runtime-error-box" role="alert">
                 <span className="app-error-hint">{runtimeAssistant.error.message}</span>

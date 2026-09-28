@@ -1,4 +1,4 @@
-import type { AssistantRunTraceItem } from '../types';
+import type { AssistantRunTraceItem, VoiceToolError } from '../types';
 
 /**
  * P1B Chat Runtime Types
@@ -124,6 +124,7 @@ export interface NormalizedSSEEvent {
     | 'error'
     | 'cache_skipped'
     | 'assistant_trace'
+    | 'voice_tool_error'
     | 'unknown'
     | 'malformed';
   data: string;
@@ -228,6 +229,11 @@ export interface RuntimeAssistantRow {
   thinking: string;
   /** Ordered authoritative realtime projection owned by this existing overlay. */
   assistantTrace?: RuntimeAssistantTrace;
+  /**
+   * CP-C `send_voice_msg` failures for this runtime turn, deduped by position.
+   * Live-only evidence; the completed Message carries the durable copy.
+   */
+  voiceToolErrors?: VoiceToolError[];
   telemetry?: RuntimeTelemetry;
   cacheSkippedReason?: string;
   isStreaming: boolean;

@@ -768,6 +768,18 @@
   border-radius: 6px;
 }
 
+/* CP-C send_voice_msg failure notice: bounded code only, no player. */
+.app-voice-tool-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-voice-tool-error-code {
+  font-size: calc(11px * var(--exo-font-scale, 1));
+  color: #f87171;
+}
+
 /* Runtime status banners */
 .app-runtime-banners {
   display: flex;

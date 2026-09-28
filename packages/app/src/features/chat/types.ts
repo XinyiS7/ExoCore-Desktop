@@ -76,6 +76,16 @@ export interface AssistantRunTraceToolItem {
 
 export type AssistantRunTraceItem = AssistantRunTraceThinkingItem | AssistantRunTraceToolItem;
 
+/**
+ * CP-C `send_voice_msg` failed-synthesis outcome (backend Plan REVISE-7 §5.3).
+ * `errorCode` is an opaque bounded safe token — never tool content/style or
+ * provider prose; the UI owns the copy around it.
+ */
+export interface VoiceToolError {
+  position: number;
+  errorCode: string;
+}
+
 export type AssistantRunTraceProjection =
   | {
       version: 1;
@@ -98,6 +108,8 @@ export interface MessageRow {
   assistant_run_trace?: unknown;
   /** B5 additive voice projection; normalized fail-closed at the API boundary. */
   voice?: unknown;
+  /** CP-C additive failed-synthesis projection; fail-closed at the API boundary. */
+  voice_tool_errors?: unknown;
   /**
    * A+ additive ordinary-send correlation; normalized fail-closed at the API
    * boundary (absent / null / malformed never participate in the handoff).
@@ -166,6 +178,12 @@ export interface MessageView {
   assistantRunTrace?: AssistantRunTraceProjection | null;
   /** `null` means absent, malformed or non-assistant voice data. */
   voice?: VoiceProjection | null;
+  /**
+   * CP-C durable `send_voice_msg` failures, deduped by position and ordered.
+   * Optional so pre-CP-C fixtures keep compiling; the API adapter always
+   * emits it (empty array when absent/malformed/non-assistant).
+   */
+  voiceToolErrors?: VoiceToolError[];
   /**
    * A+ exact ordinary-send correlation; normalization always emits it.
    * `null` means absent, malformed or unbound — only a canonical UUID string

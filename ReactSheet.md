@@ -184,6 +184,22 @@ V4 重新生成仍使用现有 Chat POST 形状：选择 managed/subscription-ru
 
 Runtime regenerate 当前仅支持 text-only 目标；目标 Message 自带附件时在 canonical edit/truncate 之前显式拒绝。Direct/API edit/regenerate 语义不变。
 
+### 1.3.4 voice_tool_error — `send_voice_msg` 失败投影（CP-C，additive）
+
+**SSE 事件**：既有事件不变，新增一个事件类型 `voice_tool_error`：
+
+```json
+{
+  "position": 0,
+  "error_code": "generation_timeout"
+}
+```
+
+- 只承载 bounded、frontend-safe 的 `error_code`（snake_case 安全词表，复用 voice port 既有安全 code 并补 `artifact_publish_failed`，例如 `generation_timeout` / `synthesis_failed` / `artifact_publish_failed`）；**不含** `content` / `style` / provider 原文 / key / 路径。
+- `position` 只在同一 assistant turn 的 `send_voice_msg` attempts 内从 0 递增；failed synthesis 在 direct 路径立即发出、Runtime 路径在 terminal 收口前发出；同一 turn + position 的重复帧幂等（客户端保留首个 code，不重复显示）。
+- 失败合成**不产生** audio attachment / transcript：Desktop 在 assistant 行只渲染安全失败文案（`send_voice_msg 调用失败` + code），不创建 audio player、不显示任何被截断的 tool 参数；completed Message 存在时改由 durable `voice_tool_errors[]` 提供同值，live 与 durable 按 turn/position 去重。
+- 完整 voice player、播放结束后的 transcript 展示与通知行为不属于本事件，留给后续 checkpoint；本事件不扩张既有 `assistant_trace` DTO。
+
 ### 1.4 Superior Session — Agent 自主调度
 
 **POST /api/agents/sessions/init/** — 创建 Conversation（Standard / Superior(g045) 通用）
@@ -790,6 +806,7 @@ type AssistantMessageArrivedV1 = {
 
 - `dedupe_key` 恒为 `assistant-message:<message_id>`，与 DB OneToOne 一致。前端以 `event_id` 推进 cursor、以 `dedupe_key` 去重（例如同一 arrival 已由 Push 处理）。
 - **`preview` 只从 canonical `Message.content` 派生**：内容过滤后折叠空白，最多 **160** 个 Unicode code point；`truncated` 表示过滤后文本超限。不读取 reasoning、`tool_calls`、私有语音指令或附件正文。锁屏沿用该 bounded preview。
+- **voice-only arrival（CP-C）**：正文为空且本回合至少一个 ready voice attachment 时，`preview.policy` 仍为 `bounded_text`，`preview.text` 由服务端固定生成 `<agent display name> 给你发来了一条语音消息`；不新增 preview policy、不读取 transcript、不从 content 构造 preview。text + voice 仍走正文 preview。点击沿既有 conversation/message target 清除提醒，不记录也不推断用户是否播放。
 - `title_hint`：`send_message` 的 title 过滤后 <=200 字符；为 `null` 时前端以 `agent.name` 作标题。
 - `ignore`：typed、封闭的显式忽略许可指示，恒存在。仅 `source=send_message` 的 arrival 为 `{"allowed": true}`；ordinary Chat 恒为 `{"allowed": false}`。前端必须以该字段决定是否提供「忽略」affordance，禁止从 title/agent/`register_ack` 推断。该字段不随是否已忽略而变化（重复忽略幂等）。
 - `register_ack` 为 **legacy-only** 字段：仅当该 arrival 仍链接一个可解码的 v1 通知信封 Register（旧 `send_message` 流程遗留）且至少一台设备 `sent` 时给出 `{register_id, preset_id}`。新 `send_message` 不再预建 Register，两种传输均为 `null`；显式忽略产生的固定文案 Register **不是** ACK 目标（同样为 `null`）。
@@ -1316,6 +1333,28 @@ shared server 冻结，不代表 Moonlight 已接入。
   - `available`: 该会话所属 AgentPreset 是否绑定了活跃声线（`active_voice_profile`）且本消息包含非空可朗读台词（剥离单星号动作 `*...*` 后）；
   - `cached`: 后端是否已成功生成并持久化音频文件（true 时客户端点击秒播）。
   - CP-B 收口：旧 `directed` 字段已随后端读模型删除；客户端必须把该键视为惰性未知字段（既不要求存在、也不影响任何渲染），不得恢复旧字段或据其推导盲盒语义。
+
+**CP-C `voice_tool_errors`（additive）**：assistant Message 行新增 `voice_tool_errors`：
+
+```json
+[
+  { "position": 0, "error_code": "generation_timeout" }
+]
+```
+
+- 仅在 `send_voice_msg` 同步合成失败时为非空；`(message, position)` 唯一，是 live SSE `voice_tool_error` 的 durable 同值投影；无失败时为 `[]`；非 assistant 行恒为 `[]`。
+- 失败合成不建立 attachment / transcript，因此前端不得据该字段创建 audio player、附件占位或显示原文；assistant 行只展示 bounded safe code（`send_voice_msg 调用失败` + code）。
+- live 与 durable 按 turn/position 去重；completed Message 的 code 不重复显示。完整 player 与播放结束后的 transcript 展示留给后续 checkpoint。
+
+**CP-C voice attachment transcript（additive）**：成功语音在普通 `attachments[]` 中仅投影 ready `source="voice_msg"` audio attachment，不携带 transcript。按需读取：
+
+`GET /api/agents/conversations/<conversation_id>/message-attachments/<attachment_id>/transcript/`
+
+```json
+{ "transcript": "exact archived spoken_content" }
+```
+
+仅当前 conversation 内 `source="voice_msg"`、ready audio且存在 rendered attempt时返回 200；其它附件、跨 conversation或缺失 outcome一律 scoped 404。该 API 无 playback-complete写入，不建立已播放状态。
 
 ### 12.2 点播触发与状态轮询
 

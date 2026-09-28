@@ -416,6 +416,11 @@ export function useChatRuntime({
               statusText: '已停止生成',
               thinking: '',
               assistantTrace: traceToRetain,
+              // CP-C: live-only voice failures must survive the stopped
+              // trace-only retention; the noncanonical content is stripped.
+              ...(prev?.voiceToolErrors && prev.voiceToolErrors.length > 0
+                ? { voiceToolErrors: prev.voiceToolErrors }
+                : {}),
               isStreaming: false,
               terminalKind: 'stopped',
             };
