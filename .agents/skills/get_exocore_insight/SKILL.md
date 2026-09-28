@@ -105,7 +105,7 @@ rg -n "<api-path-or-tool-name>" ..\ExoCore-Desktop ..\ExocoreExtension
 |---------|----------|----------|
 | Model 字段变更 | `--target ModelName` | migrations、serializer、admin、frontend 字段假设 |
 | Service 方法签名变更 | `--target MethodOrService` | dataflows.yaml 命中的流、所有调用者 |
-| API shape 变更 | `--api api/...` | urls.py、ReactSheet.txt、ExoCore-Desktop、ExocoreExtension |
+| API shape 变更 | `--api api/...` | urls.py、ReactSheet.md、ExoCore-Desktop、ExocoreExtension |
 | model provider 变更 | `--file engines/model_registry.py` | LLMGateway、SystemConfigSerializer、SubAgentService、前端模型选择 |
 | tool declaration 变更 | `--target tool_name` 或 `--file agents/tools.py` | tool loop、SSE/tool result rendering、telemetry |
 | memory compaction 变更 | `--target MemoryCompactor` | SuperiorService post-response、scheduler、ContextCacheManager、HistoryChunk |

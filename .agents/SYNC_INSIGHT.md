@@ -9,7 +9,7 @@
 ### 项目根目录
 - `.agent/project.md` — 项目身份 + 模块边界定义
 - `.agent/insight/overview.md` — insight 系统架构说明
-- `AGENT.md` — 跨模块统一指南 + 耦合警告表
+- `AGENTS.md` — 跨模块统一指南 + 耦合警告表
 
 ### 需要你在后端创建的
 - `ExoCore/.agent/insight/backend.yaml` — 后端的 model→view→serializer→service→test 映射链
@@ -62,7 +62,7 @@ entities:
 
 - 更新 ExoCore/CLAUDE.md，在顶部加一行引用根目录的共有文档：
   ```
-  Before working: read ../.agent/project.md and ../AGENT.md for cross-module context.
+  Before working: read ../.agent/project.md and ../AGENTS.md for cross-module context.
   ```
 - 各个前端和 extension 的 insight map 由各自的 agent 在自己的模块里实现
 - 阿莱在 extension 写的 generate_insight.py 是初版探索，生成的是静态 JSON，方向对但不完整。我们讨论后决定用 YAML + 活文档 + 子代理的方案替代

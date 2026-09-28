@@ -13,7 +13,7 @@ metadata:
 Provide OpenCode CLI agents with ExoCore-specific workflow guidance, Python interpreter conventions, and anti-hallucination rules.
 
 ## 2. Python Interpreter (Critical)
-**Always use `python.exe`** — the conda env `exocore_project` is pre-activated via `~/.bash_profile`. Never use absolute paths like `E:\Conda\envs\exocore_project\python.exe` unless troubleshooting.
+**Always use `python.exe`** — the conda env `exocore_project` is pre-activated via `~/.bash_profile`. Never use absolute paths like `E:\Miniconda3\envs\exocore_project\python.exe` unless troubleshooting.
 
 ### Django Imports (CRITICAL)
 NEVER run `python.exe -c "from agents..."` or `python.exe -c "from memory..."` — Django apps won't be configured and will raise `ImproperlyConfigured`.
@@ -77,7 +77,7 @@ python test_env.py       # Validate environment variables
 
 ## 10. Documentation References
 - **AGENTS.md**: Agent workflow, architecture, commands (read before any task)
-- **ReactSheet.txt**: Full API response shapes (refer for frontend-facing endpoints)
+- **ReactSheet.md**: Full API response shapes (this repo + the ExoCore-Desktop copy; refer for frontend-facing endpoints)
 - **Plan/**: Construction plans (always plan first, work later)
 
 ## 11. Key Commands Reference

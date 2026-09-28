@@ -3,9 +3,8 @@
 This file provides guidance to Codex when working with code in this repository.
 
 **API contract:** `ReactSheet.md` — active API reference (in-repo).
-**Cross-module context:** `../AGENT.md` and `../.agent/project.md`
-**Nginx deployment:** `../nginx/nginx.conf` — reverse proxy config
-**Startup script:** `../hybrid_start.ps1` — unified pgvector + Django + nginx launcher
+**Cross-module context:** `../AGENTS.md` and `../.agent/project.md`
+**Local run / nginx:** the umbrella `../AGENTS.md` §3 owns the launch discipline (`run-exocore` / `run-runtime` aliases; nginx is an always-on Docker container — do not suggest PS1 launchers).
 
 **Shell environment:** Git Bash (Windows). Use Bash tool for shell commands, not PowerShell.
 
@@ -13,7 +12,7 @@ This file provides guidance to Codex when working with code in this repository.
 
 This repo is **ExoCore-Desktop** (React + Vite frontend).
 
-**`../ExoCore/` (Django backend) and `../ExocoreExtension/` (Windows extensions) are separate repositories.**
+**`../ExoCore/` (Django backend) and `../ExoCore-Extension/` (Windows extensions) are separate repositories.**
 You may READ their source code and docs to understand API contracts, data models, and existing behavior — but you MUST NEVER modify files in those directories.
 
 If a task requires backend or extension changes:

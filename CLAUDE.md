@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code when working with code in this repository.
 
 **API contract:** `ReactSheet.md` — active API reference (in-repo).
-**Cross-module context:** `../AGENT.md` and `../.agent/project.md`
+**Cross-module context:** `../AGENTS.md` and `../.agent/project.md`
 **Nginx deployment:** `../nginx/nginx.conf` — reverse proxy config
 **Startup script:** `../hybrid_start.ps1` — unified pgvector + Django + nginx launcher
 
