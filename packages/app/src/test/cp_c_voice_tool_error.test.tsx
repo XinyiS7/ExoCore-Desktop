@@ -12,11 +12,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { ReactNode } from 'react';
 import { fetchMessagePage } from '../features/chat/api';
 import { MessageTimeline } from '../features/chat/MessageTimeline';
+import { queryKeys } from '../features/chat/queries';
 import { applyNormalizedEvent } from '../features/chat/runtime/events';
 import { normalizePollingEvent, normalizeSSEEvent } from '../features/chat/runtime/sse';
 import type { RuntimeAssistantRow } from '../features/chat/runtime/types';
 import { useChatRuntime } from '../features/chat/runtime/useChatRuntime';
-import type { MessageView } from '../features/chat/types';
+import type { MessagePage, MessageView } from '../features/chat/types';
 import { normalizeVoiceToolErrorList } from '../features/chat/voice/contract';
 import { ensureTestLocalStorage, installFetch, jsonResponse, unmockFetch } from './helpers';
 
@@ -110,14 +111,14 @@ describe('CP-C voice_tool_error wire guard', () => {
       'voice_tool_error',
       JSON.stringify({
         position: 2,
-        error_code: 'artifact_publish_failed',
+        error_code: 'tts_protocol_error',
         content: 'SECRET LINE',
         style: 'whisper',
         provider: 'gemini',
       }),
     );
     expect(normalized.event).toBe('voice_tool_error');
-    expect(normalized.parsedData).toEqual({ position: 2, errorCode: 'artifact_publish_failed' });
+    expect(normalized.parsedData).toEqual({ position: 2, errorCode: 'tts_protocol_error' });
     expect(JSON.stringify(normalized.parsedData)).not.toContain('SECRET');
   });
 
@@ -179,9 +180,9 @@ describe('CP-C durable Message.voice_tool_errors[] projection', () => {
     respondWithRow(
       wireMessageRow({
         voice_tool_errors: [
-          { position: 1, error_code: 'artifact_publish_failed', content: 'SECRET', style: 'whisper' },
+          { position: 1, error_code: 'tts_protocol_error', content: 'SECRET', style: 'whisper' },
           { position: 0, error_code: 'generation_timeout' },
-          { position: 1, error_code: 'artifact_publish_failed' },
+          { position: 1, error_code: 'tts_protocol_error' },
           { position: 3, error_code: 'UPPER' },
           { position: -1, error_code: 'synthesis_failed' },
         ],
@@ -190,7 +191,7 @@ describe('CP-C durable Message.voice_tool_errors[] projection', () => {
     const page = await fetchMessagePage(5, 0);
     expect(page.messages[0].voiceToolErrors).toEqual([
       { position: 0, errorCode: 'generation_timeout' },
-      { position: 1, errorCode: 'artifact_publish_failed' },
+      { position: 1, errorCode: 'tts_protocol_error' },
     ]);
   });
 
@@ -220,7 +221,7 @@ describe('CP-C assistant row failure surface', () => {
           assistantMessage({
             voiceToolErrors: [
               { position: 0, errorCode: 'generation_timeout' },
-              { position: 1, errorCode: 'artifact_publish_failed' },
+              { position: 1, errorCode: 'tts_protocol_error' },
             ],
           }),
         ]}
@@ -232,7 +233,7 @@ describe('CP-C assistant row failure surface', () => {
     expect(screen.getAllByTestId('voice-tool-error')).toHaveLength(2);
     expect(screen.getAllByText('send_voice_msg 调用失败')).toHaveLength(2);
     expect(screen.getByText('generation_timeout')).toBeInTheDocument();
-    expect(screen.getByText('artifact_publish_failed')).toBeInTheDocument();
+    expect(screen.getByText('tts_protocol_error')).toBeInTheDocument();
     expect(container.querySelector('audio')).toBeNull();
     expect(screen.queryByText('（空消息）')).toBeNull();
   });
@@ -313,6 +314,82 @@ describe('CP-C live transports through the existing runtime controller', () => {
     expect(screen.getAllByTestId('voice-tool-error')).toHaveLength(2);
     expect(screen.queryByText('different_code')).toBeNull();
     expect(screen.queryByText('secret prose')).toBeNull();
+    unmount();
+  });
+
+  it('replaces a live failure with its canonical durable row exactly once', async () => {
+    const encoder = new TextEncoder();
+    let releaseReconcile!: () => void;
+    const reconcileGate = new Promise<void>((resolve) => {
+      releaseReconcile = resolve;
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    installFetch([
+      {
+        test: '/api/agents/chat/63/',
+        method: 'POST',
+        handler: () =>
+          new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.enqueue(
+                  encoder.encode(
+                    'event: voice_tool_error\ndata: {"position":0,"error_code":"generation_timeout"}\n\n' +
+                      'event: done\ndata: [DONE]\n\n',
+                  ),
+                );
+                controller.close();
+              },
+            }),
+            { headers: { 'Content-Type': 'text/event-stream' } },
+          ),
+      },
+      {
+        test: '/api/agents/chat/63/',
+        method: 'GET',
+        handler: async () => {
+          await reconcileGate;
+          return jsonResponse({
+            messages: [wireMessageRow({
+              id: 630,
+              voice_tool_errors: [{ position: 0, error_code: 'generation_timeout' }],
+            })],
+            total_count: 1,
+            has_more: false,
+          });
+        },
+      },
+    ]);
+    const { result, unmount } = renderHook(() => useChatRuntime({ conversationId: 63 }), {
+      wrapper: ({ children }: { children?: ReactNode }) => (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      ),
+    });
+
+    act(() => {
+      void result.current.sendMessage({ content: 'hello' });
+    });
+    await waitFor(() =>
+      expect(result.current.runtimeAssistant?.voiceToolErrors).toEqual([
+        { position: 0, errorCode: 'generation_timeout' },
+      ]),
+    );
+
+    act(() => releaseReconcile());
+    await waitFor(() => expect(result.current.runtimeAssistant).toBeNull());
+    const cached = client.getQueryData<{ pages: MessagePage[] }>(queryKeys.messages(63));
+    const canonicalMessages = cached?.pages[0]?.messages ?? [];
+    render(
+      <MessageTimeline
+        messages={canonicalMessages}
+        hasOlder={false}
+        loadingMore={false}
+        onLoadMore={() => {}}
+        runtimeAssistant={result.current.runtimeAssistant}
+      />,
+    );
+    expect(screen.getAllByTestId('voice-tool-error')).toHaveLength(1);
+    expect(screen.getAllByText('generation_timeout')).toHaveLength(1);
     unmount();
   });
 

@@ -195,9 +195,9 @@ Runtime regenerate 当前仅支持 text-only 目标；目标 Message 自带附�
 }
 ```
 
-- 只承载 bounded、frontend-safe 的 `error_code`（snake_case 安全词表，复用 voice port 既有安全 code 并补 `artifact_publish_failed`，例如 `generation_timeout` / `synthesis_failed` / `artifact_publish_failed`）；**不含** `content` / `style` / provider 原文 / key / 路径。
-- `position` 只在同一 assistant turn 的 `send_voice_msg` attempts 内从 0 递增；failed synthesis 在 direct 路径立即发出、Runtime 路径在 terminal 收口前发出；同一 turn + position 的重复帧幂等（客户端保留首个 code，不重复显示）。
-- 失败合成**不产生** audio attachment / transcript：Desktop 在 assistant 行只渲染安全失败文案（`send_voice_msg 调用失败` + code），不创建 audio player、不显示任何被截断的 tool 参数；completed Message 存在时改由 durable `voice_tool_errors[]` 提供同值，live 与 durable 按 turn/position 去重。
+- 只承载 bounded、frontend-safe 的 `error_code`（snake_case 安全词表，例如 `generation_timeout` / `synthesis_failed`）；**不含** `content` / `style` / provider 原文 / key / 路径。
+- `position` 只在同一 assistant turn 已通过参数/权限校验、实际进入 render 的 `send_voice_msg` attempts 内从 0 递增；failed synthesis 在 direct 路径立即发出、Runtime 路径在 terminal 收口前发出；同一 turn + position 的重复帧幂等（客户端保留首个 code，不重复显示）。参数 validation failure 只返回 bounded FR，不分配 attempt position，不发本事件，也不产生 durable row。
+- 失败合成**不产生** audio attachment / transcript：Desktop 在 assistant 行只渲染安全失败文案（`send_voice_msg 调用失败` + code），不创建 audio player、不显示任何被截断的 tool 参数；completed Message 存在时改由 durable `voice_tool_errors[]` 提供同值，live 与 durable 按 turn/position 去重。render 成功后的本地 artifact publish/transaction failure 走 terminal generic system error 并整体回滚，不伪造 positioned `voice_tool_error` 或 durable failed outcome；内部安全码 `artifact_publish_failed` 不进入这两个 positioned 投影。
 - 完整 voice player、播放结束后的 transcript 展示与通知行为不属于本事件，留给后续 checkpoint；本事件不扩张既有 `assistant_trace` DTO。
 
 ### 1.4 Superior Session — Agent 自主调度
