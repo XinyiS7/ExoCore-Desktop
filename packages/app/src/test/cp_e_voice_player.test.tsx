@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { installFetch, jsonResponse, renderV4 } from './helpers';
 import { AudioPlayerBubble } from '../features/chat/audio/AudioPlayerBubble';
 import { MessageTimeline } from '../features/chat/MessageTimeline';
@@ -313,5 +313,258 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     // Exactly one audio player
     expect(container.querySelectorAll('audio')).toHaveLength(1);
     expect(screen.queryByText('（空消息）')).toBeNull();
+  });
+
+  it('refresh while playing retains single player, coherent ownership, no early transcript fetch until natural ended', async () => {
+    let transcriptCallCount = 0;
+    installFetch([
+      {
+        test: '/api/agents/conversations/42/message-attachments/10/transcript/',
+        method: 'GET',
+        handler: () => {
+          transcriptCallCount++;
+          return jsonResponse({ transcript: 'Refreshed voice message transcript.' });
+        },
+      },
+    ]);
+
+    const { container, rerender } = render(
+      <AudioPlayerBubble
+        attachment={readyVoiceAttachment}
+        conversationId={42}
+      />,
+    );
+
+    const audio = container.querySelector('audio')!;
+    // Start playback
+    act(() => {
+      fireEvent.play(audio);
+    });
+
+    // Simulate canonical refresh: new attachment object with same key/id and contentUrl
+    const refreshedAttachment: MessageAttachmentView = {
+      ...readyVoiceAttachment,
+      displayName: 'voice_0.wav', // same key & id
+    };
+
+    // Rerender with refreshed object
+    rerender(
+      <AudioPlayerBubble
+        attachment={refreshedAttachment}
+        conversationId={42}
+      />,
+    );
+
+    // Proves one player in DOM
+    expect(container.querySelectorAll('audio')).toHaveLength(1);
+
+    // Transcript should NOT be fetched on refresh
+    expect(transcriptCallCount).toBe(0);
+    expect(screen.queryByTestId('audio-transcript')).toBeNull();
+
+    // Continued coherent mutual exclusion: another player starting should pause this player
+    const pauseAnother = vi.fn();
+    act(() => {
+      globalAudioPlaybackManager.play('another_player', pauseAnother);
+    });
+    // This player was paused by mutual exclusion
+    expect(audio.pause).toHaveBeenCalled();
+
+    // Now restart this player and let it naturally end
+    act(() => {
+      fireEvent.play(audio);
+    });
+    act(() => {
+      fireEvent.ended(audio);
+    });
+
+    expect(transcriptCallCount).toBe(1);
+    const transcriptEl = await screen.findByTestId('audio-transcript');
+    expect(transcriptEl.textContent).toBe('Refreshed voice message transcript.');
+  });
+
+  it('physically pauses audio element and releases global manager on unmount', () => {
+    const { container, unmount } = renderV4(
+      <AudioPlayerBubble
+        attachment={readyVoiceAttachment}
+        conversationId={42}
+      />,
+    );
+
+    const audio = container.querySelector('audio')!;
+    act(() => {
+      fireEvent.play(audio);
+    });
+
+    // Unmount while playing
+    unmount();
+
+    expect(audio.pause).toHaveBeenCalled();
+  });
+
+  it('fails closed silently on explicit malformed transcript body', async () => {
+    const malformedBodies = [
+      { transcript: 123 },
+      { wrong_field: 'Hello' },
+      { transcript: null },
+      'not json',
+      null,
+    ];
+
+    for (const body of malformedBodies) {
+      installFetch([
+        {
+          test: '/api/agents/conversations/42/message-attachments/10/transcript/',
+          method: 'GET',
+          handler: () => jsonResponse(body),
+        },
+      ]);
+
+      const { container, unmount } = renderV4(
+        <AudioPlayerBubble
+          attachment={readyVoiceAttachment}
+          conversationId={42}
+        />,
+      );
+
+      const audio = container.querySelector('audio')!;
+      act(() => {
+        fireEvent.ended(audio);
+      });
+
+      await new Promise((r) => setTimeout(r, 20));
+
+      expect(screen.queryByTestId('audio-transcript')).toBeNull();
+      expect(screen.queryByRole('alert')).toBeNull();
+
+      unmount();
+    }
+  });
+
+  it('fails closed silently on network rejection without breaking playback', async () => {
+    installFetch([
+      {
+        test: '/api/agents/conversations/42/message-attachments/10/transcript/',
+        method: 'GET',
+        handler: () => {
+          throw new TypeError('Network request failed');
+        },
+      },
+    ]);
+
+    const { container } = renderV4(
+      <AudioPlayerBubble
+        attachment={readyVoiceAttachment}
+        conversationId={42}
+      />,
+    );
+
+    const audio = container.querySelector('audio')!;
+    act(() => {
+      fireEvent.ended(audio);
+    });
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(screen.queryByTestId('audio-transcript')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('media error never triggers transcript fetch', () => {
+    let transcriptCalled = false;
+    installFetch([
+      {
+        test: /\/transcript\//,
+        handler: () => {
+          transcriptCalled = true;
+          return jsonResponse({ transcript: 'unexpected' });
+        },
+      },
+    ]);
+
+    const { container } = renderV4(
+      <AudioPlayerBubble
+        attachment={readyVoiceAttachment}
+        conversationId={42}
+      />,
+    );
+
+    const audio = container.querySelector('audio')!;
+    act(() => {
+      fireEvent.error(audio);
+    });
+
+    expect(screen.getByRole('alert').textContent).toContain('音频加载/播放失败');
+    expect(transcriptCalled).toBe(false);
+    expect(screen.queryByTestId('audio-transcript')).toBeNull();
+  });
+
+  it('unmount aborts in-flight transcript fetch', async () => {
+    let observedSignal: AbortSignal | null | undefined;
+    installFetch([
+      {
+        test: '/api/agents/conversations/42/message-attachments/10/transcript/',
+        method: 'GET',
+        handler: (_url, init) => {
+          observedSignal = init?.signal;
+          return new Promise(() => {
+            // never resolves
+          });
+        },
+      },
+    ]);
+
+    const { container, unmount } = renderV4(
+      <AudioPlayerBubble
+        attachment={readyVoiceAttachment}
+        conversationId={42}
+      />,
+    );
+
+    const audio = container.querySelector('audio')!;
+    act(() => {
+      fireEvent.ended(audio);
+    });
+
+    expect(observedSignal).toBeDefined();
+    expect(observedSignal?.aborted).toBe(false);
+
+    unmount();
+
+    expect(observedSignal?.aborted).toBe(true);
+  });
+
+  it('canonical non-voice audio never calls transcript endpoint', () => {
+    let transcriptCalled = false;
+    installFetch([
+      {
+        test: /\/transcript\//,
+        handler: () => {
+          transcriptCalled = true;
+          return jsonResponse({ transcript: 'unexpected' });
+        },
+      },
+    ]);
+
+    // Canonical audio attachment with source: 'user'
+    const nonVoiceAtt: MessageAttachmentView = {
+      ...readyVoiceAttachment,
+      source: 'user',
+    };
+
+    const { container } = renderV4(
+      <AudioPlayerBubble
+        attachment={nonVoiceAtt}
+        conversationId={42}
+      />,
+    );
+
+    const audio = container.querySelector('audio')!;
+    act(() => {
+      fireEvent.ended(audio);
+    });
+
+    expect(transcriptCalled).toBe(false);
+    expect(screen.queryByTestId('audio-transcript')).toBeNull();
   });
 });

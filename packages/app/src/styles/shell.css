@@ -1554,7 +1554,7 @@
   border: 1px solid var(--v4-line);
   border-radius: 8px;
   font-size: calc(12px * var(--exo-font-scale, 1));
-  color: var(--v4-text-sub);
+  color: var(--v4-text-dim);
   line-height: 1.45;
   word-break: break-word;
 }

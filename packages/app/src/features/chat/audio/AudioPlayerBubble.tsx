@@ -61,15 +61,28 @@ export function AudioPlayerBubble({ meta, attachment, conversationId }: AudioPla
   const hasRequestedTranscriptRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  const latestRef = useRef({
+    attachment,
+    conversationId,
+    isEligibleVoice,
+    isPlaying,
+  });
+  latestRef.current = {
+    attachment,
+    conversationId,
+    isEligibleVoice,
+    isPlaying,
+  };
+
   // Mutual exclusion: another item claiming playback pauses this one.
   useEffect(() => {
     const unsubscribe = globalAudioPlaybackManager.subscribe((activeId) => {
-      if (activeId !== audioId && isPlaying && audioRef.current) {
+      if (activeId !== audioId && latestRef.current.isPlaying && audioRef.current) {
         audioRef.current.pause();
       }
     });
     return unsubscribe;
-  }, [audioId, isPlaying]);
+  }, [audioId]);
 
   // Abort in-flight transcript fetch on unmount.
   useEffect(() => {
@@ -110,11 +123,17 @@ export function AudioPlayerBubble({ meta, attachment, conversationId }: AudioPla
       globalAudioPlaybackManager.stop(audioId);
 
       // Natural ended: fetch scoped transcript once for this mounted player.
-      if (isEligibleVoice && !hasRequestedTranscriptRef.current && conversationId && attachment) {
+      const current = latestRef.current;
+      if (
+        current.isEligibleVoice &&
+        !hasRequestedTranscriptRef.current &&
+        current.conversationId &&
+        current.attachment
+      ) {
         hasRequestedTranscriptRef.current = true;
         const controller = new AbortController();
         abortControllerRef.current = controller;
-        fetchAttachmentTranscript(conversationId, attachment.ref.id, controller.signal)
+        fetchAttachmentTranscript(current.conversationId, current.attachment.ref.id, controller.signal)
           .then((text) => {
             if (typeof text === 'string') {
               setTranscript(text);
@@ -148,9 +167,14 @@ export function AudioPlayerBubble({ meta, attachment, conversationId }: AudioPla
       auditEl.removeEventListener('pause', handlePause);
       auditEl.removeEventListener('ended', handleEnded);
       auditEl.removeEventListener('error', handleError);
+      // On actual unmount/identity change physically pause audio and release global manager.
+      auditEl.pause();
       globalAudioPlaybackManager.stop(audioId);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
-  }, [attachment, audioId, conversationId, isEligibleVoice, src]);
+  }, [audioId, src]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;

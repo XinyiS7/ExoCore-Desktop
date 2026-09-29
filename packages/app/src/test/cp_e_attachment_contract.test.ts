@@ -125,10 +125,37 @@ describe('CP-E E1 — unified attachments contract', () => {
     expect(result[0].contentUrl).toBeNull();
   });
 
-  it('canonical attachments[] controls membership when present and valid (empty suppresses legacy)', () => {
-    // Canonical is empty array -> membership is empty, even if legacy meta is provided
+  it('canonical [] explicitly suppresses legacy attachments_meta', () => {
     const result = normalizeMessageAttachments([], [legacyMetaImage]);
     expect(result).toEqual([]);
+  });
+
+  it('canonical non-empty with >=1 valid item controls membership and drops malformed siblings', () => {
+    const result = normalizeMessageAttachments(
+      [canonicalVoiceMsg, null, { invalid: true }, 'corrupt'],
+      [legacyMetaImage],
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0].key).toBe('message_attachment:10');
+    expect(result[0].source).toBe('voice_msg');
+  });
+
+  it('canonical non-empty with 0 valid items is malformed and MUST fall back to attachments_meta', () => {
+    // Malformed non-empty array where all items fail validation -> falls back to legacy meta
+    const resultWithFallback = normalizeMessageAttachments(
+      [null, { invalid: true }, 'bad_string', { ref: { type: 'unknown', id: 1 } }],
+      [legacyMetaImage],
+    );
+    expect(resultWithFallback).toHaveLength(1);
+    expect(resultWithFallback[0].key).toBe('session_attachment:20');
+    expect(resultWithFallback[0].displayName).toBe('photo.png');
+
+    // Malformed non-empty array with no legacy meta -> returns empty
+    const resultWithoutFallback = normalizeMessageAttachments(
+      [null, { invalid: true }],
+      null,
+    );
+    expect(resultWithoutFallback).toEqual([]);
   });
 
   it('falls back to legacy meta when canonical attachments is absent or non-array', () => {

@@ -170,10 +170,9 @@ function parseLegacyMetaItem(item: unknown, index: number): MessageAttachmentVie
  * Normalizes message attachments fail-closed.
  *
  * - If canonical `attachments` is an Array:
- *   - Canonical controls membership.
- *   - Preserves server order (never client-sorts).
- *   - Drops malformed items fail-closed without dropping valid siblings or message.
- *   - Enriches `session_attachment` items with legacy `file_uri`/`original_filename`.
+ *   - If empty (`[]`), canonical explicitly suppresses legacy meta (returns `[]`).
+ *   - If non-empty with >=1 valid item, canonical controls membership and drops malformed siblings.
+ *   - If non-empty with 0 valid items, canonical is malformed and falls back to `attachments_meta`.
  * - If canonical `attachments` is absent (undefined / null) or not an Array:
  *   - Falls back to `attachments_meta` membership.
  */
@@ -190,8 +189,12 @@ export function normalizeMessageAttachments(
     }
   }
 
-  // Canonical attachments[] present as an Array: canonical controls membership.
+  // Canonical attachments[] present as an Array:
   if (Array.isArray(attachmentsRaw)) {
+    if (attachmentsRaw.length === 0) {
+      // Canonical [] explicitly suppresses legacy
+      return [];
+    }
     const out: MessageAttachmentView[] = [];
     for (const candidate of attachmentsRaw) {
       const item = parseCanonicalAttachmentItem(candidate, legacyMap);
@@ -199,10 +202,14 @@ export function normalizeMessageAttachments(
         out.push(item);
       }
     }
-    return out;
+    // Canonical non-empty with >=1 valid item controls membership and drops malformed siblings
+    if (out.length > 0) {
+      return out;
+    }
+    // Canonical non-empty with 0 valid items is malformed and MUST fall back to attachments_meta
   }
 
-  // Fallback to legacy meta membership when canonical is absent or malformed (non-array).
+  // Fallback to legacy meta membership when canonical is absent, non-array, or malformed non-empty array with 0 valid items.
   if (Array.isArray(metaRaw)) {
     const out: MessageAttachmentView[] = [];
     let idx = 0;
@@ -210,8 +217,8 @@ export function normalizeMessageAttachments(
       const view = parseLegacyMetaItem(item, idx);
       if (view) {
         out.push(view);
-        idx++;
       }
+      idx++;
     }
     return out;
   }
