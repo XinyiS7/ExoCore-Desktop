@@ -26,8 +26,8 @@ export interface RuntimeStatusBannerProps {
  * action name maps to one exact data-only recovery in the runtime controller.
  */
 export function RuntimeStatusBanner({
-  status,
-  statusText,
+  status: _status,
+  statusText: _statusText,
   error,
   protocolWarning,
   hasPendingReconcile,
@@ -42,6 +42,9 @@ export function RuntimeStatusBanner({
   onDismissTransient,
   onRetryDraftCleanup,
 }: RuntimeStatusBannerProps) {
+  const hasContent = hasPendingReconcile || Boolean(protocolWarning) || draftCleanupFailed || Boolean(error);
+  if (!hasContent) return null;
+
   return (
     <div className="app-runtime-banners" aria-live="polite">
       {/* 1. Pending reconcile button (scrolled-up terminal/uncertain hold, §8.1) */}
@@ -59,15 +62,7 @@ export function RuntimeStatusBanner({
         </div>
       ) : null}
 
-      {/* 2. Generation status / tool progress indicator */}
-      {status === 'streaming' || status === 'polling' || status === 'submitting' || status === 'stopping' ? (
-        <div className="app-runtime-banner app-runtime-banner--active">
-          <span className="app-spinner-inline" aria-hidden="true" />
-          <span>{status === 'stopping' ? '正在停止生成…' : (statusText || '正在思考与生成…')}</span>
-        </div>
-      ) : null}
-
-      {/* 3. Nonfatal protocol warning (§5.2) */}
+      {/* 2. Nonfatal protocol warning (§5.2) */}
       {protocolWarning ? (
         <div className="app-runtime-banner app-runtime-banner--warning" role="alert">
           <AlertTriangle size={14} aria-hidden="true" />

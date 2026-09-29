@@ -1,4 +1,5 @@
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Check, Copy } from 'lucide-react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -82,11 +83,42 @@ function MermaidDiagram({ code }: { code: string }) {
 // C1A-R1-05): no clipboard API surface, hence no silent-failure channel.
 
 function CodeBlock({ lang, code }: { lang: string; code: string }) {
+  const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
+
+  const handleCopy = async () => {
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+      copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Graceful fallback: silently ignore or let user select text manually
+    }
+  };
+
   if (lang === 'mermaid') {
     return (
       <div className="app-code-wrap">
         <div className="app-code-head">
           <span className="app-code-lang">mermaid</span>
+          <button
+            type="button"
+            className="app-code-copy-btn"
+            onClick={handleCopy}
+            title={copied ? '已复制代码' : '复制代码'}
+            aria-label={copied ? '已复制代码' : '复制代码'}
+          >
+            {copied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
+            <span>{copied ? '已复制' : '复制'}</span>
+          </button>
         </div>
         <MermaidDiagram code={code} />
       </div>
@@ -96,6 +128,16 @@ function CodeBlock({ lang, code }: { lang: string; code: string }) {
     <div className="app-code-wrap">
       <div className="app-code-head">
         <span className="app-code-lang">{lang || 'code'}</span>
+        <button
+          type="button"
+          className="app-code-copy-btn"
+          onClick={handleCopy}
+          title={copied ? '已复制代码' : '复制代码'}
+          aria-label={copied ? '已复制代码' : '复制代码'}
+        >
+          {copied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
+          <span>{copied ? '已复制' : '复制'}</span>
+        </button>
       </div>
       <pre className="app-code-block">
         <code>{code}</code>

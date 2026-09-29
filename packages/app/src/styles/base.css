@@ -446,6 +446,25 @@ a {
   color: var(--v4-text-mute);
 }
 
+.app-code-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: var(--v4-text-mute);
+  font-size: calc(10.5px * var(--exo-font-scale, 1));
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.app-code-copy-btn:hover {
+  color: var(--v4-text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
 .app-code-block {
   margin: 0;
   padding: 12px 14px;

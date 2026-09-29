@@ -6,6 +6,8 @@ export interface UserAttachmentManagerProps {
   manager: UserAttachmentManagerApi;
   /** C1B operation active/uncertain → delete disabled (Gate H). */
   busy: boolean;
+  /** When true, hides the component completely if rows is empty, panel is closed, and no notice. */
+  hideWhenEmpty?: boolean;
 }
 
 function formatSize(bytes: number | null | undefined): string {
@@ -20,7 +22,7 @@ function formatSize(bytes: number | null | undefined): string {
  * list user rows, single delete, explicit 409 frozen-cache guidance.
  * Never renders storage_path; tool_collection rows are not exposed.
  */
-export function UserAttachmentManager({ manager, busy }: UserAttachmentManagerProps) {
+export function UserAttachmentManager({ manager, busy, hideWhenEmpty = false }: UserAttachmentManagerProps) {
   const [open, setOpen] = useState(false);
   const { rows, loading, notice, frozenInCache, deletePending, refresh, remove, dismissNotice } = manager;
   const deleteDisabled = busy || deletePending;
@@ -34,6 +36,10 @@ export function UserAttachmentManager({ manager, busy }: UserAttachmentManagerPr
       openedOnce.current = true;
     }
   }, [open, rows.length, refresh]);
+
+  if (hideWhenEmpty && !open && rows.length === 0 && !notice) {
+    return null;
+  }
 
   return (
     <div className="app-att-manager" data-open={open || undefined}>

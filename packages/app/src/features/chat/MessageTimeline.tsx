@@ -1,4 +1,5 @@
-import { Edit2, GitBranch, RotateCw } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Check, Copy, Edit2, GitBranch, RotateCw } from 'lucide-react';
 import type { AssistantRunTraceProjection, MessageRole, MessageView } from './types';
 import type { OptimisticUserRow, RuntimeAssistantRow } from './runtime/types';
 import { MessageContent } from './MessageContent';
@@ -95,6 +96,26 @@ function MessageRowItem({
   const hasContentText = Boolean(message.content?.trim());
   const voiceToolErrors = isAssistant ? message.voiceToolErrors ?? [] : [];
   const hasVoiceToolErrors = voiceToolErrors.length > 0;
+  const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
+
+  const handleCopyContent = async () => {
+    if (!message.content) return;
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+      copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Graceful fallback
+    }
+  };
 
   return (
     <article className={`app-msg app-msg--${message.role}`} data-role={message.role}>
@@ -111,6 +132,18 @@ function MessageRowItem({
             The P2T voice control is deliberately NOT run-locked (D7) and shares
             this cluster instead of adding a second `margin-left: auto` column. */}
         <div className="app-msg-actions">
+          {isUser && hasContentText ? (
+            <button
+              type="button"
+              className="app-msg-action-btn"
+              onClick={handleCopyContent}
+              title={copied ? '已复制消息内容' : '复制消息内容'}
+              aria-label={copied ? '已复制消息内容' : '复制消息内容'}
+            >
+              {copied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
+              {copied ? '已复制' : '复制'}
+            </button>
+          ) : null}
           {conversationId !== undefined &&
           isAssistant &&
           voice !== null &&
@@ -188,6 +221,20 @@ function MessageRowItem({
           />
         ) : null}
         {hasVoiceToolErrors ? <VoiceToolErrors errors={voiceToolErrors} /> : null}
+        {isAssistant && hasContentText ? (
+          <div className="app-msg-footer">
+            <button
+              type="button"
+              className="app-msg-action-btn"
+              onClick={handleCopyContent}
+              title={copied ? '已复制消息内容' : '复制消息内容'}
+              aria-label={copied ? '已复制消息内容' : '复制消息内容'}
+            >
+              {copied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
+              {copied ? '已复制' : '复制'}
+            </button>
+          </div>
+        ) : null}
       </div>
     </article>
   );

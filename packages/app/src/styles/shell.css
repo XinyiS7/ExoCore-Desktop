@@ -740,6 +740,13 @@
   cursor: not-allowed;
 }
 
+.app-msg-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
 .app-msg--optimistic {
   opacity: 0.85;
 }
@@ -898,8 +905,12 @@
   font-family: inherit;
   font-size: calc(13.5px * var(--exo-font-scale, 1));
   line-height: 1.5;
+  min-height: 24px;
+  max-height: 200px;
   resize: none;
   outline: none;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .app-composer-toolbar {

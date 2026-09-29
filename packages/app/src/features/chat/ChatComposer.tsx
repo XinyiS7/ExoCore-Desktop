@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react';
 import { FilePlus2, ImagePlus, Mic, MicOff, Send, Snowflake, Square, X } from 'lucide-react';
 import type {
   ChatTurnInput,
@@ -164,6 +164,22 @@ export function ChatComposer({
     setAutocompleteDismissed(false);
   }, [conversationId, editingTarget]);
 
+  const adjustTextareaHeight = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, 24), 200)}px`;
+  }, []);
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [text, adjustTextareaHeight]);
+
+  const refreshAttachments = attachmentManager.refresh;
+  useEffect(() => {
+    void refreshAttachments();
+  }, [conversationId, refreshAttachments]);
+
   const handleChange = (val: string) => {
     setText(val);
     if (!editingTarget) saveConversationDraft(conversationId, val);
@@ -254,6 +270,7 @@ export function ChatComposer({
       saveConversationDraft(conversationId, '');
       compose.clearCompose();
       if (hasRecordedAudio) recorder.cancel();
+      void attachmentManager.refresh();
     }
   };
 
@@ -395,6 +412,7 @@ export function ChatComposer({
       <UserAttachmentManager
         manager={attachmentManager}
         busy={busy || runActive || audioRecovery.uploading}
+        hideWhenEmpty
       />
 
       <div className="app-composer">
@@ -473,7 +491,7 @@ export function ChatComposer({
               setCaret(e.currentTarget.selectionStart);
             }}
             placeholder={editingTarget ? '修改消息内容…' : '输入消息… (Enter 换行, Shift+Enter 发送)'}
-            rows={2}
+            rows={1}
             disabled={status === 'stopping'}
             aria-label="消息输入框"
             aria-autocomplete="list"
