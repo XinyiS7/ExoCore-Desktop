@@ -5,7 +5,7 @@
 **Baseline:** `67cf5a2`
 **Terminal Acceptance Commit:** `138c741`
 **Commit Range:** `67cf5a2..138c741` (5 atomic commits, authored by `gemini-3.8-flash <agent@exocore.local>`, unpushed)
-**Scope:** `packages/app` (V4 Desktop only; zero changes to V3/`chat-core`, backend, Runtime, TTS, or extensions)
+**Scope:** `packages/app` + `ReactSheet.md` + `Plan/` docs (zero changes to V3/`chat-core`, backend, Runtime, TTS, or cross-repo)
 
 ---
 
@@ -110,5 +110,5 @@ Verification executed strictly under the required Node web-storage guard:
 ## 5. Delivery Sign-off
 
 - **Release Status**: **ACCEPTED & RELEASED**
-- **Repository Boundary**: Strictly respected; no changes outside `packages/app` and `Plan/`.
+- **Repository Boundary**: Strictly respected; scope was `packages/app` + `ReactSheet.md` + `Plan/` docs, with no V3/`chat-core`, backend, Runtime, TTS, or cross-repo changes.
 - **Handoff**: Cross-pane interaction to Pane 5 (`Solaire · Acceptance`) executed and approved under `wezterm-pane-interaction` protocol.
