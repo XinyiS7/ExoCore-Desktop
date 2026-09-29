@@ -32,9 +32,9 @@ describe('Phase 2C CP C-2 — Settings Shell, Appearance, Routine & Notification
     },
     {
       id: 4,
-      name: 'Archived G045 Chat',
+      name: 'Archived Task Chat',
       description: '历史任务',
-      agent_type: 'g045',
+      agent_type: 'standard',
       default_model: 'deepseek-v4-flash',
       system_prompt: '',
       is_visible: true,
@@ -319,46 +319,62 @@ describe('Phase 2C CP C-2 — Settings Shell, Appearance, Routine & Notification
 
   // ── 3. Routine Panel ────────────────────────────────────────────────────────
   describe('Routine Panel', () => {
-    it('filters only g045 agents from canonical presets and sorts checked-first', async () => {
+    it('renders exactly one checkbox for canonical g045 agent and excludes non-g045 presets', async () => {
       renderApp(['/settings/routine']);
 
       expect(await screen.findByRole('heading', { name: '后台例行' })).toBeInTheDocument();
 
-      // Only Alessandro (g045) and Archived G045 Chat (g045) should appear
+      // Only Alessandro (g045) should appear
       expect(screen.getByText('Alessandro')).toBeInTheDocument();
-      expect(screen.getByText('Archived G045 Chat')).toBeInTheDocument();
 
-      // Alicia (user) and Ecki (standard) must NOT appear in the routine checklist
+      // Alicia (user), Archived Task Chat (standard), and Ecki (standard) must NOT appear in the routine checklist
       expect(screen.queryByText('Alicia')).toBeNull();
+      expect(screen.queryByText('Archived Task Chat')).toBeNull();
       expect(screen.queryByText('Ecki')).toBeNull();
 
       // Alessandro (id=1) is in defaultConfig.self_check_preset_ids -> checked
       const checkboxes = screen.getAllByRole('checkbox');
-      expect(checkboxes[0]).toBeChecked(); // Alessandro is first (checked-first)
-      expect(checkboxes[1]).not.toBeChecked(); // Archived G045 Chat is unchecked
+      expect(checkboxes).toHaveLength(1);
+      expect(checkboxes[0]).toBeChecked();
     });
 
-    it('toggles agents and saves identical deduplicated positive ID arrays to self_check and deep_org', async () => {
+    it('toggles canonical g045 and saves payload with both arrays identically [] or [1]', async () => {
       let patchBody: unknown = null;
-      activeRoutes.push({
-        test: '/api/core/config/',
-        method: 'PATCH',
-        handler: async (_url, init) => {
-          patchBody = JSON.parse(init?.body as string);
-          return jsonResponse({
-            ...defaultConfig,
-            ...(patchBody as Record<string, unknown>),
-          });
+      let currentConfig = { ...defaultConfig };
+      activeRoutes = [
+        {
+          test: '/api/agents/presets/',
+          handler: () => jsonResponse(defaultPresets),
         },
-      });
+        {
+          test: '/api/core/config/',
+          method: 'GET',
+          handler: () => jsonResponse(currentConfig),
+        },
+        {
+          test: '/api/core/config/',
+          method: 'PATCH',
+          handler: async (_url, init) => {
+            patchBody = JSON.parse(init?.body as string);
+            currentConfig = {
+              ...currentConfig,
+              ...(patchBody as Record<string, unknown>),
+            };
+            return jsonResponse(currentConfig);
+          },
+        },
+      ];
 
       renderApp(['/settings/routine']);
 
       expect(await screen.findByRole('heading', { name: '后台例行' })).toBeInTheDocument();
 
-      // Toggle Archived G045 Chat (id=4)
-      const checkboxes = screen.getAllByRole('checkbox');
-      fireEvent.click(checkboxes[1]);
+      const checkbox = screen.getByRole('checkbox');
+      expect(checkbox).toBeChecked();
+
+      // Uncheck canonical g045
+      fireEvent.click(checkbox);
+      expect(checkbox).not.toBeChecked();
 
       // Save
       const saveBtn = screen.getByRole('button', { name: '保存例行配置' });
@@ -368,14 +384,30 @@ describe('Phase 2C CP C-2 — Settings Shell, Appearance, Routine & Notification
         expect(screen.getByText('例行任务配置保存成功')).toBeInTheDocument();
       });
 
-      // Both fields must receive the identical deduplicated array [1, 4]
+      // Both fields must receive the identical empty array []
       expect(patchBody).toEqual({
-        self_check_preset_ids: [1, 4],
-        deep_org_preset_ids: [1, 4],
+        self_check_preset_ids: [],
+        deep_org_preset_ids: [],
       });
       // Absolutely no time fields sent in patch
       expect(patchBody).not.toHaveProperty('active_start');
       expect(patchBody).not.toHaveProperty('active_end');
+
+      // Check canonical g045 again
+      fireEvent.click(checkbox);
+      expect(checkbox).toBeChecked();
+
+      fireEvent.click(saveBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText('例行任务配置保存成功')).toBeInTheDocument();
+      });
+
+      // Both fields must receive identical [1]
+      expect(patchBody).toEqual({
+        self_check_preset_ids: [1],
+        deep_org_preset_ids: [1],
+      });
     });
 
     it('preserves selection draft and shows explicit error banner when PATCH fails', async () => {
@@ -389,8 +421,11 @@ describe('Phase 2C CP C-2 — Settings Shell, Appearance, Routine & Notification
 
       expect(await screen.findByRole('heading', { name: '后台例行' })).toBeInTheDocument();
 
-      const checkboxes = screen.getAllByRole('checkbox');
-      fireEvent.click(checkboxes[1]); // Check id=4
+      const checkbox = screen.getByRole('checkbox');
+      expect(checkbox).toBeChecked();
+
+      fireEvent.click(checkbox); // Uncheck id=1
+      expect(checkbox).not.toBeChecked();
 
       const saveBtn = screen.getByRole('button', { name: '保存例行配置' });
       fireEvent.click(saveBtn);
@@ -399,8 +434,81 @@ describe('Phase 2C CP C-2 — Settings Shell, Appearance, Routine & Notification
         expect(screen.getByRole('alert')).toBeInTheDocument();
       });
 
-      // Draft is preserved: checkboxes[1] remains checked
-      expect(checkboxes[1]).toBeChecked();
+      // Draft is preserved: checkbox remains unchecked
+      expect(checkbox).not.toBeChecked();
+    });
+
+    it('renders honest empty state and zero checkboxes/save when zero g045 presets exist', async () => {
+      activeRoutes = [
+        {
+          test: '/api/agents/presets/',
+          handler: () =>
+            jsonResponse([
+              { id: 2, name: 'Alicia', agent_type: 'user', is_visible: true },
+              { id: 5, name: 'Ecki', agent_type: 'standard', is_visible: true },
+            ]),
+        },
+        {
+          test: '/api/core/config/',
+          handler: () => jsonResponse(defaultConfig),
+        },
+      ];
+
+      renderApp(['/settings/routine']);
+
+      expect(await screen.findByRole('heading', { name: '后台例行' })).toBeInTheDocument();
+      expect(screen.getByText('当前系统无可用 G045 助手预设')).toBeInTheDocument();
+      expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+      expect(screen.queryByRole('button', { name: '保存例行配置' })).toBeNull();
+    });
+
+    it('renders contract-error alert and zero checkboxes/save when multiple g045 presets exist', async () => {
+      activeRoutes = [
+        {
+          test: '/api/agents/presets/',
+          handler: () =>
+            jsonResponse([
+              { id: 1, name: 'Alessandro', agent_type: 'g045', is_visible: true },
+              { id: 4, name: 'Second G045', agent_type: 'g045', is_visible: true },
+            ]),
+        },
+        {
+          test: '/api/core/config/',
+          handler: () => jsonResponse(defaultConfig),
+        },
+      ];
+
+      renderApp(['/settings/routine']);
+
+      expect(await screen.findByRole('heading', { name: '后台例行' })).toBeInTheDocument();
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent(/系统契约异常/);
+      expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+      expect(screen.queryByRole('button', { name: '保存例行配置' })).toBeNull();
+    });
+
+    it('renders contract-error alert and zero checkboxes/save when canonical g045 id is invalid', async () => {
+      activeRoutes = [
+        {
+          test: '/api/agents/presets/',
+          handler: () =>
+            jsonResponse([
+              { id: 0, name: 'Invalid G045', agent_type: 'g045', is_visible: true },
+            ]),
+        },
+        {
+          test: '/api/core/config/',
+          handler: () => jsonResponse(defaultConfig),
+        },
+      ];
+
+      renderApp(['/settings/routine']);
+
+      expect(await screen.findByRole('heading', { name: '后台例行' })).toBeInTheDocument();
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent(/系统契约异常/);
+      expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+      expect(screen.queryByRole('button', { name: '保存例行配置' })).toBeNull();
     });
 
     it('displays read-only schedule preview with active window and deep org day/hour', async () => {

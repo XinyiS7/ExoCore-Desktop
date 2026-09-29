@@ -22,6 +22,8 @@
 
 **PUT /api/agents/presets/<id>/** / **PATCH /api/agents/presets/<id>/** — 更新现有字段，response shape 同上。
 
+唯一 G045 写入不变量：`agent_type` 不接受「其它 preset → g045」，也不接受「唯一 g045 → 其它 tier」，违反返回 `400`（admin 表单同规则）。数据库层另有 backstop：partial unique index `uniq_g045_agentpreset`（至多一个 g045 行）+ demotion trigger `exocore_protect_g045_singleton`，ORM `save()` / `QuerySet.update()` 同样被拒绝；不相关的 preset 字段更新不受影响。
+
 **POST /api/agents/presets/** / **DELETE /api/agents/presets/<id>/** — `405 Method Not Allowed`。生产与开发真实库的 preset 行集合固定；创建/删除只在 Django test DB fixture 中允许。
 
 ### 1.2 Conversation CRUD — 对话管理
@@ -34,15 +36,29 @@
   "project": 1, "project_name": "My Project",
   "agent_preset_id": 1, "agent_type": "g045",
   "temperature": 1.0, "thinking_level": "medium",
-  "frozen_project_ids": [1], "created_at": "2026-01-01T00:00:00Z"
+  "frozen_project_ids": [1], "created_at": "2026-01-01T00:00:00Z",
+  "is_prime": true
 }]
 ```
 
+**Prime Conversation（唯一 G045 主会话）**
+- ExoCore 内 G045 必定且只存在一个；该 preset 只要有 Conversation，就必须且只能有一条 `is_prime=true`。
+- `POST /api/agents/sessions/init/` 创建唯一 G045 的第一个 Conversation 时，在同一创建事务内自动成为 Prime；后续新会话默认 `is_prime=false`，不抢现有 Prime（不按时间戳猜、不在读取时修补）。
+- `GET /api/agents/conversations/` 与 `GET /api/agents/conversations/<pk>/` additive 返回 strict boolean `is_prime`；DB 条件唯一约束（同一 preset 至多一条 `is_prime=true`）是 backstop。
+
 **POST /api/agents/conversations/** — name + project (必填) / agent_preset (可选)
 
-**PATCH /api/agents/conversations/<pk>/** — name / project / archive
+**PATCH /api/agents/conversations/<pk>/** — name / project / archive / `is_prime`
+- `{"is_prime": true}`：仅接受唯一 G045 所属 Conversation；旧 Prime 清除与目标设置是一个原子结果（排他转移）；重复设置当前 Prime 幂等；成功响应目标 `is_prime=true`。
+- `{"is_prime": false}`：`400`（Prime 不能清空，只能转移）；非 JSON boolean 同样 `400`。
 
 **DELETE /api/agents/conversations/<pk>/**
+- `204 No Content`: 物理删除成功（空响应体）。Django CASCADE 处理 Message/HistoryChunk/SessionAttachment 元数据；MemoryPlasmid SET_NULL 脱钩保留；物理附件文件留存。
+- `400 Bad Request`: `{"code": "conversation_protected", "message": "受保护的会话（Council / Bridge）不可通过普通会话接口删除"}`。
+- `404 Not Found`: `{"code": "conversation_not_found", "message": "会话不存在"}`。
+- `409 Conflict`: `{"code": "conversation_busy", "message": "该会话正在生成回复或处于活动运行时状态，无法删除"}`。
+- `409 Conflict`: `{"code": "conversation_prime_transfer_required", "message": "当前主会话不能直接删除，请先将主会话转移到其它会话"}`（当前 Prime 必须先排他转移；其它删除生命周期不变）。
+- `500 Internal Server Error`: `{"code": "safety_check_failed", "message": "无法验证会话安全状态，已中止删除"}`（Fail-closed 安全熔断，保护在查询异常或安全状态不可确证时的会话不被误删）。
 
 ### 1.3 Chat SSE — 实时对话
 
@@ -600,7 +616,10 @@ key_value write-only，响应不返回。last_four 自动提取。
 
 预览只统计直接关联 Conversation 与上传的 `ProjectFile`，不枚举全部 Knowledge 或文件系统状况；`files[].id` 均为正整数上传文件 ID。
 
-**DELETE /api/core/projects/<pk>/** — body 必须显式发送 `{ "keep_file_ids": [11] }`，不恢复文件时发送空数组。成功 204（无 JSON body）：所有 `ProjectFile` 数据行删除，选中的物理文件移入后端 `SavedFiles` 作为脱离项目的恢复文件（名称可能调整），直接 Conversation 归档到 `Archived Project` 并改由 `Archived Chat` 持有，仍存活的 Knowledge 归档到 `Archived Project`。失败返回 `{error, code}`；`file_rollback_failed` 表示文件回滚不完整，不能声称文件系统未改变。
+**DELETE /api/core/projects/<pk>/** — body 必须显式发送 `{ "keep_file_ids": [11] }`，不恢复文件时发送空数组。
+- `DELETE` 在项目仍拥有当前 Prime 会话时拒绝：`409` `{"error": "Project owns the current Prime conversation; transfer Prime to another conversation before deleting the project.", "code": "prime_conversation_transfer_required"}`；拒绝发生在任何文件移动或所有权变更之前，用户必须先将 Prime 转移至其他会话，项目、Conversation 归属与 Prime 状态均保持不变。
+- 成功 204（无 JSON body）：所有 `ProjectFile` 数据行删除，选中的物理文件移入后端 `SavedFiles` 作为脱离项目的恢复文件（名称可能调整），直接 Conversation 归档到 `Archived Project` 并改由 `Archived Chat` 持有，仍存活的 Knowledge 归档到 `Archived Project`。
+- 失败返回 `{error, code}`；`file_rollback_failed` 表示文件回滚不完整，不能声称文件系统未改变。
 
 ### 3.9 Project Files — 项目文件
 
@@ -927,7 +946,7 @@ Query 参数：
 | session_uuid | string (uuid) | Event 唯一 ID |
 | preset_id | int | 归属 preset |
 | preset_name | string | 归属 preset 名称 |
-| launch_source | string | auto / agent / notification |
+| launch_source | string | auto / agent / notification / user |
 | domain | string | trusted initial Drawer 域（可为空字符串） |
 | status | string | pending / running / succeeded / failed |
 | content | string | 最终摘要正文（失败时为空字符串） |

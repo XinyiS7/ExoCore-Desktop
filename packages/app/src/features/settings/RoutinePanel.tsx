@@ -8,6 +8,10 @@ import { ErrorState, LoadingState } from '../../shared/AsyncState';
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
+function isValidG045Id(id: unknown): id is number {
+  return typeof id === 'number' && Number.isInteger(id) && id > 0;
+}
+
 export function RoutinePanel() {
   useDocumentTitle('例行设置');
 
@@ -15,15 +19,32 @@ export function RoutinePanel() {
   const configQuery = useSystemConfigQuery();
   const updateMutation = useUpdateSystemConfigMutation();
 
-  // Local draft of selected g045 agent IDs
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  // Extract g045 agents from canonical presets
+  const g045Agents = useMemo(() => {
+    if (!presetsQuery.data || !Array.isArray(presetsQuery.data)) return [];
+    return presetsQuery.data.filter((p: AgentPresetRow) => p.agent_type === 'g045');
+  }, [presetsQuery.data]);
+
+  // Contract invariant: exactly one valid G045 preset may exist
+  const isContractError = useMemo(() => {
+    if (g045Agents.length >= 2) return true;
+    if (g045Agents.length === 1) {
+      return !isValidG045Id(g045Agents[0].id);
+    }
+    return false;
+  }, [g045Agents]);
+
+  const canonicalG045 = g045Agents.length === 1 && !isContractError ? g045Agents[0] : null;
+
+  // Local draft of canonical g045 enabled state
+  const [isEnabled, setIsEnabled] = useState(false);
   const [hasUserEdited, setHasUserEdited] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   // Sync draft from config when loaded (unless user is editing)
   useEffect(() => {
-    if (configQuery.data && !hasUserEdited) {
+    if (configQuery.data && !hasUserEdited && canonicalG045) {
       const raw =
         configQuery.data.self_check_preset_ids ??
         configQuery.data.deep_org_preset_ids ??
@@ -31,50 +52,30 @@ export function RoutinePanel() {
       const valid = Array.isArray(raw)
         ? raw.filter((id): id is number => typeof id === 'number' && Number.isInteger(id) && id > 0)
         : [];
-      setSelectedIds(valid);
+      setIsEnabled(valid.includes(canonicalG045.id));
     }
-  }, [configQuery.data, hasUserEdited]);
+  }, [configQuery.data, hasUserEdited, canonicalG045]);
 
-  // Extract g045 agents from canonical presets
-  const g045Agents = useMemo(() => {
-    if (!presetsQuery.data || !Array.isArray(presetsQuery.data)) return [];
-    return presetsQuery.data.filter((p: AgentPresetRow) => p.agent_type === 'g045');
-  }, [presetsQuery.data]);
-
-  // Sort g045 agents with checked items first for convenience
-  const sortedG045Agents = useMemo(() => {
-    const checkedSet = new Set(selectedIds);
-    return [...g045Agents].sort((a, b) => {
-      const aChecked = checkedSet.has(a.id) ? 0 : 1;
-      const bChecked = checkedSet.has(b.id) ? 0 : 1;
-      if (aChecked !== bChecked) return aChecked - bChecked;
-      return a.id - b.id;
-    });
-  }, [g045Agents, selectedIds]);
-
-  const handleToggle = (id: number) => {
+  const handleToggle = () => {
     setHasUserEdited(true);
     setSaveSuccess(false);
     setSaveError(null);
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    setIsEnabled((prev) => !prev);
   };
 
   const handleSave = async () => {
+    if (!canonicalG045 || isContractError) return;
     setSaveSuccess(false);
     setSaveError(null);
 
-    // Deduplicate and ensure array of positive integers
-    const uniqueIds = Array.from(
-      new Set(selectedIds.filter((id) => typeof id === 'number' && Number.isInteger(id) && id > 0))
-    ).sort((a, b) => a - b);
+    const targetIds = isEnabled ? [canonicalG045.id] : [];
 
     try {
       await updateMutation.mutateAsync({
-        self_check_preset_ids: uniqueIds,
-        deep_org_preset_ids: uniqueIds,
+        self_check_preset_ids: targetIds,
+        deep_org_preset_ids: targetIds,
       });
+      await configQuery.refetch();
       setHasUserEdited(false);
       setSaveSuccess(true);
     } catch (err: unknown) {
@@ -131,7 +132,7 @@ export function RoutinePanel() {
       <div className="settings-panel-header">
         <h1 className="settings-panel-title">后台例行</h1>
         <p className="settings-panel-desc">
-          配置自检与深度整理共用的 G045 助手列表，并查看当前的系统调度时间窗口。
+          配置自检与深度整理共用的 G045 助手，并查看当前的系统调度时间窗口。
         </p>
       </div>
 
@@ -166,54 +167,57 @@ export function RoutinePanel() {
                 Self Check & Deep Organize 参与助手
               </h2>
               <p className="settings-card-desc">
-                自检任务与深度整理共用同一组选定的 G045 智能助手；仅 G045 类型的预设支持参与后台例行。
+                自检任务与深度整理共用同一选定的 G045 智能助手；仅系统唯一 G045 预设支持参与后台例行。
               </p>
             </div>
           </div>
 
-          <div className="routine-agent-checklist" role="group" aria-label="G045 助手多选列表">
-            {sortedG045Agents.length === 0 ? (
+          {isContractError ? (
+            <div className="app-banner app-banner--error" role="alert" style={{ marginTop: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={16} color="var(--v4-danger)" />
+                <span>系统契约异常：系统仅支持唯一的 G045 助手，当前预设数据异常（存在多个 G045 或非法 ID），已阻止例行配置更改。</span>
+              </div>
+            </div>
+          ) : !canonicalG045 ? (
+            <div className="routine-agent-checklist" role="group" aria-label="G045 助手状态">
               <p className="app-muted" style={{ padding: '16px 0', textAlign: 'center' }}>
                 当前系统无可用 G045 助手预设
               </p>
-            ) : (
-              sortedG045Agents.map((agent) => {
-                const checked = selectedIds.includes(agent.id);
-                return (
-                  <label
-                    key={agent.id}
-                    className={`routine-agent-row${checked ? ' routine-agent-row--checked' : ''}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => handleToggle(agent.id)}
-                      className="routine-agent-checkbox"
-                    />
-                    <div className="routine-agent-info">
-                      <span className="routine-agent-name">{agent.name}</span>
-                      {agent.description ? (
-                        <span className="routine-agent-desc">{agent.description}</span>
-                      ) : null}
-                    </div>
-                    <span className="app-phase-chip app-phase-chip--g045">G045</span>
-                  </label>
-                );
-              })
-            )}
-          </div>
+            </div>
+          ) : (
+            <>
+              <div className="routine-agent-checklist" role="group" aria-label="G045 助手启用设置">
+                <label className={`routine-agent-row${isEnabled ? ' routine-agent-row--checked' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={isEnabled}
+                    onChange={handleToggle}
+                    className="routine-agent-checkbox"
+                  />
+                  <div className="routine-agent-info">
+                    <span className="routine-agent-name">{canonicalG045.name}</span>
+                    {canonicalG045.description ? (
+                      <span className="routine-agent-desc">{canonicalG045.description}</span>
+                    ) : null}
+                  </div>
+                  <span className="app-phase-chip app-phase-chip--g045">G045</span>
+                </label>
+              </div>
 
-          <div className="settings-card-actions" style={{ marginTop: '16px' }}>
-            <button
-              type="button"
-              className="app-btn app-btn--primary"
-              onClick={handleSave}
-              disabled={updateMutation.isPending}
-            >
-              <Save size={14} aria-hidden="true" />
-              <span>{updateMutation.isPending ? '保存中...' : '保存例行配置'}</span>
-            </button>
-          </div>
+              <div className="settings-card-actions" style={{ marginTop: '16px' }}>
+                <button
+                  type="button"
+                  className="app-btn app-btn--primary"
+                  onClick={handleSave}
+                  disabled={updateMutation.isPending}
+                >
+                  <Save size={14} aria-hidden="true" />
+                  <span>{updateMutation.isPending ? '保存中...' : '保存例行配置'}</span>
+                </button>
+              </div>
+            </>
+          )}
         </section>
 
         {/* Schedule Preview Card (Read-only) */}

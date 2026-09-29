@@ -42,9 +42,9 @@ function conv(id: number, over: Partial<ConversationSummary> = {}): Conversation
 afterEach(() => unmockFetch());
 
 describe('orderVisiblePresets (D3)', () => {
-  it('sorts g045 first, then ascending numeric id for all ties', () => {
-    const rows = [preset(2), preset(5), preset(1, 'g045'), preset(9, 'future-x'), preset(3, 'g045')];
-    expect(orderVisiblePresets(rows).map((row) => row.id)).toEqual([1, 3, 2, 5, 9]);
+  it('sorts canonical g045 first, then ascending numeric id for all ties', () => {
+    const rows = [preset(2), preset(5), preset(1, 'g045'), preset(9, 'future-x'), preset(3)];
+    expect(orderVisiblePresets(rows).map((row) => row.id)).toEqual([1, 2, 3, 5, 9]);
   });
 
   it('never mutates the source array', () => {
