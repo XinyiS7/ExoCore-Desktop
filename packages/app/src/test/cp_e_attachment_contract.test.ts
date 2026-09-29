@@ -187,6 +187,24 @@ describe('CP-E E1 — unified attachments contract', () => {
     expect(fromInvalid[0].key).toBe('session_attachment:20');
   });
 
+  it('legacy fallback assigns compact contiguous positions without gaps when malformed siblings exist', () => {
+    const metaWithMalformed = [
+      null,
+      { id: -1, display_name: 'invalid_id' },
+      { id: 10, display_name: 'first_valid.png', mime_type: 'image/png' },
+      'invalid_string',
+      { id: 'not_number' },
+      { id: 20, display_name: 'second_valid.wav', mime_type: 'audio/wav' },
+    ];
+
+    const result = normalizeMessageAttachments(null, metaWithMalformed);
+    expect(result).toHaveLength(2);
+    expect(result[0].key).toBe('session_attachment:10');
+    expect(result[0].position).toBe(0); // compact 0, not 2
+    expect(result[1].key).toBe('session_attachment:20');
+    expect(result[1].position).toBe(1); // compact 1, not 5
+  });
+
   it('normalizeMessageRow integrates attachments projection alongside existing message fields', () => {
     const row: MessageRow = {
       id: 101,

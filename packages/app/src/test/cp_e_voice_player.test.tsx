@@ -328,6 +328,11 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
       },
     ]);
 
+    let activeOwner: string | null = null;
+    const unsubManager = globalAudioPlaybackManager.subscribe((id) => {
+      activeOwner = id;
+    });
+
     const { container, rerender } = render(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
@@ -340,6 +345,9 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     act(() => {
       fireEvent.play(audio);
     });
+
+    const ownedAudioId = activeOwner;
+    expect(ownedAudioId).toMatch(/^audio_.*_message_attachment:10$/);
 
     // Simulate canonical refresh: new attachment object with same key/id and contentUrl
     const refreshedAttachment: MessageAttachmentView = {
@@ -355,6 +363,12 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
       />,
     );
 
+    // Discriminating assertions immediately after same-key/same-src rerender:
+    // audio.pause NOT called, playing UI retained, manager ownership preserved
+    expect(audio.pause).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /暂停语音/ })).toBeTruthy();
+    expect(activeOwner).toBe(ownedAudioId);
+
     // Proves one player in DOM
     expect(container.querySelectorAll('audio')).toHaveLength(1);
 
@@ -369,6 +383,7 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     });
     // This player was paused by mutual exclusion
     expect(audio.pause).toHaveBeenCalled();
+    expect(activeOwner).toBe('another_player');
 
     // Now restart this player and let it naturally end
     act(() => {
@@ -381,9 +396,60 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     expect(transcriptCallCount).toBe(1);
     const transcriptEl = await screen.findByTestId('audio-transcript');
     expect(transcriptEl.textContent).toBe('Refreshed voice message transcript.');
+
+    unsubManager();
+  });
+
+  it('rerendering with changed conversationId updates latestRef scope: natural ended fetches from new conversationId', async () => {
+    let requestedUrl: string | null = null;
+    installFetch([
+      {
+        test: /\/message-attachments\/10\/transcript\//,
+        method: 'GET',
+        handler: (url) => {
+          requestedUrl = url.pathname;
+          return jsonResponse({ transcript: 'Scoped transcript from conversation 99' });
+        },
+      },
+    ]);
+
+    const { container, rerender } = render(
+      <AudioPlayerBubble
+        attachment={readyVoiceAttachment}
+        conversationId={42}
+      />,
+    );
+
+    const audio = container.querySelector('audio')!;
+    act(() => {
+      fireEvent.play(audio);
+    });
+
+    // Rerender with same attachment key/src, but NEW conversationId=99
+    rerender(
+      <AudioPlayerBubble
+        attachment={readyVoiceAttachment}
+        conversationId={99}
+      />,
+    );
+
+    // Natural playback end occurs
+    act(() => {
+      fireEvent.ended(audio);
+    });
+
+    // Proves transcript requested from conversation 99, not stale conversation 42
+    expect(requestedUrl).toBe('/api/agents/conversations/99/message-attachments/10/transcript/');
+    const transcriptEl = await screen.findByTestId('audio-transcript');
+    expect(transcriptEl.textContent).toBe('Scoped transcript from conversation 99');
   });
 
   it('physically pauses audio element and releases global manager on unmount', () => {
+    let activeOwner: string | null = null;
+    const unsubManager = globalAudioPlaybackManager.subscribe((id) => {
+      activeOwner = id;
+    });
+
     const { container, unmount } = renderV4(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
@@ -396,10 +462,15 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
       fireEvent.play(audio);
     });
 
+    expect(activeOwner).toMatch(/^audio_.*_message_attachment:10$/);
+
     // Unmount while playing
     unmount();
 
     expect(audio.pause).toHaveBeenCalled();
+    expect(activeOwner).toBeNull();
+
+    unsubManager();
   });
 
   it('fails closed silently on explicit malformed transcript body', async () => {

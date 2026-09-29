@@ -217,8 +217,8 @@ export function normalizeMessageAttachments(
       const view = parseLegacyMetaItem(item, idx);
       if (view) {
         out.push(view);
+        idx++;
       }
-      idx++;
     }
     return out;
   }
