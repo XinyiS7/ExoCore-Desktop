@@ -1,5 +1,5 @@
 import { FileText } from 'lucide-react';
-import type { AttachmentMeta } from '../types';
+import type { AttachmentMeta, MessageAttachmentView } from '../types';
 
 function formatSize(bytes: number | null | undefined): string {
   if (bytes == null || !Number.isFinite(bytes) || bytes < 0) return '';
@@ -15,7 +15,8 @@ function typeLabel(mime: string | null | undefined): string {
 }
 
 export interface AttachmentFileCardProps {
-  meta: AttachmentMeta;
+  meta?: AttachmentMeta;
+  attachment?: MessageAttachmentView;
 }
 
 /**
@@ -25,15 +26,23 @@ export interface AttachmentFileCardProps {
  * - no download promise: the frozen contract exposes no stable same-origin
  *   document content URL for non-audio files, so this card is not clickable.
  */
-export function AttachmentFileCard({ meta }: AttachmentFileCardProps) {
-  const label = meta.display_name || meta.original_filename || '文件附件';
+export function AttachmentFileCard({ meta, attachment }: AttachmentFileCardProps) {
+  const label =
+    attachment?.displayName ||
+    attachment?.originalFilename ||
+    meta?.display_name ||
+    meta?.original_filename ||
+    '文件附件';
+  const mimeType = attachment?.mimeType ?? meta?.mime_type;
+  const fileSize = attachment?.fileSize ?? meta?.file_size;
+
   return (
-    <div className="app-att-filecard" data-mime={meta.mime_type} title={label}>
+    <div className="app-att-filecard" data-mime={mimeType ?? undefined} title={label}>
       <FileText size={14} strokeWidth={1.5} aria-hidden="true" />
       <span className="app-att-filecard-name">{label}</span>
       <span className="app-att-filecard-meta">
-        {typeLabel(meta.mime_type)}
-        {formatSize(meta.file_size) ? ` · ${formatSize(meta.file_size)}` : ''}
+        {typeLabel(mimeType)}
+        {formatSize(fileSize) ? ` · ${formatSize(fileSize)}` : ''}
       </span>
     </div>
   );

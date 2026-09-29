@@ -86,10 +86,13 @@ function MessageRowItem({
   const isAssistant = message.role === 'assistant';
   const isUser = message.role === 'user';
   const voice = message.voice;
+  const attachments = message.attachments;
   const attachmentsMeta = message.attachmentsMeta ?? [];
+  const readyAttachments = attachments ? attachments.filter((att) => att.status === 'ready') : [];
+  const hasAttachments =
+    attachments !== undefined ? readyAttachments.length > 0 : attachmentsMeta.length > 0;
   const hasReasoning = Boolean(message.reasoningContent);
   const hasContentText = Boolean(message.content?.trim());
-  const hasAttachments = attachmentsMeta.length > 0;
   const voiceToolErrors = isAssistant ? message.voiceToolErrors ?? [] : [];
   const hasVoiceToolErrors = voiceToolErrors.length > 0;
 
@@ -177,7 +180,13 @@ function MessageRowItem({
         ) : hasAttachments || hasVoiceToolErrors ? null : (
           <span className="app-muted">（空消息）</span>
         )}
-        {hasAttachments ? <MessageAttachments meta={attachmentsMeta} /> : null}
+        {hasAttachments ? (
+          <MessageAttachments
+            attachments={attachments}
+            meta={attachmentsMeta}
+            conversationId={conversationId}
+          />
+        ) : null}
         {hasVoiceToolErrors ? <VoiceToolErrors errors={voiceToolErrors} /> : null}
       </div>
     </article>

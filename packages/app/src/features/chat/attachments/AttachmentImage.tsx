@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react';
 import { ImageOff, Maximize2 } from 'lucide-react';
-import type { AttachmentMeta } from '../types';
+import type { AttachmentMeta, MessageAttachmentView } from '../types';
 import { ImageLightbox } from './ImageLightbox';
 import { validatedImageFileUri } from './mediaUrls';
 
 export interface AttachmentImageProps {
-  meta: AttachmentMeta;
+  meta?: AttachmentMeta;
+  attachment?: MessageAttachmentView;
 }
 
 /**
@@ -15,18 +16,25 @@ export interface AttachmentImageProps {
  * - opens the accessible lightbox; the box is never opened by an image that
  *   failed to load (it stays a labelled fallback card).
  */
-export function AttachmentImage({ meta }: AttachmentImageProps) {
+export function AttachmentImage({ meta, attachment }: AttachmentImageProps) {
   const [loadFailed, setLoadFailed] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const src = validatedImageFileUri(meta.file_uri) ?? '';
-  const label = meta.display_name || meta.original_filename || '图片附件';
+  const fileUri = attachment?.fileUri ?? meta?.file_uri;
+  const mimeType = attachment?.mimeType ?? meta?.mime_type;
+  const label =
+    attachment?.displayName ||
+    attachment?.originalFilename ||
+    meta?.display_name ||
+    meta?.original_filename ||
+    '图片附件';
 
+  const src = validatedImageFileUri(fileUri) ?? '';
   const closeLightbox = useCallback(() => setLightboxOpen(false), []);
 
   if (!src || loadFailed) {
     return (
-      <div className="app-att-filecard" data-mime={meta.mime_type}>
+      <div className="app-att-filecard" data-mime={mimeType ?? undefined}>
         <ImageOff size={14} strokeWidth={1.5} aria-hidden="true" />
         <span className="app-att-filecard-name" title={label}>
           {label}

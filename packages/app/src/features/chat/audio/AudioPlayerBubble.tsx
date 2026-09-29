@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { AlertCircle, Pause, Play } from 'lucide-react';
-import type { AttachmentMeta } from '../types';
+import type { AttachmentMeta, MessageAttachmentView } from '../types';
 import { globalAudioPlaybackManager } from './audioPlaybackManager';
 import { validatedAudioContentUrl } from '../attachments/mediaUrls';
 
@@ -15,22 +15,28 @@ function formatTime(seconds: number): string {
 const BAR_HEIGHTS = [40, 70, 45, 90, 60, 30, 80, 55, 100, 75, 50, 85, 40, 65, 35, 50];
 
 export interface AudioPlayerBubbleProps {
-  /** Canonical same-origin content_url (never a remote file_uri). */
-  meta: AttachmentMeta;
+  /** Canonical unified attachment view model. */
+  attachment?: MessageAttachmentView;
+  /** Transitional legacy attachment metadata. */
+  meta?: AttachmentMeta;
+  /** Canonical conversation identity for scoped transcript requests. */
+  conversationId?: number;
 }
 
 /**
- * Historical audio bubble (Task 5, Gate G):
+ * Historical and canonical voice message audio bubble:
  * - plays ONLY the same-origin `content_url`;
  * - 404/load/play failures stay visible with a stable alert;
  * - pointer click AND keyboard (left/right arrows) seek an accessible
  *   slider control;
  * - one global mutual-exclusion owner pauses any previously playing item.
  */
-export function AudioPlayerBubble({ meta }: AudioPlayerBubbleProps) {
-  const src = validatedAudioContentUrl(meta.content_url) ?? '';
+export function AudioPlayerBubble({ meta, attachment, conversationId: _conversationId }: AudioPlayerBubbleProps) {
+  const rawSrc = attachment ? attachment.contentUrl : meta?.content_url;
+  const src = validatedAudioContentUrl(rawSrc) ?? '';
   const uniqueId = useId();
-  const audioId = `audio_${uniqueId}_${meta.id}`;
+  const identity = attachment ? attachment.key : meta?.id ?? 'audio';
+  const audioId = `audio_${uniqueId}_${identity}`;
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -161,7 +167,12 @@ export function AudioPlayerBubble({ meta }: AudioPlayerBubbleProps) {
   };
 
   const progressPercent = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
-  const title = meta.display_name || meta.original_filename || '语音消息';
+  const title =
+    attachment?.displayName ||
+    attachment?.originalFilename ||
+    meta?.display_name ||
+    meta?.original_filename ||
+    '语音消息';
 
   return (
     <div className="app-audio-bubble" title={title}>
