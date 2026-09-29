@@ -13,7 +13,7 @@ const clients: QueryClient[] = [];
 afterEach(() => { cleanup(); clients.forEach(client => client.clear()); clients.length = 0; vi.unstubAllGlobals(); });
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 const preset = (id: number) => ({ id, name: `Preset ${id}`, description: null, agent_type: id === 1 ? 'g045' : 'standard', default_model: null, system_prompt: null, is_visible: true });
-const conversation = (id: number, agent = 5) => ({ id, name: `created-${id}`, created_at: '2026-01-01T00:00:00Z', frozen_project_ids: [], project: 0, project_name: null, agent_type: 'standard', agent_preset_id: agent, last_message_at: null, thinking_level: null, memory_injection_enabled: null });
+const conversation = (id: number, agent = 5) => ({ id, name: `created-${id}`, created_at: '2026-01-01T00:00:00Z', frozen_project_ids: [], project: 0, project_name: null, agent_type: 'standard', agent_preset_id: agent, last_message_at: null, thinking_level: null, memory_injection_enabled: null, is_prime: false });
 function deferred() { let resolve!: (value: Response) => void; const promise = new Promise<Response>(done => { resolve = done; }); return { promise, resolve }; }
 const success = () => json({ data: { conversation_id: 901, session_id: 999, session_name: 'created-901' } }, 201);
 function LocationProbe({ visits }: { visits: string[] }) {

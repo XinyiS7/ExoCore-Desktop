@@ -254,3 +254,53 @@
   color: var(--v4-text-dim);
   overflow-wrap: anywhere;
 }
+
+/* ── Prime Conversation Affordance (Gate 0 / CP-C) ───────────────────── */
+
+.prime-star-btn {
+  flex-shrink: 0;
+  align-self: center;
+  color: var(--v4-text-mute);
+  border: 1px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.prime-star-btn:hover:not(:disabled),
+.prime-star-btn:focus-visible {
+  color: var(--v4-text);
+  border-color: var(--v4-line-strong);
+}
+
+.prime-star-btn--active,
+.prime-star-btn--active:hover:not(:disabled) {
+  color: var(--v4-accent, #f59e0b);
+  cursor: default;
+}
+
+.prime-star {
+  color: inherit;
+}
+
+.prime-star--active {
+  color: var(--v4-accent, #f59e0b);
+  fill: currentColor;
+}
+
+.prime-confirm-dialog {
+  max-width: 440px;
+  width: 100%;
+}
+
+.prime-confirm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prime-confirm-desc {
+  margin: 0;
+  font-size: calc(13.5px * var(--exo-font-scale, 1));
+  color: var(--v4-text-dim);
+  line-height: 1.5;
+}
+

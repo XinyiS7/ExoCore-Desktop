@@ -29,8 +29,8 @@ import type { ConversationDeleteAttempt } from '../features/chat/chatDelete';
 const PRESET = { id: 11, name: 'Alessandro', is_visible: true, model: 'gpt', avatar: null };
 
 const ROWS = [
-  { id: 101, name: 'Alpha 会话', project: null, project_name: null, agent_preset_id: 11, agent_type: 'g045', temperature: 1.0, thinking_level: 'medium', frozen_project_ids: [], created_at: '2026-08-01T00:00:00Z', last_message_at: '2026-08-02T00:00:00Z' },
-  { id: 102, name: 'Beta 会话', project: 7, project_name: 'P7', agent_preset_id: 11, agent_type: 'g045', temperature: 1.0, thinking_level: 'medium', frozen_project_ids: [], created_at: '2026-08-01T00:00:00Z', last_message_at: null },
+  { id: 101, name: 'Alpha 会话', project: null, project_name: null, agent_preset_id: 11, agent_type: 'g045', temperature: 1.0, thinking_level: 'medium', frozen_project_ids: [], created_at: '2026-08-01T00:00:00Z', last_message_at: '2026-08-02T00:00:00Z', is_prime: false },
+  { id: 102, name: 'Beta 会话', project: 7, project_name: 'P7', agent_preset_id: 11, agent_type: 'g045', temperature: 1.0, thinking_level: 'medium', frozen_project_ids: [], created_at: '2026-08-01T00:00:00Z', last_message_at: null, is_prime: false },
 ];
 
 type Req = { url: string; method: string };

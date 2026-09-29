@@ -48,6 +48,7 @@ function wireConv(id: number, over: Record<string, unknown> = {}) {
     last_message_at: null,
     thinking_level: 'auto',
     memory_injection_enabled: null,
+    is_prime: false,
     ...over,
   };
 }
@@ -68,6 +69,7 @@ function lensRow(
     agentType: 'standard',
     thinkingLevel: null,
     memoryInjectionEnabled: null,
+    isPrime: false,
   };
 }
 

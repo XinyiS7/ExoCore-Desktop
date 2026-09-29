@@ -32,6 +32,7 @@ const conversation = (id: number) => ({
   last_message_at: '2026-09-01T10:00:00Z',
   thinking_level: 'high',
   memory_injection_enabled: null,
+  is_prime: false,
 });
 
 const assistant = (id: number) => ({

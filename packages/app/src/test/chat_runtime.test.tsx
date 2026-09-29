@@ -63,6 +63,7 @@ const convRow = (id: number) => ({
   last_message_at: '2026-09-01T10:00:00Z',
   thinking_level: 'auto',
   memory_injection_enabled: null,
+  is_prime: false,
 });
 
 const mkMsg = (id: number, role: string, content: string, indexInSession: number) => ({

@@ -58,6 +58,7 @@ const CONVO_ROWS = [
     frozen_project_ids: [],
     created_at: '2026-08-01T00:00:00Z',
     last_message_at: '2026-08-02T00:00:00Z',
+    is_prime: false,
   },
   {
     id: 102,
@@ -71,6 +72,7 @@ const CONVO_ROWS = [
     frozen_project_ids: [],
     created_at: '2026-08-01T00:00:00Z',
     last_message_at: null,
+    is_prime: false,
   },
 ];
 

@@ -19,6 +19,7 @@ export interface DeleteDisplayState {
     | 'success'
     | 'absent'
     | 'safety_failed'
+    | 'prime_transfer_required'
     | 'ambiguous';
   /** Human explanation for busy/protected/error states. */
   message: string;
@@ -74,6 +75,11 @@ export function deriveDeleteDisplay(
       return {
         verdict: 'safety_failed',
         message: '删除安全检查未能完成，会话未被删除。请关闭此窗口后重试。',
+      };
+    case 'prime_transfer_required':
+      return {
+        verdict: 'prime_transfer_required',
+        message: '当前主会话不可删除。若需删除，请先将其他会话设为主会话。',
       };
   }
 }

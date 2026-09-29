@@ -16,6 +16,7 @@ import {
   listConversations,
   listProjects,
   listVisiblePresets,
+  setPrimeConversation,
 } from './api';
 import type { CreateConversationResult, MessagePage, MessageView } from './types';
 
@@ -194,3 +195,18 @@ export function useCreateConversationMutation(
     },
   });
 }
+
+/**
+ * Gate 0 / CP-C mutation: atomically transfer Prime to target conversation.
+ * Invalidates the canonical conversations query upon settlement.
+ */
+export function useSetPrimeConversationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: number) => setPrimeConversation(conversationId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.conversations });
+    },
+  });
+}
+

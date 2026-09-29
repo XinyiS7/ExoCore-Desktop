@@ -38,6 +38,8 @@ export interface ConversationRow {
   last_message_at: string | null;
   thinking_level: string | null;
   memory_injection_enabled: boolean | null;
+  /** Gate 0 required boolean Prime Conversation flag */
+  is_prime: boolean;
 }
 
 export type MessageRole = 'user' | 'assistant' | 'system' | 'developer';
@@ -202,6 +204,8 @@ export interface ConversationSummary {
   thinkingLevel: string | null;
   /** Backend row value only; P1D dispatch is owned by the local g045 Conversation preference. */
   memoryInjectionEnabled: boolean | null;
+  /** Gate 0 required boolean Prime Conversation flag */
+  isPrime: boolean;
 }
 
 /**

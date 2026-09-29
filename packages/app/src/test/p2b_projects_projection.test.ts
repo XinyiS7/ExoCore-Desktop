@@ -31,6 +31,7 @@ function row(
     agentType: 'standard',
     thinkingLevel: null,
     memoryInjectionEnabled: null,
+    isPrime: false,
   };
 }
 

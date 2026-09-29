@@ -10,7 +10,7 @@ ensureTestLocalStorage();
 
 const preset = { id: 5, name: 'Fixture', description: null, agent_type: 'standard', default_model: 'deepseek-v4-flash', system_prompt: null, is_visible: true };
 const catalog = { models: [{ name: 'deepseek-v4-flash', family: 'deepseek', abilities: [], compatible_endpoint_ids: [7] }], endpoints: [{ id: 7, name: 'Fixture', provider: 'deepseek', execution_type: 'direct_api', execution_adapter: 'internal_http', payload_format: 'openai', cache_transport: 'inline_chunk', attachment_transports: [], configured: true, enabled: true }], roles: { main: [{ model: 'deepseek-v4-flash', default_endpoint: 7 }], support: {} }, providers: [] };
-const conversation = (id: number) => ({ id, name: `C${id}`, created_at: '2026-09-01T00:00:00Z', frozen_project_ids: [], project: 0, project_name: null, agent_type: 'standard', agent_preset_id: 5, last_message_at: null, thinking_level: 'auto', memory_injection_enabled: null });
+const conversation = (id: number) => ({ id, name: `C${id}`, created_at: '2026-09-01T00:00:00Z', frozen_project_ids: [], project: 0, project_name: null, agent_type: 'standard', agent_preset_id: 5, last_message_at: null, thinking_level: 'auto', memory_injection_enabled: null, is_prime: false });
 const row = (id: number, text: string) => ({ id, role: 'assistant', content: text, reasoning_content: null, platform: 'deepseek', model_version: 'v4-flash', token_count: null, index_in_session: 0, attachment_ids: [], attachments_meta: null, created_at: '2026-09-12T10:00:00Z', voice: { available: true, directed: false, cached: false } });
 const page = (id: number, messageId: number, text: string): MockRoute[] => [
   { test: '/api/agents/presets/', handler: () => jsonResponse([preset]) },

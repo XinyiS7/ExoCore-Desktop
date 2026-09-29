@@ -49,6 +49,7 @@ const convRow = (id: number, over: Record<string, unknown> = {}) => ({
   last_message_at: '2026-09-01T10:00:00Z',
   thinking_level: 'auto',
   memory_injection_enabled: null,
+  is_prime: false,
   ...over,
 });
 

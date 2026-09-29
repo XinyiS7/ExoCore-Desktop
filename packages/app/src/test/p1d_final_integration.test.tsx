@@ -37,7 +37,7 @@ const catalog = {
 const conversation = (id: number, project = 0) => ({
   id, name: `Conversation ${id}`, created_at: '2026-09-01T00:00:00Z', frozen_project_ids: [],
   project, project_name: project ? 'Project Three' : null, agent_type: 'standard', agent_preset_id: 5,
-  last_message_at: null, thinking_level: 'auto', memory_injection_enabled: null,
+  last_message_at: null, thinking_level: 'auto', memory_injection_enabled: null, is_prime: false,
 });
 const cache = { active: false, platform: null, has_snapshot: false };
 

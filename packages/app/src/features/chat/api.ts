@@ -96,7 +96,18 @@ export function extractFieldErrors(body: unknown): Record<string, string> {
   return out;
 }
 
-function normalizeConversationRow(row: ConversationRow): ConversationSummary {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeConversationRow(rawRow: unknown): ConversationSummary {
+  if (!isRecord(rawRow)) {
+    throw contractError('会话数据格式异常', rawRow);
+  }
+  const row = rawRow as unknown as ConversationRow;
+  if (typeof row.is_prime !== 'boolean') {
+    throw contractError('会话数据缺少有效的主会话标记', row);
+  }
   return {
     id: row.id,
     name: row.name,
@@ -109,6 +120,7 @@ function normalizeConversationRow(row: ConversationRow): ConversationSummary {
     thinkingLevel: typeof row.thinking_level === 'string' ? row.thinking_level : null,
     memoryInjectionEnabled:
       typeof row.memory_injection_enabled === 'boolean' ? row.memory_injection_enabled : null,
+    isPrime: row.is_prime,
   };
 }
 
@@ -117,10 +129,6 @@ const TRACE_ARGUMENT_MAX = 500;
 const TRACE_RESULT_MAX = 1000;
 const TRACE_ERROR_MAX = 500;
 const TRACE_TOOL_LIFECYCLES = new Set(['started', 'succeeded', 'failed', 'incomplete']);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function validTraceIdentity(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0 && Array.from(value).length <= TRACE_ID_MAX;
@@ -280,16 +288,59 @@ export async function listConversations(): Promise<ConversationSummary[]> {
   const raw = await apiFetch('/api/agents/conversations/');
   if (!Array.isArray(raw)) throw contractError('会话列表接口返回格式异常', raw);
   // Normalize into new objects; never mutate the server DTO array.
-  return raw.map((row: ConversationRow) => normalizeConversationRow(row));
+  return raw.map((row: unknown) => normalizeConversationRow(row));
 }
 
 /** GET /api/agents/conversations/<id>/ */
 export async function getConversation(id: number): Promise<ConversationSummary> {
   const raw = await apiFetch(`/api/agents/conversations/${id}/`);
-  if (typeof raw !== 'object' || raw === null || typeof (raw as ConversationRow).id !== 'number') {
+  if (!isRecord(raw) || typeof (raw as Record<string, unknown>).id !== 'number') {
     throw contractError('会话详情接口返回格式异常', raw);
   }
-  return normalizeConversationRow(raw as ConversationRow);
+  return normalizeConversationRow(raw);
+}
+
+/**
+ * PATCH /api/agents/conversations/<id>/ with { is_prime: true } (Gate 0 / CP-C).
+ * Atomically transfers Prime to this conversation within the G045 preset.
+ */
+export async function setPrimeConversation(id: number): Promise<ConversationSummary> {
+  let raw: unknown;
+  try {
+    raw = await apiFetch(`/api/agents/conversations/${id}/`, {
+      method: 'PATCH',
+      body: { is_prime: true },
+    });
+  } catch (cause) {
+    const appErr = toAppApiError(cause);
+    const isAmbiguous =
+      appErr.status === null || (typeof appErr.status === 'number' && appErr.status >= 500);
+    if (isAmbiguous) {
+      throw new AppApiError(appErr.message, {
+        status: appErr.status,
+        body: appErr.body,
+        code: appErr.code,
+        fieldErrors: appErr.fieldErrors,
+        ambiguousWrite: true,
+      });
+    }
+    throw appErr;
+  }
+
+  if (
+    !isRecord(raw) ||
+    typeof raw.id !== 'number' ||
+    raw.id !== id ||
+    typeof raw.is_prime !== 'boolean'
+  ) {
+    throw new AppApiError('设置主会话接口返回格式异常', {
+      body: raw,
+      code: 'CONTRACT',
+      ambiguousWrite: true,
+    });
+  }
+
+  return normalizeConversationRow(raw);
 }
 
 // ── Conversation create (canonical init only — never POST .../conversations/) ─

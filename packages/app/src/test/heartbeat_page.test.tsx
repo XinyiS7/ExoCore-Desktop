@@ -1690,6 +1690,7 @@ describe('Heartbeat Page & Profile Entry (CP-A, Plan §2.1 / §2.2)', () => {
               last_message_at: '2026-09-29T10:00:00Z',
               thinking_level: null,
               memory_injection_enabled: null,
+              is_prime: false,
             }),
         },
         {
@@ -1729,6 +1730,7 @@ describe('Heartbeat Page & Profile Entry (CP-A, Plan §2.1 / §2.2)', () => {
                 last_message_at: '2026-09-29T10:00:00Z',
                 thinking_level: null,
                 memory_injection_enabled: null,
+                is_prime: false,
               },
             ]),
         },
@@ -1828,6 +1830,7 @@ describe('Heartbeat Page & Profile Entry (CP-A, Plan §2.1 / §2.2)', () => {
               last_message_at: '2026-09-29T10:00:00Z',
               thinking_level: null,
               memory_injection_enabled: null,
+              is_prime: false,
             }),
         },
         {
@@ -1875,6 +1878,7 @@ describe('Heartbeat Page & Profile Entry (CP-A, Plan §2.1 / §2.2)', () => {
                 last_message_at: '2026-09-29T10:00:00Z',
                 thinking_level: null,
                 memory_injection_enabled: null,
+                is_prime: false,
               },
             ]),
         },

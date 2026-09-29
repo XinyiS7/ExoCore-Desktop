@@ -57,6 +57,7 @@ const conv88 = {
   last_message_at: null,
   thinking_level: 'auto',
   memory_injection_enabled: null,
+  is_prime: false,
 };
 
 const initOk = () =>

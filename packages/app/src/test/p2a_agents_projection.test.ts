@@ -34,6 +34,7 @@ function conv(id: number, over: Partial<ConversationSummary> = {}): Conversation
     lastMessageAt: null,
     thinkingLevel: 'auto',
     memoryInjectionEnabled: null,
+    isPrime: false,
     ...over,
   };
 }

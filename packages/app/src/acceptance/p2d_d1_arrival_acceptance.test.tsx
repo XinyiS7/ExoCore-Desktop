@@ -80,6 +80,7 @@ const conversation = (id: number) => ({
   last_message_at: null,
   thinking_level: 'auto',
   memory_injection_enabled: null,
+  is_prime: false,
 });
 
 const row = (id: number, content = 'persisted answer') => ({

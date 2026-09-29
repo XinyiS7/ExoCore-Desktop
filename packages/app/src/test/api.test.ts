@@ -23,8 +23,8 @@ afterEach(() => unmockFetch());
 describe('api adapters — method/path/query/body', () => {
   it('lists conversations from the canonical GET path and normalizes the 0 sentinel without mutation', async () => {
     const rows = [
-      { id: 7, name: 'drift conv', created_at: '2026-09-01T10:00:00Z', frozen_project_ids: [], project: 0, project_name: null, agent_type: 'standard', agent_preset_id: 5, last_message_at: null, thinking_level: 'auto', memory_injection_enabled: null },
-      { id: 8, name: 'project conv', created_at: '2026-09-01T11:00:00Z', frozen_project_ids: [], project: 10, project_name: 'A Project', agent_type: 'standard', agent_preset_id: 5, last_message_at: '2026-09-01T12:00:00Z', thinking_level: 'auto', memory_injection_enabled: null },
+      { id: 7, name: 'drift conv', created_at: '2026-09-01T10:00:00Z', frozen_project_ids: [], project: 0, project_name: null, agent_type: 'standard', agent_preset_id: 5, last_message_at: null, thinking_level: 'auto', memory_injection_enabled: null, is_prime: false },
+      { id: 8, name: 'project conv', created_at: '2026-09-01T11:00:00Z', frozen_project_ids: [], project: 10, project_name: 'A Project', agent_type: 'standard', agent_preset_id: 5, last_message_at: '2026-09-01T12:00:00Z', thinking_level: 'auto', memory_injection_enabled: null, is_prime: false },
     ];
     const frozen = structuredClone(rows);
     const { calls } = installFetch([
@@ -47,7 +47,7 @@ describe('api adapters — method/path/query/body', () => {
 
   it('gets conversation detail by id', async () => {
     const { calls } = installFetch([
-      { test: '/api/agents/conversations/9/', handler: () => jsonResponse({ id: 9, name: 'x', created_at: '2026-09-01T10:00:00Z', frozen_project_ids: [], project: 0, project_name: null, agent_type: 'standard', agent_preset_id: 5, last_message_at: null, thinking_level: 'auto', memory_injection_enabled: null }) },
+      { test: '/api/agents/conversations/9/', handler: () => jsonResponse({ id: 9, name: 'x', created_at: '2026-09-01T10:00:00Z', frozen_project_ids: [], project: 0, project_name: null, agent_type: 'standard', agent_preset_id: 5, last_message_at: null, thinking_level: 'auto', memory_injection_enabled: null, is_prime: false }) },
     ]);
     const conv = await getConversation(9);
     expect(calls[0].url.pathname).toBe('/api/agents/conversations/9/');

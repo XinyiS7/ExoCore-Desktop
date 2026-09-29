@@ -63,6 +63,7 @@ const conversation = (id: number) => ({
   last_message_at: null,
   thinking_level: 'auto',
   memory_injection_enabled: null,
+  is_prime: false,
 });
 
 function timelineScroll(container: HTMLElement) {

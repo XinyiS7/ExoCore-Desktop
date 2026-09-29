@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Activity, ArrowLeft, Plus } from 'lucide-react';
+import { Activity, ArrowLeft, Plus, Star } from 'lucide-react';
 import { toAppApiError } from '../chat/api';
 import { CreateConversationDialog } from '../chat/CreateConversationDialog';
 import { ConversationDeleteMenu } from '../chat/ConversationDeleteMenu';
 import { isG045AgentType, useConversationsQuery } from '../chat/queries';
 import { formatDateTime } from '../chat/time';
+import type { ConversationSummary } from '../chat/types';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
 import { useDocumentTitle } from '../../shared/useDocumentTitle';
 import { MoreMenu } from '../../shell/PrimaryNavigation';
+import { PrimeConversationConfirmDialog } from './PrimeConversationConfirmDialog';
 import { isValidPresetId, useAgentMemoryQuery, useAgentPresetQuery } from './queries';
 import {
   applyConversationFilter,
@@ -75,9 +77,11 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
   // Profile-local controls reset whenever the route Agent changes (Plan §6.2).
   const [filter, setFilter] = useState<ConversationFilter>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [primeTarget, setPrimeTarget] = useState<ConversationSummary | null>(null);
   useEffect(() => {
     setFilter('all');
     setDialogOpen(false);
+    setPrimeTarget(null);
   }, [presetId]);
 
   const preset = presetQuery.data;
@@ -237,6 +241,24 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
                   <ul className="app-recent-list" aria-label="该 Agent 的会话">
                     {visibleRows.map((row) => (
                       <li key={row.id} className="app-recent-item">
+                        {isG045AgentType(preset.agent_type) ? (
+                          <button
+                            type="button"
+                            className={`app-icon-btn prime-star-btn${row.isPrime ? ' prime-star-btn--active' : ''}`}
+                            aria-label={row.isPrime ? '当前主会话' : '设为主会话'}
+                            title={row.isPrime ? '当前主会话' : '设为主会话'}
+                            onClick={() => {
+                              if (row.isPrime) return;
+                              setPrimeTarget(row);
+                            }}
+                          >
+                            <Star
+                              size={16}
+                              className={`prime-star${row.isPrime ? ' prime-star--active' : ''}`}
+                              aria-hidden="true"
+                            />
+                          </button>
+                        ) : null}
                         <Link to={`/chat/${row.id}`} className="app-recent-row">
                           <span className="app-recent-name">{row.name || `会话 #${row.id}`}</span>
                           <span className="app-recent-time">
@@ -304,6 +326,14 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
             setDialogOpen(false);
             navigate(`/chat/${result.conversationId}`);
           }}
+        />
+      ) : null}
+      {primeTarget ? (
+        <PrimeConversationConfirmDialog
+          open={true}
+          conversationId={primeTarget.id}
+          conversationName={primeTarget.name || `会话 #${primeTarget.id}`}
+          onClose={() => setPrimeTarget(null)}
         />
       ) : null}
     </div>

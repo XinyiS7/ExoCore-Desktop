@@ -12,7 +12,7 @@ afterEach(() => { cleanup(); clients.forEach(client => client.clear()); clients.
 const response = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 const row = (id: number, agent = 5, project: number | null = 7): ConversationSummary => ({
   id, name: `row-${id}`, agentPresetId: agent, projectId: project, projectName: project === null ? null : `Project ${project}`,
-  createdAt: '2026-01-01T00:00:00Z', lastMessageAt: null, agentType: 'standard', thinkingLevel: null, memoryInjectionEnabled: null,
+  createdAt: '2026-01-01T00:00:00Z', lastMessageAt: null, agentType: 'standard', thinkingLevel: null, memoryInjectionEnabled: null, isPrime: false,
 });
 function Nav() { const navigate = useNavigate(); return <button onClick={() => navigate('/agents/6')}>switch-agent</button>; }
 function mount(

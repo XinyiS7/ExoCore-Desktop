@@ -292,7 +292,11 @@ export function ConversationDeleteConfirmDialog({
             </div>
           ) : null}
 
-          {(display.verdict === 'ambiguous' || display.verdict === 'protected' || display.verdict === 'busy') && !busy ? (
+          {(display.verdict === 'ambiguous' ||
+            display.verdict === 'protected' ||
+            display.verdict === 'busy' ||
+            display.verdict === 'prime_transfer_required') &&
+          !busy ? (
             <div className="app-banner app-banner--warn" role="alert">
               {display.message}
             </div>

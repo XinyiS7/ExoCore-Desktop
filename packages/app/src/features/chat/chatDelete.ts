@@ -30,6 +30,7 @@ export const DELETE_ERROR_CODES = {
   NOT_FOUND: 'conversation_not_found',
   BUSY: 'conversation_busy',
   SAFETY_CHECK_FAILED: 'safety_check_failed',
+  PRIME_TRANSFER_REQUIRED: 'conversation_prime_transfer_required',
 } as const;
 
 export type ConversationDeleteOutcome =
@@ -37,7 +38,8 @@ export type ConversationDeleteOutcome =
   | { kind: 'absent' }
   | { kind: 'protected' }
   | { kind: 'busy' }
-  | { kind: 'safety_failed' };
+  | { kind: 'safety_failed' }
+  | { kind: 'prime_transfer_required' };
 
 export type ConversationDeleteAttempt =
   | { outcome: ConversationDeleteOutcome }
@@ -85,6 +87,9 @@ export async function deleteConversation(id: number): Promise<ConversationDelete
     }
     if (status === 409 && code === DELETE_ERROR_CODES.BUSY) {
       return { outcome: { kind: 'busy' } };
+    }
+    if (status === 409 && code === DELETE_ERROR_CODES.PRIME_TRANSFER_REQUIRED) {
+      return { outcome: { kind: 'prime_transfer_required' } };
     }
     if (status === 500 && code === DELETE_ERROR_CODES.SAFETY_CHECK_FAILED) {
       // Fail-closed: the safety check itself failed, deletion definitively
