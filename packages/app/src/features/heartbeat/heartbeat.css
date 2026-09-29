@@ -1,0 +1,472 @@
+/* V4 Heartbeat feature styles (Plan §2.2 / §3) */
+
+.heartbeat-page {
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .heartbeat-page {
+    padding: 20px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+}
+
+.heartbeat-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.heartbeat-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.heartbeat-section-heading .app-h2 {
+  margin: 0;
+}
+
+/* ── Section A: Status Card ─────────────────────────────────────────── */
+
+.heartbeat-status-card {
+  background: var(--v4-panel);
+  border: 1px solid var(--v4-line);
+  border-radius: var(--v4-radius);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.heartbeat-status-label {
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
+  color: var(--v4-text-mute);
+  font-weight: 500;
+}
+
+.heartbeat-main-time {
+  font-size: calc(20px * var(--exo-font-scale, 1));
+  font-weight: 700;
+  color: var(--v4-text);
+  font-family: var(--v4-mono);
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 768px) {
+  .heartbeat-main-time {
+    font-size: calc(24px * var(--exo-font-scale, 1));
+  }
+}
+
+.heartbeat-sub-hint {
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
+  color: var(--v4-warn);
+  font-weight: 500;
+}
+
+/* ── Section B: Mailbox & Wakeup ─────────────────────────────────────── */
+
+.heartbeat-mailbox-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 768px) {
+  .heartbeat-mailbox-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.heartbeat-subpanel {
+  background: var(--v4-panel);
+  border: 1px solid var(--v4-line);
+  border-radius: var(--v4-radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.heartbeat-subpanel-title {
+  font-size: calc(13.5px * var(--exo-font-scale, 1));
+  font-weight: 600;
+  margin: 0;
+  color: var(--v4-text);
+}
+
+.heartbeat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.heartbeat-list-item {
+  background: var(--v4-panel-2);
+  border: 1px solid var(--v4-line);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.heartbeat-note-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heartbeat-note-text {
+  margin: 0;
+  font-size: calc(13px * var(--exo-font-scale, 1));
+  color: var(--v4-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.heartbeat-note-time {
+  font-size: calc(11.5px * var(--exo-font-scale, 1));
+  color: var(--v4-text-mute);
+}
+
+.heartbeat-wakeup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heartbeat-wakeup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.heartbeat-wakeup-time {
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
+  font-weight: 600;
+  color: var(--v4-text);
+  font-family: var(--v4-mono);
+}
+
+.heartbeat-wakeup-msg {
+  margin: 0;
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
+  color: var(--v4-text-dim);
+  overflow-wrap: anywhere;
+}
+
+.heartbeat-unshown-hint {
+  margin: 0;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+}
+
+/* ── Section C: Ledger & Detail Split ─────────────────────────────────── */
+
+.heartbeat-ledger-split {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 960px) {
+  .heartbeat-ledger-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.heartbeat-ledger-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.heartbeat-ledger-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.heartbeat-ledger-count {
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
+}
+
+.heartbeat-ledger-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.heartbeat-ledger-item {
+  margin: 0;
+}
+
+.heartbeat-ledger-row {
+  width: 100%;
+  text-align: left;
+  background: var(--v4-panel);
+  border: 1px solid var(--v4-line);
+  border-radius: var(--v4-radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  color: inherit;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.heartbeat-ledger-row:hover {
+  border-color: var(--v4-line-strong);
+  background: var(--v4-hover-overlay);
+}
+
+.heartbeat-ledger-row--selected {
+  border-color: var(--v4-accent);
+  background: var(--v4-accent-soft);
+}
+
+.heartbeat-ledger-row-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+}
+
+.heartbeat-ledger-time {
+  margin-left: auto;
+  color: var(--v4-text-mute);
+  font-size: calc(11.5px * var(--exo-font-scale, 1));
+}
+
+.heartbeat-ledger-summary {
+  margin: 0;
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
+  color: var(--v4-text-dim);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.heartbeat-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.heartbeat-pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
+  padding: 4px 10px;
+}
+
+.heartbeat-pagination-info {
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  color: var(--v4-text-mute);
+}
+
+/* ── Detail Panel ─────────────────────────────────────────────────────── */
+
+.heartbeat-detail-panel {
+  background: var(--v4-panel);
+  border: 1px solid var(--v4-line);
+  border-radius: var(--v4-radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.heartbeat-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--v4-line);
+  gap: 8px;
+}
+
+.heartbeat-detail-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.heartbeat-detail-title {
+  margin: 0;
+  font-size: calc(14px * var(--exo-font-scale, 1));
+  font-weight: 600;
+  color: var(--v4-text);
+}
+
+.heartbeat-detail-uuid {
+  font-size: calc(11px * var(--exo-font-scale, 1));
+  font-family: var(--v4-mono);
+  color: var(--v4-text-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.heartbeat-detail-close {
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.heartbeat-detail-scroll {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.heartbeat-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.heartbeat-detail-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.heartbeat-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.heartbeat-detail-facts {
+  padding: 8px 10px;
+  background: var(--v4-panel-2);
+}
+
+.heartbeat-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.heartbeat-detail-section-title {
+  margin: 0;
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
+  font-weight: 600;
+  color: var(--v4-text-dim);
+}
+
+.heartbeat-detail-text {
+  font-size: calc(13px * var(--exo-font-scale, 1));
+  color: var(--v4-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+  background: var(--v4-panel-2);
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--v4-line);
+}
+
+.heartbeat-seed-box {
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
+  color: var(--v4-text-dim);
+}
+
+.heartbeat-error-title {
+  color: var(--v4-danger);
+}
+
+.heartbeat-detail-error {
+  margin: 0;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  font-family: var(--v4-mono);
+  color: var(--v4-danger);
+  background: rgba(255, 107, 107, 0.08);
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.heartbeat-tool-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.heartbeat-tool-item {
+  background: var(--v4-panel-2);
+  border: 1px solid var(--v4-line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heartbeat-tool-name {
+  font-weight: 600;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  color: var(--v4-accent);
+}
+
+.heartbeat-tool-body {
+  margin: 0;
+  font-family: var(--v4-mono);
+  font-size: calc(11px * var(--exo-font-scale, 1));
+  color: var(--v4-text-dim);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ── Chip status variations ───────────────────────────────────────────── */
+
+.app-chip--success {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  border-color: rgba(46, 204, 113, 0.3);
+}
+
+.app-chip--danger {
+  background: rgba(255, 107, 107, 0.15);
+  color: var(--v4-danger);
+  border-color: rgba(255, 107, 107, 0.3);
+}

@@ -6,6 +6,7 @@ import { ConversationPage } from '../features/chat/ConversationPage';
 import { NotFoundPage } from '../features/chat/NotFoundPage';
 import { AgentHubPage } from '../features/agents/AgentHubPage';
 import { AgentProfilePage } from '../features/agents/AgentProfilePage';
+import { AgentHeartbeatPage } from '../features/heartbeat/AgentHeartbeatPage';
 import { ProjectHubPage } from '../features/projects/ProjectHubPage';
 import { ProjectDetailPage } from '../features/projects/ProjectDetailPage';
 import { AccountPage } from '../features/account/AccountPage';
@@ -37,6 +38,8 @@ export const router = createBrowserRouter(
         // P2A: Agent Hub (L1) + directly addressable Agent Profile (L2).
         { path: 'agents', element: <AgentHubPage /> },
         { path: 'agents/:presetId', element: <AgentProfilePage /> },
+        // Heartbeat ledger page (G045 companion)
+        { path: 'agents/:presetId/heartbeat', element: <AgentHeartbeatPage /> },
         // P2B: Project Hub (L1) + directly addressable Project Detail (L2, D8).
         { path: 'projects', element: <ProjectHubPage /> },
         { path: 'projects/:projectId', element: <ProjectDetailPage /> },

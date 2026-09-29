@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { Activity, ArrowLeft, Plus } from 'lucide-react';
 import { toAppApiError } from '../chat/api';
 import { CreateConversationDialog } from '../chat/CreateConversationDialog';
 import { ConversationDeleteMenu } from '../chat/ConversationDeleteMenu';
@@ -160,6 +160,18 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
                 ) : null}
               </h2>
               <p className="agent-identity-desc">{preset.description ?? '暂无描述'}</p>
+              {isG045AgentType(preset.agent_type) ? (
+                <div className="agent-identity-actions">
+                  <Link
+                    to={`/agents/${preset.id}/heartbeat`}
+                    className="app-btn app-btn--subtle agent-heartbeat-link"
+                    aria-label="Heartbeat Ledger"
+                  >
+                    <Activity size={16} aria-hidden="true" />
+                    Heartbeat Ledger
+                  </Link>
+                </div>
+              ) : null}
               <dl className="agent-facts">
                 <FactRow label="Agent 类型" value={preset.agent_type || '未标注'} />
                 <FactRow label="默认模型" value={preset.default_model || '未配置默认模型'} />

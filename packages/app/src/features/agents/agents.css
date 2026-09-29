@@ -115,6 +115,19 @@
   overflow-wrap: anywhere;
 }
 
+.agent-identity-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-heartbeat-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
 .agent-facts {
   margin: 0;
   display: flex;
