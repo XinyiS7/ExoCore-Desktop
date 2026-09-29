@@ -3,6 +3,7 @@ import { AlertCircle, Pause, Play } from 'lucide-react';
 import type { AttachmentMeta, MessageAttachmentView } from '../types';
 import { globalAudioPlaybackManager } from './audioPlaybackManager';
 import { validatedAudioContentUrl } from '../attachments/mediaUrls';
+import { fetchAttachmentTranscript } from './transcript';
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -24,19 +25,31 @@ export interface AudioPlayerBubbleProps {
 }
 
 /**
- * Historical and canonical voice message audio bubble:
+ * Historical and canonical voice message audio bubble (CP-E):
  * - plays ONLY the same-origin `content_url`;
  * - 404/load/play failures stay visible with a stable alert;
  * - pointer click AND keyboard (left/right arrows) seek an accessible
  *   slider control;
- * - one global mutual-exclusion owner pauses any previously playing item.
+ * - one global mutual-exclusion owner pauses any previously playing item;
+ * - ready voice_msg audio fetches exact transcript at most once per mount upon natural end;
+ * - fails closed silently on transcript error/404 without breaking playback.
  */
-export function AudioPlayerBubble({ meta, attachment, conversationId: _conversationId }: AudioPlayerBubbleProps) {
+export function AudioPlayerBubble({ meta, attachment, conversationId }: AudioPlayerBubbleProps) {
   const rawSrc = attachment ? attachment.contentUrl : meta?.content_url;
   const src = validatedAudioContentUrl(rawSrc) ?? '';
   const uniqueId = useId();
   const identity = attachment ? attachment.key : meta?.id ?? 'audio';
   const audioId = `audio_${uniqueId}_${identity}`;
+
+  const isEligibleVoice =
+    Boolean(attachment) &&
+    attachment?.kind === 'audio' &&
+    attachment?.source === 'voice_msg' &&
+    attachment?.ref.type === 'message_attachment' &&
+    typeof conversationId === 'number' &&
+    conversationId > 0 &&
+    typeof attachment.ref.id === 'number' &&
+    attachment.ref.id > 0;
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -44,6 +57,9 @@ export function AudioPlayerBubble({ meta, attachment, conversationId: _conversat
   const [hasError, setHasError] = useState(!src);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [transcript, setTranscript] = useState<string | null>(null);
+  const hasRequestedTranscriptRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Mutual exclusion: another item claiming playback pauses this one.
   useEffect(() => {
@@ -54,6 +70,15 @@ export function AudioPlayerBubble({ meta, attachment, conversationId: _conversat
     });
     return unsubscribe;
   }, [audioId, isPlaying]);
+
+  // Abort in-flight transcript fetch on unmount.
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Audio element lifecycle events / resource ownership.
   useEffect(() => {
@@ -83,6 +108,22 @@ export function AudioPlayerBubble({ meta, attachment, conversationId: _conversat
       setIsPlaying(false);
       setCurrentTime(0);
       globalAudioPlaybackManager.stop(audioId);
+
+      // Natural ended: fetch scoped transcript once for this mounted player.
+      if (isEligibleVoice && !hasRequestedTranscriptRef.current && conversationId && attachment) {
+        hasRequestedTranscriptRef.current = true;
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+        fetchAttachmentTranscript(conversationId, attachment.ref.id, controller.signal)
+          .then((text) => {
+            if (typeof text === 'string') {
+              setTranscript(text);
+            }
+          })
+          .catch(() => {
+            // Safe silent failure; no error exposed, no playback interruption.
+          });
+      }
     };
     const handleError = () => {
       // 404/network/decode failure stays visible; ownership released.
@@ -109,7 +150,7 @@ export function AudioPlayerBubble({ meta, attachment, conversationId: _conversat
       auditEl.removeEventListener('error', handleError);
       globalAudioPlaybackManager.stop(audioId);
     };
-  }, [audioId, src]);
+  }, [attachment, audioId, conversationId, isEligibleVoice, src]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
@@ -175,65 +216,73 @@ export function AudioPlayerBubble({ meta, attachment, conversationId: _conversat
     '语音消息';
 
   return (
-    <div className="app-audio-bubble" title={title}>
-      <audio ref={audioRef} src={src || undefined} preload="metadata" aria-hidden="true" />
+    <div className="app-audio-player">
+      <div className="app-audio-bubble" title={title}>
+        <audio ref={audioRef} src={src || undefined} preload="metadata" aria-hidden="true" />
 
-      <button
-        type="button"
-        className="app-audio-bubble-btn"
-        onClick={() => void togglePlay()}
-        disabled={hasError}
-        aria-label={isPlaying ? `暂停语音 ${title}` : `播放语音 ${title}`}
-      >
-        {hasError ? (
-          <AlertCircle size={14} aria-hidden="true" />
-        ) : isPlaying ? (
-          <Pause size={14} fill="currentColor" aria-hidden="true" />
-        ) : (
-          <Play size={14} fill="currentColor" className="app-audio-bubble-play" aria-hidden="true" />
-        )}
-      </button>
-
-      <div className="app-audio-bubble-main">
-        {/* Decorative waveform + accessible seek slider (same element). */}
-        <div
-          className="app-audio-bubble-waves"
-          role="slider"
-          aria-label={`语音进度 ${title}`}
-          aria-valuemin={0}
-          aria-valuemax={Math.round(duration)}
-          aria-valuenow={Math.round(currentTime)}
-          aria-valuetext={`${formatTime(currentTime)} 共 ${formatTime(duration)}`}
-          tabIndex={hasError ? -1 : 0}
-          onClick={handlePointerSeek}
-          onKeyDown={handleKeySeek}
+        <button
+          type="button"
+          className="app-audio-bubble-btn"
+          onClick={() => void togglePlay()}
+          disabled={hasError}
+          aria-label={isPlaying ? `暂停语音 ${title}` : `播放语音 ${title}`}
         >
-          {BAR_HEIGHTS.map((h, i) => {
-            const barProgress = (i / BAR_HEIGHTS.length) * 100;
-            return (
-              <span
-                key={i}
-                className={`app-audio-bubble-bar${barProgress <= progressPercent ? ' app-audio-bubble-bar--played' : ''}`}
-                style={{ height: `${h}%` }}
-              />
-            );
-          })}
-        </div>
-
-        <div className="app-audio-bubble-meta">
           {hasError ? (
-            <span className="app-audio-bubble-error" role="alert">
-              音频加载/播放失败
-            </span>
-          ) : isLoading ? (
-            <span className="app-audio-bubble-loading">加载中…</span>
+            <AlertCircle size={14} aria-hidden="true" />
+          ) : isPlaying ? (
+            <Pause size={14} fill="currentColor" aria-hidden="true" />
           ) : (
-            <span className="app-audio-bubble-time">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
+            <Play size={14} fill="currentColor" className="app-audio-bubble-play" aria-hidden="true" />
           )}
+        </button>
+
+        <div className="app-audio-bubble-main">
+          {/* Decorative waveform + accessible seek slider (same element). */}
+          <div
+            className="app-audio-bubble-waves"
+            role="slider"
+            aria-label={`语音进度 ${title}`}
+            aria-valuemin={0}
+            aria-valuemax={Math.round(duration)}
+            aria-valuenow={Math.round(currentTime)}
+            aria-valuetext={`${formatTime(currentTime)} 共 ${formatTime(duration)}`}
+            tabIndex={hasError ? -1 : 0}
+            onClick={handlePointerSeek}
+            onKeyDown={handleKeySeek}
+          >
+            {BAR_HEIGHTS.map((h, i) => {
+              const barProgress = (i / BAR_HEIGHTS.length) * 100;
+              return (
+                <span
+                  key={i}
+                  className={`app-audio-bubble-bar${barProgress <= progressPercent ? ' app-audio-bubble-bar--played' : ''}`}
+                  style={{ height: `${h}%` }}
+                />
+              );
+            })}
+          </div>
+
+          <div className="app-audio-bubble-meta">
+            {hasError ? (
+              <span className="app-audio-bubble-error" role="alert">
+                音频加载/播放失败
+              </span>
+            ) : isLoading ? (
+              <span className="app-audio-bubble-loading">加载中…</span>
+            ) : (
+              <span className="app-audio-bubble-time">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
+
+      {transcript ? (
+        <div className="app-audio-transcript" data-testid="audio-transcript">
+          <span className="app-audio-transcript-text">{transcript}</span>
+        </div>
+      ) : null}
     </div>
   );
 }

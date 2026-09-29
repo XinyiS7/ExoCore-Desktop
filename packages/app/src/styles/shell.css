@@ -1540,6 +1540,25 @@
   color: var(--v4-danger);
 }
 
+/* CP-E V4 AI Voice Message Player & Transcript */
+.app-audio-player {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 300px;
+}
+
+.app-audio-transcript {
+  padding: 6px 10px;
+  background: var(--v4-panel);
+  border: 1px solid var(--v4-line);
+  border-radius: 8px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  color: var(--v4-text-sub);
+  line-height: 1.45;
+  word-break: break-word;
+}
+
 /* ════════════════════════════════════════════════════════════════════════
    V4 P1D — Tactical HUD / context cache / Aura / project drawer (additive)
    Added by the P1D builder slice (Task 3/4/5). No existing rule is changed.

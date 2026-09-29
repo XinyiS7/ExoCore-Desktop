@@ -1344,9 +1344,9 @@ shared server 冻结，不代表 Moonlight 已接入。
 
 - 仅在 `send_voice_msg` 同步合成失败时为非空；`(message, position)` 唯一，是 live SSE `voice_tool_error` 的 durable 同值投影；无失败时为 `[]`；非 assistant 行恒为 `[]`。
 - 失败合成不建立 attachment / transcript，因此前端不得据该字段创建 audio player、附件占位或显示原文；assistant 行只展示 bounded safe code（`send_voice_msg 调用失败` + code）。
-- live 与 durable 按 turn/position 去重；completed Message 的 code 不重复显示。完整 player 与播放结束后的 transcript 展示留给后续 checkpoint。
+- live 与 durable 按 turn/position 去重；completed Message 的 code 不重复显示。
 
-**CP-C voice attachment transcript（additive）**：成功语音在普通 `attachments[]` 中仅投影 ready `source="voice_msg"` audio attachment，不携带 transcript。按需读取：
+**CP-C/CP-E voice attachment transcript（additive）**：成功语音在普通 `attachments[]` 中仅投影 ready `source="voice_msg"` audio attachment，不携带 transcript。按需读取：
 
 `GET /api/agents/conversations/<conversation_id>/message-attachments/<attachment_id>/transcript/`
 
@@ -1354,7 +1354,14 @@ shared server 冻结，不代表 Moonlight 已接入。
 { "transcript": "exact archived spoken_content" }
 ```
 
-仅当前 conversation 内 `source="voice_msg"`、ready audio且存在 rendered attempt时返回 200；其它附件、跨 conversation或缺失 outcome一律 scoped 404。该 API 无 playback-complete写入，不建立已播放状态。
+- **服务端约束**：仅当前 conversation 内 `source="voice_msg"`、ready audio且存在 rendered attempt时返回 200；其它附件、跨 conversation或缺失 outcome一律 scoped 404。该 API 无 playback-complete写入，不建立已播放状态。
+- **V4 前端消费规范（CP-E）**：
+  - 仅 ready `source="voice_msg"` 且 `ref.type="message_attachment"` 的 audio 气泡在自然播放结束（`ended` 事件）后发起请求；
+  - 每个组件挂载周期内至多请求一次（once per mount），成功后在气泡下方展示 exact archived transcript；
+  - 严禁在 mount、play、pause、全局互斥强制暂停、媒体加载错误或 unmount 时发起请求；
+  - 遇到 404、格式异常或网络错误时静默 fail-closed，绝不泄漏响应原文，绝不打断音频播放；
+  - 页面刷新或组件 remount 后 transcript 初始隐藏，直至新播放器自然播毕；
+  - voice player 与文本朗读点播（Read-Aloud）及其他附件音频统一受 `globalAudioPlaybackManager` 互斥调度（起播一方自动暂停另一方）。
 
 ### 12.2 点播触发与状态轮询
 
