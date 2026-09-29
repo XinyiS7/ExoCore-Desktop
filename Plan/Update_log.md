@@ -2,6 +2,34 @@
 
 ---
 
+## 2026-09-29 — V4 CP-E：AI 语音消息播放器与统一附件契约
+
+**署名：** `[Alaric / gemini-3.8-flash; Solaire independent acceptance PASS]`
+
+### 成果与交付
+- **E1（统一附件模型与向后兼容降级）**：
+  - 将 `attachments[]` 确立为消息附件的 Canonical 读取源，保留 `attachments_meta` 作为旧格式 `file_uri` 降级读取；
+  - 实现 fail-closed 逐项归一化 `normalizeMessageAttachments`，保留后端原始顺序，拒绝非法 enum/ref，生成防碰撞 `${ref.type}:${ref.id}` 键；
+  - 确立三级降级语义：空数组 `[]` 显式抑制旧元数据；非空且含 $\ge 1$ 项有效附件时裁定成员并过滤残缺项；非空但 0 项有效时作为格式破损降级至 `attachments_meta`；降级项生成紧凑连续位置序号。
+- **E2（Canonical 语音播放器与无文本气泡收敛）**：
+  - 接入 `source="voice_msg"`, `kind="audio"`, `status="ready"` 助手语音附件，渲染专属 `<AudioPlayerBubble>`；
+  - 纯语音助手消息自动抑制「（空消息）」占位，文本与语音并存时共同展示；
+  - 严格限制同源 `content_url`，跨源或协议相对路径拒绝加载；
+  - 接入单例 `globalAudioPlaybackManager`，与历史音频及助手文本朗读（TTS）共享互斥播放仲裁。
+- **E3（自然播放结束单次转文字拉取与证据闭环）**：
+  - 严格遵循 `GET /api/agents/conversations/<cid>/message-attachments/<aid>/transcript/` 契约，仅在自然 `ended` 时单次请求转文字；
+  - 单次挂载至多请求一次，重新挂载重置隐藏，404/破损体/网络失败静默兜底，不阻断音频亦不污染界面；
+  - 组件卸载或源切换时物理调用 `audio.pause()` 并释放播放互斥所有权，取消在途请求；
+  - 响应 R1 与 R2 验收，消除对象引用抖动造成的播放中断，增加判别性刷新测试与会话作用域更新测试。
+
+### 计划与验收记录
+- 归档计划：`Plan/Archived/2026-09-29-cp-e-ai-voice-message-player.md`
+- 验收报告：`Plan/CP_E_AI_Voice_Message_Player_acceptance_report.md`
+- 提交范围：`67cf5a2..138c741`（5 commits，均由 `gemini-3.8-flash <agent@exocore.local>` 提交，零 push）
+- 质量门禁：聚焦测试 3 文件 32/32 PASS；全量测试 97 文件 1194/1194 PASS；typecheck / lint / build / diff-check 全部通过。
+
+---
+
 ## 2026-09-14 — V4 Phase 2D：助手消息到达通知与实机多端闭环
 
 **署名：** `[Alaric / gemini-3.8-flash; Alicia approved user acceptance]`
