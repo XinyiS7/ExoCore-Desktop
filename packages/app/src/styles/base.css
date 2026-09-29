@@ -397,6 +397,19 @@ a {
   color: var(--v4-warn);
 }
 
+.app-chip--link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.app-chip--link:hover,
+.app-chip--link:focus-visible {
+  color: var(--v4-text);
+  border-color: var(--v4-line-strong);
+  background: var(--v4-hover-overlay);
+}
+
 .app-phase-chip {
   display: inline-block;
   border: 1px solid var(--v4-line);

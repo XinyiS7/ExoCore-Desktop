@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  cancelHeartbeatWakeup,
+  createHeartbeatNote,
   fetchHeartbeatEventDetail,
   fetchHeartbeatEvents,
   fetchHeartbeatQueue,
@@ -8,7 +10,9 @@ import {
   normalizeHeartbeatEventListItem,
   normalizeHeartbeatEventsResponse,
   normalizeHeartbeatQueueSummary,
+  scheduleHeartbeatWakeup,
   toHeartbeatApiError,
+  withdrawHeartbeatNote,
 } from '../features/heartbeat/api';
 import { AppApiError } from '../features/chat/api';
 import { installFetch, jsonResponse } from './helpers';
@@ -786,6 +790,273 @@ describe('Heartbeat typed read client & normalizers (Plan §3.1)', () => {
       // Confirmed GET only, no mutations sent
       expect(calls[0].init?.method).toBe('GET');
       expect(calls[0].init?.body).toBeUndefined();
+    });
+  });
+
+  describe('Heartbeat write operations (CP-B)', () => {
+    it('createHeartbeatNote sends POST with preset_id and message', async () => {
+      const { calls } = installFetch([
+        {
+          test: '/api/heartbeat/notes/',
+          method: 'POST',
+          handler: () =>
+            jsonResponse(
+              {
+                id: 42,
+                message: 'Hello Alaric',
+                created_at: '2026-09-29T15:00:00Z',
+                created_local: '2026-09-29 17:00:00',
+              },
+              201,
+            ),
+        },
+      ]);
+
+      const note = await createHeartbeatNote(1, 'Hello Alaric');
+      expect(note).toEqual({
+        id: 42,
+        message: 'Hello Alaric',
+        createdAt: '2026-09-29T15:00:00Z',
+        createdLocal: '2026-09-29 17:00:00',
+      });
+      expect(calls).toHaveLength(1);
+      expect(calls[0].init?.method).toBe('POST');
+      const body = JSON.parse(calls[0].init?.body as string);
+      expect(body).toEqual({
+        preset_id: 1,
+        message: 'Hello Alaric',
+      });
+    });
+
+    it('createHeartbeatNote surfaces server error on 400 rejection', async () => {
+      installFetch([
+        {
+          test: '/api/heartbeat/notes/',
+          method: 'POST',
+          handler: () =>
+            jsonResponse(
+              {
+                error: 'message is required',
+                code: 'message_required',
+              },
+              400,
+            ),
+        },
+      ]);
+
+      await expect(createHeartbeatNote(1, '')).rejects.toThrow(HeartbeatApiError);
+    });
+
+    it('withdrawHeartbeatNote sends DELETE to note endpoint and completes on 204', async () => {
+      const { calls } = installFetch([
+        {
+          test: '/api/heartbeat/notes/42/',
+          method: 'DELETE',
+          handler: () => new Response(null, { status: 204 }),
+        },
+      ]);
+
+      await expect(withdrawHeartbeatNote(42)).resolves.toBeUndefined();
+      expect(calls).toHaveLength(1);
+      expect(calls[0].init?.method).toBe('DELETE');
+    });
+
+    it('withdrawHeartbeatNote surfaces 409 already_consumed code and message', async () => {
+      installFetch([
+        {
+          test: '/api/heartbeat/notes/42/',
+          method: 'DELETE',
+          handler: () =>
+            jsonResponse(
+              {
+                error: '纸条已被拆封消费，无法撤回',
+                code: 'already_consumed',
+              },
+              409,
+            ),
+        },
+      ]);
+
+      try {
+        await withdrawHeartbeatNote(42);
+        expect.unreachable('Should have thrown on 409');
+      } catch (err) {
+        expect(err).toBeInstanceOf(HeartbeatApiError);
+        const apiErr = err as HeartbeatApiError;
+        expect(apiErr.code).toBe('already_consumed');
+        expect(apiErr.message).toBe('纸条已被拆封消费，无法撤回');
+      }
+    });
+
+    it('scheduleHeartbeatWakeup sends POST with formatted time and resume_check=false', async () => {
+      const { calls } = installFetch([
+        {
+          test: '/api/heartbeat/wakeups/',
+          method: 'POST',
+          handler: () =>
+            jsonResponse(
+              {
+                task_id: 301,
+                target_utc: '2026-10-01T12:00:00Z',
+                effective_utc: '2026-10-01T12:00:00Z',
+                effective_local: '2026-10-01 14:00',
+                message: 'Custom wakeup',
+                resume_check: false,
+                source: 'user',
+                status: 'pending',
+              },
+              201,
+            ),
+        },
+      ]);
+
+      const wakeup = await scheduleHeartbeatWakeup(1, '2026-10-01 14:00', 'Custom wakeup');
+      expect(wakeup).toEqual({
+        taskId: 301,
+        targetUtc: '2026-10-01T12:00:00Z',
+        effectiveUtc: '2026-10-01T12:00:00Z',
+        effectiveLocal: '2026-10-01 14:00',
+        message: 'Custom wakeup',
+        resumeCheck: false,
+        status: 'pending',
+      });
+      expect(calls).toHaveLength(1);
+      expect(calls[0].init?.method).toBe('POST');
+      const body = JSON.parse(calls[0].init?.body as string);
+      expect(body).toEqual({
+        preset_id: 1,
+        wake_up_at: '2026-10-01 14:00',
+        message: 'Custom wakeup',
+        resume_check: false,
+      });
+    });
+
+    it('cancelHeartbeatWakeup sends DELETE to wakeup endpoint and completes on 204', async () => {
+      const { calls } = installFetch([
+        {
+          test: '/api/heartbeat/wakeups/301/',
+          method: 'DELETE',
+          handler: () => new Response(null, { status: 204 }),
+        },
+      ]);
+
+      await expect(cancelHeartbeatWakeup(301)).resolves.toBeUndefined();
+      expect(calls).toHaveLength(1);
+      expect(calls[0].init?.method).toBe('DELETE');
+    });
+
+    it('cancelHeartbeatWakeup surfaces 409 cannot_cancel code and message', async () => {
+      installFetch([
+        {
+          test: '/api/heartbeat/wakeups/301/',
+          method: 'DELETE',
+          handler: () =>
+            jsonResponse(
+              {
+                error: 'task could not be cancelled',
+                code: 'cannot_cancel',
+              },
+              409,
+            ),
+        },
+      ]);
+
+      try {
+        await cancelHeartbeatWakeup(301);
+        expect.unreachable('Should have thrown on 409');
+      } catch (err) {
+        expect(err).toBeInstanceOf(HeartbeatApiError);
+        const apiErr = err as HeartbeatApiError;
+        expect(apiErr.code).toBe('cannot_cancel');
+        expect(apiErr.message).toBe('task could not be cancelled');
+      }
+    });
+
+    it('createHeartbeatNote classifies malformed 201 response as ambiguousWrite', async () => {
+      installFetch([
+        {
+          test: '/api/heartbeat/notes/',
+          method: 'POST',
+          handler: () =>
+            jsonResponse(
+              {
+                id: 'not-a-number',
+                message: null,
+              },
+              201,
+            ),
+        },
+      ]);
+
+      try {
+        await createHeartbeatNote(1, 'Hello Alaric');
+        expect.unreachable('Should have thrown on malformed 201');
+      } catch (err) {
+        expect(err).toBeInstanceOf(HeartbeatApiError);
+        const apiErr = err as HeartbeatApiError;
+        expect(apiErr.code).toBe('CONTRACT');
+        expect(apiErr.ambiguousWrite).toBe(true);
+      }
+    });
+
+    it('scheduleHeartbeatWakeup classifies malformed 201 response as ambiguousWrite', async () => {
+      installFetch([
+        {
+          test: '/api/heartbeat/wakeups/',
+          method: 'POST',
+          handler: () =>
+            jsonResponse(
+              {
+                task_id: 'bad-id',
+                target_utc: null,
+              },
+              201,
+            ),
+        },
+      ]);
+
+      try {
+        await scheduleHeartbeatWakeup(1, '2026-10-01 14:00', 'Custom wakeup');
+        expect.unreachable('Should have thrown on malformed 201');
+      } catch (err) {
+        expect(err).toBeInstanceOf(HeartbeatApiError);
+        const apiErr = err as HeartbeatApiError;
+        expect(apiErr.code).toBe('CONTRACT');
+        expect(apiErr.ambiguousWrite).toBe(true);
+      }
+    });
+
+    it('scheduleHeartbeatWakeup normalizes real backend response without effective_* fields', async () => {
+      installFetch([
+        {
+          test: '/api/heartbeat/wakeups/',
+          method: 'POST',
+          handler: () =>
+            jsonResponse(
+              {
+                task_id: 402,
+                target_utc: '2026-10-02T10:00:00Z',
+                target_local: '2026-10-02 12:00',
+                message: 'Morning briefing',
+                resume_check: false,
+                source: 'user',
+                status: 'pending',
+              },
+              201,
+            ),
+        },
+      ]);
+
+      const wakeup = await scheduleHeartbeatWakeup(1, '2026-10-02 12:00', 'Morning briefing');
+      expect(wakeup).toEqual({
+        taskId: 402,
+        targetUtc: '2026-10-02T10:00:00Z',
+        effectiveUtc: '2026-10-02T10:00:00Z',
+        effectiveLocal: '2026-10-02 12:00',
+        message: 'Morning briefing',
+        resumeCheck: false,
+        status: 'pending',
+      });
     });
   });
 });

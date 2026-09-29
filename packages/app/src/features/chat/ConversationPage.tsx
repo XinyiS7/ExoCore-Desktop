@@ -581,10 +581,28 @@ export function ConversationPage() {
             {conversation?.name ?? (conversationQuery.isPending ? '加载中…' : `会话 #${id}`)}
           </h1>
           <span className="app-topbar-sub">
-            <span className="app-chip">{agentLabel}</span>
-            <span className={`app-chip${conversation?.projectId === null ? ' app-chip--drift' : ''}`}>
-              {conversation?.projectName ?? 'Drift'}
-            </span>
+            {conversation?.agentPresetId !== null && conversation?.agentPresetId !== undefined ? (
+              <Link
+                to={`/agents/${conversation.agentPresetId}`}
+                className="app-chip app-chip--link"
+              >
+                {agentLabel}
+              </Link>
+            ) : (
+              <span className="app-chip">{agentLabel}</span>
+            )}
+            {conversation?.projectId !== null && conversation?.projectId !== undefined ? (
+              <Link
+                to={`/projects/${conversation.projectId}`}
+                className="app-chip app-chip--link"
+              >
+                {conversation.projectName ?? `项目 #${conversation.projectId}`}
+              </Link>
+            ) : (
+              <span className={`app-chip${conversation?.projectId === null ? ' app-chip--drift' : ''}`}>
+                {conversation?.projectName ?? 'Drift'}
+              </span>
+            )}
             {presetsQuery.isError ? (
               <button
                 type="button"

@@ -162,8 +162,9 @@ function AgentHeartbeatDetail({ presetId }: { presetId: number }) {
             onRetry={() => void queueQuery.refetch()}
           />
 
-          {/* Section B: 心跳信箱与用户指定唤醒 (Read only in CP-A) */}
+          {/* Section B: 心跳信箱与用户指定唤醒 */}
           <HeartbeatMailbox
+            presetId={presetId}
             queue={queueQuery.data}
             isLoading={queueQuery.isPending}
             isError={queueQuery.isError}

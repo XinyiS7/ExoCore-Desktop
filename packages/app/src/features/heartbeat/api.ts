@@ -63,10 +63,23 @@ export class HeartbeatApiError extends AppApiError {
 export function toHeartbeatApiError(cause: unknown): HeartbeatApiError {
   if (cause instanceof HeartbeatApiError) return cause;
   if (cause instanceof AppApiError) {
-    return new HeartbeatApiError(cause.message, {
+    let code = cause.code;
+    let message = cause.message;
+    if (typeof cause.body === 'object' && cause.body !== null) {
+      const raw = cause.body as Record<string, unknown>;
+      if (typeof raw.code === 'string') {
+        code = raw.code;
+      }
+      if (typeof raw.error === 'string') {
+        message = raw.error;
+      } else if (typeof raw.detail === 'string') {
+        message = raw.detail;
+      }
+    }
+    return new HeartbeatApiError(message, {
       status: cause.status,
       body: cause.body,
-      code: cause.code,
+      code,
       fieldErrors: cause.fieldErrors,
       ambiguousWrite: cause.ambiguousWrite,
     });
@@ -383,6 +396,119 @@ export async function fetchHeartbeatEventDetail(sessionUuid: string): Promise<He
   try {
     const raw = await apiFetch(`/api/heartbeat/events/${encodeURIComponent(sessionUuid)}/`);
     return normalizeHeartbeatEventDetail(raw);
+  } catch (cause) {
+    throw toHeartbeatApiError(cause);
+  }
+}
+
+/**
+ * POST /api/heartbeat/notes/
+ * Creates a pending note for next heartbeat (CP-B).
+ */
+export async function createHeartbeatNote(
+  presetId: number,
+  message: string,
+): Promise<HeartbeatPendingNote> {
+  let raw: unknown;
+  try {
+    raw = await apiFetch('/api/heartbeat/notes/', {
+      method: 'POST',
+      body: { preset_id: presetId, message },
+    });
+  } catch (cause) {
+    throw toHeartbeatApiError(cause);
+  }
+
+  try {
+    return normalizeHeartbeatPendingNote(raw, 0);
+  } catch {
+    throw new HeartbeatApiError('小纸条已提交，但返回格式无法确认；已重新读取信箱（避免重复提交）。', {
+      body: raw,
+      code: 'CONTRACT',
+      ambiguousWrite: true,
+    });
+  }
+}
+
+/**
+ * DELETE /api/heartbeat/notes/<int:note_id>/
+ * Withdraws a pending note before consumption (CP-B).
+ */
+export async function withdrawHeartbeatNote(noteId: number): Promise<void> {
+  try {
+    await apiFetch(`/api/heartbeat/notes/${noteId}/`, {
+      method: 'DELETE',
+    });
+  } catch (cause) {
+    throw toHeartbeatApiError(cause);
+  }
+}
+
+/**
+ * POST /api/heartbeat/wakeups/
+ * Schedules a user-designated wakeup task (CP-B).
+ */
+export async function scheduleHeartbeatWakeup(
+  presetId: number,
+  wakeUpAt: string,
+  message: string,
+): Promise<HeartbeatExplicitWakeup> {
+  let raw: unknown;
+  try {
+    raw = await apiFetch('/api/heartbeat/wakeups/', {
+      method: 'POST',
+      body: {
+        preset_id: presetId,
+        wake_up_at: wakeUpAt,
+        message,
+        resume_check: false,
+      },
+    });
+  } catch (cause) {
+    throw toHeartbeatApiError(cause);
+  }
+
+  try {
+    const r = requireRecord(raw, 'schedule_wakeup response');
+    const targetUtc = requireString(r.target_utc, 'target_utc', false);
+    const effectiveUtc =
+      typeof r.effective_utc === 'string' && r.effective_utc.trim() !== ''
+        ? r.effective_utc
+        : targetUtc;
+    const effectiveLocal =
+      typeof r.effective_local === 'string' && r.effective_local.trim() !== ''
+        ? r.effective_local
+        : typeof r.target_local === 'string' && r.target_local.trim() !== ''
+          ? r.target_local
+          : targetUtc;
+
+    return {
+      taskId: requirePositiveInt(r.task_id, 'task_id'),
+      targetUtc,
+      effectiveUtc,
+      effectiveLocal,
+      message: requireString(r.message, 'message', true),
+      resumeCheck: requireBoolean(r.resume_check, 'resume_check'),
+      status: requireEnum<HeartbeatTaskStatus>(r.status, VALID_TASK_STATUSES, 'status'),
+    };
+  } catch {
+    throw new HeartbeatApiError('唤醒预约已提交，但返回格式无法确认；已重新读取信箱（避免重复提交）。', {
+      body: raw,
+      code: 'CONTRACT',
+      ambiguousWrite: true,
+    });
+  }
+}
+
+/**
+ * DELETE /api/heartbeat/wakeups/<int:task_id>/
+ * Cancels a user-designated wakeup task (CP-B).
+ */
+export async function cancelHeartbeatWakeup(taskId: number): Promise<void> {
+  try {
+    await apiFetch(`/api/heartbeat/wakeups/${taskId}/`, {
+      method: 'DELETE',
+    });
   } catch (cause) {
     throw toHeartbeatApiError(cause);
   }

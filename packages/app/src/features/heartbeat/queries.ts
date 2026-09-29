@@ -1,9 +1,14 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isValidPresetId } from '../agents/queries';
 import {
+  cancelHeartbeatWakeup,
+  createHeartbeatNote,
   fetchHeartbeatEventDetail,
   fetchHeartbeatEvents,
   fetchHeartbeatQueue,
+  scheduleHeartbeatWakeup,
+  toHeartbeatApiError,
+  withdrawHeartbeatNote,
 } from './api';
 import type {
   HeartbeatEventDetail,
@@ -69,5 +74,84 @@ export function useHeartbeatEventDetailQuery(
     queryKey: heartbeatQueryKeys.eventDetail(presetId, sessionUuid),
     queryFn: () => fetchHeartbeatEventDetail(sessionUuid!),
     enabled: enabled && valid && hasUuid,
+  });
+}
+
+/**
+ * Mutation to leave a pending note for next heartbeat (CP-B).
+ * Invalidates current preset queue query on success, or upon ambiguous write.
+ */
+export function useCreateHeartbeatNoteMutation(presetId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (message: string) => createHeartbeatNote(presetId, message),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: heartbeatQueryKeys.queue(presetId) });
+    },
+  });
+}
+
+/**
+ * Mutation to withdraw a pending note before consumption (CP-B).
+ * Invalidates current preset queue query on success or already-consumed/not-found.
+ */
+export function useWithdrawHeartbeatNoteMutation(presetId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (noteId: number) => withdrawHeartbeatNote(noteId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: heartbeatQueryKeys.queue(presetId) });
+    },
+    onError: (cause) => {
+      const err = toHeartbeatApiError(cause);
+      if (
+        err.status === 404 ||
+        err.status === 409 ||
+        err.code === 'note_not_found' ||
+        err.code === 'already_consumed'
+      ) {
+        void queryClient.invalidateQueries({ queryKey: heartbeatQueryKeys.queue(presetId) });
+      }
+    },
+  });
+}
+
+/**
+ * Mutation to schedule a user-designated wakeup (CP-B).
+ * Invalidates current preset queue query on success.
+ */
+export function useScheduleHeartbeatWakeupMutation(presetId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ wakeUpAt, message }: { wakeUpAt: string; message: string }) =>
+      scheduleHeartbeatWakeup(presetId, wakeUpAt, message),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: heartbeatQueryKeys.queue(presetId) });
+    },
+  });
+}
+
+/**
+ * Mutation to cancel a user-designated wakeup (CP-B).
+ * Invalidates current preset queue query on success or 404/409.
+ */
+export function useCancelHeartbeatWakeupMutation(presetId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (taskId: number) => cancelHeartbeatWakeup(taskId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: heartbeatQueryKeys.queue(presetId) });
+    },
+    onError: (cause) => {
+      const err = toHeartbeatApiError(cause);
+      if (
+        err.status === 404 ||
+        err.status === 409 ||
+        err.code === 'cannot_cancel' ||
+        err.code === 'task_not_found'
+      ) {
+        void queryClient.invalidateQueries({ queryKey: heartbeatQueryKeys.queue(presetId) });
+      }
+    },
   });
 }
