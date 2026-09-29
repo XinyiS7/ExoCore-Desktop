@@ -52,6 +52,49 @@ export interface AttachmentMeta {
   content_url: string | null;
 }
 
+export type AttachmentRefType = 'session_attachment' | 'message_attachment';
+
+export interface AttachmentRef {
+  type: AttachmentRefType;
+  id: number;
+}
+
+export type MessageAttachmentKind = 'audio' | 'image' | 'file';
+export type MessageAttachmentStatus = 'pending' | 'ready' | 'failed';
+
+export interface MessageAttachmentRow {
+  ref: AttachmentRef;
+  kind: MessageAttachmentKind;
+  source: string;
+  status: MessageAttachmentStatus;
+  position: number;
+  display_name: string;
+  mime_type: string | null;
+  file_size: number | null;
+  content_url: string | null;
+  duration_ms: number | null;
+  error_code: string | null;
+}
+
+export interface MessageAttachmentView {
+  /** Collision-safe identity `${ref.type}:${ref.id}` */
+  key: string;
+  ref: AttachmentRef;
+  kind: MessageAttachmentKind;
+  source: string;
+  status: MessageAttachmentStatus;
+  position: number;
+  displayName: string;
+  mimeType: string | null;
+  fileSize: number | null;
+  contentUrl: string | null;
+  durationMs: number | null;
+  errorCode: string | null;
+  /** Enriched from legacy meta for session rows if available */
+  fileUri?: string | null;
+  originalFilename?: string | null;
+}
+
 export interface AssistantRunTraceThinkingItem {
   itemId: string;
   order: number;
@@ -120,6 +163,8 @@ export interface MessageRow {
   token_count: number | null;
   index_in_session: number;
   attachment_ids: number[];
+  /** CP-E canonical message presentation attachments; normalized fail-closed. */
+  attachments?: unknown;
   attachments_meta: AttachmentMeta[] | null;
   created_at: string;
 }
@@ -196,6 +241,11 @@ export interface MessageView {
   indexInSession: number;
   attachmentIds: number[];
   attachmentsMeta: AttachmentMeta[] | null;
+  /**
+   * CP-E canonical unified attachments projection.
+   * Emitted as array by normalizeMessageRow; optional for pre-CP-E fixture compatibility.
+   */
+  attachments?: MessageAttachmentView[];
   createdAt: string;
 }
 

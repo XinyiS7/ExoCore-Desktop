@@ -1,5 +1,6 @@
 import { apiFetch } from 'exo-shared/api';
 import { normalizeVoiceToolErrorList } from './voice/contract';
+import { normalizeMessageAttachments } from './attachments/projection';
 import type {
   AgentPresetRow,
   AssistantRunTraceItem,
@@ -249,7 +250,7 @@ export function normalizeClientTurnId(value: unknown): string | null {
   return isValidClientTurnId(value) ? value : null;
 }
 
-function normalizeMessageRow(row: MessageRow): MessageView {
+export function normalizeMessageRow(row: MessageRow): MessageView {
   return {
     id: row.id,
     role: row.role,
@@ -267,6 +268,7 @@ function normalizeMessageRow(row: MessageRow): MessageView {
     indexInSession: row.index_in_session,
     attachmentIds: row.attachment_ids,
     attachmentsMeta: row.attachments_meta,
+    attachments: normalizeMessageAttachments(row.attachments, row.attachments_meta),
     createdAt: row.created_at,
   };
 }
