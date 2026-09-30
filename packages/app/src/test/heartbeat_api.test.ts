@@ -116,284 +116,101 @@ describe('Heartbeat typed read client & normalizers (Plan §3.1)', () => {
     });
 
     describe('R1-F01: nested queue validation & no coercion', () => {
-      const validBaseQueue = {
+      // Fresh per-case payload builders; every call returns new objects/arrays so
+      // table rows cannot leak mutations into one another.
+      const queue = (overrides: Record<string, unknown> = {}) => ({
         preset_id: 1,
         auto_enabled: true,
         cadence_mode: 'normal',
         paused_until_utc: null,
         paused_until_local: null,
         next_auto: null,
-        pending_notes: [],
-        explicit_wakeups: [],
+        pending_notes: [] as unknown[],
+        explicit_wakeups: [] as unknown[],
         unshown_explicit_count: 0,
-      };
-
-      it('rejects array as next_auto object', () => {
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            next_auto: [],
-          }),
-        ).toThrow(AppApiError);
+        ...overrides,
       });
 
-      it('rejects non-positive, string, or float task_id in next_auto', () => {
-        // task_id = 0
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            next_auto: {
-              task_id: 0,
-              target_utc: '2026-09-30T09:30:00Z',
-              effective_utc: '2026-09-30T09:30:00Z',
-              effective_local: '2026-09-30 09:30',
-              message: '',
-              resume_check: false,
-              status: 'pending',
-            },
-          }),
-        ).toThrow(AppApiError);
-
-        // task_id string "101"
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            next_auto: {
-              task_id: '101',
-              target_utc: '2026-09-30T09:30:00Z',
-              effective_utc: '2026-09-30T09:30:00Z',
-              effective_local: '2026-09-30 09:30',
-              message: '',
-              resume_check: false,
-              status: 'pending',
-            },
-          }),
-        ).toThrow(AppApiError);
-
-        // task_id float 10.5
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            next_auto: {
-              task_id: 10.5,
-              target_utc: '2026-09-30T09:30:00Z',
-              effective_utc: '2026-09-30T09:30:00Z',
-              effective_local: '2026-09-30 09:30',
-              message: '',
-              resume_check: false,
-              status: 'pending',
-            },
-          }),
-        ).toThrow(AppApiError);
+      const nextAuto = (overrides: Record<string, unknown> = {}) => ({
+        task_id: 101,
+        target_utc: '2026-09-30T09:30:00Z',
+        effective_utc: '2026-09-30T09:30:00Z',
+        effective_local: '2026-09-30 09:30',
+        message: '',
+        resume_check: false,
+        status: 'pending',
+        ...overrides,
       });
 
-      it('rejects truthy/falsy non-boolean resume_check in next_auto (no coercion)', () => {
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            next_auto: {
-              task_id: 101,
-              target_utc: '2026-09-30T09:30:00Z',
-              effective_utc: '2026-09-30T09:30:00Z',
-              effective_local: '2026-09-30 09:30',
-              message: '',
-              resume_check: 1, // number coerced to boolean in old code
-              status: 'pending',
-            },
-          }),
-        ).toThrow(AppApiError);
-
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            next_auto: {
-              task_id: 101,
-              target_utc: '2026-09-30T09:30:00Z',
-              effective_utc: '2026-09-30T09:30:00Z',
-              effective_local: '2026-09-30 09:30',
-              message: '',
-              resume_check: 'false',
-              status: 'pending',
-            },
-          }),
-        ).toThrow(AppApiError);
+      const note = (overrides: Record<string, unknown> = {}) => ({
+        id: 1,
+        message: 'hi',
+        created_at: '2026-09-29T10:00:00Z',
+        created_local: '10:00',
+        ...overrides,
       });
 
-      it('rejects empty or non-string date/status fields in next_auto', () => {
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            next_auto: {
-              task_id: 101,
-              target_utc: '',
-              effective_utc: '2026-09-30T09:30:00Z',
-              effective_local: '2026-09-30 09:30',
-              message: '',
-              resume_check: false,
-              status: 'pending',
-            },
-          }),
-        ).toThrow(AppApiError);
+      const wakeup = (overrides: Record<string, unknown> = {}) => ({
+        task_id: 201,
+        target_utc: '2026-10-01T08:00:00Z',
+        effective_utc: '2026-10-01T08:00:00Z',
+        effective_local: '2026-10-01 10:00',
+        message: '',
+        resume_check: false,
+        status: 'pending',
+        ...overrides,
       });
 
-      it('R2: rejects unknown cadence_mode (not normal, quiet, deep_quiet)', () => {
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            cadence_mode: 'fast',
-          }),
-        ).toThrow(AppApiError);
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            cadence_mode: '',
-          }),
-        ).toThrow(AppApiError);
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            cadence_mode: null,
-          }),
-        ).toThrow(AppApiError);
+      const rejectQueue = (payload: unknown) =>
+        expect(() => normalizeHeartbeatQueueSummary(payload)).toThrow(AppApiError);
+
+      it.each<[string, unknown]>([
+        ['array as next_auto object', []],
+        ['task_id 0 (non-positive)', nextAuto({ task_id: 0 })],
+        ['task_id string "101"', nextAuto({ task_id: '101' })],
+        ['task_id float 10.5', nextAuto({ task_id: 10.5 })],
+        ['resume_check number 1 (truthy non-boolean)', nextAuto({ resume_check: 1 })],
+        ['resume_check string "false" (falsy non-boolean)', nextAuto({ resume_check: 'false' })],
+        ['target_utc empty string', nextAuto({ target_utc: '' })],
+        ['R2: status unknown_status', nextAuto({ status: 'unknown_status' })],
+      ])('rejects invalid next_auto (%s)', (_label, next) => {
+        rejectQueue(queue({ next_auto: next }));
       });
 
-      it('R2: rejects unknown next_auto.status', () => {
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            next_auto: {
-              task_id: 101,
-              target_utc: '2026-09-30T09:30:00Z',
-              effective_utc: '2026-09-30T09:30:00Z',
-              effective_local: '2026-09-30 09:30',
-              message: '',
-              resume_check: false,
-              status: 'unknown_status',
-            },
-          }),
-        ).toThrow(AppApiError);
+      it.each<[string, unknown]>([
+        ['fast', 'fast'],
+        ['empty string', ''],
+        ['null', null],
+      ])('R2: rejects unknown cadence_mode (%s; not normal, quiet, deep_quiet)', (_label, mode) => {
+        rejectQueue(queue({ cadence_mode: mode }));
       });
 
-      it('R2: rejects unknown explicit_wakeups[].status', () => {
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            explicit_wakeups: [
-              {
-                task_id: 201,
-                target_utc: '2026-10-01T08:00:00Z',
-                effective_utc: '2026-10-01T08:00:00Z',
-                effective_local: '2026-10-01 10:00',
-                message: '',
-                resume_check: false,
-                status: 'active',
-              },
-            ],
-          }),
-        ).toThrow(AppApiError);
+      it.each<[string, unknown[]]>([
+        ['array instead of object item', [[]]],
+        ['id 0 (non-positive)', [note({ id: 0 })]],
+        ['message 12345 (non-string)', [note({ message: 12345 })]],
+        [
+          'one malformed among valid items (never injects synthetic id:0)',
+          [note({ message: 'valid' }), { id: 'bad-id', message: 'invalid' }],
+        ],
+      ])('rejects malformed pending_notes (%s) and fails the entire response', (_label, notes) => {
+        rejectQueue(queue({ pending_notes: notes }));
       });
 
-      it('rejects malformed pending_notes items and fails the entire response', () => {
-        // array instead of object item
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            pending_notes: [[]],
-          }),
-        ).toThrow(AppApiError);
-
-        // id = 0 or non-number
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            pending_notes: [
-              { id: 0, message: 'hi', created_at: '2026-09-29T10:00:00Z', created_local: '10:00' },
-            ],
-          }),
-        ).toThrow(AppApiError);
-
-        // non-string message
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            pending_notes: [
-              { id: 1, message: 12345, created_at: '2026-09-29T10:00:00Z', created_local: '10:00' },
-            ],
-          }),
-        ).toThrow(AppApiError);
-
-        // one malformed among valid items rejects entire response (never injects synthetic id:0)
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            pending_notes: [
-              { id: 1, message: 'valid', created_at: '2026-09-29T10:00:00Z', created_local: '10:00' },
-              { id: 'bad-id', message: 'invalid' },
-            ],
-          }),
-        ).toThrow(AppApiError);
+      it.each<[string, unknown[]]>([
+        ['array instead of object item', [[]]],
+        ['R2: status active', [wakeup({ status: 'active' })]],
+        ['task_id 0 (non-positive)', [wakeup({ task_id: 0 })]],
+        ['resume_check string "false" (non-boolean)', [wakeup({ resume_check: 'false' })]],
+      ])('rejects malformed explicit_wakeups (%s) and fails the entire response', (_label, wakeups) => {
+        rejectQueue(queue({ explicit_wakeups: wakeups }));
       });
 
-      it('rejects malformed explicit_wakeups items and fails the entire response', () => {
-        // array instead of object
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            explicit_wakeups: [[]],
-          }),
-        ).toThrow(AppApiError);
-
-        // task_id = 0
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            explicit_wakeups: [
-              {
-                task_id: 0,
-                target_utc: '2026-09-30T09:30:00Z',
-                effective_utc: '2026-09-30T09:30:00Z',
-                effective_local: '2026-09-30 09:30',
-                message: '',
-                resume_check: false,
-                status: 'pending',
-              },
-            ],
-          }),
-        ).toThrow(AppApiError);
-
-        // resume_check non-boolean
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            explicit_wakeups: [
-              {
-                task_id: 1,
-                target_utc: '2026-09-30T09:30:00Z',
-                effective_utc: '2026-09-30T09:30:00Z',
-                effective_local: '2026-09-30 09:30',
-                message: '',
-                resume_check: 'false',
-                status: 'pending',
-              },
-            ],
-          }),
-        ).toThrow(AppApiError);
-      });
-
-      it('rejects negative or non-integer unshown_explicit_count', () => {
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            unshown_explicit_count: -1,
-          }),
-        ).toThrow(AppApiError);
-
-        expect(() =>
-          normalizeHeartbeatQueueSummary({
-            ...validBaseQueue,
-            unshown_explicit_count: 2.5,
-          }),
-        ).toThrow(AppApiError);
+      it.each<[string, number]>([
+        ['negative -1', -1],
+        ['non-integer 2.5', 2.5],
+      ])('rejects negative or non-integer unshown_explicit_count (%s)', (_label, count) => {
+        rejectQueue(queue({ unshown_explicit_count: count }));
       });
     });
   });
