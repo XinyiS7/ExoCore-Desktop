@@ -1010,6 +1010,8 @@
   overflow: hidden;
   border: 1px solid var(--v4-line);
   background: var(--v4-panel-2);
+  padding: 0;
+  cursor: zoom-in;
 }
 
 .app-att-item-preview-wrap.app-att-item-preview--ok {

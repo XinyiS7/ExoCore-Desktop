@@ -330,6 +330,7 @@ Runtime regenerate 当前仅支持 text-only 目标；目标 Message 自带附�
 - 仅 `audio/*`；attachment 必须属于该 conversation；文件存在时 200（原 MIME + `inline` disposition + `Cache-Control: private`）
 - missing / 非 audio / 跨会话 → 稳定 404
 - `MessageSerializer.attachments_meta[].content_url`：audio 附件为上述同源 URL，其余附件为 `null`；前端播放使用 `content_url`，不使用 Gemini `file_uri`
+- **canonical `attachments[]` 图片 `content_url`（V4，additive）**：canonical ready 展示行（`kind="image"`）可提供同源 `content_url` 供缩略图/灯箱渲染；前端对 canonical `content_url` 仅接受同源 `http/https`（跨源、协议相对与 `file:`/`data:` 等一律拒绝），拒绝或加载失败时按顺序回退到已验证的 legacy `file_uri`（每个候选至多尝试一次），两者均不可用/失败时呈现文件名失败卡片且绝不生成 `<img src>`。legacy `file_uri` 维持既有校验（`http/https`，允许 HTTPS 远端源）；同源限制只适用于 canonical `content_url`。本项不改变上一行 `attachments_meta[].content_url` 的 audio-only 语义。
 
 **DELETE /api/agents/conversations/<pk>/attachments/delete/** — 批量删除
 

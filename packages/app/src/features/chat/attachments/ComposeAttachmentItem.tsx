@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Check, FileText, Loader2, TriangleAlert, X } from 'lucide-react';
 import type { AttachmentDiagnostic, ComposeAttachmentEntry } from './types';
+import { ImageLightbox } from './ImageLightbox';
 
 function firstDiagnosticLabel(
   diagnostics: AttachmentDiagnostic[] | undefined,
@@ -23,6 +25,7 @@ export interface ComposeAttachmentItemProps {
  * dependency), never color-only.
  */
 export function ComposeAttachmentItem({ entry, onRemove, disabled }: ComposeAttachmentItemProps) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const isUploading = entry.status === 'uploading';
   const isOk = entry.status === 'ok';
   const isDegraded = entry.status === 'ok_degraded';
@@ -41,7 +44,8 @@ export function ComposeAttachmentItem({ entry, onRemove, disabled }: ComposeAtta
 
   const removeLabel = `移除附件 ${entry.name}`;
 
-  if (entry.preview) {
+  const preview = entry.preview;
+  if (preview) {
     // Image entry with local preview.
     const borderClass = isFailed
       ? 'app-att-item-preview--failed'
@@ -51,49 +55,63 @@ export function ComposeAttachmentItem({ entry, onRemove, disabled }: ComposeAtta
           ? 'app-att-item-preview--ok'
           : '';
     return (
-      <div className="app-att-item app-att-item--image" data-state={entry.status}>
-        <div className={`app-att-item-preview-wrap ${borderClass}`}>
-          <img src={entry.preview} alt={entry.name} className="app-att-item-img" />
-          {isUploading ? (
-            <div className="app-att-item-overlay app-att-item-overlay--uploading">
-              <Loader2 size={16} className="app-att-spinner" aria-hidden="true" />
-            </div>
-          ) : null}
-          {isFailed ? (
-            <div className="app-att-item-overlay app-att-item-overlay--failed">
-              <span className="app-att-item-state-text">{errorLabel ?? '上传失败'}</span>
-            </div>
-          ) : null}
-          {isDegraded ? (
-            <div className="app-att-item-overlay app-att-item-overlay--degraded">
-              <TriangleAlert size={12} className="app-att-warn-icon" aria-hidden="true" />
-              <span className="app-att-item-state-text">{warningLabel ?? '已降级处理'}</span>
-            </div>
-          ) : null}
-          {isOk ? (
-            <span
-              className="app-att-item-success-badge"
-              role="img"
-              aria-label="上传成功"
-            >
-              <Check size={10} strokeWidth={2.5} aria-hidden="true" />
-            </span>
-          ) : null}
+      <>
+        <div className="app-att-item app-att-item--image" data-state={entry.status}>
+          <button
+            type="button"
+            className={`app-att-item-preview-wrap ${borderClass}`}
+            onClick={() => setLightboxOpen(true)}
+            aria-label={`查看图片 ${entry.name}`}
+            title={`查看图片：${entry.name}`}
+          >
+            <img src={preview} alt={entry.name} className="app-att-item-img" />
+            {isUploading ? (
+              <div className="app-att-item-overlay app-att-item-overlay--uploading">
+                <Loader2 size={16} className="app-att-spinner" aria-hidden="true" />
+              </div>
+            ) : null}
+            {isFailed ? (
+              <div className="app-att-item-overlay app-att-item-overlay--failed">
+                <span className="app-att-item-state-text">{errorLabel ?? '上传失败'}</span>
+              </div>
+            ) : null}
+            {isDegraded ? (
+              <div className="app-att-item-overlay app-att-item-overlay--degraded">
+                <TriangleAlert size={12} className="app-att-warn-icon" aria-hidden="true" />
+                <span className="app-att-item-state-text">{warningLabel ?? '已降级处理'}</span>
+              </div>
+            ) : null}
+            {isOk ? (
+              <span
+                className="app-att-item-success-badge"
+                role="img"
+                aria-label="上传成功"
+              >
+                <Check size={10} strokeWidth={2.5} aria-hidden="true" />
+              </span>
+            ) : null}
+          </button>
+          <button
+            type="button"
+            className="app-att-item-remove"
+            onClick={() => onRemove(entry.clientId)}
+            disabled={disabled}
+            aria-label={removeLabel}
+            title={removeLabel}
+          >
+            <X size={11} strokeWidth={2} aria-hidden="true" />
+          </button>
+          <span className="app-att-item-status" role="status">
+            {stateLabel}
+          </span>
         </div>
-        <button
-          type="button"
-          className="app-att-item-remove"
-          onClick={() => onRemove(entry.clientId)}
-          disabled={disabled}
-          aria-label={removeLabel}
-          title={removeLabel}
-        >
-          <X size={11} strokeWidth={2} aria-hidden="true" />
-        </button>
-        <span className="app-att-item-status" role="status">
-          {stateLabel}
-        </span>
-      </div>
+        <ImageLightbox
+          isOpen={lightboxOpen}
+          src={preview}
+          alt={entry.name}
+          onClose={() => setLightboxOpen(false)}
+        />
+      </>
     );
   }
 
