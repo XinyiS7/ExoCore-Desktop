@@ -2,6 +2,47 @@
 
 ---
 
+## 2026-09-30 — V4 Agent Profile：心跳账本、信箱写入与主会话伴随（CP-A ~ CP-D）
+
+**署名：** `[Alaric / gemini-3.8-flash; Solaire independent acceptance PASS; Alicia approved]`
+
+### 成果与交付
+- **CP-A（G045 心跳账本与状态展示）**：
+  - 在 G045 Profile 接入心跳状态展示与「心跳历史与状态」专属入口，非 G045 预设严格不渲染入口；
+  - 接入 `GET /api/heartbeat/state/` 与 `GET /api/heartbeat/events/`（含详情接口），准确解析唯一下次自动心跳主时间（严谨处理 disabled / paused / unscheduled）；
+  - Event 只读账本支持分页与详情浮层，严格遵循只读 GET 语义，绝不产生 acknowledge 或任何写操作；
+  - 页面刷新后准确从服务端恢复 queue 与 ledger 状态。
+- **CP-B（小纸条信箱写入、指定唤醒与对账关闭状态机）**：
+  - 实现小纸条留言（Note）与指定唤醒（Wakeup）写入模态窗，严格校验正整数 ID 与 UTC ISO-8601 时间；
+  - 建立强一致对账状态机（Reconciliation State Machine）：针对 201 畸形响应、5xx/网络错误启动信箱队列反查，未证伪前终端锁定二次提交与弹窗关闭；
+  - 撤回竞态 409 `item_already_consumed` 显式提示并刷新移除，不误报成功；
+  - 接入 Alicia 授权的完整导航闭环（Conversation Header / Profile / Mailbox 往返路径），通过 R1–R4 独立探针验收。
+- **CP-C（Gate 0 Prime 会话排他星标、安全转移与删除保护）**：
+  - 严格对齐 Gate 0 单例契约，G045 会话列表仅渲染一颗实心星（Prime），其他正常会话渲染空心星；
+  - 切换 Prime 弹出排他转移确认窗，确认后原子发送 `PATCH /api/agents/conversations/<cid>/ {"is_prime": true}`，响应 2xx 校验 id 匹配并立即更新真相；
+  - 遇到 5xx/网络超时等非确定性写入触发反查机制，防止盲目重试；
+  - 严禁对当前 Prime 进行直接删除，拦截并显示 409 `conversation_prime_transfer_required`，转移后旧会话恢复可删除；
+  - 归一化 Conversation 列表数据行，从未知输入强校验 `is_prime` 严格布尔值。
+- **CP-D（联合回归、接口契约同步与 G045 单例重基线收口）**：
+  - 同步 Desktop `ReactSheet.md`，对齐 Gate 0 会话及项目级删除保护（409 `prime_conversation_transfer_required`）与 `launch_source` 枚举（补齐 `user`）；
+  - 彻底收敛 `RoutinePanel.tsx`：移除历史多选残留，重基线为单 G045 启用开关，0 G045 诚实空状态与 $\ge 2$ G045 契约错误保护；
+  - 规范化 `p2c_appearance_routine.test.tsx` 与 `p2a_agents_projection.test.ts` 测试套件，重基线单选与 canonical-first 顺序；
+  - 机械门禁全绿：101 测试文件 1305/1305 PASS；typecheck / lint / build（exo-app 及 V3 全量工作区）全部 PASS。
+
+### 计划与验收记录
+- 归档计划：`Plan/Archived/2026-09-29-v4-agent-profile-heartbeat-prime-companion.md`
+- 归档契约：`Plan/Archived/2026-09-29-v4-agent-profile-prime-contract-handoff.md`
+- 验收报告：
+  - `Plan/2026-09-29-v4-agent-profile-heartbeat-cpa-acceptance.md`（PASS）
+  - `Plan/2026-09-29-v4-agent-profile-heartbeat-cpb-acceptance.md`（PASS）
+  - `Plan/2026-09-29-v4-agent-profile-heartbeat-cpc-acceptance.md`（PASS）
+  - `Plan/2026-09-29-v4-agent-profile-heartbeat-cpd-acceptance.md`（PASS）
+  - `Plan/2026-09-29-g045-singleton-invariant-doc-rebaseline.md`
+- 提交范围：`12c5f95..4395b2c`（4 commits，均由 `gemini-3.8-flash <agent@exocore.local>` 提交，零 push）
+- 质量门禁：聚焦测试全部 PASS；全量测试 101 文件 1305/1305 PASS；typecheck / lint / build / diff-check 全部通过。
+
+---
+
 ## 2026-09-29 — V4 CP-E：AI 语音消息播放器与统一附件契约
 
 **署名：** `[Alaric / gemini-3.8-flash; Solaire independent acceptance PASS]`

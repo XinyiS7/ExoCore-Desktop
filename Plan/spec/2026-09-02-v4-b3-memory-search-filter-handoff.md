@@ -25,7 +25,7 @@
 - Processing states: `pending | processing | ready | failed`; `is_processed` read-only compat bool; `embedding`/`indexed_content_hash` never serialized. Failure explicit with `processing_error`/`processing_attempts`/retry scheduling (VB §8 tests, `test_plasmid_lifecycle`).
 - HistoryChunk: list `?conversation_id=` (parents only, envelope), detail PATCH accepts **only keywords** (SN `memory.history_chunk.list_detail`); no grep-like query surface exists.
 - KnowledgeFragment (Project Knowledge): separate paginated list (page_size 50, `topic`/`project` filters), PATCH `keywords`/`abstract` only (SN `memory.knowledge`) — a **separate domain** from plasmids and history chunks.
-- Consumers: AgentHub marquee reads `listPlasmids` for g045 presets; MemoryConsole manages history chunks; no SPA uses tags/search surfaces today (V3 management gaps).
+- Consumers: AgentHub marquee reads `listPlasmids` for the single canonical g045 preset; MemoryConsole manages history chunks; no SPA uses tags/search surfaces today (V3 management gaps).
 
 ## 3. Problem statement and frozen product semantics
 

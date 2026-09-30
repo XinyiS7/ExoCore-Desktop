@@ -5,6 +5,7 @@
 > **Scout Author / Guard:** Alaric (圣武士与守誓者)  
 > **Status:** **COMPLETE — FACT INDEX & EVIDENCE REFERENCE FOR P2A REVIEW**  
 > **Date:** 2026-09-09  
+> **2026-09-29 Alicia-authorized semantic rebaseline:** references to plural G045 agents are corrected to the system's single canonical G045; see `Plan/2026-09-29-g045-singleton-invariant-doc-rebaseline.md`.
 > **Baseline Checkpoints:**  
 > - Desktop HEAD / Baseline: `b1178fb1a974cd848fdeaa11a7d279df920b1a0c` / accepted Unified C1 (`23dea37`)  
 > - Real Database / Backend State: `AgentPreset` baseline is exactly IDs 1–8; Django backend read-only; PostgreSQL trigger `exocore_protect_agentpreset_rows` active  
@@ -74,7 +75,7 @@ Phase 2A 是 ExoCore V4 单 SPA 重构中 Phase 2（Groups + Chat Workspaces + R
   - `plasmidMap`: 仅对 `isG045Type` 的 Agent 发起 `memoryApi.listPlasmids({ preset_id })`，用于下方 `MarqueeArea` 跑马灯轮播。
 - **界面结构与分组**:
   1. Header：标题 `Agent Hub`，说明字样，右侧「新建」按钮（绑定 `openCreatePreset`，实际调用后端 `POST /api/agents/presets/`，**必返 405**）。
-  2. `THE PRIME` 区块：展示 G045 类型 Agent（Alessandro、Ric 等），卡片内含头像、名称、G045 徽标、Immutable 锁图标、描述文案、分割线以及 `MarqueeArea` 质粒跑马灯。
+  2. `THE PRIME` 区块：展示系统内唯一 G045 Agent（Alessandro）。旧组件虽按数组 map 渲染，但这只是历史实现形状，不代表产品支持复数 G045；卡片内含头像、名称、G045 徽标、Immutable 锁图标、描述文案、分割线以及 `MarqueeArea` 质粒跑马灯。
   3. `STANDARD` 区块：展示 Standard 类型 Agent，微型胶囊卡片（头像 + 名称 + std 标）。
   4. 空态提示：`No agents configured / Run init_g045 to create the prime agent`。
 - **交互与排序**:

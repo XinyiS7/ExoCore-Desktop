@@ -6,10 +6,11 @@
 > **Product authority:** `[human / Alicia]`。
 > **Plan / architecture / QC:** `[gpt-5.6-sol / Solaire]`。
 > **Mini-fork review / ablation:** 基建复用、过度设计与消融复查 `[deepseek/deepseek-v4-flash / reviewer]`；建议由 `[gpt-5.6-sol / Solaire]` 逐项裁定并收口。
-> **Source inventory:** `Plan/P2C_Core_Shell_Settings_Source_Inventory.md`，SHA-256 `b901762110f9dae9085a3be76b5471b252e56366f009ec6748052850d6e5c298`，调查者 `[gemini / Alaric]`。
+> **Source inventory:** `Plan/P2C_Core_Shell_Settings_Source_Inventory.md`，SHA-256 `a0fa16960ac9fa447f60e0ba28084970f12dd921183a977f8230fd2e6086c13a`，调查者 `[gemini / Alaric]`。
 > **Frozen product defaults:** canonical Account 路由、轻量用量展示、分段施工、通知边界与主题保留由 `[human / Alicia]` 确认；技术落位由 `[gpt-5.6-sol / Solaire]` 冻结。
 > **Planning baseline:** Desktop HEAD `0cfa84df97d2341d371fd21ad19041ff2bed5de7`（P2T 已提交）；P2T independent acceptance R9 为 PASS。
 > **Planning-time unrelated dirty paths:** `DevelopLog/DebugLog.md`、`Plan/Update_log.md`、`Plan/V4_Master_Implementation_Roadmap.md`、`packages/chat-core/src/main.jsx`、untracked Source Inventory 与 TTS handoff；施工必须原样保留，不能夹带。
+> **2026-09-29 Alicia-authorized semantic rebaseline:** Routine 只面向唯一 canonical G045；数组字段最多承载该唯一 ID。见 `Plan/2026-09-29-g045-singleton-invariant-doc-rebaseline.md`。
 
 ---
 
@@ -203,7 +204,7 @@ Settings layout 是一个 feature shell，不复制 AppShell。desktop 使用持
 
 ### D9 — Routine 保留现有有效部分，时间编辑继续 omitted/disabled
 
-Routine 复用 `queryKeys.presets`，仅展示 `agent_type='g045'`。它保留 V3 的“Self Check & Deep Organize 共用 Agent 列表”语义：一次保存向 `self_check_preset_ids` 与 `deep_org_preset_ids` 写入相同、去重的正整数数组。`[gemini / Alaric; gpt-5.6-sol / Solaire]`
+Routine 复用 `queryKeys.presets`，只解析系统内唯一的 `agent_type='g045'` preset，并提供一个启用选择。`self_check_preset_ids` 与 `deep_org_preset_ids` 保留既有数组 wire shape，但只能提交相同的 `[]` 或 `[canonical_g045_id]`；数组形状不代表产品支持多个 G045。`[Alicia frozen invariant; gpt-5.6-sol / Solaire]`
 
 时间窗口只读展示 `active_start/active_end/deep_org_weekday/deep_org_hour`；不渲染可操作的“时间设置”按钮，不写任何时间字段。Config 或 Presets 任一失败都不能伪装为空；保存成功后 refetch config，失败保留选择草稿。
 
@@ -398,7 +399,7 @@ P2C 必须串行分段；Alicia 释放 pane，Plan 自身不派发 Builder/Revie
 2. 全局单实例 theme/font/scale bootstrap/provider；
 3. dark/light token 与全仓 hardcoded overlay/highlight 审计；
 4. Appearance control + previews；
-5. Routine shared g045 selection + schedule read-only；
+5. Routine singleton G045 selection + schedule read-only；
 6. Notifications entry-only placeholder并激活 More 的 Notifications直达项；Settings总入口仍保持未释放；
 7. 固定精简矩阵：100% 在 320/390/1280 覆盖双主题；80/150% 在 390 覆盖双主题；767/768 只做 dark+100% 断点检查。
 
@@ -497,8 +498,8 @@ P2C 必须串行分段；Alicia 释放 pane，Plan 自身不派发 Builder/Revie
 
 ### 7.6 Routine + Notifications negative invariants
 
-- [ ] Routine 只列 g045，checked-first 只改变展示顺序，不改变提交 identity。
-- [ ] 保存向两个字段提交相同去重 ID 数组；失败保留 draft，成功 refetch。
+- [ ] Routine 只显示唯一 canonical G045；若响应出现第二条 g045，按 contract violation 处理而非渲染多选。
+- [ ] 保存向两个字段提交相同的 `[]` 或 `[canonical_g045_id]`；失败保留 draft，成功 refetch。
 - [ ] Config/Presets 任一失败不显示假 empty；schedule 缺字段显示未知而非猜测。
 - [ ] 不存在可操作时间设置、时间字段 PATCH 或 Heartbeat policy 编辑。
 - [ ] Notifications route/nav/说明面存在且明确指向 P2D。

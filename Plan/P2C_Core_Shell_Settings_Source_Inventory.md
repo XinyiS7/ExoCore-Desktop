@@ -6,6 +6,7 @@
 > **状态：** Complete / 供后续 P2C Detailed Plan 起草参考  
 > **日期：** 2026-09-13  
 > **执行者：** Alaric (阿莱里克)  
+> **2026-09-29 Alicia-authorized semantic rebaseline:** Routine 的数组 wire shape 只承载唯一 canonical G045 ID，不构成多 G045 产品能力；见 `Plan/2026-09-29-g045-singleton-invariant-doc-rebaseline.md`。
 
 ---
 
@@ -177,7 +178,7 @@
 | **Model Assign** | `/settings/models` | `ModelAssignPanel.jsx` (L1-498) | 配置模型与端点映射：①主模型角色 (Main Roles) 列表管理（动态增减、模型与端点配对、影子模型配置）；②后台辅助角色（Sub-agent、Vision Helper、Grounding、Image Gen）严格一对一模型端点绑定。提供兼容端点自动推导与脏检查保存。 |
 | **Notifications** | `/settings/notifications` | `NotificationsPanel.jsx` (L1-156) | 状态卡片展示系统权限（已授权/已拒绝/待授权）与订阅状态（检查中/已订阅/未订阅）；已订阅展示设备名称，未订阅提供设备名称输入框与“启用通知/关闭通知”切换按钮（此套订阅与权限交互在 V4 迁移中归属于 P2D，P2C 仅落位路由入口与诚实占位）。 |
 | **Appearance** | `/settings/appearance` | `AppearancePanel.jsx` (L1-274) | 系统字体、消息字体、代码字体三路单选切换器；全局字体缩放 (80%–150%) 滑块；深色/浅色全局主题双态切换按钮；底部附带系统/消息/代码实时预览卡片。 |
-| **Routine** | `/settings/routine` | `RoutinePanel.jsx` (L1-196) | 后台自检与深度整理 (Self Check & Deep Organize) 的参与 g045 Agent 多选列表与保存；下附只读“Schedule Preview”（显示活跃时间区间与深度整理周日时点）；“时间设置”按钮在 V3 为不可用的占位 stub。 |
+| **Routine** | `/settings/routine` | `RoutinePanel.jsx` (L1-196) | 后台自检与深度整理 (Self Check & Deep Organize) 的唯一 G045 参与开关与保存；旧组件使用列表/数组形状，但产品实体始终只有一个。下附只读“Schedule Preview”（显示活跃时间区间与深度整理周日时点）；“时间设置”按钮在 V3 为不可用的占位 stub。 |
 | **Memory** | `/settings/memory` | `MemoryConsole.jsx` (L1-582) | 会话历史片段 (HistoryChunk) 审查与编辑控制台。按会话展开、查看 topic label/keywords/summary，标记 unresolved。 |
 
 ---
@@ -383,7 +384,7 @@
 | **MCP 与抽屉 (MCP & Drawers)** | `McpManagePanel.jsx` | **Migrate** | 对应 `ReactSheet.md` 第十篇，后端 `agents/views.py` 与 `agentsApi`/`mcpApi` 完全可用。 |
 | **模型角色分配 (Model Assign)** | `ModelAssignPanel.jsx` | **Migrate** | 对应 `ReactSheet.md` §3.3 与 §3.7，后端 `/api/core/config/roles/` 完全支持。 |
 | **通知设置入口 (Notifications)** | `NotificationsPanel.jsx` | **Migrate Entry Only (P2D owns Setup & Runtime)** | Roadmap §8.3：“Notifications 设置入口在 P2C 落位，但其订阅、arrival、unread 与 click runtime 由 P2D 接管”。P2C 仅激活 More/nav 路由并渲染诚实有界的占位/禁用展示面（明确说明通知设置与推送订阅将于 P2D 交付）；**严禁**读取浏览器权限、PushManager 订阅、配置设备名或发起 subscribe/unsubscribe。完整的配置、状态卡片与运行时由 P2D 统一接管。 |
-| **后台自检任务预设 (Routine)** | `RoutinePanel.jsx` | **Migrate (Partial)** | `self_check_preset_ids` 与 `deep_org_preset_ids` 的多选保存完全有效（`SystemConfig`）。 |
+| **后台自检任务预设 (Routine)** | `RoutinePanel.jsx` | **Migrate (Partial)** | `self_check_preset_ids` 与 `deep_org_preset_ids` 保留数组 wire shape，但产品上只承载唯一 G045 ID 的启用/停用，不构成多 G045 能力。 |
 | **Routine 时间调度编辑** | `RoutinePanel.jsx:151, 175` | **Omit-Disabled** | **正面证据**：V3 界面中该按钮为无动作占位符，标注 `(时间设置接口待上线)`。Roadmap §8.3 严令“无有效后端契约的旧占位项继续 disabled/omitted，不借迁移重写 backend”。保持只读展示，不开发时间编辑器。 |
 | **外观设置中的主题切换 (Light Theme)** | `AppearancePanel.jsx:183-218` | **Migrate-by-default (Current-valid Capability)** | **契约保留原则**：缺失 V4 浅色 Token 并非退役 V3 活跃深浅色偏好的正向证据（AGENTS.md 规定破坏性改动必须有正向证据）。作为 Settings 契约保留的一部分，主题切换默认为 Migrate。施工需执行 V4 全仓 Token 与硬编码 overlay 审计，并通过 320/390/1280 视口对比度回归；若评估后欲推迟至后续切片，必须取得 Alicia 或 Roadmap 的明确退役/延期授权。字体控制 (`useFont`) 维持 Migrate。 |
 | **浮动通知中心卡片** | `chat-core/components/notifications/NotificationPanel.jsx` | **Omit-Disabled** | **正面证据**：该浮动气泡与抽屉在 V4 中被废弃，其功能由 P2D 规范的桌面/移动到达指示接管。 |
@@ -482,7 +483,7 @@
   1. **Key Manage**：端点增删改查（弹窗） + API 密钥池增删改查。
   2. **MCP & Drawers**：MCP 凭证管理 + 本地 Drawer 授权切换。
   3. **Model Assign**：主模型列表排序/配置 + 辅助角色模型端点配对。
-  4. **Routine**：后台自检与深度整理 g045 Agent 多选保存（时间设置保持只读禁用）。
+  4. **Routine**：唯一 G045 的后台自检与深度整理启用保存；后端字段仍使用 ID 数组，但最多包含该唯一 G045 ID（时间设置保持只读禁用）。
   5. **Notifications (Entry Only)**：仅落位 `/settings/notifications` 路由与设置导航项，渲染诚实、有界的占位/禁用展示面（明确说明通知设置与推送订阅将于 P2D 阶段交付），不读取权限、不配置设备名、不调用任何 push API。
   6. **Appearance**：字体选择（System/Message/Code）与全局字号缩放（Migrate）；主题切换（深/浅色）在未获 Alicia 明确退役授权前属于 Migrate-by-default，需审计 V4 全仓 Token 映射并执行多视口 (320/390/1280) 对比度回归（若获得延期批准方可转为只读提示）。
 - 明确将 `Memory` 面板排除出 P2C（递延至 P5 Library 阶段）。

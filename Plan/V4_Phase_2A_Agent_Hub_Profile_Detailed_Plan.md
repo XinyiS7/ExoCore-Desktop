@@ -9,6 +9,7 @@
 > **Mini-fork reviews:** internal-abstraction reductions `[opencode-go/deepseek-v4-flash / reviewer]`; execution ablation and three-checkpoint handoff `[gpt-5.6-sol / Solaire]`; both approved by Alicia and incorporated here.
 > **Accepted Desktop baseline:** `b1178fb1a974cd848fdeaa11a7d279df920b1a0c` (unified C1 transfer record; working tree clean at planning time).
 > **Planning-time real-data invariant:** `AgentPreset` baseline is exactly IDs 1–8.
+> **2026-09-29 Alicia-authorized semantic rebaseline:** G045 is a system singleton; historical multi-G045 robustness wording below is corrected. Text/fixture semantics only; see `Plan/2026-09-29-g045-singleton-invariant-doc-rebaseline.md`.
 
 ---
 
@@ -384,7 +385,7 @@ Prove:
 
 - loading, malformed top-level payload, HTTP/network error + working retry, and true empty list;
 - all visible returned presets appear once, including an unknown non-g045 type;
-- one or multiple g045 rows sort before all others, then all ties sort by numeric ID;
+- exactly one canonical g045 row is supported and sorts before all standard rows; any second g045 row is a contract violation, not a supported UI case; standard rows sort by numeric ID;
 - source Query arrays are not mutated;
 - no POST/DELETE preset request, create/delete button, drag handle or `agentHubOrder` storage access exists;
 - card navigation uses positive preset identity and reaches the canonical Profile implementation;
