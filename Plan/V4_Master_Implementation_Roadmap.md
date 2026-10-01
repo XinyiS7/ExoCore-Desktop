@@ -776,4 +776,4 @@ Roadmap handoff 前按 acceptance scope 做消融：
 - [x] 后续仍不在 backend contract/上游 gate 前提前写源码级计划；
 - [x] TTS/notification active scope 与 Groups/Live/电话/Capacitor deferred scope 已分离。
 
-**Current release position:** P2A/P2B 已独立验收；待 P2B 文件收尾后，下一份允许起草的源码级施工计划只有 **P2T Detailed Plan**，且必须等待 B5 frontend contract freeze。P2C、P2D、P3 与 P2G 不自动获准。
+**Current release position（2026-10-01）：** P2A/P2B/P2T/P2C/P2D 与统一 **Core C2 均已独立验收 PASS**；P2G 继续由 V3-primary 持有并独立 deferred。下一项主 gate 为后端 **B2 River aggregation**；只有 `C2 PASS + B2 PASS` 后才允许起草 P3 River + Memo Detailed Plan。

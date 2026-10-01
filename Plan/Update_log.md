@@ -88,6 +88,7 @@
   - 新增 D3-R1-04 回归（JSON 媒体类型/对象序列化 + 768px 断点）；构造测试 5 文件 81/81；tsc/eslint/build/产物检查全绿；冻结 D-1/D-2 acceptance 探针按施工包「temporarily excluded」（待 Acceptance 补丁后重新纳入）；
   - 状态为 READY FOR RECHECK，未自评 PASS；Core C2 发布状态仍归 Acceptance 所有。
 - **CP D-3 R3（响应 R2 两 P1 修复）**：① 忽略响应收口——`ignoreAssistantArrival` 只接受五字段冻结真值（action/event_id 与请求匹配/正整数 message_id/conversation_id/boolean created），违约 2xx 一律可见可重试失败，无静默成功；② Shell Ignore 状态改为 event_id 绑定——旧请求完成不会关闭/标注/置忙新指示，同事件失败仍可显式重试；③ 移除三处临时排除，默认 typecheck/lint/test 重新纳入 amended D-1/D-2 与新增 D-3 冻结探针。三份 Acceptance 19/19 + Builder focused 5 文件 87/87，tsc/eslint/build/diff 全绿；全量与真机 smoke 按验收方顺序暂缓。
+- **CP D-3 R4 / Core C2 Final PASS（2026-10-01）**：Alicia 完成 Android 后台跳转、反复断网恢复、PWA 划除后的锁屏送达与冷启动正确会话跳转，以及 Desktop 双窗口 focused/minimized 通知所有权观察；最新消息完整、单份、非 streaming。独立收口验证为 P2D focused 115/115、Node 24.14.0 下 exo-app 1333/1333、typecheck/lint/build/diff 全绿，四个 workspace production build 全绿；唯一发现为 P2T 测试 passive-effect 同步采样 race，按同文件既有 `waitFor` 模式做一行 harness stabilization，精确用例 20/20 后全量通过。P2D Final Device Hold 与统一 Core C2 均释放；P2G 继续 V3-primary / deferred。验收记录：`Plan/V4_Phase_2D_CP_D3_acceptance_report.md` R4、`Plan/V4_Core_C2_acceptance_report.md`。
 
 ---
 

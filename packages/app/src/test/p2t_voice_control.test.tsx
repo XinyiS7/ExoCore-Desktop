@@ -225,7 +225,7 @@ describe('T5 — voice lifecycle stays click-driven', () => {
     const sequence = ttsCalls(calls).map((call) => call.init?.method ?? 'GET');
     expect(sequence).toEqual(['POST', 'GET', 'GET']);
     expect(ttsCalls(calls)[0].init?.body).toBe('{}');
-    expect(play).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(play).toHaveBeenCalledTimes(1));
   });
 
   it('collapses rapid repeat clicks into a single in-flight request', async () => {

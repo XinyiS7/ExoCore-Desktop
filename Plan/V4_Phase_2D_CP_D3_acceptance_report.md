@@ -328,3 +328,51 @@ Recorded by Acceptance from Alicia's device observations plus read-only DB corre
 **Not yet evidenced (remaining matrix):** background/closed, warm click, cold click, click-from-lock-screen unlock/navigation, denied permission, offline→online, renewal/repair, site-data clear / new installation, and desktop multi-window suppression.
 
 **Accepted limitation recorded (S5):** an OS notification shown while no `/app/` client is focused can be followed by the bounded in-app indication once the user refocuses, for the same still-unconsumed arrival. This is not a duplicate-delivery defect (distinct from same-installation duplicate OS presentation, which remains blocking).
+
+---
+
+## R4 — Final device/recovery closure
+
+```text
+Verdict: P2D CP D-3 PASS
+Phase/checkpoint: P2D CP D-3 final device/recovery closure
+Baseline: 46315ac + accepted one-line test-harness stabilization
+Consecutive FAIL count: 0
+Focused P2D: 8 files / 115 tests / 115 PASS
+Full exo-app: 102 files / 1333 tests / 1333 PASS (Node 24.14.0)
+Static gates: typecheck PASS; lint PASS; build PASS; git diff --check PASS
+```
+
+### Additional real-use rows
+
+| # | Scenario | Alicia-visible outcome | Gate |
+|---|---|---|---|
+| S9 | Phone PWA retained in background; notification tapped | entered the correct Conversation page | D3-G03 warm/background click |
+| S10 | Normal connectivity loss and recovery (repeated elevator use) | messages reconcile normally after network returns; no permanent loss observed | D3-G06 offline → online |
+| S11 | PWA removed from recent tasks while Chrome remained available; screen locked | notification arrived and lit the screen; after the system-required double tap/unlock, the PWA cold-started into the correct Conversation; the latest Message was complete, appeared exactly once, was not in streaming state, and had no stale “前往最新” affordance | D3-G03 cold/lock-screen click; D3-G05 display path; D3-G06 recovery |
+| S12 | Desktop with one focused V4 window and one minimized window, then both minimized | focused-client case produced no external popup and no stray minimized-window indication; with both windows minimized, exactly one OS popup appeared | D3-G04 multi-window focus selection |
+
+Read-only backend correlation found a bounded latest candidate set of three arrivals, each with exactly one nonempty canonical assistant Message, exactly one arrival row, exactly three role-based `sent` claims, no duplicate `(arrival, subscription)` delivery, and no duplicate Message/arrival identity. Device presentation/click state is browser-owned and cannot identify one candidate row after the fact; because every candidate satisfies the same frozen uniqueness and completion invariant, no unsupported exact-row attribution is claimed. No message body, endpoint, key or secret was recorded.
+
+### Technical recovery rows
+
+- denied permission does not block canonical foreground reconciliation; covered by focused integration probes;
+- renewal/repair preserves one active installation identity and truthful backend persistence state; covered by Service Worker/subscription probes and backend B6 contract tests;
+- backend persistence failure never reports a healthy subscription; stale/deleted targets fail safely rather than redirecting to another Conversation;
+- site-data reset/new-installation behavior is covered by installation-identity probes; automatic legacy merge is explicitly not claimed, and residual-endpoint risk remains documented;
+- lock-screen delivery during S11 demonstrates that OEM/DND did not suppress the accepted device run; OEM/DND remains an environment condition, not an ExoCore delivery guarantee.
+
+### Mechanical closure and harness disposition
+
+The first Node 24 full-suite run exposed one intermittent TTS test assertion that sampled a passive effect synchronously. Production behavior and P2D were unaffected. Independent repetition reproduced the harness race; the construction test now uses its file's existing asynchronous assertion pattern. The formerly flaky case passed 20/20 fresh-process repetitions, followed by a clean 1333/1333 full regression. Node 25's experimental WebStorage stub is not an accepted test environment; Node 24.14.0 is the established V4 acceptance baseline.
+
+### R4 gate decision
+
+- **D3-G03 PASS:** foreground/background/lock-screen, warm and cold paths are evidenced.
+- **D3-G04 PASS:** focused, unfocused and multi-window OS-notification ownership is evidenced.
+- **D3-G05 PASS:** completed canonical Message, single arrival/delivery identity and one frontend display path converge without duplicate UI.
+- **D3-G06 PASS:** offline recovery plus denied/persistence/renewal/stale-target recovery boundaries are evidenced without false success or wrong navigation.
+- **D3-G08 PASS:** installation reset/residual-endpoint and OEM/DND environment boundaries are truthfully recorded.
+- Previously passing D3-G01/G02/G07/G09/G10 remain intact.
+
+**Final verdict:** all D3-G01 through D3-G10 pass. **P2D PASS; Final Device Hold released.** Core C2 may now run as a separate unified checkpoint.
