@@ -5,14 +5,14 @@
 > **Frontend consumer phase:** P3 (River + Memo); earliest start: after C0
 > **Backend owner:** `ExoCore` (Django)
 > **Hard gate:** B2 PASS is required before the P3 Detailed Plan may freeze; P0 does not implement anything.
-> **Status:** Drafted in P0; advisory for backend planning, non-expanding without Alicia's approval.
+> **Status:** B2 R5 FINAL PASS under Alicia-approved exact-three existing migration-test isolation（2026-10-01）；原949/errors3，隔离后946/946 PASS，无skip/error。后端契约已实现并双仓同步；P3仍需有效C2+B2，锁屏C2 hold，未授权P3施工。
 > **Date:** 2026-09-02 · **Sources:** `Plan/V4_Phase_0_Baseline/Canonical_API_Snapshot.json` (SN), frozen specs (Freeze Index §5, River spec §3–7, Architecture spec §7), Master Roadmap §9. Current-source evidence for each source domain is cited inline.
 
 ---
 
 ## 1. Status, ownership, and hard-gate statement
 
-1. **Status:** Requirement brief only. No B2 code exists in either repository.
+1. **Status:** Backend B2 implemented and independently accepted (R5, 2026-10-01); synchronized API contracts in both ReactSheets §3.11–3.13. Acceptance evidence: `../ExoCore/Plan/V4_B2_River_Backend_acceptance_report.md`; archived implementation: `../ExoCore/Plan/Archived/V4_B2_River_Backend_Implementation_Plan.md`. Original949 had three existing replay errors; Alicia approved only those exact labels' isolation, remaining946 passed. Defects remain separately pending; no claim of949-green.
 2. **Backend owner:** `ExoCore`. **Frontend consumer:** V4 P3 (River main axis, Open Tasks shelf, Memo, Diary preview/full-read, legacy Chronicle event time-reading). **Earliest start:** after C0 (may run in parallel with frontend P1–P2).
 3. **Hard gate:** P3 Detailed Plan freeze requires B2 implementation + independent acceptance in `ExoCore` + synchronized `ReactSheet.md` pair. Backend completion never transfers frontend capability ownership by itself.
 
@@ -21,10 +21,10 @@
 - **River is a read model, not a unified business table** (Arch spec §7.1): sources keep their CRUD; only the time-reading projection is aggregated.
 - **Current source domains and their real endpoints:**
   - Task/ScheduleEntry: SN `task.entry.*` (`/api/tasks/entries/`, complete/suspend/resume/gcal, calendar snapshots file-backed). Model fields `tasks/models.py`; ordering `-is_pinned, due_date, cycle_due, start_date`; CompletionRecord is the single completion-state source.
-  - Diary: backend-maintained canonical DiaryEntry (memory app domain; daily-diary acceptance suites exist under `agents/tests/acceptance/test_daily_diary_*`; no dedicated V3 SPA read UI — see ownership matrix row `diary`).
+  - Diary: backend-maintained canonical day file (`YYYY-MM-DD.md`; memory app domain; daily-diary acceptance suites exist under `agents/tests/acceptance/test_daily_diary_*`; no dedicated V3 SPA read UI — see ownership matrix row `diary`).
   - Heartbeat: read-only Event ledger `/api/heartbeat/events/?preset_id=&limit=&offset=` + `/events/<session_uuid>/` (ReactSheet §9, unchanged): `content` = final summary; technical ledger fields (`seed_message`, `tool_history`, `error_summary`, `attempt_number`…) stay on the detail surface only.
   - Chronicle legacy: `/api/agents/chronicle/` ModelViewSet (ChronicleEntry: preset, event_time, content, scope, kind, keywords…) — `milestone/moment` rows are legacy-event candidates; highlight rows are Collection candidates (NOT River).
-  - Timeline/Tweet: `/api/core/tweets/` + `/reply/` (chronicle TimelineView consumer) — Memo source decision pending: evolve vs compatible replace (freeze before P3 Detailed Plan; Freeze Index §5.2 + questionnaire Q4).
+  - Timeline/Tweet: `/api/core/tweets/` + `/reply/` (chronicle TimelineView consumer) — approved Memo evolution preserves Tweet ids/history/replies and legacy consumers; new `/api/core/memos/` compatibility surface documented in ReactSheet §3.11.
 - Rule reminder: frontend must **never** merge independently paginated source lists into the River axis (Roadmap R4/B2 hard gate).
 
 ## 3. Problem statement and frozen product semantics
@@ -33,7 +33,7 @@
 - **Frozen:** `River flows in you.` sits at the top of the River homepage (long-term display).
 - **Frozen:** Memo = low-friction, no-title-required, Markdown + inline Tags, default reverse-chronological; reply tree is a Memo-local capability and **only thread roots participate in River global ordering**.
 - **Frozen:** Heartbeat shows the final summary with agent/time/optional source link; the technical ledger stays on the Heartbeat ledger surface and must remain traceable from the River item (no default ledger pollution of River).
-- **Frozen:** Diary = short preview of the day's canonical DiaryEntry (~09:00 formation) + full read; preview may be a canonical-content excerpt — no River-specific second summary.
+- **Frozen:** Diary = short preview of the day's canonical day file (~09:00 formation) + full read; preview may be a canonical-content excerpt — no River-specific second summary.
 - **Frozen:** Task events keep original event positions on the main axis; Open Tasks shelf derives from the same Task source; Calendar is a companion view over the same data.
 - **Frozen:** Chronicle is not a new V4 product domain; legacy archive remains auditable; nothing un-promoted may auto-enter River (spec River#4.6/#12-16).
 
@@ -75,7 +75,7 @@
 ## 9. Backend acceptance targets (binary, externally observable)
 
 1. **Tie timestamps:** two items with identical `occurred_at` sort deterministically and paginate without duplicates/skips across the boundary.
-2. **Page boundaries:** walking cursor pages forward from an empty-to-populated timeline yields every item exactly once (including items inserted between two page requests).
+2. **Page boundaries (amended 2026-10-01 per Alicia-approved G1):** stateless keyset pagination on `(occurred_at, source_type, source_key)` descending. Continuation pages return only items after the cursor; items inserted after the cursor may appear during that walk, while items inserted into already-passed ranges become visible on refresh or a renewed first-page traversal. On an unchanged dataset, replaying the same cursor sequence yields identical item identity sequences, and existing stock is neither duplicated nor skipped. A cursor-session seen-set guarantee is not adopted.
 3. **Source deletion/update:** deleting/updating a source item yields the documented River behavior and no pagination corruption on subsequent pages.
 4. **Empty sources:** a source domain with zero items contributes nothing and never errors the axis; a fully empty River returns the frozen empty semantics.
 5. **Reply exclusion:** Memo replies never appear on the main axis ordering; thread roots do.
@@ -93,11 +93,11 @@
 
 ### Handoff completion checklist
 
-- [ ] Memo source decision (evolve Timeline/Tweet vs compatible replace) frozen with Alicia before P3 Detailed Plan
-- [ ] Accepted backend Plan in `ExoCore/Plan/` with independent acceptance spec; `occurred_at`/cursor contract frozen there
-- [ ] Implementation + tests in `ExoCore`; additive migrations; no V3 source behavior change
-- [ ] `ExoCore/ReactSheet.md` + `ExoCore-Desktop/ReactSheet.md` synchronized
-- [ ] All 7 acceptance targets PASS in the backend repo
+- [x] Memo source decision frozen with Alicia: evolve Tweet, preserve history/replies
+- [x] Accepted backend Plan archived in `ExoCore/Plan/Archived/`; independent acceptance spec/report retained in `ExoCore/Plan/`; `occurred_at`/cursor contract frozen
+- [x] Implementation + tests in `ExoCore`; additive Tweet Tags migration; no V3 source behavior change; no real migration application in B2
+- [x] `ExoCore/ReactSheet.md` + `ExoCore-Desktop/ReactSheet.md` synchronized
+- [x] Backend acceptance targets PASS under approved regression rebase: original949/errors3, exact-three isolation only, remaining946/946 PASS; existing defects separately pending
 - [ ] Requirements re-verified against then-current source before the P3 Detailed Plan freezes
 
 ---

@@ -378,10 +378,12 @@ Checkpoint / rollback:
 - River header/theme、Open Tasks shelf 与 heterogeneous time axis。
 - Memo 的低摩擦创建、Markdown/Tags 与局部 reply thread。
 - Heartbeat final summary、Diary preview/full read、Task/completion event，以及 Chronicle `milestone/moment` 的 legacy event 时间阅读。
-- Task complete/defer/edit 与 Calendar 陪伴视图。
+- Task complete/defer（=编辑适用日期）/edit 与 Calendar 陪伴视图。
 - Chronicle archive 继续存在；`highlight/bookmark` 的 legacy read/write path 在 P3 全程仍由 V3 持有，直到 P4 Collection 明确接管新 bookmark writes。[deepseek-v4 / Ecki confirmed current write path]
 
 ### Backend handoff — B2 hard gate
+
+**B2状态（2026-10-01）：R5 FINAL PASS under approved rebase。** 原full949有3个既有migration replay错误；Alicia批准仅精确三标签隔离，余946/946通过、无skip/error；缺陷另行pending，不宣称949全绿。双仓ReactSheet已同步；报告见 `../ExoCore/Plan/V4_B2_River_Backend_acceptance_report.md`，实施plan已归档 `../ExoCore/Plan/Archived/V4_B2_River_Backend_Implementation_Plan.md`。这只满足B2门禁；有效C2仍因锁屏恢复hold，不释放P3。
 
 B2 必须稳定提供：
 
@@ -646,7 +648,7 @@ B4 必须稳定提供：
 | ID | Backend owner | Frontend consumer | Earliest start | Required before | Compatibility rule |
 |---|---|---|---|---|---|
 | **B1 Attachment provenance + Collection storage/target identity** | ExoCore | P4 | C0 后可并行 | P4 Detailed Plan freeze | 现 V3 attachment/audio 继续可用；新 managed storage 与 authorization structure additive |
-| **B2 River aggregation** | ExoCore | P3 | C0 后可并行 | P3 Detailed Plan freeze | source CRUD 保持；aggregation additive |
+| **B2 River aggregation** | ExoCore | P3 | C0 后可并行 | P3 Detailed Plan freeze（B2 R5 PASS；C2 hold，P3未释放） | source CRUD 保持；aggregation additive；精确3标签授权隔离后946绿，非949全绿 |
 | **B3 Memory search/filter** | ExoCore | P5 | C0 后可并行 | P5 Detailed Plan freeze | 现 Plasmid CRUD 保持；扩展查询不得破坏 V3 |
 | **B4 Recall identity/observability** | ExoCore | P6 | C0 后可并行 | P6 Detailed Plan freeze | 未升级的 chat consumer 可忽略新 records；不得改变回答语义 |
 | **B5 Message TTS render contract** | ExoCore | P2T | 已开始独立需求/后端设计 | P2T Detailed Plan freeze | additive message projection；文本/attachment/chat runtime 不依赖 voice 成功 |
@@ -687,7 +689,7 @@ Handoff acceptance 只判断稳定接口、权限、分页/identity/error 语义
 | Settings | chat-core | **Migrate with contract preservation** | P2C/C2 | 现有效设置全部可达；不顺手重写 backend | V3 Settings |
 | User/Profile shell entry | chat-core | **Migrate** | P2C/C2 | 账号/头像/More 稳定可达 | V3 User view |
 | Timeline/Tweet → Memo candidate | chronicle Timeline | **Replace after source decision** | P3 | 低摩擦创建、Tags、reply tree | V3 Timeline |
-| Task CRUD/actions | chronicle | **Migrate** | P3 | create/edit/complete/defer 与错误状态可靠 | V3 Task views |
+| Task CRUD/actions | chronicle | **Migrate** | P3 | create/edit/complete/defer（=编辑适用日期）与错误状态可靠 | V3 Task views |
 | Calendar | chronicle | **Migrate as companion view** | P3 | 不复制 Task source | V3 Calendar |
 | Heartbeat final summary | chat-core AgentMemory / backend ledger surfaces | **Project into River; retain ledger** | P3 | summary 与 technical ledger 分离且可追溯 | V3 ledger surface |
 | Diary | backend/domain existing surface | **Add canonical River read path** | P3 | preview/full read 同一 canonical content | Existing backend/read path |
@@ -776,4 +778,4 @@ Roadmap handoff 前按 acceptance scope 做消融：
 - [x] 后续仍不在 backend contract/上游 gate 前提前写源码级计划；
 - [x] TTS/notification active scope 与 Groups/Live/电话/Capacitor deferred scope 已分离。
 
-**Current release position（2026-10-01）：** P2A/P2B/P2T/P2C/P2D 与统一 **Core C2 均已独立验收 PASS**；P2G 继续由 V3-primary 持有并独立 deferred。下一项主 gate 为后端 **B2 River aggregation**；只有 `C2 PASS + B2 PASS` 后才允许起草 P3 River + Memo Detailed Plan。
+**Current release position（2026-10-01）：** P2A/P2B/P2T/P2C/P2D保留既有验收记录；**B2 R5 FINAL PASS under Alicia-approved rebase**（原949有3旧迁移错误，仅精确三标签隔离后946/946 PASS，无skip/error，非949全绿）。Core C2历史PASS不解除当前锁屏恢复hold；P2G继续V3-primary/independently deferred。只有有效 `C2 PASS + B2 PASS` 后才允许起草P3 River + Memo Detailed Plan；当前P3不释放、不启动。

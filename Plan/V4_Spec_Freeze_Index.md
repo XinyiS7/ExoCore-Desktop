@@ -156,7 +156,7 @@ source domain -> River projection -> unified time reading
 
 ### 5.3 Diary
 
-- River 展示当天约 09:00 形成的 canonical DiaryEntry 的一小段 preview；
+- River 展示当天约 09:00 形成的 canonical day file（`YYYY-MM-DD.md`，非旧 DiaryEntry 表）的一小段 preview；
 - 点击阅读全文；
 - preview 首期可以由 canonical content 截取，不要求额外生成一份 River-specific summary；
 - popup / drawer / inline 阅读属于前端表现，不要求 API 分叉。
@@ -165,7 +165,7 @@ source domain -> River projection -> unified time reading
 
 - River 顶部固定 Open Tasks shelf；
 - 主时间轴仍保留 Task 原始事件；
-- complete / defer / edit capability 保留；
+- complete / defer（= 编辑适用日期，不新增独立 defer 动作）/ edit capability 保留；
 - Calendar 为陪伴视图。
 
 ### 5.5 Chronicle
@@ -326,6 +326,8 @@ Master Roadmap 应把下面内容作为独立 backend dependency，不把 Django
 - preview / derived representations。
 
 ### B2 — River aggregation
+
+**收口状态（2026-10-01）：** R5 FINAL B2 PASS under Alicia-approved baseline rebase；原949/errors3，仅精确三个既有migration标签隔离，余946/946 PASS无skip/error；未修复旧迁移缺陷、不宣称949全绿。双仓ReactSheet §3.11–3.13同步；报告 `../ExoCore/Plan/V4_B2_River_Backend_acceptance_report.md`，实施plan `../ExoCore/Plan/Archived/V4_B2_River_Backend_Implementation_Plan.md`。P3仍需有效Core C2+B2；锁屏C2 hold，不释放P3。
 
 - Diary read API；
 - heterogeneous River projection；
