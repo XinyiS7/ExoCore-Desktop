@@ -653,6 +653,88 @@ key_value write-only，响应不返回。last_four 自动提取。
 
 **POST /api/core/tweets/<pk>/reply/** — 回复推文
 
+### 3.11 Memo — Tweet 的兼容投影（B2）
+
+Memo 保留 Tweet 主键、历史与回复关系；旧 `/tweets/`、`/reply/`、TimelineService 和 `read_by` 不变。不新增内容编辑/删除或独立 Tag 管理 API。
+
+Memo 对象：`{id: number, author: string, content: string, parent_id: number|null, created_at: string, tags: string[]}`。`tags` 按名称排序；创建/回复的作者由服务端固定为当前用户编码 `agent:2`，不接受客户端指定作者。
+
+| 接口 | 请求 / 响应 |
+|---|---|
+| `GET /api/core/memos/?before_id=<id>` | roots-only，id 降序，每页20条；`{memos: Memo[], has_more: boolean, next_before_id: number|null}` |
+| `POST /api/core/memos/` | `{content: string}` → 201 Memo root；content trim 后不得为空 |
+| `GET /api/core/memos/<root_id>/` | `{memo: Memo, replies: Memo[]}`；replies 为全部后代平铺列表，每项 parent_id 可重建任意深度关系；非 root/不存在 → 404 |
+| `POST /api/core/memos/<parent_id>/replies/` | `{content: string}` → 201 Memo reply；parent 可为任意层级；不存在 → 404 |
+| `PATCH /api/core/memos/<id>/tags/` | `{tags: string[]}` → 200 Memo；名称 trim/去重，非空且最多50字符；`[]` 清除关联但不删除全局 Tag |
+
+Memo 参数/正文/Tags 校验失败返回400 `{error: string}`；不存在的目标返回404（沿 DRF detail 响应），不承诺 River 的 code 形状。
+
+### 3.12 Canonical Diary — 日期身份只读（B2）
+
+**GET `/api/memory/diaries/<preset_id>/<YYYY-MM-DD>/`**
+
+```json
+{"preset_id": 1, "day": "2026-10-01", "occurred_at": "2026-10-01T01:00:00Z", "time_precision": "day", "content": "# 2026-10-01\n\nDiary 原文"}
+```
+
+示例时刻采用 Europe/Berlin。`occurred_at` 是该 diary day 本地03:00转 UTC 的排序锚点，非真实发生瞬间；day 严格合法 `YYYY-MM-DD`。content 为 canonical UTF-8 原文（含原换行），不生成 AI 摘要。
+
+只读取当前 canonical 日文件，非递归、非 symlink 普通文件；忽略但不删除 legacy hourly/range/temp。不是历史 DiaryEntry 表，不继承 prompt 的 recent-3/g045 资格策略。不存在的 preset/文件 → 404 `diary_not_found`；非法 day → 400 `invalid_day`；真实读取失败 → 503 `source_unavailable`。错误体 `{error: string, code: string}`，响应不含服务器路径。
+
+### 3.13 River — 五源只读聚合（B2）
+
+**GET `/api/core/river/`** — 后端完成合并，前端不自行多源 merge；所有写动作仍走来源 API。
+
+| Query | 规则 |
+|---|---|
+| `limit` | 十进制正整数，默认20，范围1–100 |
+| `cursor` | 可空；服务端生成的 opaque 签名游标，客户端原样 URL 编码传回，不解包/拼接 |
+| `sources` | 逗号分隔 `memo,task,diary,heartbeat,chronicle` 子集；缺省/空串为全部；trim/去重，不接受未知项或空子项 |
+| `preset_id` | 可空或正整数，仅过滤 Diary/Heartbeat/Chronicle；Memo/Task 仍为全局域、preset_id 为 null |
+
+响应：`{items: RiverItem[], next_cursor: string|null}`；空流是200 `{items: [], next_cursor: null}`，没有更多条目时 next_cursor 为 null。
+
+```ts
+type RiverItem = {
+  source_type: "memo" | "task" | "diary" | "heartbeat" | "chronicle";
+  source_id: string;
+  occurred_at: string; // UTC ISO，Z
+  time_precision: "day" | "instant";
+  preset_id: number | null;
+  preview: string; // 来源原文展示截断，最多280字符后可附 …，不是AI摘要
+  capabilities: string[];
+  target: RiverTarget;
+  source_specific: Record<string, unknown>; // 下表精确白名单
+};
+type RiverTarget =
+  | {type: "memo"; memo_id: number}
+  | {type: "task"; entry_id: number}
+  | {type: "diary"; preset_id: number; day: string}
+  | {type: "heartbeat"; session_uuid: string}
+  | {type: "chronicle"; id: number};
+```
+
+| 来源 | 纳入、source_id / 时间 | capabilities / source_specific |
+|---|---|---|
+| Memo | root-only；`"<Tweet.id>"` / created_at，instant；reply不占主轴 | `read_thread, reply, edit_tags`；`author, tags, reply_count`（直接子回复数量，非全线程总数） |
+| Task-created | `"created:<entry.id>"` / created_at，instant | 基础 `edit_date, archive`；active/escalated 另含 `complete, suspend`，suspended 另含 `resume`；`event_kind, title, entry_type, status, is_pinned, start_date, due_date, cycle_start, cycle_due` |
+| Task-completed | `"completed:<record.id>"` / completed_at，instant；每次完成独立，同属task | 同 Task-created；额外 `completion_id, completion_note, completion_cycle_start` |
+| Diary | `"<preset_id>:<day>"` / 本地03:00转UTC，day | `read_full`；`day`；preview/full来自同一 canonical 原文 |
+| Heartbeat | succeeded且摘要非空白；session_uuid / completed_at，缺失才取 started_at/created_at，instant | `open_ledger`；`launch_source, domain, status`；preview仅最终摘要，不含seed/context/tool/error或纸条内容 |
+| Chronicle | milestone/moment，排除highlight；`"<id>"` / event_time本地午夜转UTC，day | `read, edit, delete`；`event_time, kind, scope, keywords` |
+
+日期字段为 ISO date 或 null；capabilities 声明来源真实动作，不是授权凭证。typed target 不是前端 URL；Heartbeat ledger/mailbox 导航由后续 P3 根据已有页面路由接入，不新增纸条消费历史读接口。River GET 不 ack、不消费纸条、不唤醒 Agent。
+
+**排序与 G1：** `(occurred_at, source_type, source_key)` 降序；source_key 是内部稳定文本 tie-break（整数20位补零、UUID hex），不作为公共字段。cursor 版本化并绑定规范化 sources/preset_id 与完整排序边界；limit 不是绑定过滤器。签名仅保护完整性、不是加密，payload 无秘密/路径。
+
+续页只取 cursor 后区间：该区间新增可在本轮出现；已翻过区间新增需首页刷新。未变化数据集同 cursor 重放同序，存量不重不漏。内容/Tags/状态更新读取最新且不移动排序；删除跳过失效项；Diary同日覆盖保身份/排序。Chronicle event_time 编辑会移动排序，须刷新开始新遍历；迟到补录依 G1。没有 cursor session/seen-set/outbox，不承诺任意时间编辑下的历史 snapshot 或 DB/文件跨介质全局原子性。
+
+River 错误：400 `{error, code}`，code 为 `invalid_limit / invalid_sources / invalid_preset_id / malformed_cursor`（含篡改、版本不符、过滤器混用）；选中来源真实失败 → 503 `{error, code: "source_unavailable", source_type}`，不返回假完整页。继承现有 BasicAuthentication/AllowAny；preset_id 是过滤而非 per-preset 鉴权，不能用自报头代替认证；实际权限拒绝沿既有认证/权限机制，不虚构私密域保护。
+
+**GET `/api/core/river/open-tasks/`** — `{items: ScheduleEntry[]}`（来源 `ScheduleEntrySerializer` 完整形状，不是 RiverItem）；同 ScheduleEntry 事实源，只取 active/escalated，排除 suspended/archived；当前来源无 completed 状态，普通任务完成后归档。顺序 `-is_pinned, due_date, cycle_due, start_date, id`，复用 pinned/date 优先级。
+
+**G2 日期编辑：** “延期”沿 `PATCH /api/tasks/entries/<id>/` 明确更新适用日期（如普通任务 due_date，当前周期日期由客户端明确选择），保留其他字段与既有校验/GCal同步；不新增 `/defer/`，不等同 suspend、不新增延期事件、不自动推算周期。complete/suspend/resume 仍走现有来源 POST 动作；archive 沿 `DELETE /api/tasks/entries/<id>/`（来源软归档，非物理删除）。已关联 GCal 的 PATCH 沿既有更新链；未关联者不自动创建事件，同步失败仍沿原日志处理，不新增成功保证。ScheduleEntry 当前 serializer 字段为：`id, title, description, entry_type, status, is_pinned, start_date, tags, due_date, interval_unit, interval_value, end_type, end_count, end_date, occurrences_done, goal_count, goal_period, cycle_start, cycle_due, gcal_event_id, gcal_event_link, current_cycle_completions, next_periodic_due, created_at, updated_at`；第四篇旧示意字段不作为 B2 shelf shape。
+
 ---
 
 ## 第四篇  日程 (Tasks)
