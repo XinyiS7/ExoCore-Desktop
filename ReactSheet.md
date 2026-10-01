@@ -325,12 +325,17 @@ Runtime regenerate 当前仅支持 text-only 目标；目标 Message 自带附�
 
 成功/失败响应均不暴露 `storage_path`（HTTP formatter 仅输出前端契约字段，不输出 PC 路径）。
 
-**GET /api/agents/conversations/<pk>/attachments/<id>/content/** — 流式返回本地 audio 原件
+**GET /api/agents/conversations/<pk>/attachments/<id>/content/** — 流式返回本地原件（audio / allowlist 图片）
 
-- 仅 `audio/*`；attachment 必须属于该 conversation；文件存在时 200（原 MIME + `inline` disposition + `Cache-Control: private`）
-- missing / 非 audio / 跨会话 → 稳定 404
-- `MessageSerializer.attachments_meta[].content_url`：audio 附件为上述同源 URL，其余附件为 `null`；前端播放使用 `content_url`，不使用 Gemini `file_uri`
-- **canonical `attachments[]` 图片 `content_url`（V4，additive）**：canonical ready 展示行（`kind="image"`）可提供同源 `content_url` 供缩略图/灯箱渲染；前端对 canonical `content_url` 仅接受同源 `http/https`（跨源、协议相对与 `file:`/`data:` 等一律拒绝），拒绝或加载失败时按顺序回退到已验证的 legacy `file_uri`（每个候选至多尝试一次），两者均不可用/失败时呈现文件名失败卡片且绝不生成 `<img src>`。legacy `file_uri` 维持既有校验（`http/https`，允许 HTTPS 远端源）；同源限制只适用于 canonical `content_url`。本项不改变上一行 `attachments_meta[].content_url` 的 audio-only 语义。
+- 可服务 MIME 由后端 `session_content_mime_servable` 统一判定：`audio/*`（历史行为不变）与图片 allowlist
+  `image/png` / `image/jpeg` / `image/gif` / `image/webp`；`image/svg+xml`（active content）及其它 MIME 一律不可服务
+- attachment 必须属于该 conversation；文件存在时 200（存储 MIME + `inline` disposition + `Cache-Control: private`）；
+  图片响应额外携带 `X-Content-Type-Options: nosniff`
+- missing / 非可服务 MIME / 跨会话 / 文件缺失 → 稳定 404 `{"error": "附件不存在"}`，响应不出现 `storage_path`
+- canonical `MessageSerializer.attachments[]`：session 行中 audio 与 allowlisted 图片给出上述同源 `content_url`，
+  其余（SVG/PDF/文本等）为 `null`；前端渲染/播放使用 `content_url`，不使用 provider `file_uri`
+- `MessageSerializer.attachments_meta[].content_url`：audio 附件为上述同源 URL，其余附件为 `null`（legacy audio-only 语义不变）
+- **canonical `attachments[]` 图片 `content_url`（V4，additive）**：canonical ready 展示行（`kind="image"`）可提供同源 `content_url` 供缩略图/灯箱渲染；前端对 canonical `content_url` 仅接受同源 `http/https`（跨源、协议相对与 `file:`/`data:` 等一律拒绝），拒绝或加载失败时按顺序回退到已验证的 legacy `file_uri`（每个候选至多尝试一次），两者均不可用/失败时呈现文件名失败卡片且绝不生成 `<img src>`。legacy `file_uri` 维持既有校验（`http/https`，允许 HTTPS 远端源）；同源限制只适用于 canonical `content_url`。本项不改变上一行 `attachments_meta[].content_url` 的 audio-only 语义。**（后端已交付，2026-10-01）** session 用户图片（PNG/JPEG/GIF/WebP）现在在 canonical `attachments[]` 行输出上述同源 `content_url`，由 `GET /api/agents/conversations/<pk>/attachments/<id>/content/` 以 `inline` + `nosniff` 提供；`image/svg+xml` 与其它 MIME 仍投影 `null` 且 content 端点稳定 404。
 
 **DELETE /api/agents/conversations/<pk>/attachments/delete/** — 批量删除
 
