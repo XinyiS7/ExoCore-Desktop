@@ -74,8 +74,6 @@ export interface AttachmentListRow {
   source: AttachmentSource;
   id: number | string;
   display_name: string;
-  /** Present for `user` rows; never rendered or used as a URL (KF-10). */
-  storage_path: string | null;
   mime_type?: string | null;
   file_size?: number | null;
   original_filename?: string | null;

@@ -14,7 +14,6 @@ const userRow = (id: number, name = `f${id}.png`) => ({
   id,
   display_name: name,
   original_filename: name,
-  storage_path: '/srv/x/' + name,
   mime_type: 'image/png',
   file_size: 16,
   created_at: '2026-09-01T10:00:00Z',
@@ -65,7 +64,7 @@ describe('P1C user-attachment manager (Task 2.5/2.6, Gate H)', () => {
   it('loads only user rows and exposes deletePending during the request', async () => {
     let resolveDelete: ((r: Response) => void) | null = null;
     const { calls } = installFetch([
-      { test: LIST_ROUTE, handler: () => jsonResponse([userRow(1), { source: 'tool_collection', id: 'doc/x.md', display_name: 'x.md', storage_path: null }]) },
+      { test: LIST_ROUTE, handler: () => jsonResponse([userRow(1), { source: 'tool_collection', id: 'doc/x.md', display_name: 'x.md' }]) },
       {
         test: DELETE_ROUTE,
         method: 'DELETE',

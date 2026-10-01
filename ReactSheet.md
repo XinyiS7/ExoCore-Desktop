@@ -325,6 +325,11 @@ Runtime regenerate 当前仅支持 text-only 目标；目标 Message 自带附�
 
 成功/失败响应均不暴露 `storage_path`（HTTP formatter 仅输出前端契约字段，不输出 PC 路径）。
 
+**客户端字段收口（2026-10-01）**：`GET /api/agents/conversations/<pk>/attachments/` 列表行与 legacy
+JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**成功响应**同步移除
+`storage_path` 回显；`SessionAttachment.storage_path` 仅作服务端内部字段保留（DB 字段不变），
+客户端删除 / 预览 / 上传 / 发送给模型一律使用 opaque `id`，不依赖浏览器拿到路径。
+
 **GET /api/agents/conversations/<pk>/attachments/<id>/content/** — 流式返回本地原件（audio / allowlist 图片）
 
 - 可服务 MIME 由后端 `session_content_mime_servable` 统一判定：`audio/*`（历史行为不变）与图片 allowlist

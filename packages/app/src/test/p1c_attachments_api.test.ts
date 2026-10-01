@@ -111,7 +111,7 @@ describe('P1C attachment wire — upload (Task 1, Gate B)', () => {
 describe('P1C attachment wire — list (Task 1)', () => {
   it('returns the bare mixed-source array with user + tool_collection rows', async () => {
     const body = [
-      { source: 'user', id: 11, display_name: 'a.png', original_filename: 'a.png', storage_path: '/srv/x/a.png', mime_type: 'image/png', file_size: 16, created_at: '2026-09-01T10:00:00Z' },
+      { source: 'user', id: 11, display_name: 'a.png', original_filename: 'a.png', mime_type: 'image/png', file_size: 16, created_at: '2026-09-01T10:00:00Z' },
       { source: 'tool_collection', id: 'doc/x.md', display_name: 'x.md', char_count: 10, is_summary: false, is_expired: false, created_at: null },
     ];
     installFetch([{ test: ROUTE(), handler: () => jsonResponse(body) }]);

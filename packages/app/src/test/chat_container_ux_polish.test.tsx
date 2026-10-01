@@ -173,7 +173,6 @@ describe('V4 Chat Container UX Polish', () => {
             display_name: 'test.png',
             file_size: 1024,
             mime_type: 'image/png',
-            storage_path: null,
           },
         ],
       };
