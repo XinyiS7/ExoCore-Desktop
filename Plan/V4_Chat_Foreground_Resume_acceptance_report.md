@@ -32,3 +32,12 @@ Confirm the device is using the rebuilt version (reload once before reproducing;
 Expected: full reply appears automatically exactly once; interrupted banner, stale analysis spinner and busy/Stop state clear. Foreground arrival notification behavior remains normal. If not, record displayed state/time and continue diagnosis; do not count manual recovery as automatic success.
 
 This observation remains Alicia-owned and pending. No success release log/archive or C2/P3 release is authorized by automated PASS alone.
+## R2 | Physical-device observation | Final LR-01 PASS
+
+**User evidence:** Alicia reported: “现在好了！发送后锁屏，传输中和完成后分别试过解锁，都会正常显示传输中的或者完整回答，不会需要手点继续”.
+
+This directly covers both foreground resume while generation is still active and foreground resume after completion. No manual Continue Polling was needed. User reported normal presentation; exact duplicate-prevention assertions remain independently demonstrated by the automated real-ConversationPage cases rather than fabricated device telemetry. No backend message/event correlation is claimed from this observation.
+
+Together with R1 independent full1345/1345, typecheck/lint/build and source-path review, all frozen LR-01 requirements are satisfied. Final verdict PASS; no remaining implementation blockers. The lockscreen-related effective Core C2 hold may now be removed, retaining original C2 acceptance plus this supplemental fix evidence. B2 remains PASS under its exact-three approved migration baseline isolation; no P3 implementation is authorized by this release.
+
+Construction may record completed accepted fix and archive its corresponding construction plan with tracked history, update effective C2/Roadmap/Freeze Index status and evidence links, preserving original historical reports. Do not overwrite the historical initial C2 verdict/reproduction, claim excluded B2 migration defects repaired, or launch P3 without separate authorization.
