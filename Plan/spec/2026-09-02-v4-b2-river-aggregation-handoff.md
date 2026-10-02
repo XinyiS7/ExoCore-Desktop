@@ -5,7 +5,7 @@
 > **Frontend consumer phase:** P3 (River + Memo); earliest start: after C0
 > **Backend owner:** `ExoCore` (Django)
 > **Hard gate:** B2 PASS is required before the P3 Detailed Plan may freeze; P0 does not implement anything.
-> **Status:** B2 R5 FINAL PASS under Alicia-approved exact-three existing migration-test isolation（2026-10-01）；原949/errors3，隔离后946/946 PASS，无skip/error。后端契约已实现并双仓同步；P3仍需有效C2+B2，锁屏C2 hold，未授权P3施工。
+> **Status:** B2 R5 FINAL PASS under Alicia-approved exact-three existing migration-test isolation（2026-10-01）；原949/errors3，隔离后946/946 PASS，无skip/error。后端契约已实现并双仓同步；LR-01 R2 FINAL PASS（`Plan/V4_Chat_Foreground_Resume_acceptance_report.md`）已解除锁屏造成的effective C2 hold；有效C2 PASS + B2 PASS前置已满足，未授权P3施工、不启动P3。
 > **Date:** 2026-09-02 · **Sources:** `Plan/V4_Phase_0_Baseline/Canonical_API_Snapshot.json` (SN), frozen specs (Freeze Index §5, River spec §3–7, Architecture spec §7), Master Roadmap §9. Current-source evidence for each source domain is cited inline.
 
 ---

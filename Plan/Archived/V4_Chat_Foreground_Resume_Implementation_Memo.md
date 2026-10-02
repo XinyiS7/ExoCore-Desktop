@@ -1,6 +1,7 @@
 # LR-01 — V4 Chat foreground resume construction memo
 
-**Authority:** Alicia via pane5 LR-01; construction date 2026-10-02. Baseline `3b02e50`. Builder Solaire / gpt-6.1-sol. Independent Acceptance owns `Plan/V4_Chat_Foreground_Resume_acceptance_spec.md` (read-only); actual Android observation still required for effective C2/P3 release.
+**Authority:** Alicia via pane5 LR-01; construction date 2026-10-02. Baseline `3b02e50`. Builder Solaire / gpt-6.1-sol. Independent Acceptance owns `Plan/V4_Chat_Foreground_Resume_acceptance_spec.md` (read-only). This memo preserves the construction-time plan and evidence.
+**Closeout (2026-10-02):** LR-01 R2 FINAL PASS (`Plan/V4_Chat_Foreground_Resume_acceptance_report.md`, commit `953cae3`); Alicia confirmed automatic recovery on unlocking during transmission and after completion. Archived after acceptance; lockscreen-related effective C2 hold removed, effectiveC2+B2 prerequisites satisfied. P3 construction remains unauthorized/not started; historical construction sections below are not the current release state.
 
 ## Goal / causal facts
 
@@ -23,7 +24,7 @@ Accepted async sends must recover their retained status reader on returning fore
 
 ## Construction evidence / status
 
-Deterministic RED against unchanged production confirmed visible-event recovery missing; final focused12/12, adjacent101/101, full103 files/1345 tests, typecheck/lint/build passed (no exclusions). Details and initial construction defects/corrections are in `Plan/V4_Chat_Foreground_Resume_execution_log.md`. Builder self-check complete; submitted for independent acceptance, not a C2/P3 release or actual Android confirmation.
+Deterministic RED against unchanged production confirmed visible-event recovery missing; final focused12/12, adjacent101/101, full103 files/1345 tests, typecheck/lint/build passed (no exclusions). Details and initial construction defects/corrections are in `Plan/V4_Chat_Foreground_Resume_execution_log.md`. Historical delivery: Builder self-check complete; submitted for independent acceptance without claiming a C2/P3 release or actual Android confirmation. Final acceptance/device disposition is recorded in the closeout note above.
 
 ## Verification invariants
 

@@ -2,7 +2,8 @@
 
 **Owner:** gpt-6.1-sol / Solaire, pane7, 2026-10-02（local construction/test date）.
 **Authority:** Alicia via pane5 LR-01; baseline Desktop `3b02e50`.
-**State:** Implementation/self-check complete; independent acceptance and actual Android smoke pending. No C2/P3 release claimed.
+**Historical delivery state:** Implementation/self-check complete; independent acceptance and actual Android smoke were pending. No C2/P3 release was claimed by Builder at delivery.
+**Closeout (2026-10-02):** LR-01 R2 FINAL PASS (`Plan/V4_Chat_Foreground_Resume_acceptance_report.md`, `953cae3`); Alicia confirmed unlocking during transmission/after completion automatically shows progress/full reply, no Continue Polling. Effective C2 lockscreen hold removed; effectiveC2+B2 prerequisites satisfied, P3 construction not authorized/not started. Construction memo now `Plan/Archived/V4_Chat_Foreground_Resume_Implementation_Memo.md`. Evidence below, including delivery-time residuals, is historical and unchanged; this closeout runs no new tests/services/real sends.
 **Trace commit before code:** `6f16010` tracks construction memo, supplied diagnosis, and frozen Acceptance-owned spec unchanged.
 
 ## Cause / narrow implementation
@@ -47,7 +48,7 @@ Node `v25.7.0`, pnpm `11.5.1`; existing documented WebStorage compatibility alig
 - `pnpm --filter exo-app test:run`:whole exo-app default suite, **103 files/1345 tests PASS**, no failures/skips/exclusions. Exit0,37.73s. jsdom HTMLMediaElement.pause not-implemented notices, not failures. Complete logs `/tmp/lr01-mech-verify/01-typecheck.log`, `02-lint.log`, `03-build.log`, `04-test-run.log` and exit files (all0).
 - `git diff --check`:exit0; own source/tests/docs only. Frozen spec content SHA256 `26fd8936d8510e8a40a72baa8c32f00b1f464d862cbcbfd54b5e419b2a3ba1e5` unchanged vs trace commit. No Acceptance report/spec edits.
 
-## Builder personal self-check / boundary
+## Builder personal self-check / boundary (at delivery)
 
 Read the real dispatch/poll/resume/stop/terminal/reconcile/route-effect paths and current diff; verified test assertions and batch results against memo/frozen behavior. Late GET handlers check epoch+conversation before applying results; removed route callbacks have attached=false and cannot initiate recovery. Existing terminal handler gates reconciling and canonical replacement remains sole read owner. No async POST, token replacement, notification component, backend or shared contract edits in this fix.
 

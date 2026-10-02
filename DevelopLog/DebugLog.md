@@ -1,3 +1,11 @@
+## Accepted Runtime Repairs
+
+### [2026-10-02] LR-01：Chat 锁屏后 retained async reader 缺少自动恢复
+- **现象/根因：** arrival正常但解锁仍中断/分析转圈，手点Continue可取回回复；`useChatRuntime` poll失败保留token/cursor却无前台续接，busy又阻挡P2D补窗。非通知transport故障。
+- **修复：** `0b0d4ed`，visible四事件复用exact resume与旧terminal reconcile；同步transition防并发，event generation覆盖先前台后GET reject，继续失败无新事件则诚实blocked。route listener不能捕获每次send变化的operation epoch；resume/请求仍核当前identity。
+- **验收：** 独立1345/1345与源码/checks通过；Alicia确认传输中/完成后解锁均自动恢复。LR-01 R2 FINAL PASS见 `Plan/V4_Chat_Foreground_Resume_acceptance_report.md`（`953cae3`）；effective C2 hold解除，C2+B2前置满足，不授权P3施工。
+- **证据/署名：** `Plan/V4_Chat_Foreground_Resume_execution_log.md`；memo `Plan/Archived/V4_Chat_Foreground_Resume_Implementation_Memo.md`。Alicia真实复现/授权/设备确认；Scout定位；gpt-6.1-sol / Solaire Builder施工、pane5独立验收。属局部debug修复，按Update Log纪律不扩写特性里程碑。
+
 ## Shell Mistakes
 
 ### [2026-06-07] PWA Manifest Missing `id` — Same-Origin Multi-App Install Degrades to Shortcut

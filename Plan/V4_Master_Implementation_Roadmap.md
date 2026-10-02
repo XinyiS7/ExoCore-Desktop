@@ -383,7 +383,7 @@ Checkpoint / rollback:
 
 ### Backend handoff — B2 hard gate
 
-**B2状态（2026-10-01）：R5 FINAL PASS under approved rebase。** 原full949有3个既有migration replay错误；Alicia批准仅精确三标签隔离，余946/946通过、无skip/error；缺陷另行pending，不宣称949全绿。双仓ReactSheet已同步；报告见 `../ExoCore/Plan/V4_B2_River_Backend_acceptance_report.md`，实施plan已归档 `../ExoCore/Plan/Archived/V4_B2_River_Backend_Implementation_Plan.md`。这只满足B2门禁；有效C2仍因锁屏恢复hold，不释放P3。
+**B2状态（2026-10-01）：R5 FINAL PASS under approved rebase。** 原full949有3个既有migration replay错误；Alicia批准仅精确三标签隔离，余946/946通过、无skip/error；缺陷另行pending，不宣称949全绿。双仓ReactSheet已同步；报告见 `../ExoCore/Plan/V4_B2_River_Backend_acceptance_report.md`，实施plan已归档 `../ExoCore/Plan/Archived/V4_B2_River_Backend_Implementation_Plan.md`。锁屏恢复现经 LR-01 R2 FINAL PASS 解除 effective C2 hold（Alicia确认传输中与完成后解锁均自动恢复，报告 `Plan/V4_Chat_Foreground_Resume_acceptance_report.md`）。有效 C2 PASS + B2 PASS 已满足前置，但尚未授权 P3 施工，不启动 P3。
 
 B2 必须稳定提供：
 
@@ -648,7 +648,7 @@ B4 必须稳定提供：
 | ID | Backend owner | Frontend consumer | Earliest start | Required before | Compatibility rule |
 |---|---|---|---|---|---|
 | **B1 Attachment provenance + Collection storage/target identity** | ExoCore | P4 | C0 后可并行 | P4 Detailed Plan freeze | 现 V3 attachment/audio 继续可用；新 managed storage 与 authorization structure additive |
-| **B2 River aggregation** | ExoCore | P3 | C0 后可并行 | P3 Detailed Plan freeze（B2 R5 PASS；C2 hold，P3未释放） | source CRUD 保持；aggregation additive；精确3标签授权隔离后946绿，非949全绿 |
+| **B2 River aggregation** | ExoCore | P3 | C0 后可并行 | P3 Detailed Plan freeze（B2 R5 PASS + 有效C2 PASS；P3施工另待授权） | source CRUD 保持；aggregation additive；精确3标签授权隔离后946绿，非949全绿 |
 | **B3 Memory search/filter** | ExoCore | P5 | C0 后可并行 | P5 Detailed Plan freeze | 现 Plasmid CRUD 保持；扩展查询不得破坏 V3 |
 | **B4 Recall identity/observability** | ExoCore | P6 | C0 后可并行 | P6 Detailed Plan freeze | 未升级的 chat consumer 可忽略新 records；不得改变回答语义 |
 | **B5 Message TTS render contract** | ExoCore | P2T | 已开始独立需求/后端设计 | P2T Detailed Plan freeze | additive message projection；文本/attachment/chat runtime 不依赖 voice 成功 |
@@ -778,4 +778,4 @@ Roadmap handoff 前按 acceptance scope 做消融：
 - [x] 后续仍不在 backend contract/上游 gate 前提前写源码级计划；
 - [x] TTS/notification active scope 与 Groups/Live/电话/Capacitor deferred scope 已分离。
 
-**Current release position（2026-10-01）：** P2A/P2B/P2T/P2C/P2D保留既有验收记录；**B2 R5 FINAL PASS under Alicia-approved rebase**（原949有3旧迁移错误，仅精确三标签隔离后946/946 PASS，无skip/error，非949全绿）。Core C2历史PASS不解除当前锁屏恢复hold；P2G继续V3-primary/independently deferred。只有有效 `C2 PASS + B2 PASS` 后才允许起草P3 River + Memo Detailed Plan；当前P3不释放、不启动。
+**Current release position（2026-10-02）：** P2A/P2B/P2T/P2C/P2D保留既有验收记录；**B2 R5 FINAL PASS under Alicia-approved rebase**（原949有3旧迁移错误，仅精确三标签隔离后946/946 PASS，无skip/error，非949全绿）。Core C2历史PASS与 `Plan/V4_Chat_Foreground_Resume_acceptance_report.md` LR-01 R2 FINAL PASS 补充证据共同恢复有效 C2 PASS，锁屏造成的hold已解除；P2G继续V3-primary/independently deferred。有效 `C2 PASS + B2 PASS` 已满足P3前置；不等于P3施工授权，当前不启动P3。

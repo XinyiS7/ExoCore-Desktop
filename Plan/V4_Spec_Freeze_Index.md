@@ -327,7 +327,7 @@ Master Roadmap 应把下面内容作为独立 backend dependency，不把 Django
 
 ### B2 — River aggregation
 
-**收口状态（2026-10-01）：** R5 FINAL B2 PASS under Alicia-approved baseline rebase；原949/errors3，仅精确三个既有migration标签隔离，余946/946 PASS无skip/error；未修复旧迁移缺陷、不宣称949全绿。双仓ReactSheet §3.11–3.13同步；报告 `../ExoCore/Plan/V4_B2_River_Backend_acceptance_report.md`，实施plan `../ExoCore/Plan/Archived/V4_B2_River_Backend_Implementation_Plan.md`。P3仍需有效Core C2+B2；锁屏C2 hold，不释放P3。
+**收口状态（2026-10-01）：** R5 FINAL B2 PASS under Alicia-approved baseline rebase；原949/errors3，仅精确三个既有migration标签隔离，余946/946 PASS无skip/error；未修复旧迁移缺陷、不宣称949全绿。双仓ReactSheet §3.11–3.13同步；报告 `../ExoCore/Plan/V4_B2_River_Backend_acceptance_report.md`，实施plan `../ExoCore/Plan/Archived/V4_B2_River_Backend_Implementation_Plan.md`。LR-01 R2 FINAL PASS（`Plan/V4_Chat_Foreground_Resume_acceptance_report.md`；Alicia确认传输中与完成后解锁均自动恢复）已解除锁屏造成的effective C2 hold。有效Core C2 PASS + B2 PASS前置已满足；未授权P3施工，不启动P3。
 
 - Diary read API；
 - heterogeneous River projection；
