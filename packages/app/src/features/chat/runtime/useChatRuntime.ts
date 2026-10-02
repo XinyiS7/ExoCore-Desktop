@@ -256,6 +256,7 @@ export function useChatRuntime({
   const pollControllerRef = useRef<AbortController | null>(null);
   const pollingTimeoutRef = useRef<number | null>(null);
   const pollCursorRef = useRef(0);
+  const foregroundEventRef = useRef(0);
   const pendingPollRef = useRef<{ res: PollingStatusResponse; identity: CallbackIdentity } | null>(null);
   const suspendedSseResponseRef = useRef<Response | null>(null);
   const onNavigateToConversationRef = useRef(onNavigateToConversation);
@@ -1048,6 +1049,7 @@ export function useChatRuntime({
         const token = st.payload.token;
         const cursor = pollCursorRef.current;
         const identityNow = st.identity;
+        const foregroundEventAtStart = foregroundEventRef.current;
 
         pollControllerRef.current = new AbortController();
         let res: PollingStatusResponse;
@@ -1071,6 +1073,12 @@ export function useChatRuntime({
             message: classified.message,
             recovery: preserveStop ? { kind: 'resume-poll', preserveStop } : { kind: 'resume-poll' },
           });
+          // A suspended GET can reject after the foreground event already ran.
+          // Consume that event once; a failed replacement GET without a new
+          // foreground event remains blocked (no event-independent retry loop).
+          if (document.visibilityState === "visible" && foregroundEventRef.current !== foregroundEventAtStart) {
+            resumePollingRef.current();
+          }
           return;
         }
         if (!isCurrentIdentity(identityNow.epoch, convId)) return;
@@ -1881,6 +1889,7 @@ export function useChatRuntime({
     if (!rec || rec.kind !== 'resume-poll') return;
     const { identity, snapshot } = cur;
     if (snapshot.transport !== 'async' || !snapshot.asyncToken) return;
+    if (!isCurrentIdentity(identity.epoch, identity.stableOwner.conversationId)) return;
     // R5-B4: when the pause was captured mid-stop, resume STOPPING (with its
     // stopOutcome) — an accepted stop stays accepted (no duplicate POST) and
     // a failed one stays retryable.
@@ -1902,7 +1911,7 @@ export function useChatRuntime({
       snapshot,
     });
     startPollingLoop(identity);
-  }, [transition, startPollingLoop]);
+  }, [transition, startPollingLoop, isCurrentIdentity]);
 
   /** Reconciliation retry after a fetch/apply failure — retries the failed step. */
   const retrySync = useCallback(() => {
@@ -2515,7 +2524,35 @@ export function useChatRuntime({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 
+  // Foreground recovery observes the same retained run as the manual button.
+  // resumePolling transitions the synchronous union before starting a GET, so
+  // event bursts cannot acquire parallel polling chains. No mount-time retry.
+  useEffect(() => {
+    const convId = conversationId;
+    let attached = true;
+    const onForeground = () => {
+      // The operation epoch changes on every send, not just route changes.
+      // Bind listeners to the route; resumePolling checks the current run.
+      if (!attached || document.visibilityState !== "visible" || activeConversationIdRef.current !== convId) return;
+      foregroundEventRef.current += 1;
+      resumePollingRef.current();
+    };
+    document.addEventListener("visibilitychange", onForeground);
+    window.addEventListener("focus", onForeground);
+    window.addEventListener("pageshow", onForeground);
+    window.addEventListener("online", onForeground);
+    return () => {
+      attached = false;
+      document.removeEventListener("visibilitychange", onForeground);
+      window.removeEventListener("focus", onForeground);
+      window.removeEventListener("pageshow", onForeground);
+      window.removeEventListener("online", onForeground);
+    };
+  }, [conversationId]);
+
   // Latest-ref bridges so mount/unmount callbacks never close over stale values.
+  const resumePollingRef = useRef(resumePolling);
+  resumePollingRef.current = resumePolling;
   const startPollingLoopRef = useRef(startPollingLoop);
   startPollingLoopRef.current = startPollingLoop;
   const applyPollEventsRef = useRef(applyPollEvents);
