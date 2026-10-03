@@ -10,6 +10,7 @@ import { NotFoundPage } from '../features/chat/NotFoundPage';
 import { AgentHubPage } from '../features/agents/AgentHubPage';
 import { AgentProfilePage } from '../features/agents/AgentProfilePage';
 import { AgentHeartbeatPage } from '../features/heartbeat/AgentHeartbeatPage';
+import { RiverPage } from '../features/river/RiverPage';
 import { ProjectHubPage } from '../features/projects/ProjectHubPage';
 import { ProjectDetailPage } from '../features/projects/ProjectDetailPage';
 import { AccountPage } from '../features/account/AccountPage';
@@ -208,6 +209,7 @@ export function renderApp(
               <Route path="agents" element={<AgentHubPage />} />
               <Route path="agents/:presetId" element={<AgentProfilePage />} />
               <Route path="agents/:presetId/heartbeat" element={<AgentHeartbeatPage />} />
+              <Route path="river" element={<RiverPage />} />
               <Route path="projects" element={<ProjectHubPage />} />
               <Route path="projects/:projectId" element={<ProjectDetailPage />} />
               <Route path="account" element={<AccountPage />} />

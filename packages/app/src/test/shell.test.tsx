@@ -45,7 +45,7 @@ function homeRoutes(convs: unknown[]): MockRoute[] {
 afterEach(() => unmockFetch());
 
 describe('App Shell navigation (D1: M1 bottom bar projection)', () => {
-  it('shows Chat as the only enabled product area; future areas are semantic disabled', async () => {
+  it('enables Chat and River; remaining future areas are semantic disabled', async () => {
     installFetch(homeRoutes([baseConv(1)]));
     renderApp(['/']);
 
@@ -56,7 +56,9 @@ describe('App Shell navigation (D1: M1 bottom bar projection)', () => {
     expect(disabledGroups).toBeDisabled();
     expect(disabledGroups).toHaveAttribute('aria-disabled', 'true');
     expect(within(nav).getByText('P2')).toBeTruthy();
-    expect(within(nav).getByRole('button', { name: /River/ })).toBeDisabled();
+    const riverLink = within(nav).getByRole('link', { name: 'River' });
+    expect(riverLink).toHaveAttribute('href', '/river');
+    expect(within(nav).queryByText('P3')).toBeNull();
     expect(within(nav).getByRole('button', { name: /Library/ })).toBeDisabled();
   });
 
