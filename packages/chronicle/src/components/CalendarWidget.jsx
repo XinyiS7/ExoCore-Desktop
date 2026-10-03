@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Plus, X, Calendar, CheckCircle2, Circle, ChevronLeft, ChevronRight, Target, RefreshCw } from 'lucide-react';
 import { tasksApi } from 'exo-shared';
 const fetchEntries = tasksApi.listTasks;
@@ -36,10 +36,12 @@ function getGcalDotDays(events) {
 }
 
 const EmptyForm = { title: '', deadline: '', repeat: 'none', note: '' };
+const localDate = (date = new Date()) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 export default function CalendarWidget() {
   const today = new Date();
-  const todayIso = today.toISOString().slice(0, 10);
+  const todayIso = localDate(today);
 
   const [selectedDate, setSelectedDate] = useState(todayIso);
   const [viewYear, setViewYear]   = useState(today.getFullYear());
@@ -49,6 +51,9 @@ export default function CalendarWidget() {
   const [loading, setLoading]     = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [form, setForm]           = useState(EmptyForm);
+  const [creating, setCreating]   = useState(false);
+  const [createError, setCreateError] = useState(null);
+  const createInFlight = useRef(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -66,21 +71,35 @@ export default function CalendarWidget() {
 
   useEffect(() => { load(); }, [load]);
 
-  const addTask = () => {
-    if (!form.title.trim()) return;
+  const addTask = async () => {
+    if (createInFlight.current || !form.title.trim()) return;
     const payload = {
       title: form.title.trim(),
       entry_type: 'todo',
+      start_date: localDate(),
       due_date: form.deadline || selectedDate,
-      description: form.note.trim() || null,
+      description: form.note.trim(),
     };
-    createEntry(payload)
-      .then(newEntry => {
-        setEntries(prev => [newEntry, ...prev]);
-        setForm(EmptyForm);
-        setShowAddForm(false);
-      })
-      .catch(err => console.error('任务创建失败:', err));
+    createInFlight.current = true;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const newEntry = await createEntry(payload);
+      if (!Number.isInteger(newEntry?.id) || newEntry.id <= 0) {
+        throw new Error('无法确认创建结果');
+      }
+      setEntries(prev => [newEntry, ...prev]);
+      setForm(EmptyForm);
+      setShowAddForm(false);
+    } catch (err) {
+      const uncertain = !Number.isInteger(err?.status) || err.status >= 500;
+      setCreateError(uncertain
+        ? '保存结果不确定，请先刷新核对任务列表，再决定是否重新提交，避免重复创建。'
+        : '任务创建失败，请检查输入后重新提交。');
+    } finally {
+      createInFlight.current = false;
+      setCreating(false);
+    }
   };
 
   const handleToggle = (id) => {
@@ -226,7 +245,9 @@ export default function CalendarWidget() {
               <span className="label-caps text-exo-muted/60">{selectedDate === todayIso ? '今日任务' : `${selectedDate} 任务`}</span>
             </div>
             <button
-              onClick={() => setShowAddForm(p => !p)}
+              aria-label="新建待办"
+              disabled={creating}
+              onClick={() => { setShowAddForm(p => !p); setCreateError(null); }}
               className="p-1 text-exo-muted hover:text-exo-accent transition-colors"
             >
               <Plus size={14} />
@@ -238,22 +259,26 @@ export default function CalendarWidget() {
             <div className="px-4 py-3 border-b border-exo-border/30 bg-exo-metal/50 flex flex-col gap-2">
               <input
                 autoFocus
+                disabled={creating}
                 value={form.title}
                 onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                onKeyDown={e => { if (e.key === 'Enter') addTask(); if (e.key === 'Escape') setShowAddForm(false); }}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) addTask(); if (e.key === 'Escape' && !creating) setShowAddForm(false); }}
                 placeholder="任务标题..."
                 className="w-full bg-transparent border-b border-exo-border/60 focus:border-exo-accent/40 outline-none text-sm text-exo-text pb-1 transition-colors placeholder:text-exo-muted/30"
               />
+              {createError && <p role="alert" className="text-xs text-red-400">{createError}</p>}
               <div className="flex gap-2 flex-wrap items-center">
                 <input
                   type="date"
+                  aria-label="截止日期"
+                  disabled={creating}
                   value={form.deadline || selectedDate}
                   onChange={e => setForm(p => ({ ...p, deadline: e.target.value }))}
                   className="bg-exo-metal border border-exo-border/50 rounded px-2 py-1 text-xs text-exo-text/70 outline-none focus:border-exo-accent/30 transition-colors"
                 />
                 <div className="flex gap-1.5 ml-auto">
-                  <button onClick={() => { setShowAddForm(false); setForm(EmptyForm); }} className="px-2 py-1 text-xs text-exo-muted hover:text-chron-text transition-colors">取消</button>
-                  <button onClick={addTask} className="px-3 py-1 text-xs bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded hover:bg-exo-accent hover:text-black transition-all">添加</button>
+                  <button disabled={creating} onClick={() => { setShowAddForm(false); setForm(EmptyForm); setCreateError(null); }} className="px-2 py-1 text-xs text-exo-muted hover:text-chron-text transition-colors">取消</button>
+                  <button disabled={creating || !form.title.trim()} onClick={addTask} className="px-3 py-1 text-xs bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded hover:bg-exo-accent hover:text-black transition-all">{creating ? '添加中...' : '添加'}</button>
                 </div>
               </div>
             </div>
