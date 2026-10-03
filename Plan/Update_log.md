@@ -2,6 +2,30 @@
 
 ---
 
+## 2026-10-03 — V4 Phase 3：River & Memo C3 最终独立验收 PASS
+
+**署名：** `[pane7 Builder；Solaire independent acceptance FINAL PASS；Alaric approved UI mockup；Alicia visual approved]`
+
+### 成果与归属
+- `packages/app` 的 `/app/river` 已完成五源统一时间阅读：Memo、Heartbeat final summary、Diary、Task events、Chronicle milestone/moment；服务端顺序、opaque cursor与来源错误语义保留，Memo replies不进入主轴。
+- Memo已完成低摩擦创建、Unicode Tags两步保存/独立重试、任意层级真实parent回复及同页重建下的草稿/在途/错误生命周期保留。
+- Task已完成todo/periodic/goal原生CRUD、Shelf与River同源详情/完成/暂停/恢复/置顶/归档/类型化日期动作；CompletionRecord按真实接口读取，GCal仅承诺单向push/unlink与可见错误。
+- Calendar陪伴视图使用真实snapshot范围与`fetched_at`，明确503/未覆盖/goal缺席/periodic单次边界；Diary与Heartbeat提供完整只读Drawer，Ledger session深链可刷新定位；Legacy milestone/moment支持详情/PATCH及明确永久删除确认。
+- River生产子路由与导航已启用；V4接管上述P3 capability ownership。Chronicle `highlight/bookmark`仍由V3持有至P4，V3 Chronicle/archive继续作为回退与审计表面。
+
+### 验收与环境条件
+- CP0/KF07及CP1–CP4均经独立复核PASS；视觉按获批mockup对齐后，Alicia在真实页面确认“可以，这版挺好了”。最终报告：`Plan/V4_Phase_3_River_Memo_acceptance_report.md`。
+- 正式全量回归：Node v25.7.0下仅以**单进程**`NODE_OPTIONS=--no-experimental-webstorage`运行，116文件/1489测试全部通过，0 failed/skipped/errors；typecheck、lint、build通过。默认Node25无flag仍会因实验性global localStorage缺少`getItem/setItem`污染jsdom而失败，此事实未被隐藏或用持久配置绕过。
+- 真实只读浏览器证据闭合长流分页可达、Desktop/Mobile Drawer内部滚动与背景位置保持、Tab/Shift+Tab focus containment、Escape/关闭focus恢复，以及Calendar→Task、Ledger刷新返回、Legacy开关链路；未执行真实CRUD矩阵、GCal远端/付费生成。Task busy-focus保留为非阻塞未实测边界。
+- Live部署时发现Memo表缺失；backend pane6在schema recorder/备份核对后仅应用既有`core.0028_tweet_tags`，Memo/River接口恢复。该动作不是Desktop后端代码修改，也不是重复B2验收。
+- Live证据：`Plan/V4_Phase_3_CP5_Live_Execution_Log.md`。CP级报告：`Plan/V4_Phase_3_KF07_acceptance_report.md`、`Plan/V4_Phase_3_CP1_acceptance_report.md`、`Plan/V4_Phase_3_CP2_acceptance_report.md`、`Plan/V4_Phase_3_CP3_acceptance_report.md`、`Plan/V4_Phase_3_CP4_acceptance_report.md`。
+
+### 保留边界
+- C3 PASS不是全产品root/P7切换；根站点仍指向`/chat/`。不删除V3、不启动P4，不改后端或跨仓契约；P4仍须B1 PASS及独立release。
+- C2/B2既有历史原样保留：B2仍是精确三标签隔离后的946/946 PASS，不宣称原949全绿；P2G继续V3-primary/deferred。
+
+---
+
 ## 2026-09-30 — V4 Agent Profile：心跳账本、信箱写入与主会话伴随（CP-A ~ CP-D）
 
 **署名：** `[Alaric / gemini-3.8-flash; Solaire independent acceptance PASS; Alicia approved]`

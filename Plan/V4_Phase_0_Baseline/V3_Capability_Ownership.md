@@ -3,7 +3,7 @@
 > **Artifact:** `Plan/V4_Phase_0_Baseline/V3_Capability_Ownership.md`
 > **Source rows:** `Plan/V4_Master_Implementation_Roadmap.md` §16 (all rows preserved; additions marked ➕).
 > **Grounding evidence:** current frontend source (commit `6b0948e`), `V3_Baseline.md` (VB), `Canonical_API_Snapshot.json` (SN).
-> **Transfer status:** P1A–P1D remained **V3-primary** through their construction gates. Unified C1 is now PASS: the ordinary Chat rows listed in §5 are **V4-primary**, with V3 chat-core retained as the rollback reference. No row may lack a fallback owner.
+> **Transfer status:** P1A–P1D remained **V3-primary** through their construction gates. Unified C1 is PASS: the ordinary Chat rows listed in §5 are **V4-primary**. Unified C3 is also PASS: the P3 rows listed in §6 are **V4-primary** at `/app/river`, with their listed V3/source surfaces retained as rollback or canonical-source references. Product-root remains unchanged until P7. No row may lack a fallback owner.
 
 ## 1. Legend
 
@@ -98,3 +98,18 @@ The following capability IDs are now **V4-primary** in `packages/app`; their lis
 - `memory_search_toolcall`
 
 No P2-or-later capability changes owner in C1. The root production redirect remains `/chat/` until P7; this does not reverse the capability transfer because `/app/` is the accepted canonical V4 Chat surface and V3 remains intentionally reachable for rollback.
+
+## 6. Unified C3 ownership transfer record
+
+Unified C3 passed on 2026-10-03 after CP0/KF07 and CP1–CP4 independent acceptance, Alicia's real-page visual confirmation, and final read-only browser evidence. Verdict source: `Plan/V4_Phase_3_River_Memo_acceptance_report.md`.
+
+The following capability IDs are now **V4-primary** in `packages/app` through `/app/river`; each row's existing fallback/source owner remains available and no source data was migrated into a second store:
+
+- `timeline_tweet` — Memo creation, Tags and local reply tree; replies do not enter the River main axis;
+- `task_crud` — todo/periodic/goal CRUD and typed source actions;
+- `calendar` — read-only snapshot companion plus canonical Task detail/list actions;
+- `heartbeat_summary` — final-summary River projection/full read while the technical Ledger remains traceable;
+- `diary` — canonical preview/full-read path;
+- `chronicle_milestone` — milestone/moment time reading and in-scope source detail/actions while the legacy archive remains auditable.
+
+C3 does **not** transfer `chronicle_highlight`: highlight/bookmark read/write stays V3-primary until P4/C4 accepts new Collection writes. It also does not transfer GroupChat, Library/Collection/Memory/Recall, the whole-product root, or V3 retirement. The root redirect remains `/chat/` until P7, and V3 cleanup remains gated by P8 plus explicit approval.

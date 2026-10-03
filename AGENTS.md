@@ -30,7 +30,7 @@ If a task requires backend or extension changes:
 
 ExoCore-Desktop is a **monorepo** containing three independent V3 SPAs and the **temporary V4 package** `exo-app`. Each runs on its own port as a standalone PWA, sharing a single Django backend (port 8000).
 
-> **Migration state (unified C1 PASS):** `packages/app` (`exo-app`, port **5176**, production `/app/`) owns ordinary Chat as **V4-primary**; V3 `chat-core` remains the buildable rollback reference. The whole-product root still redirects to `/chat/` until P7, and Agent/Project/Group/Settings ownership remains V3 until later gates. The repo continues to host four SPA/PWA packages; `dev:app` is additive and independent from V3 dev commands. V4 never imports V3 page/components.
+> **Migration state (C1 + C3 PASS):** `packages/app` (`exo-app`, port **5176**, production `/app/`) owns ordinary Chat as **V4-primary** and now owns the accepted P3 `/app/river` surface: five-source River reading, Memo/thread/Tags, Task CRUD/source actions, Calendar companion, Diary/Heartbeat full reading, and Chronicle milestone/moment time reading. V3 `chat-core`/Chronicle remain buildable rollback and legacy-source references; `chronicle_highlight`/bookmark stays V3-primary until P4. The whole-product root still redirects to `/chat/` until P7; P2G GroupChat remains V3-primary/deferred, and no V3 surface is deleted before P8. The repo continues to host four SPA/PWA packages; `dev:app` is additive and independent from V3 dev commands. V4 never imports V3 page/components. Verdict: `Plan/V4_Phase_3_River_Memo_acceptance_report.md`.
 
 ## Architecture
 
@@ -41,7 +41,7 @@ ExoCore-Desktop is a **monorepo** containing three independent V3 SPAs and the *
 | `chat-core` | Agent hub, conversations, projects, files, settings, memory, user profile (V3) |
 | `chronicle` | Timeline/BBS feed, task management, Google Calendar (V3) |
 | `council` | Multi-agent workspace — **deferred to V3.1** (V3) |
-| `app` | **V4 App Shell + canonical Chat (C1 accepted, V4-primary)** — `exo-app` |
+| `app` | **V4 App Shell + canonical Chat (C1) + River/Memo/Task/Calendar surface (C3), V4-primary for accepted capabilities** — `exo-app` |
 
 ### Shared Package
 
