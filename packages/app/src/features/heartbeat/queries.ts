@@ -60,6 +60,21 @@ export function useHeartbeatEventsQuery(
 }
 
 /**
+ * Canonical dashed UUID shape accepted by the heartbeat detail route
+ * (`GET /api/heartbeat/events/<session_uuid>/`). The API only emits this form,
+ * so the Ledger refuses any other value as malformed instead of issuing an
+ * ambiguous lookup or silently defaulting to another event (CP4 deep link).
+ */
+const HEARTBEAT_SESSION_UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isValidHeartbeatSessionUuid(
+  value: string | null | undefined,
+): value is string {
+  return typeof value === 'string' && HEARTBEAT_SESSION_UUID_PATTERN.test(value);
+}
+
+/**
  * Reads single HeartbeatEvent detail by sessionUuid.
  * Guarded: only launches when presetId is valid, sessionUuid is non-empty, and enabled is true.
  */

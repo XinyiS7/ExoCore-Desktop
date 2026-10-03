@@ -20,7 +20,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { id: 'chat', label: 'Chat', icon: MessageSquare, to: '/', enabled: true },
   { id: 'groups', label: 'Groups', icon: Users, enabled: false, phase: 'P2' },
-  { id: 'river', label: 'River', icon: Waves, enabled: false, phase: 'P3' },
+  { id: 'river', label: 'River', icon: Waves, to: '/river', enabled: true },
   { id: 'library', label: 'Library', icon: Library, enabled: false, phase: 'P4/P5' },
 ];
 

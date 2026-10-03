@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, X } from 'lucide-react';
 import { isG045AgentType } from '../chat/queries';
 import { toAppApiError } from '../chat/api';
 import { ErrorState, LoadingState } from '../../shared/AsyncState';
@@ -8,7 +7,7 @@ import { useDocumentTitle } from '../../shared/useDocumentTitle';
 import { MoreMenu } from '../../shell/PrimaryNavigation';
 import { isValidPresetId, useAgentPresetQuery } from '../agents/queries';
 import { toHeartbeatApiError } from './api';
-import { useHeartbeatQueueQuery } from './queries';
+import { isValidHeartbeatSessionUuid, useHeartbeatQueueQuery } from './queries';
 import { HeartbeatMailbox } from './HeartbeatMailbox';
 import { HeartbeatLedger } from './HeartbeatLedger';
 import { HeartbeatEventDetail } from './HeartbeatEventDetail';
@@ -60,6 +59,45 @@ function AgentNotEligibleState({ presetId }: { presetId: number }) {
   );
 }
 
+/**
+ * CP4: `?session=` is present but is not a canonical UUID (including empty).
+ * Explicit failure — no silent fallback and no default event selection.
+ */
+function InvalidSessionPanel({ raw, onClose }: { raw: string; onClose: () => void }) {
+  return (
+    <aside
+      className="heartbeat-detail-panel"
+      role="region"
+      aria-label="无效的心跳会话"
+    >
+      <div className="heartbeat-detail-header">
+        <div className="heartbeat-detail-title-group">
+          <h3 className="heartbeat-detail-title">心跳会话无效</h3>
+          <span className="heartbeat-detail-uuid" title={raw}>
+            {raw || '（空）'}
+          </span>
+        </div>
+        <button
+          type="button"
+          className="app-btn app-btn-ghost heartbeat-detail-close"
+          onClick={onClose}
+          aria-label="关闭详情"
+        >
+          <X size={16} aria-hidden="true" />
+        </button>
+      </div>
+      <div className="heartbeat-detail-scroll">
+        <div className="app-async" role="alert">
+          <p className="app-async-title">Session 参数无效</p>
+          <p className="app-async-detail">
+            session 必须是完整的心跳会话 UUID；本页不会默认选择其他记录。
+          </p>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 export function AgentHeartbeatPage() {
   const { presetId } = useParams();
   if (!isValidPresetId(presetId)) return <InvalidAgentState />;
@@ -74,12 +112,27 @@ function AgentHeartbeatDetail({ presetId }: { presetId: number }) {
   // Only launch Heartbeat queue query if confirmed G045
   const queueQuery = useHeartbeatQueueQuery(presetId, isG045);
 
-  const [selectedSessionUuid, setSelectedSessionUuid] = useState<string | null>(null);
+  // CP4 deep link: the URL is the single source of truth for Ledger selection,
+  // so refresh/back/forward and River heartbeat links resolve identically.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawSessionParam = searchParams.get('session');
+  const sessionUuid = isValidHeartbeatSessionUuid(rawSessionParam) ? rawSessionParam : null;
+  const invalidSession = rawSessionParam !== null && sessionUuid === null;
 
-  // Clear selection if route preset changes
-  useEffect(() => {
-    setSelectedSessionUuid(null);
-  }, [presetId]);
+  const selectSession = (uuid: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('session', uuid);
+      return next;
+    });
+  };
+  const closeSession = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('session');
+      return next;
+    });
+  };
 
   const pageTitle = preset?.name
     ? `${preset.name} · Heartbeat Ledger`
@@ -177,15 +230,18 @@ function AgentHeartbeatDetail({ presetId }: { presetId: number }) {
             <div className="heartbeat-ledger-main">
               <HeartbeatLedger
                 presetId={presetId}
-                selectedSessionUuid={selectedSessionUuid}
-                onSelectSession={setSelectedSessionUuid}
+                selectedSessionUuid={sessionUuid}
+                onSelectSession={selectSession}
               />
             </div>
-            {selectedSessionUuid ? (
+            {invalidSession ? (
+              <InvalidSessionPanel raw={rawSessionParam ?? ''} onClose={closeSession} />
+            ) : null}
+            {sessionUuid ? (
               <HeartbeatEventDetail
                 presetId={presetId}
-                sessionUuid={selectedSessionUuid}
-                onClose={() => setSelectedSessionUuid(null)}
+                sessionUuid={sessionUuid}
+                onClose={closeSession}
               />
             ) : null}
           </div>

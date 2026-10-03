@@ -44,6 +44,7 @@ export function HeartbeatEventDetail({
   onClose,
 }: HeartbeatEventDetailProps) {
   const detailQuery = useHeartbeatEventDetailQuery(presetId, sessionUuid);
+  const detailError = detailQuery.isError ? toHeartbeatApiError(detailQuery.error) : null;
 
   return (
     <aside
@@ -71,13 +72,19 @@ export function HeartbeatEventDetail({
       <div className="heartbeat-detail-scroll">
         {detailQuery.isPending ? (
           <LoadingState label="正在加载心跳记录详情…" />
-        ) : detailQuery.isError ? (
+        ) : detailError ? (
           <ErrorState
-            title="心跳记录详情加载失败"
-            detail={toHeartbeatApiError(detailQuery.error).message}
+            title={
+              detailError.status === 404 ? '心跳记录不存在' : '心跳记录详情加载失败'
+            }
+            detail={
+              detailError.status === 404
+                ? '该 Session 在心跳账本中没有对应记录。'
+                : detailError.message
+            }
             onRetry={() => void detailQuery.refetch()}
           />
-        ) : detailQuery.data ? (
+        ) : detailQuery.data && detailQuery.data.presetId === presetId ? (
           <div className="heartbeat-detail-content">
             <div className="heartbeat-detail-meta">
               <div className="heartbeat-meta-row">
@@ -200,6 +207,18 @@ export function HeartbeatEventDetail({
                 </ul>
               </div>
             ) : null}
+          </div>
+        ) : detailQuery.data ? (
+          <div className="heartbeat-detail-content" role="alert">
+            <div className="heartbeat-detail-section">
+              <h4 className="heartbeat-detail-section-title">记录归属不匹配</h4>
+              <p className="heartbeat-detail-text">
+                该心跳会话属于 Agent #{detailQuery.data.presetId}，不属于当前 Agent #{presetId}；已阻止展示其余内容。
+              </p>
+              <p className="app-muted">
+                请从 Agent #{detailQuery.data.presetId} 的心跳账本打开该记录。
+              </p>
+            </div>
           </div>
         ) : null}
       </div>
