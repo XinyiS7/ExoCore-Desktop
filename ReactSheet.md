@@ -1571,6 +1571,192 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 
 ---
 
+## 第十三篇：V4 Collection / Library 后端契约（B1）
+
+> 本篇记录已实现的后端事实，供 Desktop P4 消费；它不代表 Library 前端已施工或
+> 后端已部署。统一前缀为 `/api/collection/`。
+
+### 13.1 身份与领域边界
+
+- 人类 Library HTTP CRUD / 浏览沿用当前产品 HTTP 边界，B1 不扩大全站认证。
+- Agent/tool/runtime 读取必须在后端 service 内传入真实 `ToolCallerIdentity`，且
+  `agent_type == "g045"`；header、query、body 自报 agent type 或 preset id 均无效。
+- `StoredAsset` 表示 exact bytes；`AttachmentProvenance` 表示一次新上传；
+  `CollectionItem` 表示一次收藏。相同字节可复用一个 Asset，但每次收藏均有独立 Item。
+- 只有新 multipart 上传确认成功后才有 `provenance_id`。旧附件与 JSON
+  `storage_path` 草稿不能冒充可收藏原件。
+
+### 13.2 路由与状态码
+
+| Method / path | 成功响应 | 用途 |
+|---|---:|---|
+| `GET /items/` | 200 | cursor 浏览与筛选 |
+| `POST /items/` | 201 | 按 discriminated `source` 创建一次收藏 |
+| `GET /items/<uuid>/` | 200 | 详情、来源快照、派生表示与 capabilities |
+| `PATCH /items/<uuid>/` | 200 | 更新元数据、Tags 或人工 canonical text |
+| `DELETE /items/<uuid>/` | 204 | 删除 Item occurrence；不在请求中 unlink 原件 |
+| `GET /items/<uuid>/original/` | 200/404 | 读取原件 bytes |
+| `GET /items/<uuid>/representations/<kind>/content/` | 200/404 | 读取派生 artifact |
+| `POST /items/<uuid>/representations/<kind>/retry/` | 200 | 重试真实 failed + retryable 自动派生 |
+| `POST /items/<uuid>/bring-to-chat/` | 200/201 | text 回 composer payload；file 复制回 G045 会话附件域 |
+| `GET /tags/` | 200 | 当前非空 Tag 及 Item 数量 |
+
+`GET /items/` query：
+
+- `limit`：默认 24，范围 1–100；
+- `kind`：`text | image | audio | document`；
+- `tag`：按服务端 normalized Tag 精确筛选；
+- `q`：title / description / context / text / Tags / succeeded canonical text 的
+  lexical substring 搜索，不是 semantic/vector search；
+- `recent=1|true|0|false`：true 表示最近 30 天；
+- `cursor`：签名、filter-bound 的 `(collected_at, public_id)` 降序游标。
+
+列表信封：
+
+```json
+{
+  "items": [
+    {
+      "id": "<uuid>",
+      "kind": "image",
+      "title": "...",
+      "description": "...",
+      "collection_context": "...",
+      "preview": "...",
+      "tags": ["reference"],
+      "source": {"type": "attachment", "key": "<opaque-key>"},
+      "target": {"type": "collection_item", "id": "<uuid>"},
+      "search_target": "collection",
+      "collected_at": "<ISO-8601>",
+      "updated_at": "<ISO-8601>"
+    }
+  ],
+  "next_cursor": "<opaque-or-null>"
+}
+```
+
+### 13.3 创建与更新
+
+通用创建字段：`title?`、`description?`、`collection_context?`、`tags?`（最多
+32 个、每个最多 50 字符）以及下列一种 `source`：
+
+```json
+{"source":{"type":"attachment","provenance_id":"<uuid>"}}
+{"source":{"type":"text","text":"明确提交的文本"}}
+{"source":{"type":"message","message_id":123,"text":"消息中的明确摘录"}}
+{"source":{"type":"chronicle_highlight","highlight_id":456}}
+```
+
+- attachment / highlight / message 来源均由服务端核验；message 的 `text` 必须真实
+  出现在该 Message；promotion 不修改或删除原 Chronicle highlight。
+- 同一 provenance 或 highlight 可被明确收藏多次，不做隐式 occurrence 去重。
+- `PATCH` 只接受 `title`、`description`、`collection_context`、`tags`，以及：
+
+```json
+{
+  "manual_representation": {
+    "kind": "audio_transcript",
+    "canonical_text": "人工校准文本"
+  }
+}
+```
+
+人工值只允许当前 Item kind 支持的 representation；producer 投影为 `human` /
+`manual-v1`。不可变 source、kind、asset 与 occurrence identity 不能通过 PATCH 改写。
+
+### 13.4 详情与派生状态
+
+详情包含列表 card 的全部字段，并增加：
+
+```json
+{
+  "source": {"type":"attachment","key":"...","snapshot":{},"available":true},
+  "text_content": "",
+  "asset": {"sha256":"...","file_size":123,"mime_type":"image/png","status":"ready"},
+  "representations": [
+    {
+      "kind": "image_preview",
+      "state": "succeeded",
+      "canonical_text": "",
+      "content_url": "/api/collection/items/<uuid>/representations/image_preview/content/",
+      "artifact_mime_type": "image/png",
+      "producer_type": "deterministic_preview",
+      "producer_version": "collection-cp4-v1",
+      "model_identity": "",
+      "attempt_count": 1,
+      "retryable": false,
+      "retry_url": null,
+      "error_code": "",
+      "updated_at": "<ISO-8601>"
+    }
+  ],
+  "capabilities": ["update","delete","bring_to_chat","read_original"],
+  "original_content_url": "/api/collection/items/<uuid>/original/",
+  "bring_to_chat_url": "/api/collection/items/<uuid>/bring-to-chat/"
+}
+```
+
+- `asset` 对 text 为 `null`；`original_content_url` / `read_original` 仅在 Asset ready
+  时出现。
+- representation `state` 仅为 `pending | succeeded | failed | unavailable`。
+  `content_url` 仅在 succeeded 且有 artifact 时出现；`retry_url` 仅在 failed 且
+  retryable 时出现。
+- B1 自动范围仅含 deterministic image preview、audio playback、可靠 document text；
+  无批准 provider 的图片描述、用户音频 transcript、document summary 明确为
+  `unavailable`，不伪造成功。
+- representation 的 granular `error_code`（例如 `image_preview_failed`、
+  `audio_transcript_unavailable`、`document_extraction_unavailable`）是可展示的派生状态，
+  不是独立 HTTP 错误信封。
+
+### 13.5 原件、派生内容与 bring-to-chat
+
+- 原件/派生内容以 `FileResponse` 返回，并带
+  `Cache-Control: private, max-age=0` 与 `X-Content-Type-Options: nosniff`。
+- 内容不存在、Asset 不可读或 trusted-agent 未授权统一映射为：
+  `404 {"error":"Collection content not found","code":"collection_item_not_found"}`；
+  客户端不得据此推断隐藏资源是否存在。
+- `POST bring-to-chat` 请求为 `{"conversation_id": <positive-int>}`。目标身份由服务端
+  重新加载 Conversation → AgentPreset，必须为 G045。
+- text 成功返回 200：
+  `{"mode":"text","composer_payload":{"text":"...","source":{"type":"collection_item","id":"<uuid>"}}}`；
+  不自动发送消息。
+- file 成功返回 201，包含 `mode="attachment"`、`pending_attachment_id` 和新的安全
+  `attachment` 投影（id / display_name / original_filename / mime_type / file_size /
+  provenance_id / source）。它复制到 chat 附件域并创建新 provenance；不会让
+  SessionAttachment 直接引用 Collection 文件，也不会把 Collection 生命周期交给聊天。
+
+### 13.6 实际公共错误词表
+
+普通 JSON 错误信封统一为 `{"error":"<safe message>","code":"<stable code>"}`：
+
+| code | HTTP | 公开触发面 |
+|---|---:|---|
+| `invalid_request` | 400 | body/query、source 字段、mutable field 或手工 representation 非法 |
+| `malformed_cursor` | 400 | cursor 签名、版本或 filter binding 非法 |
+| `collection_item_not_found` | 404 | Item/representation 不存在；亦为内容读取统一 404 code |
+| `source_not_found` | 404 | Message 或 Chronicle source 不存在 |
+| `source_type_mismatch` | 400 | source type/kind/selection 不匹配 |
+| `source_provenance_unavailable` | 409 | provenance 不存在或不是已确认新上传 occurrence |
+| `asset_missing` | 409 | 创建收藏时 managed original 已不可用 |
+| `asset_verification_failed` | 409 | bring-to-chat 原件 hash/size/copy 校验失败 |
+| `derivation_not_retryable` | 409 | representation 不在 failed + retryable 自动派生状态 |
+| `collection_target_not_g045` | 403 | bring-to-chat 目标 Conversation 不是 G045 |
+
+`collection_agent_unauthorized` 是 trusted-agent service 的授权 code；HTTP 内容读取故意
+将它掩蔽为上述统一 404，不直接发给前端。当前没有公开 Asset 删除 API，因此不公开
+`asset_still_referenced`；当前也没有通用 `derivation_failed` HTTP code，派生失败使用
+representation 自身的 granular `error_code`。客户端不得为这两个未实现 code 写必需分支。
+
+### 13.7 部署与可用性门禁
+
+Collection migration `0001–0004` 必须在 **Django 后端与 Runtime 任一服务启动前**
+应用并通过 `python.exe manage.py migrate --check --noinput`。共享 APScheduler 的
+Collection GC / recovery jobs 会直接查询这些表；缺表必须阻止启动/显式失败，禁止吞错后
+伪装服务可用。部署时按项目规范同步显式重启 `run-exocore` 与 `run-runtime`；不得只重启
+一端。本契约落盘不等于真实库已 migrate，也不等于 Desktop P4 已发布。
+
+---
+
 ## 附录 A — Typed Error Shape (§P1-11 commit 6)
 
 SSE 和 async polling 共用的稳定 error payload：
