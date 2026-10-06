@@ -79,6 +79,17 @@ error payload (commit 6 shape):
 }
 ```
 
+在 SSE `200` 或 async acknowledgement 之前，聊天 POST 会同步完成 runtime/direct 目标解析、runtime 当前轮附件预检与 direct 音频预检。拒绝时返回：
+
+```http
+422 Unprocessable Entity
+Content-Type: application/json
+
+{"code": "runtime_attachment_type_unsupported", "message": "..."}
+```
+
+稳定 code 包括 `runtime_attachments_unsupported`、`runtime_session_type_unsupported`、`runtime_retry_target_invalid`、`runtime_target_invalid`、`runtime_config_error`、`runtime_attachment_{invalid_request,not_found,wrong_conversation,type_unsupported,capability_unavailable,unreadable,too_large}`、目标解析器返回的稳定 code，以及 `audio_model_unsupported`、`audio_mime_unsupported`、`attachment_not_found`。同步拒绝不创建 Message、附件、运行状态、SSE/async buffer 或生成线程，并在响应前释放 generation reserve；会话 `thinking_level` 偏好可能已更新。客户端应把这些 4xx 视为安全拒绝并保留 composer 输入。
+
 **GET /api/agents/chat/<session_id>/status/** — `{status: "running" | "completed" | "error"}`
 
 **POST /api/agents/chat/<session_id>/stop/** — 中断流
