@@ -247,7 +247,30 @@ export function useChatRuntime({
   const [stopError, setStopError] = useState<ChatRuntimeError | null>(null);
   const [draftCleanupFailed, setDraftCleanupFailed] = useState(false);
   const [editingTarget, setEditingTarget] = useState<{ id: number; content: string } | null>(null);
+  const [restoredTurn, setRestoredTurn] = useState<{
+    token: number;
+    conversationId: number;
+    text: string;
+    attachmentIds: number[];
+  } | null>(null);
   const stashedDraftRef = useRef<string>('');
+  const inFlightTurnRef = useRef<{
+    epoch: number;
+    conversationId: number;
+    clientTurnId?: string;
+    content: string;
+    pendingAttachments: number[];
+    isAudioTurn: boolean;
+  } | null>(null);
+  const inFlightTurnsRef = useRef<Map<number, {
+    epoch: number;
+    conversationId: number;
+    clientTurnId?: string;
+    content: string;
+    pendingAttachments: number[];
+    isAudioTurn: boolean;
+  }>>(new Map());
+  const lastTerminalErrorRef = useRef<ChatRuntimeError | null>(null);
 
   const [transport, setTransportState] = useState<ChatTransport>(loadTransportPreference);
 
@@ -721,20 +744,26 @@ export function useChatRuntime({
 
   // ── Reconciliation: FOUR separated effects (§7, §8.1) ────────────────────
   const runReconcileStages = useCallback(
-    async (identity: CallbackIdentity, snapshot: V4RuntimeLease, ctx: ReconcileContext) => {
-      if (!isCurrentIdentity(identity.epoch, identity.stableOwner.conversationId)) return;
+    async (
+      identity: CallbackIdentity,
+      snapshot: V4RuntimeLease,
+      ctx: ReconcileContext,
+      errorPayload?: ChatRuntimeError,
+    ) => {
       const convId = identity.stableOwner.conversationId;
-      const cur = opStateRef.current;
-      if (cur.phase !== 'reconciling') return;
+      const isCurrent = isCurrentIdentity(identity.epoch, convId);
+      if (isCurrent && opStateRef.current.phase !== 'reconciling') return;
 
       // 1) FETCH canonical newest window — network only; failure keeps the last
       //    displayed Query state (old data, marker and lock all remain).
-      transition({ phase: 'reconciling', identity, snapshot, reconcile: { ...ctx, stage: 'fetching' } });
+      if (isCurrent) {
+        transition({ phase: 'reconciling', identity, snapshot, reconcile: { ...ctx, stage: 'fetching' } });
+      }
       let page: MessagePage;
       try {
         page = await fetchFreshWindow(convId);
       } catch {
-        if (!isCurrentIdentity(identity.epoch, convId)) return;
+        if (!isCurrent) return;
         if (opStateRef.current.phase !== 'reconciling') return;
         emitAttemptOutcome(identity, 'reconcile_failed', {
           kind: 'unknown',
@@ -750,8 +779,7 @@ export function useChatRuntime({
         });
         return;
       }
-      if (!isCurrentIdentity(identity.epoch, convId)) return;
-      if (opStateRef.current.phase !== 'reconciling') return;
+      if (isCurrent && opStateRef.current.phase !== 'reconciling') return;
 
       if (ctx.outcome !== 'done') {
         const terminal: RuntimeAttemptOutcome['terminal'] =
@@ -764,11 +792,13 @@ export function useChatRuntime({
       }
 
       // 2) APPLY — the single append/destructive Query owner (no marker/UI).
-      transition({ phase: 'reconciling', identity, snapshot, reconcile: { ...ctx, stage: 'applying' } });
+      if (isCurrent) {
+        transition({ phase: 'reconciling', identity, snapshot, reconcile: { ...ctx, stage: 'applying' } });
+      }
       try {
         applyFreshWindow(queryClient, convId, page, identity.destructive);
       } catch {
-        if (!isCurrentIdentity(identity.epoch, convId)) return;
+        if (!isCurrent) return;
         transition({
           phase: 'blocked',
           identity,
@@ -779,11 +809,12 @@ export function useChatRuntime({
         });
         return;
       }
-      if (!isCurrentIdentity(identity.epoch, convId)) return;
-      if (opStateRef.current.phase !== 'reconciling') return;
+      if (isCurrent && opStateRef.current.phase !== 'reconciling') return;
 
       // 3) MARKER — one conditional transition; never clear → write (§5).
-      transition({ phase: 'reconciling', identity, snapshot, reconcile: { ...ctx, stage: 'clearing' } });
+      if (isCurrent) {
+        transition({ phase: 'reconciling', identity, snapshot, reconcile: { ...ctx, stage: 'clearing' } });
+      }
 
       if (ctx.outcome === 'not_found') {
         // not_found: FIRST reconcile canonical, THEN replace active → uncertain
@@ -791,88 +822,148 @@ export function useChatRuntime({
         const uncertain: V4RuntimeLease = { ...snapshot, disposition: 'uncertain', updatedAt: Date.now() };
         const up = persistRuntimeLease(snapshot, uncertain);
         if (up.state === 'persisted') {
-          transition({
-            phase: 'blocked',
-            identity,
-            reason: 'not_found',
-            snapshot: up.snapshot,
-            message: '异步会话凭据已失效或后台服务已重置。消息历史已同步；确认后将解除锁定，不会自动重发。',
-            recovery: { kind: 'ack' },
-          });
+          if (isCurrent) {
+            transition({
+              phase: 'blocked',
+              identity,
+              reason: 'not_found',
+              snapshot: up.snapshot,
+              message: '异步会话凭据已失效或后台服务已重置。消息历史已同步；确认后将解除锁定，不会自动重发。',
+              recovery: { kind: 'ack' },
+            });
+          }
           return;
         }
         if (up.state === 'mutation_unavailable') {
-          transition({
-            phase: 'blocked',
-            identity,
-            reason: 'storage_unavailable',
-            snapshot,
-            message: '无法写入凭据失效标记（浏览器存储不可用）。请重试存储操作。',
-            recovery: { kind: 'persist-retry', expectedPrior: snapshot, next: uncertain, onPersisted: { kind: 'ack-refresh' } },
-          });
+          if (isCurrent) {
+            transition({
+              phase: 'blocked',
+              identity,
+              reason: 'storage_unavailable',
+              snapshot,
+              message: '无法写入凭据失效标记（浏览器存储不可用）。请重试存储操作。',
+              recovery: { kind: 'persist-retry', expectedPrior: snapshot, next: uncertain, onPersisted: { kind: 'ack-refresh' } },
+            });
+          }
           return;
         }
         if (up.state === 'conflict') {
+          if (isCurrent) adoptOrReread(identity);
+          return;
+        }
+        if (isCurrent) {
+          transition({
+            phase: 'storage_blocked_read',
+            conversationId: convId,
+            reason: up.reason,
+            suspendedOperation: makeSuspended(identity, snapshot, true),
+          });
+        }
+        return;
+      }
+
+      const inFlight =
+        inFlightTurnsRef.current.get(convId) ??
+        (inFlightTurnRef.current?.conversationId === convId ? inFlightTurnRef.current : null);
+      const isDeterministicError =
+        ctx.outcome === 'error' && (errorPayload?.retryClass ?? lastTerminalErrorRef.current?.retryClass) !== 'uncertain';
+      const wasUserPersisted = Boolean(
+        inFlight &&
+          typeof inFlight.clientTurnId === 'string' &&
+          page.messages.some(
+            (m) =>
+              m.role === 'user' &&
+              typeof m.clientTurnId === 'string' &&
+              m.clientTurnId === inFlight.clientTurnId,
+          ),
+      );
+      const shouldRestoreFailedTurn = Boolean(
+        isDeterministicError &&
+          inFlight &&
+          !inFlight.isAudioTurn &&
+          !wasUserPersisted,
+      );
+
+      if (shouldRestoreFailedTurn && inFlight) {
+        saveConversationDraft(convId, inFlight.content);
+        if (isCurrent) {
+          setRestoredTurn({
+            token: Date.now(),
+            conversationId: convId,
+            text: inFlight.content,
+            attachmentIds: inFlight.pendingAttachments,
+          });
+        }
+      }
+      if (ctx.outcome === 'done' || wasUserPersisted || shouldRestoreFailedTurn) {
+        inFlightTurnsRef.current.delete(convId);
+        if (inFlightTurnRef.current?.conversationId === convId) {
+          inFlightTurnRef.current = null;
+        }
+      }
+
+      const clearOut = clearRuntimeLease(snapshot);
+      if (clearOut.state === 'cleared') {
+        // 4) RELEASE — completeness: only after the exact marker cleared.
+        if (isCurrent) {
+          releaseUi(identity, { retainStoppedTrace: ctx.outcome === 'stopped' });
+          if (shouldRestoreFailedTurn) {
+            const errPayload = errorPayload ?? lastTerminalErrorRef.current;
+            setTransientError({
+              code: errPayload?.code || 'GENERATION_ERROR',
+              message: errPayload?.message || '后台生成遇到错误，文字与附件已放回输入框',
+              retryClass: 'safe',
+              status: errPayload?.status ?? null,
+              raw: errPayload?.raw,
+            });
+          }
+        }
+        return;
+      }
+      if (isCurrent) {
+        if (clearOut.state === 'mutation_unavailable') {
+          // D-F01: capture sanitized stopped trace before dropping overlay rows
+          const currentTrace = activeTraceRef.current;
+          const retainedTrace: RuntimeAssistantTrace | undefined =
+            ctx.outcome === 'stopped' && currentTrace && currentTrace.items.length > 0
+              ? {
+                  runId: currentTrace.runId,
+                  lastSequence: currentTrace.lastSequence,
+                  items: currentTrace.items.map((item) => ({ ...item })),
+                }
+              : undefined;
+
+          activeTraceRef.current = null;
+          // Canonical data applied: drop the noncanonical overlay (R2-01) but the
+          // lock is carried by the union — never by stale overlay rows.
+          setOptimisticUser(null);
+          setRuntimeAssistant(null);
+          setProtocolWarning(null);
+          transition({
+            phase: 'blocked',
+            identity,
+            reason: 'clear_blocked',
+            snapshot,
+            message: '无法清除上次运行标记（浏览器存储不可用）。请重试清理后再继续，避免重复发送。',
+            recovery: {
+              kind: 'clear-retry',
+              expectedPrior: snapshot,
+              onCleared: retainedTrace ? { kind: 'unlock', retainedTrace } : { kind: 'unlock' },
+            },
+          });
+          return;
+        }
+        if (clearOut.state === 'conflict') {
           adoptOrReread(identity);
           return;
         }
         transition({
           phase: 'storage_blocked_read',
           conversationId: convId,
-          reason: up.reason,
+          reason: clearOut.reason,
           suspendedOperation: makeSuspended(identity, snapshot, true),
         });
-        return;
       }
-
-      const clearOut = clearRuntimeLease(snapshot);
-      if (clearOut.state === 'cleared') {
-        // 4) RELEASE — completeness: only after the exact marker cleared.
-        releaseUi(identity, { retainStoppedTrace: ctx.outcome === 'stopped' });
-        return;
-      }
-      if (clearOut.state === 'mutation_unavailable') {
-        // D-F01: capture sanitized stopped trace before dropping overlay rows
-        const currentTrace = activeTraceRef.current;
-        const retainedTrace: RuntimeAssistantTrace | undefined =
-          ctx.outcome === 'stopped' && currentTrace && currentTrace.items.length > 0
-            ? {
-                runId: currentTrace.runId,
-                lastSequence: currentTrace.lastSequence,
-                items: currentTrace.items.map((item) => ({ ...item })),
-              }
-            : undefined;
-
-        activeTraceRef.current = null;
-        // Canonical data applied: drop the noncanonical overlay (R2-01) but the
-        // lock is carried by the union — never by stale overlay rows.
-        setOptimisticUser(null);
-        setRuntimeAssistant(null);
-        setProtocolWarning(null);
-        transition({
-          phase: 'blocked',
-          identity,
-          reason: 'clear_blocked',
-          snapshot,
-          message: '无法清除上次运行标记（浏览器存储不可用）。请重试清理后再继续，避免重复发送。',
-          recovery: {
-            kind: 'clear-retry',
-            expectedPrior: snapshot,
-            onCleared: retainedTrace ? { kind: 'unlock', retainedTrace } : { kind: 'unlock' },
-          },
-        });
-        return;
-      }
-      if (clearOut.state === 'conflict') {
-        adoptOrReread(identity);
-        return;
-      }
-      transition({
-        phase: 'storage_blocked_read',
-        conversationId: convId,
-        reason: clearOut.reason,
-        suspendedOperation: makeSuspended(identity, snapshot, true),
-      });
     },
     [isCurrentIdentity, transition, queryClient, adoptOrReread, releaseUi, makeSuspended, emitAttemptOutcome],
   );
@@ -883,6 +974,7 @@ export function useChatRuntime({
       const cur = opStateRef.current;
       if (cur.phase !== 'live' && cur.phase !== 'stopping') return;
       if (!isCurrentIdentity(cur.identity.epoch, cur.identity.stableOwner.conversationId)) return;
+      lastTerminalErrorRef.current = kind === 'error' ? (errorPayload ?? null) : null;
       cancelLocalReaders();
       const { identity, snapshot } = cur;
       if (kind === 'done') {
@@ -941,7 +1033,18 @@ export function useChatRuntime({
 
   const applyPollEvents = useCallback(
     async (identity: CallbackIdentity, snapshot: V4RuntimeLease, res: PollingStatusResponse) => {
-      if (!isCurrentIdentity(identity.epoch, identity.stableOwner.conversationId)) return;
+      if (!isCurrentIdentity(identity.epoch, identity.stableOwner.conversationId)) {
+        if (res.status === 'error') {
+          const errorPayload = classifyRuntimeError(res.error_message ?? '后台生成遇到错误', 'terminal_persisted');
+          const ctx: ReconcileContext = {
+            outcome: 'error',
+            waitForLatest: false,
+            stage: 'idle',
+          };
+          void runReconcileStagesRef.current(identity, snapshot, ctx, errorPayload);
+        }
+        return;
+      }
       const cur = opStateRef.current;
       if (cur.phase !== 'live' && cur.phase !== 'stopping') return;
       // Preserve the authoritative phase (a user stop must stay 'stopping').
@@ -1081,7 +1184,23 @@ export function useChatRuntime({
           }
           return;
         }
-        if (!isCurrentIdentity(identityNow.epoch, convId)) return;
+        if (!isCurrentIdentity(identityNow.epoch, convId)) {
+          if (res.status === 'error') {
+            const leaseOutcome = readRuntimeLease(convId);
+            const snapshot =
+              leaseOutcome.state === 'valid'
+                ? leaseOutcome.lease
+                : makeLease(identityNow.stableOwner, 'active', undefined, { asyncToken: token, cursor });
+            const errorPayload = classifyRuntimeError(res.error_message ?? '后台生成遇到错误', 'terminal_persisted');
+            const ctx: ReconcileContext = {
+              outcome: 'error',
+              waitForLatest: false,
+              stage: 'idle',
+            };
+            void runReconcileStagesRef.current(identityNow, snapshot, ctx, errorPayload);
+          }
+          return;
+        }
         if (opStateRef.current.phase !== 'live' && opStateRef.current.phase !== 'stopping') return;
         if (opStateRef.current.identity.epoch !== identityNow.epoch) return;
         await applyPollResultRef.current(identityNow, opStateRef.current.snapshot, res);
@@ -1680,6 +1799,16 @@ export function useChatRuntime({
       let clientTurnIdForPost: string | undefined;
       if (operation === 'send') {
         clientTurnIdForPost = generateClientTurnId();
+        const inFlightData = {
+          epoch,
+          conversationId: convId,
+          clientTurnId: clientTurnIdForPost,
+          content: trimmedContent,
+          pendingAttachments: [...pendingAttachments],
+          isAudioTurn: Boolean(turn.attemptKey),
+        };
+        inFlightTurnRef.current = inFlightData;
+        inFlightTurnsRef.current.set(convId, inFlightData);
         setOptimisticUser({
           kind: 'client_user',
           clientKey: `user:${epoch}`,
@@ -1689,6 +1818,8 @@ export function useChatRuntime({
           clientTurnId: clientTurnIdForPost,
         });
       } else {
+        inFlightTurnRef.current = null;
+        inFlightTurnsRef.current.delete(convId);
         setOptimisticUser(null);
       }
       activeTraceRef.current = null;
@@ -1702,6 +1833,7 @@ export function useChatRuntime({
       setTransientError(null);
       setStopError(null);
       setProtocolWarning(null);
+      setRestoredTurn(null);
       // A stale replay target is replaced (not replayed) and made visible here,
       // after the notice reset, so the divergence is diagnosable without log
       // archaeology.
@@ -2465,6 +2597,7 @@ export function useChatRuntime({
     setStopError(null);
     setDraftCleanupFailed(false);
     setEditingTarget(null);
+    setRestoredTurn(null);
     stashedDraftRef.current = '';
     activeAttemptRef.current = null;
     pollCursorRef.current = 0;
@@ -2582,6 +2715,7 @@ export function useChatRuntime({
     protocolWarning,
     hasPendingReconcile,
     draftCleanupFailed,
+    restoredTurn,
     sendMessage,
     retryRecoveredTurn,
     stopGeneration,

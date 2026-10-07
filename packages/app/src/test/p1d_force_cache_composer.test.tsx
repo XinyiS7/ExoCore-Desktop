@@ -36,6 +36,7 @@ function composeStub(overrides: Partial<ComposeAttachmentApi> = {}): ComposeAtta
     removeEntry: vi.fn(),
     purgeAttachmentId: vi.fn(),
     clearCompose: vi.fn(),
+    restoreEntries: vi.fn(),
     ...overrides,
   };
 }

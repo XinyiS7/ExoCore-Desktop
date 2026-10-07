@@ -232,6 +232,7 @@ export function ConversationPage() {
     protocolWarning,
     hasPendingReconcile,
     draftCleanupFailed,
+    restoredTurn,
     sendMessage,
     retryRecoveredTurn,
     stopGeneration,
@@ -818,6 +819,7 @@ export function ConversationPage() {
           audioGate={audioGate}
           audioRecovery={audioRecovery}
           onRetryAudio={handleRetryAudio}
+          restoredTurn={restoredTurn}
         />
       ) : null}
 

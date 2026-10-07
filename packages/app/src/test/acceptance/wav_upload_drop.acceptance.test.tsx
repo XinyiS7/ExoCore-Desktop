@@ -56,6 +56,7 @@ function renderComposer(overrides: Partial<ChatComposerProps> = {}) {
     removeEntry: vi.fn(),
     purgeAttachmentId: vi.fn(),
     clearCompose: vi.fn(),
+    restoreEntries: vi.fn(),
   };
   const attachmentManager: UserAttachmentManagerApi = {
     rows: [],

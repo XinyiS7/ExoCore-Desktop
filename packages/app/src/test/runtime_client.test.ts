@@ -7,6 +7,7 @@ import {
   postChatStop,
   postConversationBranch,
 } from '../features/chat/runtime/client';
+import { AppApiError } from '../features/chat/api';
 import { installFetch, jsonResponse, unmockFetch } from './helpers';
 
 afterEach(() => unmockFetch());
@@ -31,6 +32,18 @@ describe('P1B Runtime Client & Error Classification (§5, §6.6)', () => {
       const classified = classifyRuntimeError(abortErr);
       expect(classified.code).toBe('ABORTED');
       expect(classified.retryClass).toBe('safe');
+    });
+
+    it('classifies synchronous 422 preflight errors with backend code as safe', () => {
+      const err = new AppApiError('Subscription Runtime accepts PNG, JPEG, and WebP images only', {
+        status: 422,
+        code: 'runtime_attachment_type_unsupported',
+        body: { code: 'runtime_attachment_type_unsupported', message: 'Subscription Runtime accepts PNG, JPEG, and WebP images only' },
+      });
+      const classified = classifyRuntimeError(err);
+      expect(classified.retryClass).toBe('safe');
+      expect(classified.code).toBe('runtime_attachment_type_unsupported');
+      expect(classified.message).toBe('Subscription Runtime accepts PNG, JPEG, and WebP images only');
     });
   });
 

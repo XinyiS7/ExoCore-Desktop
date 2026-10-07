@@ -71,6 +71,8 @@ export interface ComposeAttachmentApi {
   purgeAttachmentId: (attachmentId: number) => void;
   /** Clear compose state after an accepted ordinary send (Task 4 hook). */
   clearCompose: () => void;
+  /** Restore previously uploaded compose entries after an unpersisted failure. */
+  restoreEntries: (entries: ComposeAttachmentEntry[]) => void;
 }
 
 export function useComposeAttachments(
@@ -337,6 +339,27 @@ export function useComposeAttachments(
     [],
   );
 
+  const restoreEntries = useCallback((restored: ComposeAttachmentEntry[]) => {
+    setEntries((prev) => {
+      const existingAttachmentIds = new Set(
+        prev.map((e) => e.attachmentId).filter((id): id is number => typeof id === 'number' && id > 0),
+      );
+      const toAdd: ComposeAttachmentEntry[] = restored
+        .filter((e) => {
+          if (e.attachmentId === null || typeof e.attachmentId !== 'number' || e.attachmentId <= 0) return false;
+          if (purgedIdsRef.current.has(e.attachmentId)) return false;
+          return !existingAttachmentIds.has(e.attachmentId);
+        })
+        .map((e) => ({
+          ...e,
+          clientId: nextClientId++,
+          preview: e.file ? imagePreviewFor(e.file) : e.preview,
+        }));
+      if (toAdd.length === 0) return prev;
+      return [...prev, ...toAdd];
+    });
+  }, []);
+
   return {
     entries,
     anyUploading,
@@ -347,5 +370,6 @@ export function useComposeAttachments(
     removeEntry,
     purgeAttachmentId,
     clearCompose,
+    restoreEntries,
   };
 }

@@ -9,6 +9,7 @@ import type {
 import { loadConversationDraft, saveConversationDraft } from './runtime/storage';
 import { ComposeAttachmentList } from './attachments/ComposeAttachmentList';
 import type { ComposeAttachmentApi } from './attachments/useComposeAttachments';
+import type { ComposeAttachmentEntry } from './attachments/types';
 import { UserAttachmentManager } from './attachments/UserAttachmentManager';
 import type { UserAttachmentManagerApi } from './attachments/useUserAttachmentManager';
 import { AudioComposeBar } from './audio/AudioComposeBar';
@@ -59,6 +60,13 @@ export interface ChatComposerProps {
   /** Conversation-bound uploaded-audio recovery owner. */
   audioRecovery: AudioRecoveryApi;
   onRetryAudio: () => void;
+  /** Unpersisted failure recovery payload dispatched by useChatRuntime. */
+  restoredTurn?: {
+    token: number;
+    conversationId: number;
+    text: string;
+    attachmentIds: number[];
+  } | null;
 }
 
 function flattenProjectFiles(entries: readonly ProjectTreeEntry[]): string[] {
@@ -93,6 +101,7 @@ export function ChatComposer({
   audioGate,
   audioRecovery,
   onRetryAudio,
+  restoredTurn,
 }: ChatComposerProps) {
   const [text, setText] = useState('');
   const [caret, setCaret] = useState(0);
@@ -102,6 +111,14 @@ export function ChatComposer({
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isComposingRef = useRef(false);
+  const stashedSubmissionRef = useRef<{
+    conversationId: number;
+    text: string;
+    entries: ComposeAttachmentEntry[];
+  } | null>(null);
+  const appliedRestoredTokenRef = useRef<number | null>(null);
+  const composeRef = useRef(compose);
+  composeRef.current = compose;
 
   const atQuery =
     editingTarget || autocompleteDismissed ? null : extractCurrentAtQuery(text, caret);
@@ -163,6 +180,25 @@ export function ChatComposer({
     setActiveSuggestion(0);
     setAutocompleteDismissed(false);
   }, [conversationId, editingTarget]);
+
+  // Restore text and compose attachments if an ordinary turn failed without persistence
+  useEffect(() => {
+    if (!restoredTurn) return;
+    if (appliedRestoredTokenRef.current === restoredTurn.token) return;
+    if (restoredTurn.conversationId === conversationId) {
+      appliedRestoredTokenRef.current = restoredTurn.token;
+      const textToRestore = restoredTurn.text;
+      setText((prev) => {
+        const nextText = prev.trim() ? `${textToRestore}\n\n${prev}` : textToRestore;
+        saveConversationDraft(conversationId, nextText);
+        return nextText;
+      });
+      if (stashedSubmissionRef.current && stashedSubmissionRef.current.conversationId === conversationId) {
+        composeRef.current.restoreEntries(stashedSubmissionRef.current.entries);
+      }
+    }
+    stashedSubmissionRef.current = null;
+  }, [restoredTurn, conversationId]);
 
   const adjustTextareaHeight = useCallback(() => {
     const el = textareaRef.current;
@@ -266,6 +302,13 @@ export function ChatComposer({
     // here would permit an accidental second audio upload or partial replay.
     const transferredToRecovery = hasRecordedAudio && audioRecovery.hasSnapshot();
     if (outcome === 'accepted' || transferredToRecovery) {
+      if (!transferredToRecovery && !hasRecordedAudio) {
+        stashedSubmissionRef.current = {
+          conversationId,
+          text: submittedText,
+          entries: [...compose.entries.filter((e) => (e.status === 'ok' || e.status === 'ok_degraded') && e.attachmentId != null)],
+        };
+      }
       setText('');
       saveConversationDraft(conversationId, '');
       compose.clearCompose();
