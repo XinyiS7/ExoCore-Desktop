@@ -1593,7 +1593,10 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 - Agent/tool/runtime 读取必须在后端 service 内传入真实 `ToolCallerIdentity`，且
   `agent_type == "g045"`；header、query、body 自报 agent type 或 preset id 均无效。
 - `StoredAsset` 表示 exact bytes；`AttachmentProvenance` 表示一次新上传；
-  `CollectionItem` 表示一次收藏。相同字节可复用一个 Asset，但每次收藏均有独立 Item。
+  `CollectionItem` 表示一个已收藏的来源。同一来源身份（attachment provenance、
+  Chronicle highlight、整条 Message 文本或同一 Message 中的同一摘录）只对应一个
+  Item；重复收藏不新建 Item，只为该收藏者 `collect_count` +1（§13.3）。`type=text`
+  自由文本无来源身份，每次提交各建一个 Item。相同字节可复用一个 Asset。
 - 只有新 multipart 上传确认成功后才有 `provenance_id`。旧附件与 JSON
   `storage_path` 草稿不能冒充可收藏原件。
 
@@ -1602,7 +1605,7 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 | Method / path | 成功响应 | 用途 |
 |---|---:|---|
 | `GET /items/` | 200 | cursor 浏览与筛选 |
-| `POST /items/` | 201 | 按 discriminated `source` 创建一次收藏 |
+| `POST /items/` | 201/200 | 按 discriminated `source` 收藏：新建 201，同一来源已收藏 200（返回既有 Item） |
 | `GET /items/<uuid>/` | 200 | 详情、来源快照、派生表示与 capabilities |
 | `PATCH /items/<uuid>/` | 200 | 更新元数据、Tags 或人工 canonical text |
 | `DELETE /items/<uuid>/` | 204 | 删除 Item occurrence；不在请求中 unlink 原件 |
@@ -1660,7 +1663,16 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 
 - attachment / highlight / message 来源均由服务端核验；message 的 `text` 必须真实
   出现在该 Message；promotion 不修改或删除原 Chronicle highlight。
-- 同一 provenance 或 highlight 可被明确收藏多次，不做隐式 occurrence 去重。
+- **collect-or-increment**：来源身份为 `(source.type, 实体, scope)`，message 来源中
+  `text` 等于整条 `Message.content` 与摘录各自算不同 scope。来源尚未收藏 → 新建
+  Item 并返回 `201`；已收藏 → 返回既有 Item 与 `200`，本次的 `title` /
+  `description` / `tags` 不改写既有 Item。两种响应正文均为 §13.4 详情，并额外带
+  `"collect_outcome": "created" | "already_collected"`。
+- 每次被接受的 POST 都为 Alicia 计一次 `collect_count`（含首次）；不承诺调用级幂等，
+  客户端重试即算再收藏一次。
+- 首次收藏的 `collection_context` 保留在 Item 上；重复收藏时非空
+  `collection_context` 追加为一条只增不改的收藏评论，不覆盖原 context。本阶段不
+  提供 `collect_count` / 评论的读取 API。
 - `PATCH` 只接受 `title`、`description`、`collection_context`、`tags`，以及：
 
 ```json
@@ -1673,7 +1685,7 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 ```
 
 人工值只允许当前 Item kind 支持的 representation；producer 投影为 `human` /
-`manual-v1`。不可变 source、kind、asset 与 occurrence identity 不能通过 PATCH 改写。
+`manual-v1`。不可变 source、kind、asset 与来源身份不能通过 PATCH 改写。
 
 ### 13.4 详情与派生状态
 
@@ -1681,7 +1693,7 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 
 ```json
 {
-  "source": {"type":"attachment","key":"...","snapshot":{},"available":true},
+  "source": {"type":"attachment","key":"...","snapshot":{"message":{}},"available":true},
   "text_content": "",
   "asset": {"sha256":"...","file_size":123,"mime_type":"image/png","status":"ready"},
   "representations": [
@@ -1706,6 +1718,11 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
   "bring_to_chat_url": "/api/collection/items/<uuid>/bring-to-chat/"
 }
 ```
+
+`source.snapshot.message` 是来源 Message 的 canonical 快照，attachment 与 message
+两类来源同形：`{message_id, conversation_id, index_in_session, role, created_at}`；
+无法确定唯一来源 Message 时为 `null`。message 来源快照中同名的顶层键仅为兼容保留，
+新消费者只读嵌套 `message`。
 
 - `asset` 对 text 为 `null`；`original_content_url` / `read_original` 仅在 Asset ready
   时出现。
