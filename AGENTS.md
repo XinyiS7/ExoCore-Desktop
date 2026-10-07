@@ -4,6 +4,7 @@ This file provides guidance to Codex when working with code in this repository.
 
 **API contract:** `ReactSheet.md` — active API reference (in-repo).
 **Cross-module context:** `../AGENTS.md` and `../.agent/project.md`
+**Backlog:** pending work for all repos lives in `XinyiS7/ExoCore` GitHub issues (`gh issue list -R XinyiS7/ExoCore -l area:desktop`); do not write `*_Pending.md`. Commits reference `refs XinyiS7/ExoCore#N`, never `fixes`/`closes`. Rules: `../ExoCore/AGENTS.md` §2 「待办」.
 **Local run / nginx:** the umbrella `../AGENTS.md` §3 owns the launch discipline (`run-exocore` / `run-runtime` aliases; nginx is an always-on Docker container — do not suggest PS1 launchers).
 
 **Shell environment:** Git Bash (Windows). Use Bash tool for shell commands, not PowerShell.
