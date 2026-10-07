@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   audioTargetUnsupportedText,
   resolveAudioTarget,
+  resolveSelectedAudioTarget,
 } from '../features/chat/audio/audioTarget';
 import type { ModelCatalog } from 'exo-shared/models';
 
@@ -77,5 +78,81 @@ describe('P1C audio target gate (Task 3.2, Gate E)', () => {
     const { gate, reason } = resolveAudioTarget(catalog, presetOf('unknown-model'));
     expect(gate.state).toBe('unsupported');
     expect(reason).toBe('target_unresolved');
+  });
+
+  describe('Managed Runtime audio target gate (Plan R1)', () => {
+    const managedCatalog: ModelCatalog = {
+      models: [
+        { name: 'gemini-3.8-flash', family: 'gemini', abilities: ['audio', 'vision'], compatible_endpoint_ids: [7] },
+        { name: 'deepseek-chat', family: 'deepseek', abilities: [], compatible_endpoint_ids: [7] },
+      ],
+      endpoints: [
+        {
+          id: 7,
+          name: 'agy-runtime',
+          provider: 'google',
+          execution_type: 'managed_runtime',
+          execution_adapter: 'managed_runtime',
+          payload_format: 'chat',
+          cache_transport: '',
+          attachment_transports: [],
+          configured: true,
+          enabled: true,
+        },
+      ],
+      roles: {
+        main: [
+          { model: 'gemini-3.8-flash', default_endpoint: 7 },
+          { model: 'deepseek-chat', default_endpoint: 7 },
+        ],
+        support: {},
+      },
+      providers: [],
+    };
+
+    it('resolves a supported target for managed_runtime endpoints with audio-capable model without file_uri transport', () => {
+      const { gate, target } = resolveAudioTarget(managedCatalog, presetOf('gemini-3.8-flash'));
+      expect(gate.state).toBe('supported');
+      expect(target).toEqual({ model: 'gemini-3.8-flash', endpoint: 7 });
+
+      const selectedGate = resolveSelectedAudioTarget(managedCatalog, { model: 'gemini-3.8-flash', endpoint: 7 });
+      expect(selectedGate.state).toBe('supported');
+      if (selectedGate.state === 'supported') {
+        expect(selectedGate.target).toEqual({ model: 'gemini-3.8-flash', endpoint: 7 });
+      }
+    });
+
+    it('blocks managed_runtime endpoints if model lacks audio ability', () => {
+      const { gate, reason } = resolveAudioTarget(managedCatalog, presetOf('deepseek-chat'));
+      expect(gate.state).toBe('unsupported');
+      expect(reason).toBe('model_without_audio');
+
+      const selectedGate = resolveSelectedAudioTarget(managedCatalog, { model: 'deepseek-chat', endpoint: 7 });
+      expect(selectedGate.state).toBe('unsupported');
+      if (selectedGate.state === 'unsupported') {
+        expect(selectedGate.reason).toBe('model_without_audio');
+      }
+    });
+
+    it('retains file_uri requirement for cloud / direct_api endpoints', () => {
+      const cloudCatalog: ModelCatalog = {
+        ...managedCatalog,
+        endpoints: [
+          {
+            ...managedCatalog.endpoints[0],
+            execution_type: 'cloud',
+          },
+        ],
+      };
+      const { gate, reason } = resolveAudioTarget(cloudCatalog, presetOf('gemini-3.8-flash'));
+      expect(gate.state).toBe('unsupported');
+      expect(reason).toBe('endpoint_without_file_uri');
+
+      const selectedGate = resolveSelectedAudioTarget(cloudCatalog, { model: 'gemini-3.8-flash', endpoint: 7 });
+      expect(selectedGate.state).toBe('unsupported');
+      if (selectedGate.state === 'unsupported') {
+        expect(selectedGate.reason).toBe('endpoint_without_file_uri');
+      }
+    });
   });
 });

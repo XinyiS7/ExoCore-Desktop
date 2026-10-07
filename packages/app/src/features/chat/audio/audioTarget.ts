@@ -52,7 +52,8 @@ export function resolveAudioTarget(
   if (!(model.abilities ?? []).includes('audio')) {
     return { gate: { state: 'unsupported', reason: 'model_without_audio' }, target: null, reason: 'model_without_audio' };
   }
-  if (!endpoint || !(endpoint.attachment_transports ?? []).includes('file_uri')) {
+  const isManagedRuntime = endpoint?.execution_type === 'managed_runtime';
+  if (!endpoint || (!isManagedRuntime && !(endpoint.attachment_transports ?? []).includes('file_uri'))) {
     return { gate: { state: 'unsupported', reason: 'endpoint_without_file_uri' }, target: null, reason: 'endpoint_without_file_uri' };
   }
 
@@ -102,7 +103,8 @@ export function resolveSelectedAudioTarget(
   if (!(model.abilities ?? []).includes('audio')) {
     return { state: 'unsupported', reason: 'model_without_audio' };
   }
-  if (!(endpoint.attachment_transports ?? []).includes('file_uri')) {
+  const isManagedRuntime = endpoint.execution_type === 'managed_runtime';
+  if (!isManagedRuntime && !(endpoint.attachment_transports ?? []).includes('file_uri')) {
     return { state: 'unsupported', reason: 'endpoint_without_file_uri' };
   }
   return { state: 'supported', target: { model: target.model, endpoint: endpoint.id } };
