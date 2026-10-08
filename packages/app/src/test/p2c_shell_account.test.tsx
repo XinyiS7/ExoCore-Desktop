@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import {
@@ -586,6 +588,35 @@ describe('Phase 2C CP C-1 — Shell, Routes, Title & Account', () => {
       fireEvent.change(fileInput!, { target: { files: [textFile] } });
 
       expect(await screen.findByText('请选择有效的图片文件')).toBeInTheDocument();
+    });
+
+    it('enforces circular aspect-ratio, zero padding and overflow clipping for avatar button (Issue #6)', () => {
+      const directPath = resolve(process.cwd(), 'src/styles/shell.css');
+      const monorepoPath = resolve(process.cwd(), 'packages/app/src/styles/shell.css');
+      const cssPath = existsSync(directPath) ? directPath : monorepoPath;
+      const css = readFileSync(cssPath, 'utf8');
+
+      // Rule for .app-avatar-btn
+      const btnMatch = css.match(/\.app-avatar-btn\s*\{([^}]+)\}/);
+      expect(btnMatch).not.toBeNull();
+      const btnBody = btnMatch![1];
+      expect(btnBody).toMatch(/padding:\s*0/);
+      expect(btnBody).toMatch(/overflow:\s*hidden/);
+      expect(btnBody).toMatch(/flex-shrink:\s*0/);
+      expect(btnBody).toMatch(/aspect-ratio:\s*1\s*\/\s*1/);
+
+      // Rule for .app-avatar-img
+      const imgMatch = css.match(/\.app-avatar-img\s*\{([^}]+)\}/);
+      expect(imgMatch).not.toBeNull();
+      const imgBody = imgMatch![1];
+      expect(imgBody).toMatch(/object-fit:\s*cover/);
+      expect(imgBody).toMatch(/aspect-ratio:\s*1\s*\/\s*1/);
+
+      // Rule for .app-more
+      const moreMatch = css.match(/\.app-more\s*\{([^}]+)\}/);
+      expect(moreMatch).not.toBeNull();
+      const moreBody = moreMatch![1];
+      expect(moreBody).toMatch(/flex-shrink:\s*0/);
     });
   });
 
