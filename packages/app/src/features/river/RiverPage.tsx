@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { RiverApiError } from './api';
 import { LegacyEventDialog } from './LegacyEventDialog';
@@ -10,6 +10,7 @@ import { RIVER_SOURCES, SOURCE_LABELS, type ReadingItem, type RiverSource } from
 import { MemoComposer } from '../memo/MemoComposer';
 import { useMemoWrites } from '../memo/queries';
 import { useMemoReplyDrafts } from '../memo/replyDrafts';
+import { useVisiblePresetsQuery } from '../chat/queries';
 import { useTaskActions } from '../tasks/queries';
 import { TaskFormDialog } from '../tasks/TaskFormDialog';
 import { TaskDetailDialog } from '../tasks/TaskDetailDialog';
@@ -39,6 +40,12 @@ export function RiverPage({ presetId }: { presetId?: number }) {
   // One page-lifetime action owner: switching dialogs must never reset the
   // per-entry busy locks into a second concurrent same-entry write.
   const taskActions = useTaskActions();
+  const presetsQuery = useVisiblePresetsQuery();
+  const presetById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const preset of presetsQuery.data ?? []) map.set(preset.id, preset.name);
+    return map;
+  }, [presetsQuery.data]);
   const filters = { sources, presetId };
   const query = useRiverQuery(filters);
   const pageRequest = useRef(false);
@@ -106,11 +113,11 @@ export function RiverPage({ presetId }: { presetId?: number }) {
           </div>
           <button type="button" className="river-refresh" disabled={refreshing} onClick={() => { void refresh(); }}>{refreshing ? '刷新中…' : '刷新时间流'}</button>
         </div>
-        <p className="river-precision-note">按服务端顺序展示；已翻过区间的新记录需刷新，不保证历史快照。{presetId !== undefined && ` 当前 Agent ${presetId} 筛选仅影响 Diary、Heartbeat 与历史纪事；Memo 和 Task 仍为全局。`}</p>
+        <p className="river-precision-note">按服务端顺序展示；已翻过区间的新记录需刷新，不保证历史快照。{presetId !== undefined && ` 当前 ${presetById.get(presetId) ?? `Agent #${presetId}`} 筛选仅影响 Diary、Heartbeat 与历史纪事；Memo 和 Task 仍为全局。`}</p>
         {query.isPending && <p role="status" className="river-status-note">正在加载 River…</p>}
         {query.isError && !query.data && <div role="alert" className="river-alert river-alert--danger"><p>{message}</p><button type="button" onClick={() => { void refresh(); }}>重新刷新时间流</button></div>}
         {query.isSuccess && items.length === 0 && <p className="river-empty-note">这段时间流暂无记录。</p>}
-        <div className="river-items">{items.map((item) => <RiverItemCard key={`${item.source_type}:${item.source_id}`} item={item} onRead={setReading} onOpenTask={(entryId) => setTaskStage({ kind: 'detail', entryId, origin: 'river' })} onOpenLegacy={(chronicleItem) => setLegacyId(chronicleItem.target.id)} memoWrites={memoWrites} replyDrafts={replyDrafts} />)}</div>
+        <div className="river-items">{items.map((item) => <RiverItemCard key={`${item.source_type}:${item.source_id}`} item={item} onRead={setReading} onOpenTask={(entryId) => setTaskStage({ kind: 'detail', entryId, origin: 'river' })} onOpenLegacy={(chronicleItem) => setLegacyId(chronicleItem.target.id)} memoWrites={memoWrites} replyDrafts={replyDrafts} presetById={presetById} />)}</div>
         {query.isFetchNextPageError && <div role="alert" className="river-alert river-alert--warn"><p>{message} 已保留先前成功页面，本次遍历未完成。</p>
           {cursorError ? <button type="button" onClick={() => { void refresh(); }}>重新刷新时间流</button>
             : <button type="button" disabled={query.isFetching} onClick={() => { void loadMore(); }}>重试加载更早记录</button>}
@@ -119,7 +126,7 @@ export function RiverPage({ presetId }: { presetId?: number }) {
         {query.isSuccess && !query.hasNextPage && items.length > 0 && <p className="river-end-note">已到本次遍历末尾。</p>}
       </section>
     </div>
-    {reading && <SourceReadingDrawer key={`${reading.source_type}:${reading.source_id}`} item={reading} onClose={() => setReading(null)} />}
+    {reading && <SourceReadingDrawer key={`${reading.source_type}:${reading.source_id}`} item={reading} onClose={() => setReading(null)} presetById={presetById} />}
     {legacyId !== null && <LegacyEventDialog
       key={`legacy-${legacyId}`}
       eventId={legacyId}

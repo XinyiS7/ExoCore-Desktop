@@ -21,8 +21,18 @@ function orderedReplies(rootId: number, replies: Memo[]) {
   }
   return rows;
 }
-export function MemoThread({ rootId, open, writes, replyDrafts, canReply, canEditTags }: {
-  rootId: number; open: boolean; writes: MemoWrites; replyDrafts: MemoReplyDrafts; canReply: boolean; canEditTags: boolean;
+function formatAuthor(author: string, presetById?: Map<number, string>): string {
+  if (author.startsWith('agent:')) {
+    const id = Number(author.slice(6));
+    if (!Number.isNaN(id) && presetById?.has(id)) {
+      return presetById.get(id)!;
+    }
+  }
+  return author;
+}
+
+export function MemoThread({ rootId, open, writes, replyDrafts, canReply, canEditTags, presetById }: {
+  rootId: number; open: boolean; writes: MemoWrites; replyDrafts: MemoReplyDrafts; canReply: boolean; canEditTags: boolean; presetById?: Map<number, string>;
 }) {
   const query = useMemoThreadQuery(rootId, open);
   const draft = replyDrafts.get(rootId);
@@ -41,14 +51,14 @@ export function MemoThread({ rootId, open, writes, replyDrafts, canReply, canEdi
       {orderedReplies(rootId, data.replies).map(({ memo, depth }) => {
         const parent = targets.get(memo.parent_id!)!;
         return <article key={memo.id} className="memo-reply" data-memo-id={memo.id} data-parent-id={memo.parent_id} data-depth={depth}>
-          <header><strong>{memo.author} · #{memo.id}</strong><span className="memo-target">@{parent.author} · Memo #{parent.id}</span><time dateTime={memo.created_at}>{new Date(memo.created_at).toLocaleString()}</time></header>
+          <header><strong>{formatAuthor(memo.author, presetById)} · #{memo.id}</strong><span className="memo-target">@{formatAuthor(parent.author, presetById)} · Memo #{parent.id}</span><time dateTime={memo.created_at}>{new Date(memo.created_at).toLocaleString()}</time></header>
           <MemoContent content={memo.content} />
           {memo.tags.length > 0 && <ul className="river-tags" aria-label="回复标签">{memo.tags.map((tag) => <li key={tag}>#{tag}</li>)}</ul>}
           {canReply && <button type="button" aria-label={`回复 Memo #${memo.id}`} disabled={sending} onClick={() => replyDrafts.selectParent(rootId, memo)}>回复</button>}
           {canEditTags && <button type="button" aria-label={`管理 Memo #${memo.id} 标签`} disabled={writes.busyIds.includes(memo.id)} onClick={() => setEditingTags(memo)}>标签</button>}
         </article>;
       })}
-      {canReply && target && <div className="memo-reply-composer"><p>回复目标：@{target.author} · Memo #{target.id}</p>
+      {canReply && target && <div className="memo-reply-composer"><p>回复目标：@{formatAuthor(target.author, presetById)} · Memo #{target.id}</p>
         {draft.parent && !targets.has(draft.parent.id) && <p>该目标已不在当前读取结果中，请核对或选择新的回复目标。</p>}
         <MemoComposer writes={writes} parentId={target.id} rootId={rootId} replyControl={replyDrafts.control(rootId, target)} className="memo-composer--reply" />
       </div>}

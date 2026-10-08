@@ -67,6 +67,7 @@ export interface MessageTimelineProps {
   onRegenerateMessage?: (id: number, isLatestUser: boolean) => void;
   onBranchMessage?: (id: number, snippet: string) => void;
   onCollectMessage?: (message: MessageView) => void;
+  assistantName?: string;
 }
 
 function MessageRowItem({
@@ -78,6 +79,7 @@ function MessageRowItem({
   onRegenerateMessage,
   onBranchMessage,
   onCollectMessage,
+  assistantName,
 }: {
   message: MessageView;
   conversationId?: number;
@@ -87,6 +89,7 @@ function MessageRowItem({
   onRegenerateMessage?: (id: number, isLatestUser: boolean) => void;
   onBranchMessage?: (id: number, snippet: string) => void;
   onCollectMessage?: (message: MessageView) => void;
+  assistantName?: string;
 }) {
   const isAssistant = message.role === 'assistant';
   const isUser = message.role === 'user';
@@ -124,7 +127,9 @@ function MessageRowItem({
   return (
     <article className={`app-msg app-msg--${message.role}`} data-role={message.role}>
       <header className="app-msg-head">
-        <span className="app-msg-role">{ROLE_LABELS[message.role] ?? message.role}</span>
+        <span className="app-msg-role">
+          {message.role === 'assistant' ? (assistantName || ROLE_LABELS.assistant) : (ROLE_LABELS[message.role] ?? message.role)}
+        </span>
         <span className="app-msg-time">{formatTimeOfDay(message.createdAt)}</span>
         {isAssistant && (message.platform || message.modelVersion) ? (
           <span className="app-msg-model">
@@ -270,6 +275,7 @@ export function MessageTimeline({
   onRegenerateMessage,
   onBranchMessage,
   onCollectMessage,
+  assistantName,
 }: MessageTimelineProps) {
   const [collectTarget, setCollectTarget] = useState<MessageView | null>(null);
 
@@ -328,6 +334,7 @@ export function MessageTimeline({
           onRegenerateMessage={onRegenerateMessage}
           onBranchMessage={onBranchMessage}
           onCollectMessage={handleCollectMessage}
+          assistantName={assistantName}
         />
       ))}
 
@@ -364,7 +371,7 @@ export function MessageTimeline({
           data-role="assistant"
         >
           <header className="app-msg-head">
-            <span className="app-msg-role">Agent</span>
+            <span className="app-msg-role">{assistantName || 'Agent'}</span>
             {runtimeAssistant.isStreaming ? (
               <span className="app-muted" style={{ fontSize: '10.5px' }}>
                 {runtimeAssistant.statusText || '生成中…'}

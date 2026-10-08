@@ -13,7 +13,22 @@ const SOURCE_GLYPHS: Record<RiverSource, string> = {
   memo: '📝', heartbeat: '⚡', diary: '📖', task: '✅', chronicle: '📜',
 };
 
-export function RiverItemCard({ item, onRead, onOpenTask, onOpenLegacy, memoWrites, replyDrafts }: { item: RiverItem; onRead: (item: ReadingItem) => void; onOpenTask: (entryId: number) => void; onOpenLegacy: (item: Extract<RiverItem, { source_type: 'chronicle' }>) => void; memoWrites: MemoWrites; replyDrafts: MemoReplyDrafts }) {
+function formatAgentName(id: number | null | undefined, presetById?: Map<number, string>): string {
+  if (id === null || id === undefined) return '未知 Agent';
+  return presetById?.get(id) ?? `Agent #${id}`;
+}
+
+export function formatAuthor(author: string, presetById?: Map<number, string>): string {
+  if (author.startsWith('agent:')) {
+    const id = Number(author.slice(6));
+    if (!Number.isNaN(id) && presetById?.has(id)) {
+      return presetById.get(id)!;
+    }
+  }
+  return author;
+}
+
+export function RiverItemCard({ item, onRead, onOpenTask, onOpenLegacy, memoWrites, replyDrafts, presetById }: { item: RiverItem; onRead: (item: ReadingItem) => void; onOpenTask: (entryId: number) => void; onOpenLegacy: (item: Extract<RiverItem, { source_type: 'chronicle' }>) => void; memoWrites: MemoWrites; replyDrafts: MemoReplyDrafts; presetById?: Map<number, string> }) {
   const [threadOpen, setThreadOpen] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
   const memoRootId = item.source_type === 'memo' ? item.target.memo_id : 0;
@@ -23,11 +38,11 @@ export function RiverItemCard({ item, onRead, onOpenTask, onOpenLegacy, memoWrit
     : item.preview;
   let subtitle: string;
   switch (item.source_type) {
-    case 'memo': subtitle = `${item.source_specific.author} · ${item.source_specific.reply_count} 条直接回复`; break;
+    case 'memo': subtitle = `${formatAuthor(item.source_specific.author, presetById)} · ${item.source_specific.reply_count} 条直接回复`; break;
     case 'task': subtitle = `${item.source_specific.event_kind === 'created' ? '任务创建' : '任务完成'} · ${item.source_specific.title}`; break;
-    case 'diary': subtitle = `Agent ${item.target.preset_id} · Canonical day ${item.target.day}`; break;
-    case 'heartbeat': subtitle = `Agent ${item.preset_id} · 最终巡检总结`; break;
-    case 'chronicle': subtitle = `${item.source_specific.kind === 'milestone' ? '里程碑' : '时刻'} · Agent ${item.preset_id}`; break;
+    case 'diary': subtitle = `${formatAgentName(item.target.preset_id, presetById)} · Canonical day ${item.target.day}`; break;
+    case 'heartbeat': subtitle = `${formatAgentName(item.preset_id, presetById)} · 最终巡检总结`; break;
+    case 'chronicle': subtitle = `${item.source_specific.kind === 'milestone' ? '里程碑' : '时刻'} · ${formatAgentName(item.preset_id, presetById)}`; break;
   }
   const tags = item.source_type === 'memo' ? item.source_specific.tags : item.source_type === 'chronicle' ? item.source_specific.keywords : [];
   const time = item.source_type === 'diary' ? `${item.target.day} · 03:00 排序锚点`
@@ -56,7 +71,7 @@ export function RiverItemCard({ item, onRead, onOpenTask, onOpenLegacy, memoWrit
         {item.source_type === 'memo' && item.capabilities.includes('edit_tags') && <button type="button" aria-label={`管理 Memo #${item.target.memo_id} 标签`} disabled={memoWrites.busyIds.includes(item.target.memo_id)} onClick={() => setTagsOpen(true)}>标签</button>}
       </footer>
       {item.source_type === 'memo' && item.capabilities.includes('read_thread')
-        && <MemoThread rootId={item.target.memo_id} open={threadOpen} writes={memoWrites} replyDrafts={replyDrafts} canReply={item.capabilities.includes('reply')} canEditTags={item.capabilities.includes('edit_tags')} />}
+        && <MemoThread rootId={item.target.memo_id} open={threadOpen} writes={memoWrites} replyDrafts={replyDrafts} canReply={item.capabilities.includes('reply')} canEditTags={item.capabilities.includes('edit_tags')} presetById={presetById} />}
       {item.source_type === 'memo' && tagsOpen && <MemoTagsDialog memoId={item.target.memo_id} rootId={item.target.memo_id} tags={item.source_specific.tags} writes={memoWrites} onClose={() => setTagsOpen(false)} />}
     </div>
   </article>;

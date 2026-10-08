@@ -9,7 +9,7 @@ import { useCanonicalDiaryQuery } from '../diary/queries';
 import { useHeartbeatEventDetailQuery } from '../heartbeat/queries';
 import type { ReadingItem } from './types';
 
-export function SourceReadingDrawer({ item, onClose }: { item: ReadingItem; onClose: () => void }) {
+export function SourceReadingDrawer({ item, onClose, presetById }: { item: ReadingItem; onClose: () => void; presetById?: Map<number, string> }) {
   const titleId = useId();
   const overlayRef = useRef<HTMLDivElement>(null);
   // Restore background interactivity BEFORE dialogA11y's cleanup restores trigger focus.
@@ -34,9 +34,11 @@ export function SourceReadingDrawer({ item, onClose }: { item: ReadingItem; onCl
   const query = item.source_type === 'diary' ? diary : heartbeat;
   const content = query.data?.content;
   const status = query.error instanceof AppApiError ? query.error.status : null;
+  const diaryAgent = item.source_type === 'diary' ? (presetById?.get(item.target.preset_id) ?? `Agent ${item.target.preset_id}`) : '';
+  const heartbeatAgent = item.source_type === 'heartbeat' ? (presetById?.get(item.preset_id ?? 0) ?? `Agent ${item.preset_id}`) : '';
   const title = item.source_type === 'diary'
-    ? `Agent ${item.target.preset_id} 的日记 · ${item.target.day}`
-    : `Agent ${item.preset_id} 的心跳总结`;
+    ? `${diaryAgent} 的日记 · ${item.target.day}`
+    : `${heartbeatAgent} 的心跳总结`;
 
   return createPortal(
     <div ref={overlayRef} className="river-reading-overlay" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>

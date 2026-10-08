@@ -443,10 +443,11 @@ export function ConversationPage() {
   if (invalid) return <InvalidConversationState />;
 
   const conversation = conversationQuery.data;
-  const agentLabel =
-    conversation?.agentPresetId === null || conversation?.agentPresetId === undefined
-      ? '未知 Agent'
-      : (presetById.get(conversation.agentPresetId) ?? `Agent #${conversation.agentPresetId}`);
+  const assistantName =
+    conversation?.agentPresetId != null
+      ? (presetById.get(conversation.agentPresetId) ?? `Agent #${conversation.agentPresetId}`)
+      : undefined;
+  const agentLabel = assistantName ?? '未知 Agent';
   const endpointLabel =
     controls.compatibleEndpoints.find((endpoint) => endpoint.id === controls.target.endpoint)?.name ?? '';
   const cacheSummary =
@@ -710,6 +711,7 @@ export function ConversationPage() {
                   onEditMessage={handleEditMessage}
                   onRegenerateMessage={handleRegenerateMessage}
                   onBranchMessage={handleBranchMessage}
+                  assistantName={assistantName}
                 />
               )
             ) : null}
@@ -735,6 +737,7 @@ export function ConversationPage() {
                 onEditMessage={handleEditMessage}
                 onRegenerateMessage={handleRegenerateMessage}
                 onBranchMessage={handleBranchMessage}
+                assistantName={assistantName}
               />
             ) : null}
           </div>
