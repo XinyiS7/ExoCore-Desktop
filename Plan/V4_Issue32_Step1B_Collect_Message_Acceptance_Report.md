@@ -4,14 +4,16 @@
 - **Mode:** verify
 - **Acceptance owner:** [gpt-5.6-sol / Solaire]
 - **Construction owner:** [Gemini 3.8 Flash / Alaric]
-- **Baseline:** `8f21424b2d58cefb892e0d1e7278b30e38f3dec3`
+- **Baseline:** `d3f7a44d19f4a2e3f743b7358692185055161b6e`
 - **Frozen contract:** ExoCore `dabe95ca`, §10.17 / §11 / §13 Step 1B
-- **Cycle:** R1
-- **Verdict:** **FAIL**
+- **Cycle:** R2
+- **Verdict:** **PASS**
 
 ## Review ledger
 
 `Cycle: R1 | Checkpoint: Step 1B | Baseline: 8f21424 | Verdict: FAIL | Owners: Construction 1, Acceptance 0, Harness 1, Spec 0, Environment 0 | Findings: F-01, H-01 | Consecutive FAIL Count: 1`
+
+`Cycle: R2 | Checkpoint: Step 1B | Baseline: d3f7a44 | Verdict: PASS | Owners: Construction 0, Acceptance 0, Harness 0, Spec 0, Environment 0 | Findings: F-01 cleared; H-01 remains a documented harness condition | Consecutive FAIL Count: 0`
 
 ## Baseline and scope integrity
 
@@ -89,12 +91,16 @@ passes 1513/1513. Step 1B does not modify localStorage, test setup, Vitest confi
 - Malformed successful HTTP envelopes do not carry an ambiguous-write marker. The frozen contract explicitly treats accepted retries as additional collect actions, so this is not promoted into Step 1B scope.
 - No read API exists for a filled state, count, or comments; the implementation correctly does not imply one.
 
-## Recheck boundary
+## R2 recheck result
 
-After F-01 repair:
+- **F-01 cleared:** repair `d3f7a44` adds a Collection-only action class and confines hidden-at-rest behavior to fine-pointer hover devices.
+- The control is revealed by its owning Message row's hover and focus-within states, remains directly focusable, and stays visible by default on non-hover/touch devices.
+- Existing copy, voice, edit, regenerate, and branch action visibility and order are unchanged.
+- Independent verification passed: focused 37/37, production typecheck/build, documented-flag full V4 suite 1515/1515, and `git diff --check`.
+- Frozen contract and the R1 acceptance report were not rewritten by Construction.
 
-1. inspect only the CSS/class/test delta and adjacent Message action rules;
-2. verify hover, focus-within, and non-hover accessibility behavior;
-3. rerun the focused Step 1B tests and production build;
-4. run the documented-flag full V4 suite if the repair touches shared message CSS;
-5. if clear, issue PASS and authorize Plan archival. `DEPLOY_STEP: none`.
+## Deploy and closeout handoff
+
+`DEPLOY_STEP: none` — Step 1B is a V4 client-only feature with no schema or backend deployment action.
+
+PASS authorizes tracked archival of `Plan/V4_Issue32_Step1B_Collect_Message_Plan.md` into `Plan/Archived/`. This small UI checkpoint does not require an `Update_log.md` entry. Issue #32 remains open because it is the umbrella tracker for unfinished Steps 2–5.
