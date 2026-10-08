@@ -175,8 +175,8 @@ describe('T5 — voice lifecycle stays click-driven', () => {
     expect(cluster?.contains(branch)).toBe(true);
     // Voice control precedes the existing row actions in DOM order (D5).
     expect(entry.compareDocumentPosition(branch) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // No second `margin-left: auto` sibling was introduced (D5).
-    expect(cluster?.children.length).toBe(2);
+    // No second `margin-left: auto` sibling was introduced (D5), now containing voice, collect, and branch.
+    expect(cluster?.children.length).toBe(3);
   });
 
   it('never renders the control for the runtime overlay or the optimistic row', () => {

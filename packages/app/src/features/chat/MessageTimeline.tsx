@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy, Edit2, GitBranch, RotateCw } from 'lucide-react';
+import { Bookmark, Check, Copy, Edit2, GitBranch, RotateCw } from 'lucide-react';
 import type { AssistantRunTraceProjection, MessageRole, MessageView } from './types';
 import type { OptimisticUserRow, RuntimeAssistantRow } from './runtime/types';
 import { MessageContent } from './MessageContent';
@@ -8,6 +8,7 @@ import { MessageAttachments } from './attachments/MessageAttachments';
 import { AssistantRunTrace } from './trace/AssistantRunTrace';
 import { MessageVoiceControl } from './tts/MessageVoiceControl';
 import { VoiceToolErrors } from './voice/VoiceToolErrors';
+import { CollectMessageModal } from '../collection/CollectMessageModal';
 
 function runtimeTraceProjection(row: RuntimeAssistantRow): AssistantRunTraceProjection | null {
   if (!row.assistantTrace) return null;
@@ -65,6 +66,7 @@ export interface MessageTimelineProps {
   onEditMessage?: (id: number, content: string, isLatestUser: boolean) => void;
   onRegenerateMessage?: (id: number, isLatestUser: boolean) => void;
   onBranchMessage?: (id: number, snippet: string) => void;
+  onCollectMessage?: (message: MessageView) => void;
 }
 
 function MessageRowItem({
@@ -75,6 +77,7 @@ function MessageRowItem({
   onEditMessage,
   onRegenerateMessage,
   onBranchMessage,
+  onCollectMessage,
 }: {
   message: MessageView;
   conversationId?: number;
@@ -83,6 +86,7 @@ function MessageRowItem({
   onEditMessage?: (id: number, content: string, isLatestUser: boolean) => void;
   onRegenerateMessage?: (id: number, isLatestUser: boolean) => void;
   onBranchMessage?: (id: number, snippet: string) => void;
+  onCollectMessage?: (message: MessageView) => void;
 }) {
   const isAssistant = message.role === 'assistant';
   const isUser = message.role === 'user';
@@ -154,6 +158,18 @@ function MessageRowItem({
               messageId={message.id}
               voice={voice}
             />
+          ) : null}
+          {(isUser || isAssistant) && hasContentText ? (
+            <button
+              type="button"
+              className="app-msg-action-btn"
+              onClick={() => onCollectMessage?.(message)}
+              title="收藏此条消息"
+              aria-label="收藏此条消息"
+            >
+              <Bookmark size={12} aria-hidden="true" />
+              收藏
+            </button>
           ) : null}
           {isUser && onEditMessage && (
             <button
@@ -253,7 +269,18 @@ export function MessageTimeline({
   onEditMessage,
   onRegenerateMessage,
   onBranchMessage,
+  onCollectMessage,
 }: MessageTimelineProps) {
+  const [collectTarget, setCollectTarget] = useState<MessageView | null>(null);
+
+  const handleCollectMessage = (target: MessageView) => {
+    if (onCollectMessage) {
+      onCollectMessage(target);
+    } else {
+      setCollectTarget(target);
+    }
+  };
+
   // Find latest persisted user turn ID to identify historical vs latest turns (§7.4)
   let latestUserMessageId = -1;
   for (let i = messages.length - 1; i >= 0; i--) {
@@ -300,6 +327,7 @@ export function MessageTimeline({
           onEditMessage={onEditMessage}
           onRegenerateMessage={onRegenerateMessage}
           onBranchMessage={onBranchMessage}
+          onCollectMessage={handleCollectMessage}
         />
       ))}
 
@@ -365,6 +393,14 @@ export function MessageTimeline({
             ) : null}
           </div>
         </article>
+      ) : null}
+
+      {collectTarget ? (
+        <CollectMessageModal
+          isOpen={Boolean(collectTarget)}
+          targetMessage={collectTarget}
+          onClose={() => setCollectTarget(null)}
+        />
       ) : null}
     </div>
   );
