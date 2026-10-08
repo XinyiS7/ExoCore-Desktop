@@ -66,9 +66,11 @@ export async function collectMessage(input: CollectMessageInput): Promise<Collec
       throw contractError('收藏响应缺少合法的 collect_outcome', res);
     }
 
-    const id = typeof row.id === 'string' ? row.id : '';
+    if (!Number.isInteger(row.id)) {
+      throw contractError('收藏响应缺少合法的整数 id', res);
+    }
     return {
-      id,
+      id: row.id as number,
       collectOutcome: outcome as CollectOutcome,
     };
   } catch (err: unknown) {

@@ -1602,17 +1602,19 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 
 ### 13.2 路由与状态码
 
+路径中的 `<id>` 与响应里的 `id`、`target.id` 都是 CollectionItem 的整数主键。
+
 | Method / path | 成功响应 | 用途 |
 |---|---:|---|
 | `GET /items/` | 200 | cursor 浏览与筛选 |
 | `POST /items/` | 201/200 | 按 discriminated `source` 收藏：新建 201，同一来源已收藏 200（返回既有 Item） |
-| `GET /items/<uuid>/` | 200 | 详情、来源快照、派生表示与 capabilities |
-| `PATCH /items/<uuid>/` | 200 | 更新元数据、Tags 或人工 canonical text |
-| `DELETE /items/<uuid>/` | 204 | 删除 Item occurrence；不在请求中 unlink 原件 |
-| `GET /items/<uuid>/original/` | 200/404 | 读取原件 bytes |
-| `GET /items/<uuid>/representations/<kind>/content/` | 200/404 | 读取派生 artifact |
-| `POST /items/<uuid>/representations/<kind>/retry/` | 200 | 重试真实 failed + retryable 自动派生 |
-| `POST /items/<uuid>/bring-to-chat/` | 200/201 | text 回 composer payload；file 复制回 G045 会话附件域 |
+| `GET /items/<id>/` | 200 | 详情、来源快照、派生表示与 capabilities |
+| `PATCH /items/<id>/` | 200 | 更新元数据、Tags 或人工 canonical text |
+| `DELETE /items/<id>/` | 204 | 删除 Item occurrence；不在请求中 unlink 原件 |
+| `GET /items/<id>/original/` | 200/404 | 读取原件 bytes |
+| `GET /items/<id>/representations/<kind>/content/` | 200/404 | 读取派生 artifact |
+| `POST /items/<id>/representations/<kind>/retry/` | 200 | 重试真实 failed + retryable 自动派生 |
+| `POST /items/<id>/bring-to-chat/` | 200/201 | text 回 composer payload；file 复制回 G045 会话附件域 |
 | `GET /tags/` | 200 | 当前非空 Tag 及 Item 数量 |
 
 `GET /items/` query：
@@ -1623,7 +1625,7 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 - `q`：title / description / context / text / Tags / succeeded canonical text 的
   lexical substring 搜索，不是 semantic/vector search；
 - `recent=1|true|0|false`：true 表示最近 30 天；
-- `cursor`：签名、filter-bound 的 `(collected_at, public_id)` 降序游标。
+- `cursor`：签名、filter-bound 的 `(collected_at, id)` 降序游标。
 
 列表信封：
 
@@ -1631,7 +1633,7 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 {
   "items": [
     {
-      "id": "<uuid>",
+      "id": <int>,
       "kind": "image",
       "title": "...",
       "description": "...",
@@ -1639,7 +1641,7 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
       "preview": "...",
       "tags": ["reference"],
       "source": {"type": "attachment", "key": "<opaque-key>"},
-      "target": {"type": "collection_item", "id": "<uuid>"},
+      "target": {"type": "collection_item", "id": <int>},
       "search_target": "collection",
       "collected_at": "<ISO-8601>",
       "updated_at": "<ISO-8601>"
@@ -1701,7 +1703,7 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
       "kind": "image_preview",
       "state": "succeeded",
       "canonical_text": "",
-      "content_url": "/api/collection/items/<uuid>/representations/image_preview/content/",
+      "content_url": "/api/collection/items/<id>/representations/image_preview/content/",
       "artifact_mime_type": "image/png",
       "producer_type": "deterministic_preview",
       "producer_version": "collection-cp4-v1",
@@ -1714,8 +1716,8 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
     }
   ],
   "capabilities": ["update","delete","bring_to_chat","read_original"],
-  "original_content_url": "/api/collection/items/<uuid>/original/",
-  "bring_to_chat_url": "/api/collection/items/<uuid>/bring-to-chat/"
+  "original_content_url": "/api/collection/items/<id>/original/",
+  "bring_to_chat_url": "/api/collection/items/<id>/bring-to-chat/"
 }
 ```
 
@@ -1746,7 +1748,7 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 - `POST bring-to-chat` 请求为 `{"conversation_id": <positive-int>}`。目标身份由服务端
   重新加载 Conversation → AgentPreset，必须为 G045。
 - text 成功返回 200：
-  `{"mode":"text","composer_payload":{"text":"...","source":{"type":"collection_item","id":"<uuid>"}}}`；
+  `{"mode":"text","composer_payload":{"text":"...","source":{"type":"collection_item","id":<int>}}}`；
   不自动发送消息。
 - file 成功返回 201，包含 `mode="attachment"`、`pending_attachment_id` 和新的安全
   `attachment` 投影（id / display_name / original_filename / mime_type / file_size /
@@ -1777,7 +1779,7 @@ representation 自身的 granular `error_code`。客户端不得为这两个未�
 
 ### 13.7 部署与可用性门禁
 
-Collection migration `0001–0004` 必须在 **Django 后端与 Runtime 任一服务启动前**
+Collection migration `0001–0006` 必须在 **Django 后端与 Runtime 任一服务启动前**
 应用并通过 `python.exe manage.py migrate --check --noinput`。共享 APScheduler 的
 Collection GC / recovery jobs 会直接查询这些表；缺表必须阻止启动/显式失败，禁止吞错后
 伪装服务可用。部署时按项目规范同步显式重启 `run-exocore` 与 `run-runtime`；不得只重启

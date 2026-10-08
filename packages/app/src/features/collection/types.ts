@@ -26,6 +26,6 @@ export interface CollectMessageInput {
 }
 
 export interface CollectMessageResult {
-  id: string;
+  id: number;
   collectOutcome: CollectOutcome;
 }

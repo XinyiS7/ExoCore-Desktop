@@ -20,7 +20,7 @@ describe('V4 Collection API adapter (Issue #32 Step 1B)', () => {
           capturedBody = JSON.parse(String(init?.body));
           return jsonResponse(
             {
-              id: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
+              id: 7,
               collect_outcome: 'created',
               source: { type: 'message', key: '101' },
             },
@@ -51,7 +51,7 @@ describe('V4 Collection API adapter (Issue #32 Step 1B)', () => {
     });
 
     expect(result).toEqual({
-      id: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
+      id: 7,
       collectOutcome: 'created',
     });
   });
@@ -66,7 +66,7 @@ describe('V4 Collection API adapter (Issue #32 Step 1B)', () => {
         handler: async (_url, init) => {
           capturedBody = JSON.parse(String(init?.body));
           return jsonResponse({
-            id: 'item-uuid-1',
+            id: 8,
             collect_outcome: 'created',
           }, 201);
         },
@@ -96,7 +96,7 @@ describe('V4 Collection API adapter (Issue #32 Step 1B)', () => {
         method: 'POST',
         handler: async () => {
           return jsonResponse({
-            id: 'item-uuid-existing',
+            id: 9,
             collect_outcome: 'already_collected',
           }, 200);
         },
@@ -110,7 +110,7 @@ describe('V4 Collection API adapter (Issue #32 Step 1B)', () => {
     });
 
     expect(result).toEqual({
-      id: 'item-uuid-existing',
+      id: 9,
       collectOutcome: 'already_collected',
     });
   });
@@ -150,7 +150,7 @@ describe('V4 Collection API adapter (Issue #32 Step 1B)', () => {
         test: '/api/collection/items/',
         method: 'POST',
         handler: async () => {
-          return jsonResponse({ id: 'item-1', outcome: 'unknown' }, 200);
+          return jsonResponse({ id: 1, outcome: 'unknown' }, 200);
         },
       },
     ]);
@@ -164,6 +164,35 @@ describe('V4 Collection API adapter (Issue #32 Step 1B)', () => {
       expect(err).toBeInstanceOf(CollectionApiError);
       const apiErr = err as CollectionApiError;
       expect(apiErr.message).toContain('collect_outcome');
+      return true;
+    });
+  });
+
+  it.each([
+    ['string', '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'],
+    ['decimal', 1.5],
+    ['NaN', Number.NaN],
+    ['missing', undefined],
+  ])('fails closed when backend returns a non-integer id (%s)', async (_label, id) => {
+    installFetch([
+      {
+        test: '/api/collection/items/',
+        method: 'POST',
+        handler: async () => {
+          return jsonResponse({ id, collect_outcome: 'created' }, 201);
+        },
+      },
+    ]);
+
+    await expect(
+      collectMessage({
+        messageId: 606,
+        content: 'some text',
+      }),
+    ).rejects.toSatisfy((err: unknown) => {
+      expect(err).toBeInstanceOf(CollectionApiError);
+      const apiErr = err as CollectionApiError;
+      expect(apiErr.message).toContain('整数 id');
       return true;
     });
   });

@@ -167,7 +167,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
         handler: async (_url, init) => {
           capturedBody = JSON.parse(String(init?.body));
           return jsonResponse({
-            id: 'uuid-created-1',
+            id: 11,
             collect_outcome: 'created',
           }, 201);
         },
@@ -234,7 +234,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
         method: 'POST',
         handler: async () => {
           return jsonResponse({
-            id: 'uuid-already-collected',
+            id: 12,
             collect_outcome: 'already_collected',
           }, 200);
         },
@@ -306,7 +306,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
     expect(submitBtn).toHaveTextContent('收藏中…');
 
     // Resolve request
-    resolvePost!(jsonResponse({ id: 'done', collect_outcome: 'created' }, 201));
+    resolvePost!(jsonResponse({ id: 13, collect_outcome: 'created' }, 201));
 
     expect(await screen.findByText('已加入收藏')).toBeInTheDocument();
     expect(callCount).toBe(1);
