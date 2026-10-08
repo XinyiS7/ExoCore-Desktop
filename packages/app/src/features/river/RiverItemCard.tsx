@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { MemoContent } from '../memo/MemoContent';
 import { MemoThread } from '../memo/MemoThread';
 import { MemoTagsDialog } from '../memo/MemoTagsDialog';
-import type { MemoWrites } from '../memo/queries';
+import { useMemoThreadQuery, type MemoWrites } from '../memo/queries';
 import type { MemoReplyDrafts } from '../memo/replyDrafts';
 import type { ReadingItem, RiverItem, RiverSource } from './types';
 import { SOURCE_LABELS } from './types';
@@ -16,6 +16,11 @@ const SOURCE_GLYPHS: Record<RiverSource, string> = {
 export function RiverItemCard({ item, onRead, onOpenTask, onOpenLegacy, memoWrites, replyDrafts }: { item: RiverItem; onRead: (item: ReadingItem) => void; onOpenTask: (entryId: number) => void; onOpenLegacy: (item: Extract<RiverItem, { source_type: 'chronicle' }>) => void; memoWrites: MemoWrites; replyDrafts: MemoReplyDrafts }) {
   const [threadOpen, setThreadOpen] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
+  const memoRootId = item.source_type === 'memo' ? item.target.memo_id : 0;
+  const memoQuery = useMemoThreadQuery(memoRootId, item.source_type === 'memo' && threadOpen);
+  const memoContent = (item.source_type === 'memo' && threadOpen && memoQuery.data?.memo.content)
+    ? memoQuery.data.memo.content
+    : item.preview;
   let subtitle: string;
   switch (item.source_type) {
     case 'memo': subtitle = `${item.source_specific.author} · ${item.source_specific.reply_count} 条直接回复`; break;
@@ -38,7 +43,7 @@ export function RiverItemCard({ item, onRead, onOpenTask, onOpenLegacy, memoWrit
       </header>
       <h2>{subtitle}</h2>
       <div className="river-item-body">
-        {item.source_type === 'memo' ? <MemoContent content={item.preview} /> : <p className="river-preview">{item.preview}</p>}
+        {item.source_type === 'memo' ? <MemoContent content={memoContent} /> : <p className="river-preview">{item.preview}</p>}
         {tags.length > 0 && <ul className="river-tags" aria-label="标签">{tags.map((tag) => <li key={tag}>#{tag}</li>)}</ul>}
         {item.source_type === 'diary' && <p className="river-precision-note">03:00 仅用于排序，不是真实写作或归档时刻。</p>}
       </div>

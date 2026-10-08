@@ -36,7 +36,6 @@ export function MemoThread({ rootId, open, writes, replyDrafts, canReply, canEdi
     {query.isPending && <p role="status">正在加载讨论…</p>}
     {query.isError && <div role="alert"><p>讨论读取失败：{query.error.message}</p><button type="button" onClick={() => { void query.refetch(); }}>重试读取讨论</button></div>}
     {query.isSuccess && data && <>
-      <h3>Memo 全文</h3><MemoContent content={data.memo.content} />
       {canReply && <button type="button" disabled={sending} onClick={() => replyDrafts.selectParent(rootId, data.memo)} aria-label={`回复 Memo #${rootId}`}>回复根 Memo</button>}
       {data.replies.length === 0 && <p>暂无回复。</p>}
       {orderedReplies(rootId, data.replies).map(({ memo, depth }) => {

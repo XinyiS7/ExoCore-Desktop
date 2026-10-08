@@ -214,4 +214,45 @@ describe('CP2 arbitrary parent threads', () => {
     expect(screen.getByLabelText('标签名称')).toHaveValue('Kept');
     expect(patches(calls)).toHaveLength(1);
   });
+
+  it('expands memo full content in place and eliminates duplicate full content in thread (Issue #4)', async () => {
+    const { server } = installMemoServer();
+    const memo = server.memos.get(7)!;
+    memo.content = '完整的长篇根正文内容，包含多段详情描述。';
+    server.river = (_url, payload) => {
+      const item = payload.items.find((it: any) => it.target?.memo_id === 7) as any;
+      if (item) item.preview = '根预览节选…';
+      return jsonResponse(payload);
+    };
+
+    renderV4(<RiverPage />);
+    await screen.findByText('agent:2 · 2 条直接回复');
+
+    const card = document.querySelector('[data-river-identity="memo:7"]')!;
+    const body = card.querySelector('.river-item-body')!;
+
+    // Initial collapsed state: shows preview snippet
+    expect(body).toHaveTextContent('根预览节选…');
+    expect(body).not.toHaveTextContent('完整的长篇根正文内容');
+
+    // Click "展开讨论"
+    fireEvent.click(within(card as HTMLElement).getByRole('button', { name: '展开讨论' }));
+
+    // In-place expanded: .river-item-body now renders the full content in place
+    await waitFor(() => {
+      expect(body).toHaveTextContent('完整的长篇根正文内容');
+    });
+
+    // Verify .memo-thread does NOT render a duplicate "Memo 全文" header or second copy
+    const thread = card.querySelector('.memo-thread')!;
+    expect(thread).toBeInTheDocument();
+    expect(within(thread as HTMLElement).queryByText('Memo 全文')).not.toBeInTheDocument();
+
+    // Click "收起讨论"
+    fireEvent.click(within(card as HTMLElement).getByRole('button', { name: '收起讨论' }));
+
+    // Collapses back to preview snippet
+    expect(body).toHaveTextContent('根预览节选…');
+    expect(body).not.toHaveTextContent('完整的长篇根正文内容');
+  });
 });
