@@ -1,8 +1,39 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MessageTimeline } from '../features/chat/MessageTimeline';
 import type { MessageView } from '../features/chat/types';
 import { installFetch, jsonResponse } from './helpers';
+
+function loadShellCss(): string {
+  const directPath = resolve(process.cwd(), 'src/styles/shell.css');
+  if (existsSync(directPath)) return readFileSync(directPath, 'utf8');
+  const monorepoPath = resolve(process.cwd(), 'packages/app/src/styles/shell.css');
+  if (existsSync(monorepoPath)) return readFileSync(monorepoPath, 'utf8');
+  throw new Error(`Cannot locate shell.css from cwd: ${process.cwd()}`);
+}
+
+function extractMediaBlock(css: string, query: string): { block: string; fullMatch: string } {
+  const qIdx = css.indexOf(query);
+  if (qIdx === -1) throw new Error(`Query "${query}" not found in css`);
+  const open = css.indexOf('{', qIdx);
+  if (open === -1) throw new Error(`Opening brace not found after "${query}"`);
+  let depth = 0;
+  for (let i = open; i < css.length; i++) {
+    if (css[i] === '{') depth++;
+    else if (css[i] === '}') {
+      depth--;
+      if (depth === 0) {
+        return {
+          block: css.slice(open + 1, i),
+          fullMatch: css.slice(qIdx, i + 1),
+        };
+      }
+    }
+  }
+  throw new Error(`Unmatched braces for "${query}"`);
+}
 
 function makeMessage(partial: Partial<MessageView> & { id: number; role: MessageView['role'] }): MessageView {
   return {
@@ -45,6 +76,18 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
     expect(buttons).toHaveLength(2);
     expect(buttons[0]).toHaveTextContent('收藏');
     expect(buttons[1]).toHaveTextContent('收藏');
+
+    // F-01: Collection action must have dedicated modifier class
+    expect(buttons[0]).toHaveClass('app-msg-action-btn', 'app-msg-action-btn--collect');
+    expect(buttons[1]).toHaveClass('app-msg-action-btn', 'app-msg-action-btn--collect');
+
+    // Sibling action buttons (e.g. copy) retain standard action button class without --collect
+    const copyButtons = screen.getAllByRole('button', { name: /复制消息内容/ });
+    expect(copyButtons.length).toBeGreaterThan(0);
+    for (const copyBtn of copyButtons) {
+      expect(copyBtn).toHaveClass('app-msg-action-btn');
+      expect(copyBtn).not.toHaveClass('app-msg-action-btn--collect');
+    }
 
     // Frozen UI rule: never render filled-state or active collected class
     expect(buttons[0]).not.toHaveClass('active');
@@ -320,5 +363,72 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
 
     // Internal modal is not opened when external callback is supplied
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('ensures only collection button receives app-msg-action-btn--collect across all timeline actions', () => {
+    const onEdit = vi.fn();
+    const onRegenerate = vi.fn();
+    const onBranch = vi.fn();
+
+    const messages: MessageView[] = [
+      makeMessage({ id: 1, role: 'user', content: 'User text' }),
+      makeMessage({ id: 2, role: 'assistant', content: 'Assistant text' }),
+    ];
+
+    render(
+      <MessageTimeline
+        messages={messages}
+        hasOlder={false}
+        loadingMore={false}
+        onLoadMore={() => {}}
+        onEditMessage={onEdit}
+        onRegenerateMessage={onRegenerate}
+        onBranchMessage={onBranch}
+      />,
+    );
+
+    const allButtons = screen.getAllByRole('button');
+    const collectButtons = allButtons.filter((btn) =>
+      btn.classList.contains('app-msg-action-btn--collect'),
+    );
+    const otherActionButtons = allButtons.filter(
+      (btn) =>
+        btn.classList.contains('app-msg-action-btn') &&
+        !btn.classList.contains('app-msg-action-btn--collect'),
+    );
+
+    // Persisted user and assistant message rows each have 1 collection button
+    expect(collectButtons).toHaveLength(2);
+
+    // Other action buttons (copy, edit, regenerate, branch) exist and do NOT have --collect class
+    expect(otherActionButtons.length).toBeGreaterThan(0);
+    for (const btn of otherActionButtons) {
+      expect(btn).not.toHaveClass('app-msg-action-btn--collect');
+    }
+  });
+
+  it('satisfies hover/focus-within reveal and accessibility stylesheet contract (F-01)', () => {
+    const css = loadShellCss();
+
+    // Verify media query scoping to pointer-hover desktop devices
+    const { block: mediaBlock, fullMatch } = extractMediaBlock(
+      css,
+      '@media (hover: hover) and (pointer: fine)',
+    );
+
+    // Hidden at rest in pointer-hover media
+    expect(mediaBlock).toMatch(/\.app-msg-action-btn--collect\s*\{[^}]*opacity:\s*0/);
+    expect(mediaBlock).toMatch(/\.app-msg-action-btn--collect\s*\{[^}]*pointer-events:\s*none/);
+
+    // Revealed on message row hover and focus-within
+    expect(mediaBlock).toMatch(/\.app-msg:hover\s+\.app-msg-action-btn--collect/);
+    expect(mediaBlock).toMatch(/\.app-msg:focus-within\s+\.app-msg-action-btn--collect/);
+    expect(mediaBlock).toMatch(/\.app-msg-action-btn--collect:focus/);
+    expect(mediaBlock).toMatch(/opacity:\s*1/);
+    expect(mediaBlock).toMatch(/pointer-events:\s*auto/);
+
+    // Outside the pointer-hover media block, the action is not hidden (fallback for touch/non-hover devices)
+    const cssWithoutMedia = css.replace(fullMatch, '');
+    expect(cssWithoutMedia).not.toMatch(/\.app-msg-action-btn--collect\s*\{[^}]*opacity:\s*0/);
   });
 });

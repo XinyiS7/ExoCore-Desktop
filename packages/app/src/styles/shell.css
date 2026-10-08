@@ -740,6 +740,24 @@
   cursor: not-allowed;
 }
 
+/* Collection action hover/focus-within reveal on desktop pointer-hover devices (spec §11) */
+@media (hover: hover) and (pointer: fine) {
+  .app-msg-action-btn--collect {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease-in-out, color 0.15s, background-color 0.15s;
+  }
+
+  .app-msg:hover .app-msg-action-btn--collect,
+  .app-msg:focus-within .app-msg-action-btn--collect,
+  .app-msg-action-btn--collect:focus,
+  .app-msg-action-btn--collect:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+
 .app-msg-footer {
   display: flex;
   align-items: center;

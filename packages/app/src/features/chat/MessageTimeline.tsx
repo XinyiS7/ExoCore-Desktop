@@ -162,7 +162,7 @@ function MessageRowItem({
           {(isUser || isAssistant) && hasContentText ? (
             <button
               type="button"
-              className="app-msg-action-btn"
+              className="app-msg-action-btn app-msg-action-btn--collect"
               onClick={() => onCollectMessage?.(message)}
               title="收藏此条消息"
               aria-label="收藏此条消息"
