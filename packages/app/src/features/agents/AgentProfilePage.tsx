@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Activity, ArrowLeft, Plus, Star } from 'lucide-react';
+import { Activity, ArrowLeft, Edit3, Plus, Star } from 'lucide-react';
 import { toAppApiError } from '../chat/api';
 import { CreateConversationDialog } from '../chat/CreateConversationDialog';
 import { ConversationDeleteMenu } from '../chat/ConversationDeleteMenu';
@@ -11,7 +11,13 @@ import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
 import { useDocumentTitle } from '../../shared/useDocumentTitle';
 import { MoreMenu } from '../../shell/PrimaryNavigation';
 import { PrimeConversationConfirmDialog } from './PrimeConversationConfirmDialog';
-import { isValidPresetId, useAgentMemoryQuery, useAgentPresetQuery } from './queries';
+import { AgentPromptDialog } from './AgentPromptDialog';
+import {
+  isValidPresetId,
+  useAgentMemoryQuery,
+  useAgentPresetQuery,
+  useUpdateAgentPresetMutation,
+} from './queries';
 import {
   applyConversationFilter,
   deriveProjectOptions,
@@ -74,17 +80,36 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
   const presetConfirmed = presetQuery.data !== undefined;
   const memoryQuery = useAgentMemoryQuery(presetId, presetConfirmed);
 
+  const updateMutation = useUpdateAgentPresetMutation();
+
   // Profile-local controls reset whenever the route Agent changes (Plan §6.2).
   const [filter, setFilter] = useState<ConversationFilter>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [primeTarget, setPrimeTarget] = useState<ConversationSummary | null>(null);
+  const [promptDialogOpen, setPromptDialogOpen] = useState(false);
+  const [saveSuccessNotice, setSaveSuccessNotice] = useState(false);
+
   useEffect(() => {
     setFilter('all');
     setDialogOpen(false);
     setPrimeTarget(null);
+    setPromptDialogOpen(false);
+    setSaveSuccessNotice(false);
   }, [presetId]);
 
   const preset = presetQuery.data;
+
+  const handlePromptSave = async (prompt: string) => {
+    if (!preset) return;
+    await updateMutation.mutateAsync({
+      id: preset.id,
+      fields: {
+        system_prompt: prompt,
+      },
+    });
+    setSaveSuccessNotice(true);
+    setTimeout(() => setSaveSuccessNotice(false), 3000);
+  };
 
   const title = presetQuery.isError
     ? toAppApiError(presetQuery.error).status === 404
@@ -179,8 +204,40 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
               <dl className="agent-facts">
                 <FactRow label="Agent 类型" value={preset.agent_type || '未标注'} />
                 <FactRow label="默认模型" value={preset.default_model || '未配置默认模型'} />
-                <FactRow label="System Prompt" value={preset.system_prompt || '未设置 System Prompt'} />
               </dl>
+            </section>
+
+            <section className="agent-profile-section" aria-labelledby="agent-prompt-heading">
+              <div className="agent-section-heading">
+                <div>
+                  <h2 id="agent-prompt-heading" className="app-h2">
+                    System Prompt
+                  </h2>
+                  <span className="app-topbar-sub">定义该 Agent 的人格设定与系统提示词</span>
+                </div>
+                <button
+                  type="button"
+                  className="app-btn app-btn-ghost"
+                  onClick={() => setPromptDialogOpen(true)}
+                >
+                  <Edit3 size={16} aria-hidden="true" />
+                  编辑 Prompt
+                </button>
+              </div>
+
+              {saveSuccessNotice ? (
+                <div className="app-banner app-banner--success" role="status">
+                  System Prompt 保存成功
+                </div>
+              ) : null}
+
+              <div className="agent-prompt-card">
+                {preset.system_prompt ? (
+                  <pre className="agent-prompt-text">{preset.system_prompt}</pre>
+                ) : (
+                  <span className="agent-prompt-empty">未设置 System Prompt</span>
+                )}
+              </div>
             </section>
 
             <section className="agent-profile-section" aria-labelledby="agent-convs-title">
@@ -334,6 +391,15 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
           conversationId={primeTarget.id}
           conversationName={primeTarget.name || `会话 #${primeTarget.id}`}
           onClose={() => setPrimeTarget(null)}
+        />
+      ) : null}
+      {promptDialogOpen && preset ? (
+        <AgentPromptDialog
+          agentName={preset.name || `Agent #${preset.id}`}
+          initialPrompt={preset.system_prompt ?? ''}
+          isOpen={promptDialogOpen}
+          onSave={handlePromptSave}
+          onClose={() => setPromptDialogOpen(false)}
         />
       ) : null}
     </div>

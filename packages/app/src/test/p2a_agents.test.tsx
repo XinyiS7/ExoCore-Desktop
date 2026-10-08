@@ -291,7 +291,8 @@ describe('Agent Profile route states (P2A Stage A)', () => {
     expect(screen.getByRole('heading', { name: /Ecki/ })).toBeTruthy();
     expect(screen.getByText('deepseek-v4-flash', { selector: 'dd' })).toBeTruthy();
     expect(screen.getByText('standard', { selector: 'dd' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /编辑|保存/ })).toBeNull();
+    // Issue #7: System Prompt is now editable via "编辑 Prompt"
+    expect(screen.getByRole('button', { name: /编辑 Prompt/ })).toBeInTheDocument();
     full.unmount();
 
     const blank = renderApp(['/agents/6']);

@@ -304,3 +304,29 @@
   line-height: 1.5;
 }
 
+/* ── System Prompt card ─────────────────────────────────────────────── */
+
+.agent-prompt-card {
+  background: var(--v4-panel-2);
+  border: 1px solid var(--v4-line);
+  border-radius: 6px;
+  padding: 16px;
+  min-height: 80px;
+}
+
+.agent-prompt-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--v4-font-mono, monospace);
+  font-size: calc(13px * var(--exo-font-scale, 1));
+  line-height: 1.6;
+  color: var(--v4-text);
+}
+
+.agent-prompt-empty {
+  font-size: calc(13px * var(--exo-font-scale, 1));
+  color: var(--v4-text-dim);
+  font-style: italic;
+}
+

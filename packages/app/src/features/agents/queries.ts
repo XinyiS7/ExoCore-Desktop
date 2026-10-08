@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { getAgentPreset, listAgentMemory } from './api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../chat/queries';
+import { getAgentPreset, listAgentMemory, patchAgentPreset, type UpdateAgentPresetInput } from './api';
 
 /**
  * Agent-specific Query keys/hooks only (Plan §6.2).
@@ -35,3 +36,19 @@ export function useAgentMemoryQuery(presetId: number, enabled: boolean) {
     retry: false,
   });
 }
+
+/** Mutation updating agent preset fields with strict cache invalidation. */
+export function useUpdateAgentPresetMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, fields }: { id: number; fields: UpdateAgentPresetInput }) =>
+      patchAgentPreset(id, fields),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(agentQueryKeys.preset(updated.id), updated);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.presets });
+      void queryClient.invalidateQueries({ queryKey: agentQueryKeys.preset(updated.id) });
+    },
+  });
+}
+
