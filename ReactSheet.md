@@ -1654,7 +1654,9 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 ### 13.3 创建与更新
 
 通用创建字段：`title?`、`description?`、`collection_context?`、`tags?`（最多
-32 个、每个最多 50 字符）以及下列一种 `source`：
+32 个、每个最多 50 字符）以及下列一种 `source`。`description` 是藏品唯一的客观
+描述，strip 后最多 500 字符；新建、重复收藏和 `PATCH` 三处同一上限，超出返回
+`400 invalid_request`：
 
 ```json
 {"source":{"type":"attachment","provenance_id":"<uuid>"}}
@@ -1667,13 +1669,14 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
   出现在该 Message；promotion 不修改或删除原 Chronicle highlight。
 - **collect-or-increment**：来源身份为 `(source.type, 实体, scope)`，message 来源中
   `text` 等于整条 `Message.content` 与摘录各自算不同 scope。来源尚未收藏 → 新建
-  Item 并返回 `201`；已收藏 → 返回既有 Item 与 `200`，本次的 `title` /
-  `description` / `tags` 不改写既有 Item。两种响应正文均为 §13.4 详情，并额外带
+  Item 并返回 `201`；已收藏 → 返回既有 Item 与 `200`，本次的 `title` / `tags`
+  不改写既有 Item；非空且与原值不同的 `description` 覆盖旧描述。两种响应正文均为 §13.4 详情，并额外带
   `"collect_outcome": "created" | "already_collected"`。
 - 每次被接受的 POST 都为 Alicia 计一次 `collect_count`（含首次）；不承诺调用级幂等，
   客户端重试即算再收藏一次。
-- 首次收藏的 `collection_context` 保留在 Item 上；重复收藏时非空
-  `collection_context` 追加为一条只增不改的收藏评论，不覆盖原 context。本阶段不
+- 首次收藏的 `collection_context` 保留在 Item 上。重复收藏时的非空
+  `collection_context`：既有 context 为空则填为 context；既有 context 非空则不覆盖，
+  追加为一条只增不改的收藏评论。本阶段不
   提供 `collect_count` / 评论的读取 API。
 - `PATCH` 只接受 `title`、`description`、`collection_context`、`tags`，以及：
 
