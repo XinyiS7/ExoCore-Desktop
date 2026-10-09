@@ -1683,14 +1683,15 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 ```json
 {
   "manual_representation": {
-    "kind": "audio_transcript",
+    "kind": "document_extracted_text",
     "canonical_text": "人工校准文本"
   }
 }
 ```
 
-人工值只允许当前 Item kind 支持的 representation；producer 投影为 `human` /
-`manual-v1`。不可变 source、kind、asset 与来源身份不能通过 PATCH 改写。
+`manual_representation` 只接受 document Item 的 `document_extracted_text`，其他
+kind 或其他 Item 返回 `400 invalid_request`；图片/音频"在说什么"一律改 `description`。
+producer 投影为 `human` / `manual-v1`。不可变 source、kind、asset 与来源身份不能通过 PATCH 改写。
 
 ### 13.4 详情与派生状态
 
@@ -1734,11 +1735,13 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 - representation `state` 仅为 `pending | succeeded | failed | unavailable`。
   `content_url` 仅在 succeeded 且有 artifact 时出现；`retry_url` 仅在 failed 且
   retryable 时出现。
-- B1 自动范围仅含 deterministic image preview、audio playback、可靠 document text；
-  无批准 provider 的图片描述、用户音频 transcript、document summary 明确为
-  `unavailable`，不伪造成功。
+- representation `kind` 只有三种原件的确定性派生：image `image_preview`、audio
+  `audio_playback`、document `document_extracted_text`。藏品的客观描述只在
+  `description`，不再有描述、转写或摘要类 representation（migration 0007 已删除
+  `image_neutral_description` / `image_subjective_reserved` / `audio_transcript` /
+  `document_summary`）。
 - representation 的 granular `error_code`（例如 `image_preview_failed`、
-  `audio_transcript_unavailable`、`document_extraction_unavailable`）是可展示的派生状态，
+  `document_extraction_unavailable`）是可展示的派生状态，
   不是独立 HTTP 错误信封。
 
 ### 13.5 原件、派生内容与 bring-to-chat
@@ -1782,7 +1785,7 @@ representation 自身的 granular `error_code`。客户端不得为这两个未�
 
 ### 13.7 部署与可用性门禁
 
-Collection migration `0001–0006` 必须在 **Django 后端与 Runtime 任一服务启动前**
+Collection migration `0001–0007` 必须在 **Django 后端与 Runtime 任一服务启动前**
 应用并通过 `python.exe manage.py migrate --check --noinput`。共享 APScheduler 的
 Collection GC / recovery jobs 会直接查询这些表；缺表必须阻止启动/显式失败，禁止吞错后
 伪装服务可用。部署时按项目规范同步显式重启 `run-exocore` 与 `run-runtime`；不得只重启
