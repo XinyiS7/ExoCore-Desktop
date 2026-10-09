@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Activity, ArrowLeft, Edit3, Plus, Star } from 'lucide-react';
+import { Activity, ArrowLeft, Bot, Camera, Edit3, Pencil, Plus, Star } from 'lucide-react';
 import { toAppApiError } from '../chat/api';
 import { CreateConversationDialog } from '../chat/CreateConversationDialog';
 import { ConversationDeleteMenu } from '../chat/ConversationDeleteMenu';
@@ -12,6 +12,9 @@ import { useDocumentTitle } from '../../shared/useDocumentTitle';
 import { MoreMenu } from '../../shell/PrimaryNavigation';
 import { PrimeConversationConfirmDialog } from './PrimeConversationConfirmDialog';
 import { AgentPromptDialog } from './AgentPromptDialog';
+import { AgentEditDialog } from './AgentEditDialog';
+import { AvatarCropDialog } from '../account/AvatarCropDialog';
+import { saveAgentAvatar, useAgentAvatar } from '../../shared/agentAvatar';
 import {
   isValidPresetId,
   useAgentMemoryQuery,
@@ -87,17 +90,25 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [primeTarget, setPrimeTarget] = useState<ConversationSummary | null>(null);
   const [promptDialogOpen, setPromptDialogOpen] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
   const [saveSuccessNotice, setSaveSuccessNotice] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setFilter('all');
     setDialogOpen(false);
     setPrimeTarget(null);
     setPromptDialogOpen(false);
+    setEditProfileOpen(false);
+    setCropFile(null);
+    setAvatarError(null);
     setSaveSuccessNotice(false);
   }, [presetId]);
 
   const preset = presetQuery.data;
+  const avatarUrl = useAgentAvatar(presetId, preset?.name);
 
   const handlePromptSave = async (prompt: string) => {
     if (!preset) return;
@@ -109,6 +120,35 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
     });
     setSaveSuccessNotice(true);
     setTimeout(() => setSaveSuccessNotice(false), 3000);
+  };
+
+  const handleProfileSave = async (fields: {
+    name: string;
+    description?: string;
+    default_model?: string;
+  }) => {
+    if (!preset) return;
+    await updateMutation.mutateAsync({
+      id: preset.id,
+      fields,
+    });
+  };
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    if (!file.type.startsWith('image/')) {
+      setAvatarError('请选择有效的图片文件 (PNG, JPG, WebP 等)');
+      return;
+    }
+    setAvatarError(null);
+    setCropFile(file);
+  };
+
+  const handleAvatarCropConfirm = (dataUrl: string) => {
+    saveAgentAvatar(presetId, dataUrl);
+    setCropFile(null);
   };
 
   const title = presetQuery.isError
@@ -182,25 +222,74 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
         ) : preset ? (
           <div className="agent-profile">
             <section className="agent-profile-section" aria-labelledby="agent-identity-title">
-              <h2 id="agent-identity-title" className="app-h2 agent-identity-name">
-                {preset.name || `Agent #${preset.id}`}
-                {isG045AgentType(preset.agent_type) ? (
-                  <span className="app-phase-chip app-phase-chip--g045">g045</span>
-                ) : null}
-              </h2>
-              <p className="agent-identity-desc">{preset.description ?? '暂无描述'}</p>
-              {isG045AgentType(preset.agent_type) ? (
-                <div className="agent-identity-actions">
-                  <Link
-                    to={`/agents/${preset.id}/heartbeat`}
-                    className="app-btn app-btn--subtle agent-heartbeat-link"
-                    aria-label="Heartbeat Ledger"
-                  >
-                    <Activity size={16} aria-hidden="true" />
-                    Heartbeat Ledger
-                  </Link>
+              <div className="agent-avatar-row">
+                <div className="agent-avatar-preview">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={preset.name || `Agent #${preset.id}`}
+                      className="agent-avatar-img"
+                    />
+                  ) : (
+                    <Bot size={36} aria-hidden="true" />
+                  )}
                 </div>
-              ) : null}
+                <div className="agent-avatar-actions">
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={handleAvatarFileChange}
+                    aria-label="上传新头像"
+                  />
+                  <button
+                    type="button"
+                    className="app-btn app-btn-ghost"
+                    onClick={() => avatarInputRef.current?.click()}
+                  >
+                    <Camera size={14} aria-hidden="true" />
+                    更换头像
+                  </button>
+                  <span className="agent-avatar-hint">支持 JPG / PNG / WebP，上传后可裁剪</span>
+                  {avatarError ? (
+                    <span className="app-field-error" role="alert">{avatarError}</span>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="agent-section-heading">
+                <div>
+                  <h2 id="agent-identity-title" className="app-h2 agent-identity-name">
+                    {preset.name || `Agent #${preset.id}`}
+                    {isG045AgentType(preset.agent_type) ? (
+                      <span className="app-phase-chip app-phase-chip--g045">g045</span>
+                    ) : null}
+                  </h2>
+                </div>
+                <div className="agent-identity-actions">
+                  <button
+                    type="button"
+                    className="app-btn app-btn-ghost"
+                    onClick={() => setEditProfileOpen(true)}
+                  >
+                    <Pencil size={14} aria-hidden="true" />
+                    编辑资料
+                  </button>
+                  {isG045AgentType(preset.agent_type) ? (
+                    <Link
+                      to={`/agents/${preset.id}/heartbeat`}
+                      className="app-btn app-btn--subtle agent-heartbeat-link"
+                      aria-label="Heartbeat Ledger"
+                    >
+                      <Activity size={16} aria-hidden="true" />
+                      Heartbeat Ledger
+                    </Link>
+                  ) : null}
+                </div>
+              </div>
+
+              <p className="agent-identity-desc">{preset.description ?? '暂无描述'}</p>
               <dl className="agent-facts">
                 <FactRow label="Agent 类型" value={preset.agent_type || '未标注'} />
                 <FactRow label="默认模型" value={preset.default_model || '未配置默认模型'} />
@@ -400,6 +489,21 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
           isOpen={promptDialogOpen}
           onSave={handlePromptSave}
           onClose={() => setPromptDialogOpen(false)}
+        />
+      ) : null}
+      {editProfileOpen && preset ? (
+        <AgentEditDialog
+          preset={preset}
+          isOpen={editProfileOpen}
+          onSave={handleProfileSave}
+          onClose={() => setEditProfileOpen(false)}
+        />
+      ) : null}
+      {cropFile ? (
+        <AvatarCropDialog
+          file={cropFile}
+          onConfirm={handleAvatarCropConfirm}
+          onCancel={() => setCropFile(null)}
         />
       ) : null}
     </div>
