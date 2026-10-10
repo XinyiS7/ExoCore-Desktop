@@ -321,18 +321,20 @@ Runtime regenerate 当前仅支持 text-only 目标；目标 Message 自带附�
 - 422 额外包含 `"error": "all attachments failed"`，同时保留完整
   `attachments: []`、`failures` 与 `results`
 
-**音频上传（PWA 录音）**：multipart 含 `audio/*` 时，请求必须携带 `model`（当前 main model name）与 `endpoint`（Endpoint ID），后端经 direct-only `resolve_session_target()` 校验 main target；managed-runtime Endpoint 在该 resolver 内以 `managed_runtime_requires_chat_resolver` 拒绝，公共上传响应归一为 422 `audio_target_required`，因此订阅 Runtime Endpoint 不适用于 audio upload。audio preflight 稳定 diagnostics：
+**音频上传（PWA 录音）**：multipart 含 `audio/*` 时，请求必须携带 `model`（当前 main model name）与 `endpoint`（Endpoint ID），后端经 `resolve_chat_execution_target()` 解析 main target。direct target 保持 provider audio ability/transport 预检；managed subscription Runtime target 按 Runtime 当前轮附件表预检，Phase 1 接受 WAV（`audio/wav` / `audio/x-wav` / `audio/wave`）与 WebM audio（含 `audio/webm;codecs=opus` 参数形式），单文件上限 20 MiB。audio preflight 稳定 diagnostics：
 
 - `audio_target_required` — 缺 model/endpoint 或 target 解析失败
 - `audio_model_unsupported` — target 缺 `audio` ability 或可用 audio transport（普通发送需 `inline_audio`；cache_reuse 需 cache-compatible `file_uri`；compose upload 阶段校验具备任意可用 audio transport）
-- `audio_mime_unsupported` — MIME 不在 allowlist（支持 WebM/Opus、MP3、WAV、AAC、FLAC、OGG、M4A 等主流音频格式）
+- `audio_mime_unsupported` — direct target 的 MIME 不在 provider audio allowlist（支持 WebM/Opus、MP3、WAV、AAC、FLAC、OGG、M4A 等主流音频格式）
+- `runtime_attachment_type_unsupported` — managed Runtime target 的 MIME 不在 Phase 1 表
+- `runtime_attachment_too_large` — managed Runtime target 的单个音频超过 20 MiB
 
 *注：已移除旧有的 10 MiB 大小门禁，统一采用临时文件分块落盘；文件大小不作为降级到 Files API 的触发条件。*
 
 **多模态传输策略与 Explicit Cache Promotion**：
 - **普通发送（Ordinary Send）**：所有受支持模态附件（文本/代码、PDF 二进制文档、图片、音频等）严格走请求级内联传输（`inline_text`、`inline_document`、`inline_image`、`inline_audio`），任何文件大小均不触发 Provider Files API。
 - **显式 🧊 Cache Send（`force_cache_rebuild`）**：仅在用户显式触发 Cache Send 时，附件提升为 Provider File 引用（如 Gemini `file_uri`），并连同历史上下文冻结进 Remote Context Cache。Cache 命中轮次中，已被 Cache 覆盖的附件 Part 在发送时自动从当前轮 Part 5 剔除；已冻结在活跃 Cache 中的附件禁止单体物理删除。
-- **Managed Runtime 当前轮附件（握手声明）**：订阅 Runtime 的当前轮附件能力由 Runtime 握手声明——`GET /v2/health` 的 `capabilities` 必须包含 `turn_attachments`（exact-list 校验即握手，mixed-version 不受支持）；`Endpoint.attachment_transports` 保持 `()`，不得据 transport 表或静态配置假定 managed endpoint 支持附件。本地 pre-seam 还要求所选 model 具备 `vision`，否则该轮以 `runtime_attachment_capability_unavailable` 终止、不创建 provider 输入。
+- **Managed Runtime 当前轮附件（握手声明）**：订阅 Runtime 的当前轮附件能力由 Runtime 握手声明——`GET /v2/health` 的 `capabilities` 必须包含 `turn_attachments`（exact-list 校验即握手，mixed-version 不受支持）；`Endpoint.attachment_transports` 保持 `()`，不得据 transport 表或静态配置假定 managed endpoint 支持附件。Phase 1 接受 PNG/JPEG/WebP、`text/plain`（`text/markdown` 规范化为纯文本）、WAV 与 audio WebM；PDF/GIF/HEIC/MP3/M4A/OGG/CSV/JSON/HTML、`application/octet-stream` 与 `video/webm` 仍拒绝。只有本轮存在图片时才要求所选 model 具备 `vision`，否则以 `runtime_attachment_capability_unavailable` 同步拒绝、不创建 provider 输入。
 
 成功/失败响应均不暴露 `storage_path`（HTTP formatter 仅输出前端契约字段，不输出 PC 路径）。
 
