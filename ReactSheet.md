@@ -521,10 +521,8 @@ Query: `preset_id`（必填），可选 `scope` / `source` / `is_processed`。`i
     "cache_transport": "runtime_managed",
     "attachment_transports": [],
     "supported_families": [],
-    "supported_models": ["gemini-3.1-pro-preview"],
-    "model_name_overrides": {
-      "gemini-3.1-pro-preview": "gemini-3.1-pro-high"
-    }
+    "supported_models": ["gemini-3.1-pro-preview", "gemini-3.8-flash", "gemini-3.6-flash"],
+    "model_name_overrides": {}
   }]
 }
 ```
@@ -1832,7 +1830,7 @@ SSE 和 async polling 共用的稳定 error payload：
 | deepseek | DeepSeek 官方 | https://api.deepseek.com/v1 | openai | inline_chunk | inline_text, inline_image | direct_api | internal_http | true | preserve |
 | openrouter | OpenRouter | https://openrouter.ai/api/v1 | openai | inline_chunk | inline_text, inline_image | direct_api | internal_http | true | preserve |
 | glm | GLM 官方 | https://open.bigmodel.cn/api/paas/v4 | openai | inline_chunk | inline_text | direct_api | internal_http | true | preserve |
-| antigravity | Antigravity Subscription | "" | runtime | runtime_managed | — | managed_runtime | subscription_runtime | false | gemini-3.1-pro-preview → gemini-3.1-pro-high |
+| antigravity | Antigravity Subscription | "" | runtime | runtime_managed | — | managed_runtime | subscription_runtime | false | gemini-3.1-pro-preview, gemini-3.8-flash, gemini-3.6-flash（exact；tier 归 Runtime） |
 
 supported_families:
 - gemini: (gemini)  
@@ -1840,3 +1838,10 @@ supported_families:
 - openrouter: (openrouter, gemini, deepseek)  
 - glm: (glm)
 - antigravity: ()
+
+antigravity 的 requested model → AGY slug 解析只在 Subscription Runtime：只接受 `gemini-*`，
+去掉结尾 `-preview` 后加 `-high`（如 `gemini-3.1-pro-preview` → `gemini-3.1-pro-high`、
+`gemini-3.8-flash` → `gemini-3.8-flash-high`）；任何 thinking level 的 effective effort 一律
+`high`；slug 是否可用由 Runtime 侧 `agy models` 门判定（`frozen_execution_unavailable`）。
+backend Endpoint 不保存 tier 映射，`model_name_overrides` 恒为空；可配对模型以上表 exact
+`supported_models` 为准。同一会话内换模型沿用同一 Runtime binding 并续接原 AGY conversation。
