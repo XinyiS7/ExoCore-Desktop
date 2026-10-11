@@ -1487,6 +1487,43 @@
   color: var(--v4-warn);
 }
 
+/* AssistantArtifact info cards — beside media, never rendering media itself. */
+.app-artifact-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.app-artifact-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  max-width: 480px;
+  padding: 7px 10px;
+  border: 1px solid var(--v4-line);
+  border-radius: 8px;
+  background: var(--v4-panel);
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  color: var(--v4-text-dim);
+}
+
+.app-artifact-card-title {
+  color: var(--v4-text);
+}
+
+.app-artifact-card-duration {
+  font-size: calc(10.5px * var(--exo-font-scale, 1));
+  color: var(--v4-text-mute);
+}
+
+.app-artifact-card-detail {
+  flex-basis: 100%;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
 /* Historical audio bubble — same-origin content_url player (Gate G). */
 .app-audio-bubble {
   display: flex;

@@ -168,6 +168,8 @@ export interface MessageRow {
   /** CP-E canonical message presentation attachments; normalized fail-closed. */
   attachments?: unknown;
   attachments_meta: AttachmentMeta[] | null;
+  /** AssistantArtifact human cards; normalized fail-closed at the API boundary. */
+  assistant_artifacts?: unknown;
   created_at: string;
 }
 
@@ -250,7 +252,30 @@ export interface MessageView {
    * Emitted as array by normalizeMessageRow; optional for pre-CP-E fixture compatibility.
    */
   attachments?: MessageAttachmentView[];
+  /**
+   * AssistantArtifact info cards ordered by (position, producer, id).
+   * Optional for pre-artifact fixtures; the API adapter always emits an array.
+   */
+  assistantArtifacts?: AssistantArtifactView[];
   createdAt: string;
+}
+
+/**
+ * Producer-neutral info card for one assistant-produced presentation. Media
+ * stay in `attachments`; the card links to its media row by attachment key.
+ */
+export interface AssistantArtifactView {
+  /** `assistant_artifact:${id}` */
+  key: string;
+  id: number;
+  producer: string;
+  kind: MessageAttachmentKind;
+  position: number;
+  title: string;
+  detail: string | null;
+  collectible: boolean;
+  /** `message_attachment:${id}` of the linked media row, if any. */
+  presentationAttachmentKey: string | null;
 }
 
 export interface MessagePage {

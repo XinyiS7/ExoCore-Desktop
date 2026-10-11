@@ -5,6 +5,7 @@ import type { OptimisticUserRow, RuntimeAssistantRow } from './runtime/types';
 import { MessageContent } from './MessageContent';
 import { formatTimeOfDay } from './time';
 import { MessageAttachments } from './attachments/MessageAttachments';
+import { AssistantArtifactCards } from './artifacts/AssistantArtifactCards';
 import { AssistantRunTrace } from './trace/AssistantRunTrace';
 import { MessageVoiceControl } from './tts/MessageVoiceControl';
 import { VoiceToolErrors } from './voice/VoiceToolErrors';
@@ -103,6 +104,8 @@ function MessageRowItem({
   const hasContentText = Boolean(message.content?.trim());
   const voiceToolErrors = isAssistant ? message.voiceToolErrors ?? [] : [];
   const hasVoiceToolErrors = voiceToolErrors.length > 0;
+  const assistantArtifacts = isAssistant ? message.assistantArtifacts ?? [] : [];
+  const hasArtifacts = assistantArtifacts.length > 0;
   const [copied, setCopied] = useState(false);
   const copyTimeoutRef = useRef<number | null>(null);
 
@@ -231,7 +234,7 @@ function MessageRowItem({
         ) : null}
         {hasContentText ? (
           <MessageContent content={message.content} />
-        ) : hasAttachments || hasVoiceToolErrors ? null : (
+        ) : hasAttachments || hasVoiceToolErrors || hasArtifacts ? null : (
           <span className="app-muted">（空消息）</span>
         )}
         {hasAttachments ? (
@@ -240,6 +243,9 @@ function MessageRowItem({
             meta={attachmentsMeta}
             conversationId={conversationId}
           />
+        ) : null}
+        {hasArtifacts ? (
+          <AssistantArtifactCards artifacts={assistantArtifacts} attachments={attachments} />
         ) : null}
         {hasVoiceToolErrors ? <VoiceToolErrors errors={voiceToolErrors} /> : null}
         {isAssistant && hasContentText ? (
