@@ -357,6 +357,49 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
 
 **DELETE /api/agents/conversations/<pk>/attachments/delete/** — 批量删除
 
+### 1.5.1 assistant_artifacts[] — AI 产物信息卡（#32，additive）
+
+`GET /api/agents/conversations/<cid>/messages/` 的每条消息新增独立 `assistant_artifacts[]`，与 `attachments[]` 分开，不挤入附件数组。非 assistant 行和无产物的 assistant 行都是 `[]`。
+
+```json
+[
+  {
+    "ref": { "type": "assistant_artifact", "id": 31 },
+    "producer": "agy_generate_image",
+    "kind": "image",
+    "position": 0,
+    "human": { "title": "生成了图片", "detail": "画面描述暂不可用" },
+    "collectible": false,
+    "presentation_attachment": { "type": "message_attachment", "id": 88 }
+  }
+]
+```
+
+- **字段**
+  - `ref`：opaque 主键引用。
+  - `producer`：registry 登记名，当前只有 `send_voice_msg` 和 `agy_generate_image`。
+  - `kind`：`audio | image | file`。
+  - `position`：同一 assistant 消息、同一 producer 内的产物序号，从 0 起。
+  - `human`：`{ title, detail | null }`，由后端从唯一 descriptor 渲染，前端不自行拼装。
+  - `collectible`：由 registry 决定，本期恒为 `false`，没有收藏按钮。
+  - `presentation_attachment`：指向同一消息 `attachments[]` 中的 ready 媒体行，可为 `null`。
+- **排序**：后端按 `(position, producer, id)` 输出。
+- **前端规范化**：Desktop fail-closed，逐项校验，畸形项丢弃，按 key 去重。
+- **不暴露的内容**：不复制 URL 或文件元数据，媒体仍只由 `attachments[]` 渲染一次。不含 raw args、路径、descriptor 原文、prompt、错误详情或内部模型配置。
+- **盲盒 voice**（`send_voice_msg`，kind `audio`）
+  - `human = { "title": "发送了语音", "detail": null }`，用户卡刻意不展示 `spoken_content`。
+  - transcript 仍由播放器在自然播放结束后通过既有 `.../message-attachments/<id>/transcript/` 拉取，Artifact 卡不提前请求。
+  - failed 合成不建立 Artifact，继续由 `voice_tool_errors[]` 投影失败。
+- **AGY 生成图**（`agy_generate_image`，kind `image`，附件 `source="agy_image"`）
+  - 图片与 `pending` Artifact 在 assistant finalize 的同一事务内落地。
+  - 提交后由后台单 worker 调用 `vision_helper` 一次（60 秒单请求，不自动重试），条件更新为 `ready` 或 `failed`。
+  - `ready` 时 `detail` 是不超过 500 字的视觉描述。`pending` 与 `failed` 的 `detail` 都固定为 `"画面描述暂不可用"`，两者对外不可区分，也不暴露失败码。
+  - 描述状态不单独出接口；Desktop 不轮询、不等待，下次正常刷新消息列表时自然更新。
+  - 进程中断留下的 `pending` 永久保持，不做重试或恢复。
+- **模型历史契约**（后端内部，不改 API shape）
+  - API 自管历史（Direct Gemini/DeepSeek 等，含消费 AGY 历史的会话）：在产物之前最近的 user 消息下附加 `<assistant_artifact>` 第二名单。voice 携带原始 spoken content；image 携带描述或“画面描述暂不可用”，按装配时的当前状态读取。有 Artifact 的 voice 不再重复输出 legacy `<voice_message>`。
+  - Runtime（AGY）bootstrap/rebase/continuity delta：不输出 Artifact 第二名单；`<voice_message>` 新旧语音照常投影。Runtime wire、manifest、`RuntimePresentation` schema 与 prefix digest 都不变。
+
 ### 1.6 Conversation Cache — 上下文缓存
 
 **GET /api/agents/conversations/<pk>/cache/** — 查看缓存状态
