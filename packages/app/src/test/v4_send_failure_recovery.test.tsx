@@ -242,6 +242,96 @@ describe('V4 Send Failure Recovery & Draft Protection (Plan R1)', () => {
       // Should NOT restore turn or overwrite draft
       expect(result.current.restoredTurn).toBeNull();
       expect(loadConversationDraft(42)).toBe('');
+      // #51 E3: the reason survives releaseUi as a dismiss-only banner.
+      expect(result.current.runtimeError).toMatchObject({
+        code: 'model_overloaded',
+        message: '服务繁忙',
+        retryClass: 'safe',
+      });
+    });
+
+    it('keeps a dismissible banner when a regenerate (no clientTurnId) fails deterministically', async () => {
+      const persisted = {
+        id: 2001,
+        role: 'user',
+        content: '要重新生成的问题',
+        reasoning_content: null,
+        platform: null,
+        model_version: null,
+        token_count: null,
+        index_in_session: 1,
+        attachment_ids: [],
+        attachments_meta: null,
+        created_at: new Date().toISOString(),
+        client_turn_id: null,
+      };
+      let regenerateBody: Record<string, unknown> | undefined;
+      installFetch([
+        {
+          test: '/api/agents/chat/42/',
+          method: 'POST',
+          handler: (_url, req) => {
+            regenerateBody = JSON.parse(req?.body ? String(req.body) : '{}') as Record<string, unknown>;
+            return jsonResponse({ message_id: 'token-regen-1', status: 'processing' });
+          },
+        },
+        {
+          test: '/api/agents/chat/42/status/',
+          method: 'GET',
+          handler: () =>
+            jsonResponse({
+              status: 'error',
+              cursor: 0,
+              error_message: {
+                code: 'frozen_execution_unavailable',
+                message: 'Antigravity Subscription 当前不提供模型 gemini-3.1-pro-preview，请切换模型。',
+              },
+              events: [],
+            }),
+        },
+        {
+          test: '/api/agents/chat/42/',
+          method: 'GET',
+          handler: () => jsonResponse({ messages: [persisted], total_count: 1, has_more: false }),
+        },
+        {
+          test: '/api/agents/conversations/42/control/cache/',
+          method: 'GET',
+          handler: () => jsonResponse({ conversation_id: 42, cache_enabled: true }),
+        },
+      ]);
+
+      const persistedRowsRef = { current: [{ id: 2001, role: 'user', indexInSession: 1 }] };
+      const { result } = renderHook(
+        () =>
+          useChatRuntime({
+            conversationId: 42,
+            dispatchSettings: SETTINGS,
+            persistedRowsRef,
+          }),
+        { wrapper: createWrapper() },
+      );
+
+      await act(async () => {
+        await result.current.regenerate(2001);
+      });
+      await waitFor(() => {
+        expect(result.current.status).toBe('idle');
+      });
+
+      expect(regenerateBody?.edit_message_id).toBe(2001);
+      expect(regenerateBody?.client_turn_id).toBeUndefined();
+      expect(result.current.restoredTurn).toBeNull();
+      expect(result.current.runtimeError).toMatchObject({
+        code: 'frozen_execution_unavailable',
+        message: 'Antigravity Subscription 当前不提供模型 gemini-3.1-pro-preview，请切换模型。',
+        retryClass: 'safe',
+      });
+
+      act(() => {
+        result.current.dismissTransient();
+      });
+      expect(result.current.runtimeError).toBeNull();
     });
   });
 
@@ -618,6 +708,8 @@ describe('V4 Send Failure Recovery & Draft Protection (Plan R1)', () => {
       // Invariant: Non-deterministic interruption must NOT auto-restore composer or draft
       expect(result.current.restoredTurn).toBeNull();
       expect(loadConversationDraft(42)).toBe('');
+      // #51 E3: uncertain outcomes never get the deterministic dismiss-only banner.
+      expect(result.current.runtimeError?.retryClass).not.toBe('safe');
     });
   });
 

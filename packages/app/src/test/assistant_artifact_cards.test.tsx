@@ -6,16 +6,6 @@ import { normalizeMessageRow } from '../features/chat/api';
 import { normalizeAssistantArtifacts } from '../features/chat/artifacts/projection';
 import type { MessageAttachmentView, MessageRow, MessageView } from '../features/chat/types';
 
-const voiceCardRaw = {
-  ref: { type: 'assistant_artifact', id: 7 },
-  producer: 'send_voice_msg',
-  kind: 'audio',
-  position: 0,
-  human: { title: '发送了语音', detail: null },
-  collectible: false,
-  presentation_attachment: { type: 'message_attachment', id: 11 },
-};
-
 const imageCardRaw = {
   ref: { type: 'assistant_artifact', id: 8 },
   producer: 'agy_generate_image',
@@ -88,45 +78,67 @@ function renderTimeline(messages: MessageView[]) {
 
 describe('AssistantArtifact projection (fail-closed)', () => {
   it('parses valid cards in (position, producer, id) order and drops malformed items', () => {
-    const later = { ...voiceCardRaw, ref: { type: 'assistant_artifact', id: 9 }, position: 1 };
+    const later = { ...imageCardRaw, ref: { type: 'assistant_artifact', id: 9 }, position: 1 };
+    const file = {
+      ...imageCardRaw,
+      ref: { type: 'assistant_artifact', id: 7 },
+      producer: 'a_file_producer',
+      kind: 'file',
+      human: { title: '生成了文件', detail: null },
+      presentation_attachment: null,
+    };
     const result = normalizeAssistantArtifacts([
       later,
-      voiceCardRaw,
+      file,
       imageCardRaw,
-      voiceCardRaw, // duplicate key collapses
-      { ...voiceCardRaw, ref: { type: 'message_attachment', id: 99 } },
-      { ...voiceCardRaw, ref: { type: 'assistant_artifact', id: 100 }, kind: 'video' },
-      { ...voiceCardRaw, ref: { type: 'assistant_artifact', id: 101 }, human: { title: '', detail: null } },
-      { ...voiceCardRaw, ref: { type: 'assistant_artifact', id: 102 }, human: { title: 'x', detail: 3 } },
-      { ...voiceCardRaw, ref: { type: 'assistant_artifact', id: 103 }, collectible: 'no' },
+      imageCardRaw, // duplicate key collapses
+      { ...imageCardRaw, ref: { type: 'message_attachment', id: 99 } },
+      { ...imageCardRaw, ref: { type: 'assistant_artifact', id: 100 }, kind: 'video' },
+      { ...imageCardRaw, ref: { type: 'assistant_artifact', id: 101 }, human: { title: '', detail: null } },
+      { ...imageCardRaw, ref: { type: 'assistant_artifact', id: 102 }, human: { title: 'x', detail: 3 } },
+      { ...imageCardRaw, ref: { type: 'assistant_artifact', id: 103 }, collectible: 'no' },
       {
-        ...voiceCardRaw,
+        ...imageCardRaw,
         ref: { type: 'assistant_artifact', id: 104 },
         presentation_attachment: { type: 'session_attachment', id: 1 },
       },
       'not-an-object',
     ]);
     expect(result.map((item) => item.key)).toEqual([
-      'assistant_artifact:8',
       'assistant_artifact:7',
+      'assistant_artifact:8',
       'assistant_artifact:9',
     ]);
     expect(result[1]).toEqual({
-      key: 'assistant_artifact:7',
-      id: 7,
+      key: 'assistant_artifact:8',
+      id: 8,
+      producer: 'agy_generate_image',
+      kind: 'image',
+      position: 0,
+      title: '生成了图片',
+      detail: '画面描述暂不可用',
+      collectible: false,
+      presentationAttachmentKey: 'message_attachment:12',
+    });
+  });
+
+  it('drops audio artifacts: voice has no user card (#51 E5)', () => {
+    const legacyVoice = {
+      ...imageCardRaw,
+      ref: { type: 'assistant_artifact', id: 6 },
       producer: 'send_voice_msg',
       kind: 'audio',
-      position: 0,
-      title: '发送了语音',
-      detail: null,
-      collectible: false,
-      presentationAttachmentKey: 'message_attachment:11',
-    });
+      human: { title: '发送了语音', detail: null },
+      presentation_attachment: { type: 'message_attachment', id: 11 },
+    };
+    expect(normalizeAssistantArtifacts([legacyVoice, imageCardRaw]).map((a) => a.key)).toEqual([
+      'assistant_artifact:8',
+    ]);
   });
 
   it('returns [] for absent or non-array data and for non-assistant rows', () => {
     expect(normalizeAssistantArtifacts(undefined)).toEqual([]);
-    expect(normalizeAssistantArtifacts({ items: [voiceCardRaw] })).toEqual([]);
+    expect(normalizeAssistantArtifacts({ items: [imageCardRaw] })).toEqual([]);
 
     const base: MessageRow = {
       id: 5,
@@ -135,7 +147,7 @@ describe('AssistantArtifact projection (fail-closed)', () => {
       reasoning_content: null,
       attachments: [],
       attachments_meta: null,
-      assistant_artifacts: [voiceCardRaw],
+      assistant_artifacts: [imageCardRaw],
       platform: null,
       model_version: null,
       token_count: null,
@@ -147,7 +159,7 @@ describe('AssistantArtifact projection (fail-closed)', () => {
     expect(normalizeMessageRow(base).assistantArtifacts).toEqual([]);
     expect(
       normalizeMessageRow({ ...base, role: 'assistant' }).assistantArtifacts?.map((a) => a.key),
-    ).toEqual(['assistant_artifact:7']);
+    ).toEqual(['assistant_artifact:8']);
   });
 });
 
@@ -158,18 +170,13 @@ describe('AssistantArtifact cards in the timeline', () => {
     vi.restoreAllMocks();
   });
 
-  it('voice card is a blind box: title + duration, single player, no transcript prefetch', () => {
+  it('voice message renders only its player: no card, no transcript prefetch', () => {
     const { fn } = installFetch([]);
-    const [voiceCard] = normalizeAssistantArtifacts([voiceCardRaw]);
-    const { container } = renderTimeline([
-      makeMsg({ attachments: [voiceAttachment], assistantArtifacts: [voiceCard] }),
-    ]);
+    const { container } = renderTimeline([makeMsg({ attachments: [voiceAttachment] })]);
 
     expect(container.querySelectorAll('audio')).toHaveLength(1);
-    const card = screen.getByTestId('assistant-artifact-card');
-    expect(within(card).getByText('发送了语音')).toBeTruthy();
-    expect(within(card).getByText('0:03')).toBeTruthy();
-    expect(card.querySelector('audio, img, a, button')).toBeNull();
+    expect(screen.queryByTestId('assistant-artifact-card')).toBeNull();
+    expect(screen.queryByText('发送了语音')).toBeNull();
     expect(screen.queryByTestId('audio-transcript')).toBeNull();
     expect(screen.queryByText('（空消息）')).toBeNull();
     expect(fn.mock.calls.some(([url]) => String(url).includes('/transcript/'))).toBe(false);
@@ -197,8 +204,7 @@ describe('AssistantArtifact cards in the timeline', () => {
 
   it('renders several cards in order on an artifact-only message without a collect entry', () => {
     const cards = normalizeAssistantArtifacts([
-      { ...voiceCardRaw, ref: { type: 'assistant_artifact', id: 9 }, position: 1, presentation_attachment: null },
-      voiceCardRaw,
+      { ...imageCardRaw, ref: { type: 'assistant_artifact', id: 9 }, position: 1, presentation_attachment: null },
       { ...imageCardRaw, human: { title: '生成了图片', detail: '海边的灯塔' } },
     ]);
     renderTimeline([
@@ -206,10 +212,9 @@ describe('AssistantArtifact cards in the timeline', () => {
     ]);
 
     const rendered = screen.getAllByTestId('assistant-artifact-card');
-    expect(rendered.map((node) => node.getAttribute('data-producer'))).toEqual([
-      'agy_generate_image',
-      'send_voice_msg',
-      'send_voice_msg',
+    expect(rendered.map((node) => node.textContent)).toEqual([
+      '生成了图片海边的灯塔',
+      '生成了图片画面描述暂不可用',
     ]);
     expect(within(rendered[0]).getByText('海边的灯塔')).toBeTruthy();
     expect(screen.queryByText('（空消息）')).toBeNull();

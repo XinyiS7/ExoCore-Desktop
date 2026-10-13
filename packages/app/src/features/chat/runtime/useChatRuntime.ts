@@ -916,6 +916,18 @@ export function useChatRuntime({
               status: errPayload?.status ?? null,
               raw: errPayload?.raw,
             });
+          } else if (isDeterministicError) {
+            // The composer is not restored (the user row is persisted, or this
+            // was an edit/regenerate), so the banner is the only place the
+            // reason stays visible after releaseUi drops the overlay.
+            const errPayload = errorPayload ?? lastTerminalErrorRef.current;
+            setTransientError({
+              code: errPayload?.code || 'GENERATION_ERROR',
+              message: errPayload?.message || '后台生成遇到错误。',
+              retryClass: 'safe',
+              status: errPayload?.status ?? null,
+              raw: errPayload?.raw,
+            });
           }
         }
         return;

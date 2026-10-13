@@ -377,8 +377,8 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
 
 - **字段**
   - `ref`：opaque 主键引用。
-  - `producer`：registry 登记名，当前只有 `send_voice_msg` 和 `agy_generate_image`。
-  - `kind`：`audio | image | file`。
+  - `producer`：产生用户卡的 registry 登记名，当前只有 `agy_generate_image`。`send_voice_msg` 仍在 registry 登记，但不产生用户卡（#51），历史语音的 Artifact 行也不再投影到本数组。
+  - `kind`：`image | file`。Desktop 规范化时丢弃 `audio` 项。
   - `position`：同一 assistant 消息、同一 producer 内的产物序号，从 0 起。
   - `human`：`{ title, detail | null }`，由后端从唯一 descriptor 渲染，前端不自行拼装。
   - `collectible`：由 registry 决定，本期恒为 `false`，没有收藏按钮。
@@ -386,9 +386,9 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
 - **排序**：后端按 `(position, producer, id)` 输出。
 - **前端规范化**：Desktop fail-closed，逐项校验，畸形项丢弃，按 key 去重。
 - **不暴露的内容**：不复制 URL 或文件元数据，媒体仍只由 `attachments[]` 渲染一次。不含 raw args、路径、descriptor 原文、prompt、错误详情或内部模型配置。
-- **盲盒 voice**（`send_voice_msg`，kind `audio`）
-  - `human = { "title": "发送了语音", "detail": null }`，用户卡刻意不展示 `spoken_content`。
-  - transcript 仍由播放器在自然播放结束后通过既有 `.../message-attachments/<id>/transcript/` 拉取，Artifact 卡不提前请求。
+- **语音**（`send_voice_msg`）：不产生用户卡（#51 删除了原“发送了语音”盲盒卡）。
+  - 音频仍只由 `attachments[]` 的 ready `source="voice_msg"` 行渲染为播放器；transcript 仍在自然播放结束后按需拉取。
+  - 内部 Artifact 行、音频附件与模型历史（见下方“模型历史契约”）不变。
   - failed 合成不建立 Artifact，继续由 `voice_tool_errors[]` 投影失败。
 - **AGY 生成图**（`agy_generate_image`，kind `image`，附件 `source="agy_image"`）
   - 图片与 `pending` Artifact 在 assistant finalize 的同一事务内落地。

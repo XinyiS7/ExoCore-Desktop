@@ -8,7 +8,8 @@ function isPositiveInt(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value > 0;
 }
 
-const VALID_KINDS = new Set<MessageAttachmentKind>(['audio', 'image', 'file']);
+// Audio artifacts have no user card (#51 E5); the audio player is their only surface.
+const VALID_KINDS = new Set<MessageAttachmentKind>(['image', 'file']);
 const PRODUCER_PATTERN = /^[a-z][a-z0-9_]{0,63}$/;
 const TEXT_LIMIT = 2000;
 

@@ -245,7 +245,7 @@ function MessageRowItem({
           />
         ) : null}
         {hasArtifacts ? (
-          <AssistantArtifactCards artifacts={assistantArtifacts} attachments={attachments} />
+          <AssistantArtifactCards artifacts={assistantArtifacts} />
         ) : null}
         {hasVoiceToolErrors ? <VoiceToolErrors errors={voiceToolErrors} /> : null}
         {isAssistant && hasContentText ? (
