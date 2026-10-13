@@ -377,10 +377,10 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
 
 - **字段**
   - `ref`：opaque 主键引用。
-  - `producer`：产生用户卡的 registry 登记名，当前只有 `agy_generate_image`。`send_voice_msg` 仍在 registry 登记，但不产生用户卡（#51），历史语音的 Artifact 行也不再投影到本数组。
-  - `kind`：`image | file`。Desktop 规范化时丢弃 `audio` 项。
+  - `producer`：产生用户卡的 registry 登记名：`agy_generate_image`、`collection_bring_back`、`collection_heartbeat_bring_back`（#54）。`send_voice_msg` 仍在 registry 登记，但不产生用户卡（#51），历史语音的 Artifact 行也不再投影到本数组。
+  - `kind`：`agy_generate_image` 为 `image`；两个藏品 producer 为 `text | image | audio | file`。Desktop 按 producer 校验 kind：非藏品 producer 只收 `image | file`（`audio` 项丢弃），未知 kind 一律丢弃。
   - `position`：同一 assistant 消息、同一 producer 内的产物序号，从 0 起。
-  - `human`：`{ title, detail | null }`，由后端从唯一 descriptor 渲染，前端不自行拼装。
+  - `human`：`{ title, detail | null }`，由后端从唯一 descriptor 渲染，前端不自行拼装。非藏品 producer 的 `title`/`detail` ≤ 2000 字符（超限项丢弃）；藏品 producer 的 `detail` 是藏品原文与元数据，**不设长度上限、不截断**（`title` 仍 ≤ 2000）。
   - `collectible`：由 registry 决定，本期恒为 `false`，没有收藏按钮。
   - `presentation_attachment`：指向同一消息 `attachments[]` 中的 ready 媒体行，可为 `null`。
 - **排序**：后端按 `(position, producer, id)` 输出。
@@ -396,9 +396,17 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
   - `ready` 时 `detail` 是不超过 500 字的视觉描述。`pending` 与 `failed` 的 `detail` 都固定为 `"画面描述暂不可用"`，两者对外不可区分，也不暴露失败码。
   - 描述状态不单独出接口；Desktop 不轮询、不等待，下次正常刷新消息列表时自然更新。
   - 进程中断留下的 `pending` 永久保持，不做重试或恢复。
+- **藏品带回**（`use_collection_item(action="bring_back")`，#54）
+  - `collection_bring_back`：live Direct / AGY 轮次，卡片随该轮 completed assistant 回复落地；failed/STOP 不落卡。
+  - `collection_heartbeat_bring_back`：心跳每次带回当场投递一条**正文为空**的 Prime assistant 消息（`platform="PushService"`），只有卡片和附件——artifact-only 消息，前端不得显示“空消息”。
+  - `title` 恒为 `从藏品馆带回 · <文本|图片|音频|文档> #<item_id>`，按藏品真实 kind（descriptor `item_kind`），与附件实际 kind 无关；`detail` 是来源、原时间、标题、描述、收藏理由与（文本藏品）全文。
+  - 分工：`text` 无附件（`presentation_attachment=null`），全文只在 `detail`；image/audio 原件复制为同消息 `attachments[]` 中 `source="collection_item"` 的 ready 行，由 `attachments[]` 渲染一次；超出附件媒体白名单的图片/音频（如 HEIC、M4A）降级为 `kind="file"` 附件，字节不变，经 content 端点以 `attachment` 下载；document 恒为 `file`。
+  - `source="collection_item"` 的音频不是语音：不走 transcript，也不出现在 `voice_tool_errors[]`。
+  - 卡片无收藏按钮（`collectible=false`）；Desktop 对两个藏品 producer 使用同一克制的藏品标记。
 - **模型历史契约**（后端内部，不改 API shape）
   - API 自管历史（Direct Gemini/DeepSeek 等，含消费 AGY 历史的会话）：在产物之前最近的 user 消息下附加 `<assistant_artifact>` 第二名单。voice 携带原始 spoken content；image 携带描述或“画面描述暂不可用”，按装配时的当前状态读取。有 Artifact 的 voice 不再重复输出 legacy `<voice_message>`。
   - Runtime（AGY）bootstrap/rebase/continuity delta：不输出 Artifact 第二名单；`<voice_message>` 新旧语音照常投影。Runtime wire、manifest、`RuntimePresentation` schema 与 prefix digest 都不变。
+  - `collection_bring_back` 属 user 锚第二名单（同 voice/image 规则）。`collection_heartbeat_bring_back` 例外：anchor 为空，continuity 投影在它自己的 assistant 消息上（`<voice_message>` 之后），API 自管历史（raw/hot 或 cache buffer，二者之一）与 Runtime 新 session bootstrap/rebase 的长首条历史都恰好出现一次；continuity delta 不接；canonical `Message.content` 不写。
 
 ### 1.6 Conversation Cache — 上下文缓存
 
@@ -972,6 +980,7 @@ type AssistantMessageArrivedV1 = {
 
 - `dedupe_key` 恒为 `assistant-message:<message_id>`，与 DB OneToOne 一致。前端以 `event_id` 推进 cursor、以 `dedupe_key` 去重（例如同一 arrival 已由 Push 处理）。
 - **`preview` 只从 canonical `Message.content` 派生**：内容过滤后折叠空白，最多 **160** 个 Unicode code point；`truncated` 表示过滤后文本超限。不读取 reasoning、`tool_calls`、私有语音指令或附件正文。锁屏沿用该 bounded preview。
+- **card-only arrival（#54）**：正文为空、无 ready voice、但有 registry user card 的 assistant 消息（心跳藏品带回，或只带回卡片的 Direct/AGY 回复）同样 eligible；`preview.text` 为第一张卡片的 `human.title`（如 `从藏品馆带回 · 图片 #12`），policy 仍为 `bounded_text`。未登记 producer 或无 user card 的产物不使消息 eligible。心跳带回走 `send_message` 同一 Prime 投递路径（`source=send_message`，`ignore.allowed=true`）。
 - **voice-only arrival（CP-C）**：正文为空且本回合至少一个 ready voice attachment 时，`preview.policy` 仍为 `bounded_text`，`preview.text` 由服务端固定生成 `<agent display name> 给你发来了一条语音消息`；不新增 preview policy、不读取 transcript、不从 content 构造 preview。text + voice 仍走正文 preview。点击沿既有 conversation/message target 清除提醒，不记录也不推断用户是否播放。
 - `title_hint`：`send_message` 的 title 过滤后 <=200 字符；为 `null` 时前端以 `agent.name` 作标题。
 - `ignore`：typed、封闭的显式忽略许可指示，恒存在。仅 `source=send_message` 的 arrival 为 `{"allowed": true}`；ordinary Chat 恒为 `{"allowed": false}`。前端必须以该字段决定是否提供「忽略」affordance，禁止从 title/agent/`register_ack` 推断。该字段不随是否已忽略而变化（重复忽略幂等）。
