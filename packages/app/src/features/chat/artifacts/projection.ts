@@ -1,4 +1,4 @@
-import type { AssistantArtifactView, MessageAttachmentKind } from '../types';
+import type { AssistantArtifactKind, AssistantArtifactView } from '../types';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -9,7 +9,17 @@ function isPositiveInt(value: unknown): value is number {
 }
 
 // Audio artifacts have no user card (#51 E5); the audio player is their only surface.
-const VALID_KINDS = new Set<MessageAttachmentKind>(['image', 'file']);
+const VALID_KINDS = new Set<AssistantArtifactKind>(['image', 'file']);
+/**
+ * Collection bring-back cards (#54): all four item kinds, and the detail is the
+ * verbatim item text/metadata, so it is not capped. Media still render once
+ * through `MessageAttachments`; a fallback `file` keeps the item-kind title.
+ */
+export const COLLECTION_PRODUCERS: ReadonlySet<string> = new Set([
+  'collection_bring_back',
+  'collection_heartbeat_bring_back',
+]);
+const COLLECTION_KINDS = new Set<AssistantArtifactKind>(['text', 'image', 'audio', 'file']);
 const PRODUCER_PATTERN = /^[a-z][a-z0-9_]{0,63}$/;
 const TEXT_LIMIT = 2000;
 
@@ -26,7 +36,9 @@ function parseArtifactItem(candidate: unknown): AssistantArtifactView | null {
 
   const { producer, kind, position, collectible, human } = candidate;
   if (typeof producer !== 'string' || !PRODUCER_PATTERN.test(producer)) return null;
-  if (typeof kind !== 'string' || !VALID_KINDS.has(kind as MessageAttachmentKind)) return null;
+  const isCollection = COLLECTION_PRODUCERS.has(producer);
+  const kinds = isCollection ? COLLECTION_KINDS : VALID_KINDS;
+  if (typeof kind !== 'string' || !kinds.has(kind as AssistantArtifactKind)) return null;
   if (typeof position !== 'number' || !Number.isInteger(position) || position < 0) return null;
   if (typeof collectible !== 'boolean') return null;
 
@@ -35,7 +47,12 @@ function parseArtifactItem(candidate: unknown): AssistantArtifactView | null {
   if (typeof title !== 'string' || title.trim().length === 0 || title.length > TEXT_LIMIT) {
     return null;
   }
-  if (detail !== null && (typeof detail !== 'string' || detail.length > TEXT_LIMIT)) return null;
+  if (
+    detail !== null &&
+    (typeof detail !== 'string' || (!isCollection && detail.length > TEXT_LIMIT))
+  ) {
+    return null;
+  }
 
   let presentationAttachmentKey: string | null = null;
   if (candidate.presentation_attachment !== null) {
@@ -48,7 +65,7 @@ function parseArtifactItem(candidate: unknown): AssistantArtifactView | null {
     key: `assistant_artifact:${id}`,
     id,
     producer,
-    kind: kind as MessageAttachmentKind,
+    kind: kind as AssistantArtifactKind,
     position,
     title,
     detail: detail && detail.trim().length > 0 ? detail : null,

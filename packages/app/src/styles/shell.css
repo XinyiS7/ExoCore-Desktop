@@ -1456,6 +1456,10 @@
 }
 
 /* Metadata-only file card (never links, never shows storage_path). */
+a.app-att-filecard {
+  text-decoration: none;
+}
+
 .app-att-filecard {
   display: inline-flex;
   align-items: center;
@@ -1507,6 +1511,11 @@
   background: var(--v4-panel);
   font-size: calc(12px * var(--exo-font-scale, 1));
   color: var(--v4-text-dim);
+}
+
+/* Collection bring-back (#54): one quiet accent edge, no extra controls. */
+.app-artifact-card--collection {
+  border-left: 2px solid var(--v4-accent);
 }
 
 .app-artifact-card-title {

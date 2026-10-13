@@ -40,6 +40,11 @@ export function validatedImageContentUrl(value: string | null | undefined): stri
   return sameOriginHttpUrl(value);
 }
 
+/** Same-origin download endpoint for a ready file attachment. */
+export function validatedFileContentUrl(value: string | null | undefined): string | null {
+  return sameOriginHttpUrl(value);
+}
+
 /**
  * Canonical image file_uri may be same-origin or an HTTPS provider URL, but
  * local-file, script, data and other unsupported schemes render a safe

@@ -260,6 +260,9 @@ export interface MessageView {
   createdAt: string;
 }
 
+/** Artifact kinds: attachment kinds plus media-less `text` (collection bring-back). */
+export type AssistantArtifactKind = MessageAttachmentKind | 'text';
+
 /**
  * Producer-neutral info card for one assistant-produced presentation. Media
  * stay in `attachments`; the card links to its media row by attachment key.
@@ -269,7 +272,7 @@ export interface AssistantArtifactView {
   key: string;
   id: number;
   producer: string;
-  kind: MessageAttachmentKind;
+  kind: AssistantArtifactKind;
   position: number;
   title: string;
   detail: string | null;
