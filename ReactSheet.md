@@ -177,7 +177,7 @@ type AssistantRunTraceProjection =
 - 非 assistant 行：`assistant_run_trace` 恒为 `null`（统一行为）。
 - assistant 行无存储投影（旧行 / wezterm bridge / 非 chat 执行等未记录 trace 的路径）→ `legacy_unavailable`（不根据 `reasoning_content` + `tool_calls` 推断交错）。
 - 新 trace-capable run 即使空（无 thinking/工具）也返回 `available` 且 `items: []`。
-- managed-runtime 仅在 `completed` 时随 canonical assistant Message 持久化该投影；`stopped` / `failed` 不创建仅供轨迹使用的 assistant Message，也不新增后端持久化字段。stopped 的已发生轨迹只在 Desktop 当前页面作为非 canonical trace-only 投影保留，刷新或重新进入会话后不由 backend/localStorage 重建；无 trace 时不保留空行。
+- managed-runtime 仅在 `completed` 时随 canonical assistant Message 持久化该投影；`stopped` / `failed` 不创建或持久化 assistant Message，也不新增后端持久化字段。Desktop 只在当前页面保留 stopped 的已发生轨迹作为 noncanonical trace-only 投影，并清除 partial content/thinking；刷新或重新进入会话后该投影丢失，不由 backend/localStorage 重建，无 trace 时不保留空行。此行为不改变 API shape。
 - 投影上限：200 items；序列化 JSON ≤ 64 KiB（按含 `"truncated": true` 指示位的**最终负载**计量，指示位本身计入预算）；超限截尾并附加安全指示符 `"truncated": true`（frozen §3.5 要求的显式截断指示，为 DTO 的唯一 additive 可选字段；前端需归一化）。
 - 读取兼容：合法 Recorder 输出经 MessageSerializer 原样回传（round-trip 不变，不解析/不重写/不重新授权历史工具）；仅做根级 fail-closed 兼容检查——非 dict / `version != 1` / `availability` 不符 / `items` 非 list 的存储值回落 `legacy_unavailable`。
 - `reasoning_content` 与 `tool_calls` 字段语义不变。
@@ -435,9 +435,9 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
 **PATCH /api/memory/knowledge/<pk>/** — 仅 `abstract`(string) 与/或 `keywords`(string[])
 
 - 返回 `{"msg": string, "updated": string[]}`；`updated` 列出实际落库字段
-- **abstract 会先 `strip()`**：与存储值 strip 后相同 → 不入库、`updated` 不含 abstract、**不启动后台线程**；仅当 strip 后仍有差异才写入并**异步触发重向量化**（后台线程调用 embedding provider）
+- **abstract 会先 `strip()`**：strip 后与当前存储值相同 → 不入库、`updated` 不含 abstract、**不启动后台线程**；仅当 strip 后仍有差异才写入并**异步触发重向量化**（后台线程调用 embedding provider）
 - 前端只能呈现「已保存 + 后台索引刷新已启动」当 `updated` 实际含 abstract 时；不得声称重向量化已完成
-- keywords 非数组 → 400 `{"error": "keywords 必须是数组"}`；不存在 → 404 `{"error": ...}
+- keywords 非数组 → 400 `{"error": "keywords 必须是数组"}`；不存在 → 404 `{"error": ...}`
 
 ### 2.2 Memory Plasmids — 记忆质粒
 
@@ -681,8 +681,8 @@ key_value write-only，响应不返回。last_four 自动提取。
 
 预览只统计直接关联 Conversation 与上传的 `ProjectFile`，不枚举全部 Knowledge 或文件系统状况；`files[].id` 均为正整数上传文件 ID。
 
-**DELETE /api/core/projects/<pk>/** — body 必须显式发送 `{ "keep_file_ids": [11] }`，不恢复文件时发送空数组。
-- `DELETE` 在项目仍拥有当前 Prime 会话时拒绝：`409` `{"error": "Project owns the current Prime conversation; transfer Prime to another conversation before deleting the project.", "code": "prime_conversation_transfer_required"}`；拒绝发生在任何文件移动或所有权变更之前，用户必须先将 Prime 转移至其他会话，项目、Conversation 归属与 Prime 状态均保持不变。
+**DELETE /api/core/projects/<pk>/** — body `{ "keep_file_ids": [11] }`（要恢复的上传文件 ID；后端省略时按 `[]` 处理，Desktop 始终显式发送）；非整数数组或含非本项目文件 ID → `invalid_keep_file_ids`。
+- `DELETE` 在项目仍拥有当前 Prime 会话时拒绝：`409` `{"error": "Project owns the current Prime conversation; transfer Prime to another conversation before deleting the project.", "code": "prime_conversation_transfer_required"}`；拒绝发生在任何文件移动或所有权变更之前，用户必须先将 Prime 转移至其他会话，项目、Conversation 归属与 Prime 状态均保持不变。同一保护也作用于 admin 删除与 ORM 删除（含 queryset，`pre_delete` 守卫）。
 - 成功 204（无 JSON body）：所有 `ProjectFile` 数据行删除，选中的物理文件移入后端 `SavedFiles` 作为脱离项目的恢复文件（名称可能调整），直接 Conversation 归档到 `Archived Project` 并改由 `Archived Chat` 持有，仍存活的 Knowledge 归档到 `Archived Project`。
 - 失败返回 `{error, code}`；`file_rollback_failed` 表示文件回滚不完整，不能声称文件系统未改变。
 
@@ -690,7 +690,7 @@ key_value write-only，响应不返回。last_four 自动提取。
 
 **GET /api/core/projects/<project_pk>/files/** — 裸数组，混排两类行：
 
-- Web 上传：`{id: int, name, file_type, size, file, url, preview_url, source: "web_upload", created_at}`
+- Web 上传：`{id: int, name, file_type, type, size, file, url, preview_url, source: "web_upload", created_at}`
 - Obsidian 同步：`{id: "kf_<int>", name: "<title>.md", file_type: "text/markdown", size: 0, file: null, source: "obsidian_sync", created_at}`（无 url/preview_url）
 
 > id 仅两种已验证形态：正整数 或 `kf_<正整数>`；未知/ID 不一致的 `source` 只是展示元数据，不允许因此拒绝整行
@@ -1582,14 +1582,14 @@ shared server 冻结，不代表 Moonlight 已接入。
 - 不可用：`503 {"status": "unavailable", "code": "runtime_unavailable" | "engine_unavailable" | "unauthorized", "message": "..."}`（白名单公网安全文案）
 - 失败状态：`500 {"status": "failed_retryable", "code": "generation_failed" | "synthesis_failed", "message": "..."}`（消息使用白名单公网安全文案，绝不泄露内部私有指令或异常堆栈）
 
-### 12.3 音频流式分发
+### 12.3 音频流式分发（含单段 Range）
 
 **GET /api/agents/conversations/<pk>/messages/<message_pk>/tts/content/**
 
-流式返回本地渲染就绪的音频文件（同源、受会话约束），支持单段字节 Range。
+流式返回本地渲染就绪的音频文件（同源、受会话约束），支持单段字节 Range（RFC 9110），使 `<audio>` 可原生 seek。会话隔离 / 工件有效性 404 门禁先于 Range 判定，携带 `Range` 也不会越过门禁进入 206/416 分支。该能力对前端透明，无需新增错误映射。
 
 - 无 `Range`、非法写法（非 `bytes` 单位、空 spec、非数字段）与多段 range：整段 `200`（`FileResponse`），响应头含 `Accept-Ranges: bytes`；
-- 语法有效且可满足的单段 range（`bytes=start-end` / `bytes=start-` / `bytes=-suffix`）：`206`，精确 `Content-Range: bytes <start>-<end>/<size>` 与 `Content-Length`，仅流式读取该段字节；`end` 超出资源长度按 `size-1` 收敛，`last < first` 视为非法写法按整段 `200` 处理；
+- 语法有效且可满足的单段 range（`bytes=start-end` / `bytes=start-` / `bytes=-suffix`）：`206`，精确 `Content-Range: bytes <start>-<end>/<size>` 与 `Content-Length`，仅流式读取该段字节；`end` 超出资源长度按 `size-1` 收敛，`bytes=-suffix` 的 suffix ≥ 资源长度时返回覆盖整段的 `206`，`last < first` 视为非法写法按整段 `200` 处理；
 - 语法有效但不可满足（`start >= size`、suffix 长度为 0、资源为空）：`416` + `Content-Range: bytes */<size>`，响应体为有界 JSON 错误（`error: range_not_satisfiable`）；该分支不打开分发流、不回传任何音频字节（此前的有效性门禁可能已校验工件元信息，但不进入字节分发）；
 - `Accept-Ranges: bytes` 与 `Cache-Control: private, no-cache, max-age=0` 适用于全部媒体响应（`200` / `206` / `416`）；其中 `Cache-Control` 的目的仍是非版本化稳定 URL 杜绝长缓存，确保消息编辑或重新生成后客户端立即获得最新音频；
 - `Content-Disposition: inline; filename="msg_<id>.wav"` 仅适用于 `200` 与 `206`（`416` 不带该头）；
