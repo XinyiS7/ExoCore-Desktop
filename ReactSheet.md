@@ -380,7 +380,7 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
   - `producer`：产生用户卡的 registry 登记名：`agy_generate_image`、`collection_bring_back`、`collection_heartbeat_bring_back`（#54）。`send_voice_msg` 仍在 registry 登记，但不产生用户卡（#51），历史语音的 Artifact 行也不再投影到本数组。
   - `kind`：`agy_generate_image` 为 `image`；两个藏品 producer 为 `text | image | audio | file`。Desktop 按 producer 校验 kind：非藏品 producer 只收 `image | file`（`audio` 项丢弃），未知 kind 一律丢弃。
   - `position`：同一 assistant 消息、同一 producer 内的产物序号，从 0 起。
-  - `human`：`{ title, detail | null }`，由后端从唯一 descriptor 渲染，前端不自行拼装。非藏品 producer 的 `title`/`detail` ≤ 2000 字符（超限项丢弃）；藏品 producer 的 `detail` 是藏品原文与元数据，**不设长度上限、不截断**（`title` 仍 ≤ 2000）。
+  - `human`：`{ title, detail | null }`，由后端从唯一 descriptor 渲染，前端不自行拼装。非藏品 producer 的 `title`/`detail` ≤ 2000 字符（超限项丢弃）；藏品 producer 的 `detail` 仅为非空的 `收藏理由：…`，**不设长度上限、不截断**，理由为空则为 `null`（`title` 仍 ≤ 2000）。
   - `collectible`：由 registry 决定，本期恒为 `false`，没有收藏按钮。
   - `presentation_attachment`：指向同一消息 `attachments[]` 中的 ready 媒体行，可为 `null`。
 - **排序**：后端按 `(position, producer, id)` 输出。
@@ -399,8 +399,8 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
 - **藏品带回**（`use_collection_item(action="bring_back")`，#54）
   - `collection_bring_back`：live Direct / AGY 轮次，卡片随该轮 completed assistant 回复落地；failed/STOP 不落卡。
   - `collection_heartbeat_bring_back`：心跳每次带回当场投递一条**正文为空**的 Prime assistant 消息（`platform="PushService"`），只有卡片和附件——artifact-only 消息，前端不得显示“空消息”。
-  - `title` 恒为 `从藏品馆带回 · <文本|图片|音频|文档> #<item_id>`，按藏品真实 kind（descriptor `item_kind`），与附件实际 kind 无关；`detail` 是来源、原时间、标题、描述、收藏理由与（文本藏品）全文。
-  - 分工：`text` 无附件（`presentation_attachment=null`），全文只在 `detail`；image/audio 原件复制为同消息 `attachments[]` 中 `source="collection_item"` 的 ready 行，由 `attachments[]` 渲染一次；超出附件媒体白名单的图片/音频（如 HEIC、M4A）降级为 `kind="file"` 附件，字节不变，经 content 端点以 `attachment` 下载；document 恒为 `file`。
+  - `title` 恒为 `从藏品馆带回 · <文本|图片|音频|文档> #<item_id>`，按藏品真实 kind（descriptor `item_kind`），与附件实际 kind 无关；面向人的 `detail` 仅显示非空的 `收藏理由：…`，不显示来源、原时间、藏品标题、客观描述或文本全文。完整信息仍保留在 descriptor、工具结果与模型 continuity。
+  - 分工：`text` 无附件（`presentation_attachment=null`），全文保留在 descriptor 与模型 continuity；image/audio 原件复制为同消息 `attachments[]` 中 `source="collection_item"` 的 ready 行，由 `attachments[]` 渲染一次；超出附件媒体白名单的图片/音频（如 HEIC、M4A）降级为 `kind="file"` 附件，字节不变，经 content 端点以 `attachment` 下载；document 恒为 `file`。
   - `source="collection_item"` 的音频不是语音：不走 transcript，也不出现在 `voice_tool_errors[]`。
   - 卡片无收藏按钮（`collectible=false`）；Desktop 对两个藏品 producer 使用同一克制的藏品标记。
 - **模型历史契约**（后端内部，不改 API shape）
