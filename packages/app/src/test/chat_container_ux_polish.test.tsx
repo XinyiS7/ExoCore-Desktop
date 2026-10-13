@@ -103,16 +103,12 @@ describe('V4 Chat Container UX Polish', () => {
           error={null}
           protocolWarning={null}
           hasPendingReconcile={false}
-          draftCleanupFailed={false}
           onApplyPendingReconcile={vi.fn()}
           onRetrySync={vi.fn()}
           onRetryStop={vi.fn()}
-          onRetryReread={vi.fn()}
-          onRetryStorage={vi.fn()}
           onResumePolling={vi.fn()}
           onAcknowledgeUncertain={vi.fn()}
           onDismissTransient={vi.fn()}
-          onRetryDraftCleanup={vi.fn()}
         />,
       );
 
@@ -126,16 +122,12 @@ describe('V4 Chat Container UX Polish', () => {
           error={null}
           protocolWarning={null}
           hasPendingReconcile={true}
-          draftCleanupFailed={false}
           onApplyPendingReconcile={vi.fn()}
           onRetrySync={vi.fn()}
           onRetryStop={vi.fn()}
-          onRetryReread={vi.fn()}
-          onRetryStorage={vi.fn()}
           onResumePolling={vi.fn()}
           onAcknowledgeUncertain={vi.fn()}
           onDismissTransient={vi.fn()}
-          onRetryDraftCleanup={vi.fn()}
         />,
       );
 

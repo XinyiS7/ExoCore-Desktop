@@ -5,9 +5,8 @@
  * - Captures immutable {id, name} at open time. Cancel sends NO DELETE.
  * - Copy is explicitly irreversible deletion and distinguishes it from
  *   project-level archival (archive keeps the row in Archived Project).
- * - Busy gate: local lease dispositions pending/active/uncertain OR any
- *   in-flight stop blocks with explanation + recovery/open path. Lease
- *   absence is NOT idle proof — the backend 409 is authoritative.
+ * - No local busy gate: the backend 409 (conversation_busy /
+ *   prime_transfer_required) is the only authority and is shown verbatim.
  * - At most ONE DELETE per pending confirmation; no automatic mutation
  *   retry. HTTP failures remain visible.
  * - uncertain outcome → read-back (canonical list refetch via onReadBack,
@@ -23,7 +22,7 @@
  * - a11y: focus enters, stays contained (incl. pending), safe Escape,
  *   restore to surviving trigger or sensible fallback.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
@@ -33,7 +32,6 @@ import { useDialogA11y } from './dialogA11y';
 import type { ConversationDeleteAttempt } from './chatDelete';
 import {
   DeleteDisplayState,
-  deleteBusyReason,
   deriveDeleteDisplay,
   retireConversationCaches,
 } from './chatDeleteUi';
@@ -78,12 +76,6 @@ export function ConversationDeleteConfirmDialog({
   /** Submit-origin identity (F01 rule): settlement binds to THIS id, never route state. */
   const submittedIdRef = useRef<number | null>(null);
   const settledRef = useRef(false);
-
-  // Busy gate evaluated at open + while open (lease changes visible).
-  const busyReason = useMemo(
-    () => (open ? deleteBusyReason(conversationId) : null),
-    [open, conversationId],
-  );
 
   // Re-open resets the local session state (origin visit).
   useEffect(() => {
@@ -202,10 +194,6 @@ export function ConversationDeleteConfirmDialog({
 
   const confirmDelete = useCallback(() => {
     if (locked || settledRef.current) return;
-    if (busyReason !== null) {
-      setDisplay({ verdict: 'busy', message: busyReason });
-      return;
-    }
     setPending(true);
     submittedIdRef.current = conversationId;
     setDisplay({ verdict: 'confirming', message: '' });
@@ -232,20 +220,18 @@ export function ConversationDeleteConfirmDialog({
             });
           });
       });
-  }, [locked, busyReason, conversationId, performDelete, settle, readBack]);
+  }, [locked, conversationId, performDelete, settle, readBack]);
 
   if (!open) return null;
 
   const nameText =
     conversationName.trim() !== '' ? conversationName : `会话 #${conversationId}`;
-  const busy = busyReason !== null;
   // confirmed/absent/protected/busy/safety_failed are terminal for THIS
   // session: no retry inside the dialog (cancel + reopen starts a new
   // origin visit). ambiguous re-arms and stays clickable.
   const canDelete =
     !pending &&
     !readBackPending &&
-    !busy &&
     (display.verdict === 'idle' ||
       display.verdict === 'confirming' ||
       display.verdict === 'ambiguous');
@@ -286,17 +272,10 @@ export function ConversationDeleteConfirmDialog({
             删除会移除该会话及其消息，且<b>不会</b>移入归档（区别于项目归档操作）。
           </p>
 
-          {busy ? (
-            <div className="app-banner app-banner--warn" role="alert">
-              {busyReason}
-            </div>
-          ) : null}
-
-          {(display.verdict === 'ambiguous' ||
-            display.verdict === 'protected' ||
-            display.verdict === 'busy' ||
-            display.verdict === 'prime_transfer_required') &&
-          !busy ? (
+          {display.verdict === 'ambiguous' ||
+          display.verdict === 'protected' ||
+          display.verdict === 'busy' ||
+          display.verdict === 'prime_transfer_required' ? (
             <div className="app-banner app-banner--warn" role="alert">
               {display.message}
             </div>
@@ -336,11 +315,7 @@ export function ConversationDeleteConfirmDialog({
             disabled={!canDelete}
           >
             <Trash2 size={14} aria-hidden="true" />
-            {pending
-              ? '删除中…'
-              : busy
-                ? '无法删除（请先处理运行中状态）'
-                : '确认删除'}
+            {pending ? '删除中…' : '确认删除'}
           </button>
         )}
       </div>

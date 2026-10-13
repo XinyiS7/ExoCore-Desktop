@@ -17,15 +17,7 @@ function RecentProbe() {
   const q = useConversationsQuery();
   return <span data-testid="recent-count">{q.data ? q.data.length : 'none'}</span>;
 }
-import * as storageModule from '../features/chat/runtime/storage';
-import { loadConversationDraft, readRuntimeLease, saveConversationDraft } from '../features/chat/runtime/storage';
-import type { V4RuntimeLease } from '../features/chat/runtime/types';
-
-/** R4 durable-lease reader via the read-outcome vocabulary. */
-function loadLease(conversationId: number): V4RuntimeLease | null {
-  const outcome = readRuntimeLease(conversationId);
-  return outcome.state === 'valid' ? outcome.lease : null;
-}
+import { loadConversationDraft, readRuntimeMarker, saveConversationDraft } from '../features/chat/runtime/storage';
 
 const PRESET_ECKI = {
   id: 5,
@@ -94,13 +86,12 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-describe('C1B-R1 repair invariants — storage-first write safety (R1-01)', () => {
-  it('blocks dispatch when the runtime lease cannot be persisted — zero POST, visible error, draft kept', async () => {
+describe('C1B-R1 repair invariants — write safety (R1-01)', () => {
+  it('a storage write failure never blocks dispatch', async () => {
     let postCount = 0;
-    const saveSpy = vi.spyOn(storageModule, 'persistRuntimeLease').mockReturnValue({
-      state: 'mutation_unavailable',
-      reason: 'blocked-by-test',
-      verifiedExpectedPrior: null,
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
     });
 
     installFetch([
@@ -121,14 +112,10 @@ describe('C1B-R1 repair invariants — storage-first write safety (R1-01)', () =
     fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
 
     await waitFor(() => {
-      expect(screen.getByText(/浏览器存储不可用/)).toBeTruthy();
+      expect(postCount).toBe(1);
     });
-    expect(postCount).toBe(0);
-    // Draft survives — no pre-dispatch destructive clearing.
-    expect(loadConversationDraft(50)).toBe('存储被锁也要发');
-    // No runtime lease could have been written.
-    expect(loadLease(50)).toBeNull();
-    saveSpy.mockRestore();
+    expect(screen.queryByText(/浏览器存储不可用/)).toBeNull();
+    setItemSpy.mockRestore();
   });
 
   it('malformed async 2xx keeps uncertainty marker + disabled send; ack unlocks without duplicate POST', async () => {
@@ -161,7 +148,7 @@ describe('C1B-R1 repair invariants — storage-first write safety (R1-01)', () =
     await waitFor(() => {
       expect(screen.getByText(/未返回有效的恢复凭据/)).toBeTruthy();
     });
-    expect(loadLease(51)?.disposition).toBe('uncertain');
+    expect(readRuntimeMarker(51)).not.toBeNull();
     expect(screen.getByRole('button', { name: /发送消息/ })).toBeDisabled();
 
     // Second Enter must NOT create a second POST.
@@ -172,7 +159,7 @@ describe('C1B-R1 repair invariants — storage-first write safety (R1-01)', () =
     // Explicit ack unlocks.
     fireEvent.click(screen.getByRole('button', { name: '关闭提示' }));
     await waitFor(() => {
-      expect(loadLease(51)).toBeNull();
+      expect(readRuntimeMarker(51)).toBeNull();
       expect(screen.getByRole('button', { name: /发送消息/ })).not.toBeDisabled();
     });
   });
@@ -257,8 +244,9 @@ describe('C1B-R1 repair invariants — lifecycle (R1-02)', () => {
       expect(capturedSignal?.aborted).toBe(true);
     });
     expect(stopCalled).toBe(0);
-    // In-flight SSE outcome at unmount becomes uncertain for re-entry.
-    expect(loadLease(60)?.disposition).toBe('uncertain');
+    // The unsettled SSE run keeps its tokenless marker: re-entry asks for ack.
+    expect(readRuntimeMarker(60)).toMatchObject({ transport: 'sse' });
+    expect(readRuntimeMarker(60)?.asyncToken).toBeUndefined();
   });
 
   it('not_found first reconciles canonical history, stays visible until ack', async () => {
@@ -316,7 +304,7 @@ describe('C1B-R1 repair invariants — lifecycle (R1-02)', () => {
     fireEvent.click(ackButton);
     await waitFor(() => {
       expect(screen.queryByText(/操作结果不确定/)).toBeNull();
-      expect(loadLease(61)).toBeNull();
+      expect(readRuntimeMarker(61)).toBeNull();
     });
     second.unmount();
   });
@@ -428,7 +416,7 @@ describe('C1B-R1 repair invariants — lifecycle (R1-02)', () => {
 
     await waitFor(() => expect(cursorRequests.length).toBeGreaterThan(0));
     // Let the first successful poll land (cursor 0 → cursor 1), then fail the next.
-    await waitFor(() => expect(loadLease(63)?.cursor).toBe(1));
+    await screen.findByText('第一段');
     failNext = true;
     await waitFor(() => {
       expect(screen.getByText(/网络连接异常/)).toBeTruthy();
@@ -715,62 +703,7 @@ describe('C1B-R1 repair invariants — protocol boundary (R1-04)', () => {
   });
 });
 
-describe('C1B-R2 residual invariants — storage lifecycle (R2-01)', () => {
-  it('terminal reconciliation stays LOCKED when lease removal fails; retry storage op unlocks', async () => {
-    let postCount = 0;
-    const originalClear = storageModule.clearRuntimeLease;
-    let failNextClear = true;
-    const clearSpy = vi.spyOn(storageModule, 'clearRuntimeLease');
-    clearSpy.mockImplementation((expectedPrior: V4RuntimeLease) => {
-      if (failNextClear && loadLease(expectedPrior.conversationId)) {
-        failNextClear = false;
-        return {
-          state: 'mutation_unavailable',
-          reason: 'blocked-by-test',
-          verifiedExpectedPrior: expectedPrior,
-        };
-      }
-      return originalClear(expectedPrior);
-    });
-    installFetch([
-      { test: '/api/agents/presets/', handler: () => jsonResponse([PRESET_ECKI]) },
-      { test: '/api/agents/conversations/95/', handler: () => jsonResponse(convRow(95)) },
-      {
-        test: /^\/api\/agents\/chat\/95\/$/,
-        handler: (_url, init) => {
-          if (init?.method === 'POST') {
-            postCount += 1;
-            return sseDoneStream('正常回答');
-          }
-          return jsonResponse({
-            messages: [mkMsg(950, 'user', 'q', 0), mkMsg(951, 'assistant', '正常回答', 1)],
-            total_count: 2,
-            has_more: false,
-          });
-        },
-      },
-    ]);
-    renderApp(['/chat/95']);
-    const textbox = await screen.findByRole('textbox', { name: /消息输入框/ });
-    fireEvent.change(textbox, { target: { value: 'q' } });
-    fireEvent.keyDown(textbox, { key: 'Enter', shiftKey: true });
-
-    await waitFor(() => {
-      expect(screen.getByText(/无法清除上次运行标记/)).toBeTruthy();
-    });
-    expect(screen.getByRole('button', { name: /发送消息/ })).toBeDisabled();
-    expect(postCount).toBe(1);
-
-    fireEvent.click(screen.getByRole('button', { name: /重试存储操作/ }));
-    await waitFor(() => {
-      expect(loadLease(95)).toBeNull();
-    });
-    const textboxAfter = screen.getByRole('textbox', { name: /消息输入框/ });
-    fireEvent.change(textboxAfter, { target: { value: '解锁后新消息' } });
-    expect(screen.getByRole('button', { name: /发送消息/ })).not.toBeDisabled();
-    clearSpy.mockRestore();
-  });
-
+describe('C1B-R2 residual invariants — uncertain outcomes (R2-01)', () => {
   it('ambiguous branch refreshes Recent while keeping its durable lock; confirm stays locked', async () => {
     let branchPosts = 0;
     let recentGets = 0;
@@ -831,7 +764,7 @@ describe('C1B-R2 residual invariants — storage lifecycle (R2-01)', () => {
     await waitFor(() => {
       expect(recentGets).toBeGreaterThanOrEqual(2);
     });
-    expect(loadLease(96)?.disposition).toBe('uncertain');
+    expect(readRuntimeMarker(96)).not.toBeNull();
     expect(screen.getByRole('button', { name: '确认创建分支' })).toBeDisabled();
 
     fireEvent.click(screen.getByRole('button', { name: '取消' }));
@@ -935,7 +868,7 @@ describe('C1B-R2 residual invariants — route switch identity (R2-02)', () => {
 
     await screen.findByText(/76 的乐观回答/);
     expect(screen.getByRole('button', { name: /停止生成/ })).toBeTruthy();
-    expect(loadLease(76)?.disposition).toBe('active');
+    expect(readRuntimeMarker(76)).toMatchObject({ transport: 'sse' });
 
     fireEvent.click(screen.getByRole('link', { name: 'go77' }));
     await screen.findByText('Conversation 77');
@@ -945,8 +878,8 @@ describe('C1B-R2 residual invariants — route switch identity (R2-02)', () => {
       expect(screen.queryByRole('button', { name: /停止生成/ })).toBeNull();
     });
     expect(screen.getByText('77 的历史')).toBeTruthy();
-    expect(loadLease(76)?.disposition).toBe('uncertain');
-    expect(loadLease(77)).toBeNull();
+    expect(readRuntimeMarker(76)).not.toBeNull();
+    expect(readRuntimeMarker(77)).toBeNull();
 
     // Late terminal from 76 after route change must be ignored.
     if (streamRef.ctrl) {
@@ -955,7 +888,7 @@ describe('C1B-R2 residual invariants — route switch identity (R2-02)', () => {
     }
     await new Promise((r) => setTimeout(r, 120));
     expect(screen.getByText('77 的历史')).toBeTruthy();
-    expect(loadLease(77)).toBeNull();
+    expect(readRuntimeMarker(77)).toBeNull();
     unmount();
   });
 });

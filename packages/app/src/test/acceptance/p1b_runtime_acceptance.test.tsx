@@ -57,34 +57,6 @@ afterEach(() => {
 });
 
 describe('C1B independent acceptance — decisive runtime invariants', () => {
-  it('does not dispatch a write when the mandatory uncertainty marker cannot be persisted', async () => {
-    let postCount = 0;
-    const originalSetItem = Storage.prototype.setItem;
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
-      if (String(key).startsWith('exo:v4:chat-runtime:')) throw new DOMException('blocked', 'QuotaExceededError');
-      return originalSetItem.call(this, key, value);
-    });
-    installFetch([
-      { test: '/api/agents/presets/', handler: () => jsonResponse([preset]) },
-      { test: '/api/agents/conversations/71/', handler: () => jsonResponse(conversation(71)) },
-      {
-        test: /^\/api\/agents\/chat\/71\/$/,
-        handler: (_url, init) => {
-          if (init?.method === 'POST') postCount += 1;
-          return init?.method === 'POST'
-            ? new Response('event: done\ndata: [DONE]\n\n', { status: 200, headers: { 'Content-Type': 'text/event-stream' } })
-            : jsonResponse({ messages: [], total_count: 0, has_more: false });
-        },
-      },
-    ]);
-
-    renderApp(['/chat/71']);
-    const box = await screen.findByRole('textbox', { name: /消息输入框/ });
-    fireEvent.change(box, { target: { value: 'must remain retry-safe' } });
-    fireEvent.keyDown(box, { key: 'Enter', shiftKey: true });
-    await waitFor(() => expect(postCount).toBe(0));
-  });
-
   it('retains an ambiguous async write lock and blocks resubmission until acknowledgement', async () => {
     let postCount = 0;
     installFetch([

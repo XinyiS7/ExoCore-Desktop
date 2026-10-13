@@ -3,8 +3,8 @@
  *
  * Small typed helpers with guarded read/write and explicit fallback. Storage
  * failure keeps the in-memory choice for the current page and surfaces a
- * non-blocking warning; preferences NEVER enter the durable chat-operation
- * lease algebra (runtime/storage.ts is untouched, pane 5 territory).
+ * non-blocking warning; preferences are independent of the chat runtime
+ * marker in runtime/storage.ts.
  *
  * V4 namespace `exo:v4:pref:` — deliberately disjoint from V3 `exo_*` keys.
  */

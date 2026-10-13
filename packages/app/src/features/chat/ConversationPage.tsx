@@ -231,7 +231,6 @@ export function ConversationPage() {
     runtimeError,
     protocolWarning,
     hasPendingReconcile,
-    draftCleanupFailed,
     restoredTurn,
     sendMessage,
     retryRecoveredTurn,
@@ -245,11 +244,8 @@ export function ConversationPage() {
     retrySync,
     applyPendingReconcile,
     acknowledgeUncertain,
-    retryReread,
-    retryStorage,
     dismissTransient,
     dismissRuntimeNotice,
-    retryDraftCleanup,
     branchFrom,
     isOperationPending,
   } = useChatRuntime({
@@ -262,12 +258,6 @@ export function ConversationPage() {
       cacheOperationPendingRef.current ||
       thinkingOperationPendingRef.current ||
       audioRecovery.isUploading(),
-    onNavigateToConversation: (conversationId: number) => {
-      // At most one later navigation, only after the exact source clear
-      // returned `cleared` AND this route caller is still current (§6.2).
-      if (pageEpochRef.current === 0) return;
-      navigate(`/chat/${conversationId}`);
-    },
   });
   const thinkingPending = thinkingOperationPendingRef.current;
   const cacheControl = useCacheControl(id, {
@@ -553,7 +543,7 @@ export function ConversationPage() {
     if (!findPersistedMessage(merged?.rows, msgId, 'assistant')) {
       throw new Error('该助手消息已不在当前会话中，无法创建分支。');
     }
-    const res = await branchFrom(msgId, callerToken);
+    const res = await branchFrom(msgId);
     if (
       callerToken.revoked ||
       callerEpoch !== pageEpochRef.current ||
@@ -788,16 +778,12 @@ export function ConversationPage() {
         error={runtimeError}
         protocolWarning={protocolWarning}
         hasPendingReconcile={hasPendingReconcile}
-        draftCleanupFailed={draftCleanupFailed}
         onApplyPendingReconcile={() => void handleScrollToLatest()}
         onRetrySync={() => void retrySync()}
         onRetryStop={() => void stopGeneration()}
-        onRetryReread={() => void retryReread()}
-        onRetryStorage={() => void retryStorage()}
         onResumePolling={resumePolling}
         onAcknowledgeUncertain={acknowledgeUncertain}
         onDismissTransient={dismissTransient}
-        onRetryDraftCleanup={retryDraftCleanup}
       />
 
       {/* Composer (Always accessible at bottom of conversation view) */}

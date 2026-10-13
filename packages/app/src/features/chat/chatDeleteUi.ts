@@ -4,7 +4,6 @@
  * helpers remain unit-testable without mounting React.
  */
 import type { QueryClient } from '@tanstack/react-query';
-import { readRuntimeLease } from './runtime/storage';
 import { queryKeys } from './queries';
 import { controlQueryKeys } from './control/queries';
 import type { ConversationDeleteOutcome } from './chatDelete';
@@ -23,28 +22,6 @@ export interface DeleteDisplayState {
     | 'ambiguous';
   /** Human explanation for busy/protected/error states. */
   message: string;
-}
-
-/**
- * Local busy gate. Lease dispositions pending/active/uncertain (or a
- * quarantined/unavailable storage state) block deletion. Lease ABSENCE is
- * NOT idle proof — the backend 409 remains authoritative; this check is a
- * local fast-path explanation over the same rule.
- */
-export function deleteBusyReason(conversationId: number): string | null {
-  const outcome = readRuntimeLease(conversationId);
-  if (outcome.state === 'valid') {
-    return outcome.lease.disposition === 'uncertain'
-      ? '该会话有未确认的运行状态（结果不确定）。请先打开会话确认结果，再回来删除。'
-      : '该会话正在进行或等待中的操作（正在生成/等待确认）。请先打开会话等待完成或停止。';
-  }
-  if (outcome.state === 'quarantined') {
-    return '存在损坏的运行记录，已隔离。请重新打开会话以恢复。';
-  }
-  if (outcome.state === 'unavailable') {
-    return '无法读取运行状态（存储不可用）。请稍后重试。';
-  }
-  return null;
 }
 
 /** Pure mapping of a settled attempt to UI copy — exported for unit tests. */

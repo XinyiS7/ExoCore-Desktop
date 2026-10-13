@@ -7,8 +7,8 @@
  *   ownership); show protected explanation, NO mutation performed
  * - 404 conversation_not_found → already absent; safe success, reconcile list
  * - 409 conversation_busy     → blocked at the backend; show busy explanation
- *   + recovery/open path, NO auto-retry. 409 is authoritative even when a
- *   local lease is absent (lease absence is NOT idle proof, cross-tab/port).
+ *   + recovery/open path, NO auto-retry. The backend is the only busy
+ *   authority; the frontend never pre-gates deletion locally.
  * - 500 safety_check_failed    → fail-closed, definitive non-deletion; show
  *   error, keep state, NO ambiguous read-back (the check itself failed).
  * - network failure / any other non-2xx   → AMBIGUOUS write: outcome unknown;
@@ -19,7 +19,7 @@
  * Per-ID local draft + preferences are NEVER cleared by this module: deletion
  * retires server-owned query caches only. Drafts (runtime/storage.ts) and
  * prefs (control/prefs.ts) are caller-owned per-ID state; the delete flow
- * must not bulk-clear storage or erase a runtime lease to unlock deletion.
+ * must not bulk-clear storage.
  */
 import { apiFetch } from 'exo-shared/api';
 import { AppApiError } from './api';

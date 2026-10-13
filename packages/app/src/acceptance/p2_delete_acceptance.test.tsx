@@ -3,8 +3,7 @@
  *
  * Asserts the FROZEN contract, not implementation details:
  * - shared dialog + always-reachable trigger on list rows; cancel = zero DELETE
- * - busy gate (valid lease blocks; corrupt lease quarantined + blocked;
- *   backend 409 authoritative when no local lease)
+ * - no local busy gate: the backend 409 is the only busy authority
  * - settled outcomes: 204 confirms and reconciles ONLY that conversation;
  *   409 busy = single DELETE, explanation, NO auto-retry;
  *   500 safety_failed = fail-closed, NO ambiguous read-back, affordance must
@@ -82,14 +81,6 @@ function wrap(ui: ReactElement, c = client()) {
 const listGets = () => requests.filter((r) => r.method === 'GET' && r.url.includes('/api/agents/conversations/')).length;
 const deletes = () => requests.filter((r) => r.method === 'DELETE').length;
 
-const LEASE_PREFIX = 'exo:v4:chat-runtime:';
-function seedLease(id: number, disposition: 'pending' | 'active' | 'uncertain') {
-  window.localStorage.setItem(
-    `${LEASE_PREFIX}${id}`,
-    JSON.stringify({ version: 1, conversationId: id, operation: 'send', transport: 'sse', disposition, startedAt: Date.now() - 1000, updatedAt: Date.now() - 1000 }),
-  );
-}
-
 afterEach(() => {
   vi.unstubAllGlobals();
   window.localStorage.clear();
@@ -113,36 +104,6 @@ it('home rows carry an always-visible delete trigger; cancel sends zero DELETE',
   fireEvent.click(screen.getByRole('button', { name: /取消/ }));
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   expect(deletes()).toBe(0);
-});
-
-it('valid pending lease blocks confirmation with explanation and zero DELETE', async () => {
-  begin();
-  seedLease(101, 'pending');
-  wrap(<RecentConversationList onRequestCreate={() => undefined} />);
-  await openDialogFor(0);
-  await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/正在进行|等待确认/));
-  expect(screen.getByRole('button', { name: /无法删除/ })).toBeDisabled();
-  fireEvent.click(screen.getByRole('button', { name: /取消/ }));
-  expect(deletes()).toBe(0);
-});
-
-it('corrupt lease: dialog blocks with quarantine banner; after isolation deletion is backend-guarded', async () => {
-  begin();
-  window.localStorage.setItem(`${LEASE_PREFIX}101`, '{{{not-json');
-  wrap(<RecentConversationList onRequestCreate={() => undefined} />);
-  await openDialogFor(0);
-  await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/损坏的运行记录/));
-  expect(screen.getByRole('button', { name: /无法删除/ })).toBeDisabled();
-  expect(window.localStorage.getItem(`${LEASE_PREFIX}101`)).toBeNull(); // quarantined away on read
-  fireEvent.click(screen.getByRole('button', { name: /取消/ }));
-  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-  await openDialogFor(0); // fresh read after isolation: absent -> backend 409 authoritative
-  const confirm = screen.getByRole('button', { name: /确认删除/ });
-  expect(confirm).not.toBeDisabled();
-  fireEvent.click(confirm);
-  await waitFor(() => expect(screen.queryByText(/Alpha 会话/)).toBeNull());
-  expect(deletes()).toBe(1);
-  expect(screen.getByText(/Beta 会话/)).toBeTruthy();
 });
 
 it('409 busy: single DELETE, alert copy, row kept, NO auto-retry', async () => {

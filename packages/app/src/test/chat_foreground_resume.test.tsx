@@ -104,10 +104,8 @@ async function send() {
   const input = await screen.findByRole("textbox", { name: /消息输入框/ });
   fireEvent.change(input, { target: { value: "恢复测试" } });
   fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
-  await waitFor(() => {
-    const lease = storage.readRuntimeLease(63);
-    expect(lease.state === "valid" && lease.lease.cursor).toBe(1);
-  });
+  await screen.findByText("第一段");
+  expect(storage.readRuntimeMarker(63)?.asyncToken).toBe("tok63abc");
 }
 async function paused() {
   await screen.findByRole("button", { name: "继续轮询" });
@@ -115,7 +113,7 @@ async function paused() {
 async function assertComplete(stats: ReturnType<typeof installRun>) {
   await waitFor(() => {
     expect(screen.getAllByText("第一段第二段")).toHaveLength(1);
-    expect(storage.readRuntimeLease(63).state).toBe("absent");
+    expect(storage.readRuntimeMarker(63)).toBeNull();
   });
   expect(screen.queryByRole("button", { name: "继续轮询" })).toBeNull();
   expect(screen.queryByText(/网络连接异常/)).toBeNull();
@@ -193,9 +191,9 @@ describe("LR-01 foreground exact async recovery", () => {
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 650)); });
     expect(stats.requests).toHaveLength(3);
     expect(stats.posts).toBe(1);
-    expect(storage.readRuntimeLease(63).state).toBe("valid");
+    expect(storage.readRuntimeMarker(63)).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "继续轮询" }));
-    await waitFor(() => expect(storage.readRuntimeLease(63).state).toBe("absent"));
+    await waitFor(() => expect(storage.readRuntimeMarker(63)).toBeNull());
     expect(screen.getAllByText("第一段第二段")).toHaveLength(1);
     expect(stats.requests.map((r) => r.cursor)).toEqual([0, 1, 1, 1]);
     expect(stats.maxActive).toBe(1);
@@ -222,9 +220,8 @@ describe("LR-01 foreground exact async recovery", () => {
     await act(async () => pending.resolve(doneResponse()));
     foregroundBurst();
     expect(screen.queryByText("第一段第二段")).toBeNull();
-    expect(storage.readRuntimeLease(64).state).toBe("absent");
-    const oldLease = storage.readRuntimeLease(63);
-    expect(oldLease.state === "valid" && oldLease.lease.cursor).toBe(1);
+    expect(storage.readRuntimeMarker(64)).toBeNull();
+    expect(storage.readRuntimeMarker(63)?.asyncToken).toBe("tok63abc");
     expect(stats.canonicalReads).toBe(0);
     expect(stats.requests).toHaveLength(3);
     unmount();
@@ -232,7 +229,7 @@ describe("LR-01 foreground exact async recovery", () => {
     expect(stats.requests).toHaveLength(3);
   });
 
-  it("unmount removes foreground listeners while an eligible paused lease remains durable", async () => {
+  it("unmount removes foreground listeners while the paused run's marker remains", async () => {
     const removeDocument = vi.spyOn(document, "removeEventListener");
     const removeWindow = vi.spyOn(window, "removeEventListener");
     const stats = installRun();
@@ -244,7 +241,7 @@ describe("LR-01 foreground exact async recovery", () => {
     visibility = "visible";
     foregroundBurst();
     expect(stats.requests).toHaveLength(2);
-    expect(storage.readRuntimeLease(63).state).toBe("valid");
+    expect(storage.readRuntimeMarker(63)).not.toBeNull();
     expect(removeDocument).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
     for (const event of ["focus", "pageshow", "online"]) {
       expect(removeWindow).toHaveBeenCalledWith(event, expect.any(Function));
@@ -263,25 +260,6 @@ describe("LR-01 foreground exact async recovery", () => {
     expect(stats.requests).toHaveLength(0);
     expect(stats.posts).toBe(1);
     expect(screen.getByRole("button", { name: /发送消息/ })).toBeDisabled();
-  });
-
-  it("foreground does not bypass a cursor-persist storage failure", async () => {
-    const original = storage.persistRuntimeLease;
-    vi.spyOn(storage, "persistRuntimeLease").mockImplementation((prior, next) =>
-      next.cursor === 1 ? { state: "mutation_unavailable", reason: "test-storage", verifiedExpectedPrior: prior }
-        : original(prior, next),
-    );
-    const stats = installRun();
-    renderApp(["/chat/63"]);
-    await selectRuntimeTransport("async");
-    const input = await screen.findByRole("textbox", { name: /消息输入框/ });
-    fireEvent.change(input, { target: { value: "恢复测试" } });
-    fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
-    await screen.findByText(/无法保存轮询进度/);
-    foregroundBurst();
-    expect(stats.requests).toHaveLength(1);
-    expect(stats.posts).toBe(1);
-    expect(screen.getByRole("button", { name: /重试存储操作/ })).toBeTruthy();
   });
 
   it("accepted stop survives foreground recovery without another stop POST", async () => {

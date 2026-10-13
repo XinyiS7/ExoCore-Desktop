@@ -124,48 +124,6 @@ describe('P1C C1B runtime bridge', () => {
     expect(JSON.parse(String(calls[0].init?.body))).toMatchObject({ edit_message_id: 101 });
   });
 
-  it('preserves exact original binding when replacement is blocked before POST', async () => {
-    const outcomes = vi.fn();
-    const originalSetItem = Storage.prototype.setItem;
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
-      if (String(key).startsWith('exo:v4:chat-runtime:')) throw new DOMException('blocked', 'QuotaExceededError');
-      return originalSetItem.call(this, key, value);
-    });
-    const { calls } = installFetch([]);
-    const persisted: MessageView[] = [{
-      id: 101,
-      role: 'user',
-      content: 'voice text',
-      reasoningContent: null,
-      platform: null,
-      modelVersion: null,
-      tokenCount: null,
-      indexInSession: 2,
-      attachmentIds: [11, 22],
-      attachmentsMeta: null,
-      createdAt: '2026-09-07T00:00:00Z',
-      clientTurnId: null,
-    }];
-    const { result } = renderHook(() => {
-      const persistedRowsRef = useRef<ReadonlyArray<MessageView>>(persisted);
-      return useChatRuntime({ conversationId: 42, persistedRowsRef, onAttemptOutcome: outcomes });
-    }, { wrapper });
-
-    await act(async () => {
-      expect(await result.current.retryRecoveredTurn({
-        content: 'voice text',
-        pendingAttachments: [11, 22],
-        attemptKey: 'attempt-storage',
-      }, 101)).toBe('rejected');
-    });
-    expect(calls).toHaveLength(0);
-    expect(outcomes).toHaveBeenLastCalledWith({
-      attemptKey: 'attempt-storage',
-      terminal: 'rejected',
-      persistence: { kind: 'exact_persisted', messageId: 101, indexInSession: 2 },
-    });
-  });
-
   it('permits attachment-only ordinary send while edit remains attachment-free', async () => {
     const bodies: Record<string, unknown>[] = [];
     installFetch([

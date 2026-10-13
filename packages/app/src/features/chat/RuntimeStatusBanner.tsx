@@ -7,22 +7,17 @@ export interface RuntimeStatusBannerProps {
   error?: ChatRuntimeError | null;
   protocolWarning?: string | null;
   hasPendingReconcile: boolean;
-  /** Independent anciliary draft-cleanup failure (§4.4) — never touches the lease. */
-  draftCleanupFailed: boolean;
   onApplyPendingReconcile: () => void;
   onRetrySync: () => void;
   onRetryStop: () => void;
-  onRetryReread: () => void;
-  onRetryStorage: () => void;
   onResumePolling: () => void;
   onAcknowledgeUncertain: () => void;
   onDismissTransient: () => void;
-  onRetryDraftCleanup: () => void;
 }
 
 /**
  * Pure projection surface of the authoritative OperationState (C1B §3.2).
- * No button here can clear a lease, unlock a write or start a run — every
+ * No button here can unlock a write or start a run on its own — every
  * action name maps to one exact data-only recovery in the runtime controller.
  */
 export function RuntimeStatusBanner({
@@ -31,18 +26,14 @@ export function RuntimeStatusBanner({
   error,
   protocolWarning,
   hasPendingReconcile,
-  draftCleanupFailed,
   onApplyPendingReconcile,
   onRetrySync,
   onRetryStop,
-  onRetryReread,
-  onRetryStorage,
   onResumePolling,
   onAcknowledgeUncertain,
   onDismissTransient,
-  onRetryDraftCleanup,
 }: RuntimeStatusBannerProps) {
-  const hasContent = hasPendingReconcile || Boolean(protocolWarning) || draftCleanupFailed || Boolean(error);
+  const hasContent = hasPendingReconcile || Boolean(protocolWarning) || Boolean(error);
   if (!hasContent) return null;
 
   return (
@@ -70,31 +61,6 @@ export function RuntimeStatusBanner({
         </div>
       ) : null}
 
-      {/* 3b. Independent draft-cleanup recovery (§4.4) — coexists with any
-           operation-storage outcome; repairing one never erases the other. */}
-      {draftCleanupFailed ? (
-        <div className="app-runtime-banner app-runtime-banner--warning" role="alert">
-          <AlertTriangle size={14} aria-hidden="true" />
-          <div className="app-runtime-banner-content">
-            <div className="app-runtime-banner-msgwrap">
-              <span className="app-runtime-banner-msg">
-                草稿清理失败：已发送内容可能残留为未发送状态，请勿在刷新后重复发送同一条消息。
-              </span>
-            </div>
-            <div className="app-runtime-banner-actions">
-              <button
-                type="button"
-                className="app-btn app-btn-xs"
-                onClick={onRetryDraftCleanup}
-              >
-                <RefreshCw size={12} aria-hidden="true" />
-                重试清理草稿
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       {/* 4. Runtime error / Interruption banner */}
       {error ? (
         <div className="app-runtime-banner app-runtime-banner--error" role="alert">
@@ -118,16 +84,6 @@ export function RuntimeStatusBanner({
                 <button type="button" className="app-btn app-btn-xs" onClick={onRetryStop}>
                   <RefreshCw size={12} aria-hidden="true" />
                   重试停止
-                </button>
-              ) : error.code === 'STORAGE_BLOCKED_READ' ? (
-                <button type="button" className="app-btn app-btn-xs" onClick={onRetryReread}>
-                  <RefreshCw size={12} aria-hidden="true" />
-                  重试读取存储
-                </button>
-              ) : error.code === 'STORAGE_CLEAR_FAILED' || error.code === 'STORAGE_UNAVAILABLE' ? (
-                <button type="button" className="app-btn app-btn-xs" onClick={onRetryStorage}>
-                  <RefreshCw size={12} aria-hidden="true" />
-                  重试存储操作
                 </button>
               ) : error.retryClass === 'uncertain' ? (
                 <button type="button" className="app-btn app-btn-xs" onClick={onAcknowledgeUncertain}>

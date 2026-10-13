@@ -170,18 +170,15 @@ export interface BranchResponse {
   name: string;
 }
 
-// ── V4 Storage Lease & Uncertainty ──────────────────────────────────────────
+// ── In-flight runtime marker (best-effort localStorage) ─────────────────────
 
-export interface V4RuntimeLease {
-  version: 1;
-  operation: RuntimeOperationKind;
+export interface RuntimeMarker {
   conversationId: number;
+  operation: RuntimeOperationKind;
   transport: ChatTransport;
-  asyncToken?: string;
-  cursor?: number;
   startedAt: number;
-  updatedAt: number;
-  disposition: 'pending' | 'active' | 'uncertain';
+  /** Async run token, present once the backend acknowledged the POST. */
+  asyncToken?: string;
 }
 
 // ── Error Modeling ─────────────────────────────────────────────────────────
@@ -283,13 +280,12 @@ export interface RuntimeAttemptOutcome {
 /** Action outcome returned by dispatch commands (accepted vs not). */
 export type TurnAcceptance = 'accepted' | 'rejected';
 
-// ── Authoritative route-runtime operation state (C1B intervention §3) ──────
-// One discriminated OperationState owns every write lock / lease / recovery
-// decision. `busy`, presentation `status`, `locked`, `hasPendingReconcile`,
-// stop visibility and modal confirm availability are PROJECTIONS of this
-// union only — no parallel mutable safety truth may exist.
+// ── Route-runtime operation state ───────────────────────────────────────────
+// One discriminated OperationState owns the in-tab write lock and recovery
+// decision. `busy`, presentation `status`, stop visibility and banner actions
+// are projections of this union only.
 
-/** Durable lease owner fields — already present in V4RuntimeLease. */
+/** Stable owner of one operation; `startedAt` also keys the runtime marker. */
 export interface StableOperationOwner {
   conversationId: number;
   operation: RuntimeOperationKind;
@@ -299,8 +295,7 @@ export interface StableOperationOwner {
 
 /**
  * Ephemeral route epoch + stable owner + in-memory destructive fact.
- * The epoch is an in-memory callback guard: never durable, never part of
- * lease matching (§3.1).
+ * The epoch is an in-memory callback guard.
  */
 export interface CallbackIdentity {
   epoch: number;
@@ -309,15 +304,12 @@ export interface CallbackIdentity {
   destructive: boolean;
 }
 
-/**
- * Transport payload of a live/stopping operation.
- * `live_async` always carries the complete durable token + cursor snapshot.
- */
+/** Transport payload of a live/stopping operation. */
 export type TransportPayload =
   | { transport: 'sse'; readerId: number }
   | { transport: 'async'; token: string; cursor: number };
 
-/** Request intent retained by predispatch/storage-blocked suspension (§4.2). */
+/** Request intent captured at dispatch. */
 export interface DispatchIntent {
   operation: 'send' | 'edit' | 'regenerate' | 'branch';
   content: string;
@@ -332,24 +324,8 @@ export interface DispatchIntent {
   attemptKey?: string;
 }
 
-/** Suspended in-memory operation context (never proof of storage ownership). */
-export interface SuspendedOperation {
-  identity: CallbackIdentity;
-  intent: DispatchIntent;
-  pendingSnapshot: V4RuntimeLease;
-  /** True when the POST already left this tab before the storage failure. */
-  postSent: boolean;
-  /**
-   * R5: captured constrained continuation for an ACCEPTED operation whose
-   * durable upgrade never landed. Reread-absent must re-attach the captured
-   * token-bearing lease and continue (begin-poll/continue-live/resume-poll),
-   * never collapse to uncertain or release idle (§10.1 B3).
-   */
-  onPersisted?: ConstrainedAfter;
-}
-
-/** §8.1 scrolled-up reconciliation stages — four separated effects (§7). */
-export type ReconcileStage = 'idle' | 'fetching' | 'applying' | 'clearing' | 'releasing';
+/** §8.1 scrolled-up reconciliation stages. */
+export type ReconcileStage = 'idle' | 'fetching' | 'applying' | 'releasing';
 
 export type ReconcileOutcome =
   | 'done'
@@ -369,101 +345,49 @@ export interface ReconcileContext {
 export type BlockedReason =
   | 'uncertain_write'
   | 'not_found'
-  | 'storage_unavailable'
-  | 'clear_blocked'
   | 'poll_failed'
   | 'reconcile_failed';
 
-/**
- * Exact, data-only recovery actions (§4.1). Only `persisted`/`cleared` may
- * execute the constrained success continuation; the transition owner
- * revalidates identity + storage ownership before applying it.
- */
-export type ConstrainedAfter =
-  | { kind: 'continue-live'; preserveStop?: 'accepted' | 'failed' }
-  | { kind: 'begin-poll'; preserveStop?: 'accepted' | 'failed' }
+export type RecoveryDescriptor =
   | {
       kind: 'resume-poll';
-      /** R5-B4/R6-01: phase was `stopping` when the recovery was captured —
-       *  restore stopping (with its stopOutcome) instead of live; stopOutcome
-       *  'accepted' blocks a duplicate Stop POST. */
+      token: string;
+      /** Phase was `stopping` when the pause was captured: resume stopping
+       *  instead of live; 'accepted' blocks a duplicate Stop POST. */
       preserveStop?: 'accepted' | 'failed';
-    }
-  | { kind: 'ack-refresh' }
-  | {
-      kind: 'branch-navigate';
-      conversationId: number;
-      /** R5-A2: per-invocation caller token; explicit modal close/replacement
-       *  or route switch revokes it — a revoked caller never navigates, even
-       *  after a later clear-retry succeeds. */
-      callerToken?: { revoked: boolean };
-    }
-  | {
-      kind: 'unlock';
-      /** D-F01: sanitized in-memory stopped trace projection carried across
-       *  clear-retry; applied only after successful clear. */
-      retainedTrace?: RuntimeAssistantTrace;
-    };
-
-export type RecoveryDescriptor =
-  | { kind: 'reread' }
-  | {
-      kind: 'persist-retry';
-      expectedPrior: V4RuntimeLease | null;
-      next: V4RuntimeLease;
-      onPersisted: ConstrainedAfter;
-      /** R5-B2: a stop POST has already been accepted from the blocked state;
-       *  Stop is hidden until the durability retry resumes. */
+      /** A stop POST from the paused state is in flight. */
       stopPending?: boolean;
     }
-  | { kind: 'clear-retry'; expectedPrior: V4RuntimeLease; onCleared: ConstrainedAfter }
-  | { kind: 'resume-poll'; preserveStop?: 'accepted' | 'failed'; stopPending?: boolean }
   | { kind: 'ack' }
   | { kind: 'reconcile-retry'; context: ReconcileContext };
 
-/**
- * The ONE authoritative route-runtime union (intervention §3.1).
- * Names are local; ownership is binding: every lock/lease/recovery decision
- * reads THIS state and nothing else.
- */
 export type OperationState =
   | { phase: 'idle' }
-  | {
-      phase: 'storage_blocked_read';
-      conversationId: number;
-      reason: string;
-      suspendedOperation: SuspendedOperation | null;
-    }
   | {
       phase: 'predispatch';
       identity: CallbackIdentity;
       intent: DispatchIntent;
-      pendingSnapshot: V4RuntimeLease;
     }
   | {
       phase: 'live';
       identity: CallbackIdentity;
       payload: TransportPayload;
-      snapshot: V4RuntimeLease;
     }
   | {
       phase: 'stopping';
       identity: CallbackIdentity;
       payload: TransportPayload;
-      snapshot: V4RuntimeLease;
       stopOutcome: 'accepted' | 'failed';
     }
   | {
       phase: 'reconciling';
       identity: CallbackIdentity;
-      snapshot: V4RuntimeLease;
       reconcile: ReconcileContext;
     }
   | {
       phase: 'blocked';
       identity: CallbackIdentity;
       reason: BlockedReason;
-      snapshot: V4RuntimeLease;
       message: string;
       recovery: RecoveryDescriptor | null;
     };

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import { MessageTimeline } from '../features/chat/MessageTimeline';
 import { queryKeys } from '../features/chat/queries';
-import { readRuntimeLease } from '../features/chat/runtime/storage';
+import { readRuntimeMarker } from '../features/chat/runtime/storage';
 import type { RuntimeAssistantRow } from '../features/chat/runtime/types';
 import { useChatRuntime } from '../features/chat/runtime/useChatRuntime';
 import { installFetch, jsonResponse, unmockFetch } from './helpers';
@@ -297,7 +297,7 @@ describe('D-C1 stopped trace-only retention & lifecycle', () => {
     expect(streamingBadges[0].className).toContain('v4-trace-tool-badge--started');
   });
 
-  it('D3: retains only trace + stopped status after stopped SSE turn; clears partial content, thinking, and optimistic user; releases lock/lease', async () => {
+  it('D3: retains only trace + stopped status after stopped SSE turn; clears partial content, thinking, and optimistic user; releases lock/marker', async () => {
     const encoder = new TextEncoder();
     const thinking50 = {
       version: 1, run_id: 'run-50', sequence: 0, item_id: 'thinking-1',
@@ -351,7 +351,7 @@ describe('D-C1 stopped trace-only retention & lifecycle', () => {
     expect(result.current.isOperationPending()).toBe(false);
 
     // Invariant: lease is cleared from localStorage
-    expect(readRuntimeLease(50).state).toBe('absent');
+    expect(readRuntimeMarker(50)).toBeNull();
 
     // Invariant: no optimistic user survives
     expect(result.current.optimisticUser).toBeNull();
@@ -422,7 +422,7 @@ describe('D-C1 stopped trace-only retention & lifecycle', () => {
 
     await waitFor(() => expect(result.current.busy).toBe(false));
     expect(result.current.status).toBe('idle');
-    expect(readRuntimeLease(51).state).toBe('absent');
+    expect(readRuntimeMarker(51)).toBeNull();
     expect(result.current.optimisticUser).toBeNull();
 
     const row = result.current.runtimeAssistant;
@@ -467,7 +467,7 @@ describe('D-C1 stopped trace-only retention & lifecycle', () => {
 
     await waitFor(() => expect(result.current.busy).toBe(false));
     expect(result.current.status).toBe('idle');
-    expect(readRuntimeLease(52).state).toBe('absent');
+    expect(readRuntimeMarker(52)).toBeNull();
     expect(result.current.optimisticUser).toBeNull();
     // Invariant: no trace -> retain no empty assistant row
     expect(result.current.runtimeAssistant).toBeNull();
@@ -510,7 +510,7 @@ describe('D-C1 stopped trace-only retention & lifecycle', () => {
     expect(result.current.runtimeAssistant).not.toBeNull();
 
     // Invariant: never in localStorage
-    expect(readRuntimeLease(53).state).toBe('absent');
+    expect(readRuntimeMarker(53)).toBeNull();
 
     // Route switch clears noncanonical projection immediately
     rerender({ id: 54 });
@@ -568,20 +568,30 @@ describe('D-C1 stopped trace-only retention & lifecycle', () => {
     unmount();
   });
 
-  it('D5: rejected predispatch cleans up cleanly and does not restore old stopped row', async () => {
+  it('D5: a storage write failure never blocks the next send', async () => {
     const encoder = new TextEncoder();
+    let posts = 0;
     installFetch([
       {
         test: '/api/agents/chat/56/', method: 'POST',
-        handler: () => new Response(new ReadableStream({
-          start(controller) {
-            controller.enqueue(encoder.encode(
-              `event: assistant_trace\ndata: ${JSON.stringify(trace)}\n\n` +
-              `event: stopped\ndata: [STOPPED]\n\n`,
-            ));
-            controller.close();
-          },
-        }), { headers: { 'Content-Type': 'text/event-stream' } }),
+        handler: () => {
+          posts += 1;
+          return new Response(new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode(
+                `event: assistant_trace
+data: ${JSON.stringify(trace)}
+
+` +
+                `event: stopped
+data: [STOPPED]
+
+`,
+              ));
+              controller.close();
+            },
+          }), { headers: { 'Content-Type': 'text/event-stream' } });
+        },
       },
       {
         test: '/api/agents/chat/56/', method: 'GET',
@@ -593,9 +603,8 @@ describe('D-C1 stopped trace-only retention & lifecycle', () => {
 
     act(() => { void result.current.sendMessage({ content: 'first turn' }); });
     await waitFor(() => expect(result.current.busy).toBe(false));
-    expect(result.current.runtimeAssistant?.assistantTrace?.items).toHaveLength(1);
 
-    // Mock storage mutation failure on next send predispatch
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError');
     });
@@ -606,11 +615,10 @@ describe('D-C1 stopped trace-only retention & lifecycle', () => {
         sendOutcome = await result.current.sendMessage({ content: 'second turn with storage error' });
       });
 
-      expect(sendOutcome).toBe('rejected');
-      expect(result.current.runtimeError?.code).toBe('TURN_STORAGE_BLOCKED');
-      // Invariant: does not restore old stopped row, does not leave empty row
-      expect(result.current.runtimeAssistant).toBeNull();
-      expect(result.current.optimisticUser).toBeNull();
+      expect(sendOutcome).toBe('accepted');
+      expect(posts).toBe(2);
+      await waitFor(() => expect(result.current.busy).toBe(false));
+      expect(result.current.runtimeError).toBeNull();
     } finally {
       setItemSpy.mockRestore();
     }
@@ -686,253 +694,5 @@ describe('D-C1 stopped trace-only retention & lifecycle', () => {
     });
 
     unmount();
-  });
-
-  it('D-F01: stopped turn with trace preserves trace-only row across recoverable clear-retry', async () => {
-    const encoder = new TextEncoder();
-    installFetch([
-      {
-        test: '/api/agents/chat/60/', method: 'POST',
-        handler: () => new Response(new ReadableStream({
-          start(controller) {
-            controller.enqueue(encoder.encode(
-              `event: assistant_trace\ndata: ${JSON.stringify(trace)}\n\n` +
-              `event: content\ndata: partial text before stop\n\n` +
-              `event: stopped\ndata: [STOPPED]\n\n`,
-            ));
-            controller.close();
-          },
-        }), { headers: { 'Content-Type': 'text/event-stream' } }),
-      },
-      {
-        test: '/api/agents/chat/60/', method: 'GET',
-        handler: () => jsonResponse({ messages: [], total_count: 0, has_more: false }),
-      },
-    ]);
-
-    const originalRemoveItem = Storage.prototype.removeItem;
-    let clearAttempts = 0;
-    const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(function (this: Storage, key: string) {
-      if (key === 'exo:v4:chat-runtime:60') {
-        clearAttempts += 1;
-        if (clearAttempts === 1) {
-          throw new DOMException('QuotaExceededError', 'QuotaExceededError');
-        }
-      }
-      return originalRemoveItem.call(this, key);
-    });
-
-    try {
-      const { result, unmount } = renderHook(() => useChatRuntime({ conversationId: 60 }), { wrapper: wrapper() });
-
-      act(() => { void result.current.sendMessage({ content: 'stopped turn with clear error' }); });
-
-      // 1) First clear throws QuotaExceededError -> blocked state (status: interrupted, busy: true)
-      await waitFor(() => expect(result.current.status).toBe('interrupted'));
-      expect(result.current.busy).toBe(true);
-      expect(readRuntimeLease(60).state).toBe('valid');
-      // Blocked interim: no stale overlay rows visible
-      expect(result.current.runtimeAssistant).toBeNull();
-      expect(result.current.optimisticUser).toBeNull();
-
-      // 2) Retry storage clears the lease and restores trace-only stopped projection
-      act(() => { result.current.retryStorage(); });
-
-      await waitFor(() => expect(result.current.status).toBe('idle'));
-      expect(result.current.busy).toBe(false);
-      expect(readRuntimeLease(60).state).toBe('absent');
-      expect(result.current.optimisticUser).toBeNull();
-
-      // Exact trace-only row restored
-      expect(result.current.runtimeAssistant).not.toBeNull();
-      expect(result.current.runtimeAssistant?.assistantTrace?.items).toHaveLength(1);
-      expect(result.current.runtimeAssistant?.content).toBe('');
-      expect(result.current.runtimeAssistant?.thinking).toBe('');
-      expect(result.current.runtimeAssistant?.statusText).toBe('已停止生成');
-      expect(result.current.runtimeAssistant?.terminalKind).toBe('stopped');
-      expect(result.current.runtimeAssistant?.isStreaming).toBe(false);
-
-      unmount();
-    } finally {
-      removeItemSpy.mockRestore();
-    }
-  });
-
-  it('D-F01: stopped turn without trace releases to null after clear-retry success', async () => {
-    const encoder = new TextEncoder();
-    installFetch([
-      {
-        test: '/api/agents/chat/61/', method: 'POST',
-        handler: () => new Response(new ReadableStream({
-          start(controller) {
-            controller.enqueue(encoder.encode(
-              `event: content\ndata: partial text only\n\n` +
-              `event: stopped\ndata: [STOPPED]\n\n`,
-            ));
-            controller.close();
-          },
-        }), { headers: { 'Content-Type': 'text/event-stream' } }),
-      },
-      {
-        test: '/api/agents/chat/61/', method: 'GET',
-        handler: () => jsonResponse({ messages: [], total_count: 0, has_more: false }),
-      },
-    ]);
-
-    const originalRemoveItem = Storage.prototype.removeItem;
-    let clearAttempts = 0;
-    const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(function (this: Storage, key: string) {
-      if (key === 'exo:v4:chat-runtime:61') {
-        clearAttempts += 1;
-        if (clearAttempts === 1) {
-          throw new DOMException('QuotaExceededError', 'QuotaExceededError');
-        }
-      }
-      return originalRemoveItem.call(this, key);
-    });
-
-    try {
-      const { result, unmount } = renderHook(() => useChatRuntime({ conversationId: 61 }), { wrapper: wrapper() });
-
-      act(() => { void result.current.sendMessage({ content: 'no trace stopped with clear error' }); });
-
-      await waitFor(() => expect(result.current.status).toBe('interrupted'));
-      expect(result.current.busy).toBe(true);
-      expect(result.current.runtimeAssistant).toBeNull();
-
-      act(() => { result.current.retryStorage(); });
-
-      await waitFor(() => expect(result.current.status).toBe('idle'));
-      expect(result.current.busy).toBe(false);
-      expect(readRuntimeLease(61).state).toBe('absent');
-      // Invariant: no trace -> releases to null
-      expect(result.current.runtimeAssistant).toBeNull();
-
-      unmount();
-    } finally {
-      removeItemSpy.mockRestore();
-    }
-  });
-
-  it('D-F01: completed turn with trace releases to null after clear-retry success', async () => {
-    const encoder = new TextEncoder();
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    installFetch([
-      {
-        test: '/api/agents/chat/62/', method: 'POST',
-        handler: () => new Response(new ReadableStream({
-          start(controller) {
-            controller.enqueue(encoder.encode(
-              `event: assistant_trace\ndata: ${JSON.stringify(trace)}\n\n` +
-              `event: content\ndata: answer\n\n` +
-              `event: done\ndata: [DONE]\n\n`,
-            ));
-            controller.close();
-          },
-        }), { headers: { 'Content-Type': 'text/event-stream' } }),
-      },
-      {
-        test: '/api/agents/chat/62/', method: 'GET',
-        handler: () => jsonResponse({
-          messages: [{
-            id: 20, role: 'assistant', content: 'answer', reasoning_content: 'structured',
-            assistant_run_trace: null, platform: 'test', model_version: 'm', token_count: 1,
-            index_in_session: 0, attachment_ids: [], attachments_meta: [], created_at: '2026-09-01T00:00:00Z',
-          }],
-          total_count: 1, has_more: false,
-        }),
-      },
-    ]);
-
-    const originalRemoveItem = Storage.prototype.removeItem;
-    let clearAttempts = 0;
-    const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(function (this: Storage, key: string) {
-      if (key === 'exo:v4:chat-runtime:62') {
-        clearAttempts += 1;
-        if (clearAttempts === 1) {
-          throw new DOMException('QuotaExceededError', 'QuotaExceededError');
-        }
-      }
-      return originalRemoveItem.call(this, key);
-    });
-
-    try {
-      const { result, unmount } = renderHook(() => useChatRuntime({ conversationId: 62 }), {
-        wrapper: wrapper(client),
-      });
-
-      act(() => { void result.current.sendMessage({ content: 'done turn with clear error' }); });
-
-      await waitFor(() => expect(result.current.status).toBe('interrupted'));
-      expect(result.current.busy).toBe(true);
-      expect(result.current.runtimeAssistant).toBeNull();
-
-      act(() => { result.current.retryStorage(); });
-
-      await waitFor(() => expect(result.current.status).toBe('idle'));
-      expect(result.current.busy).toBe(false);
-      expect(readRuntimeLease(62).state).toBe('absent');
-      // Invariant: completed turn clears overlay to null
-      expect(result.current.runtimeAssistant).toBeNull();
-
-      unmount();
-    } finally {
-      removeItemSpy.mockRestore();
-    }
-  });
-
-  it('D-F01: failed clear-retry preserves blocked interim safety without restoring overlay', async () => {
-    const encoder = new TextEncoder();
-    installFetch([
-      {
-        test: '/api/agents/chat/63/', method: 'POST',
-        handler: () => new Response(new ReadableStream({
-          start(controller) {
-            controller.enqueue(encoder.encode(
-              `event: assistant_trace\ndata: ${JSON.stringify(trace)}\n\n` +
-              `event: content\ndata: partial text\n\n` +
-              `event: stopped\ndata: [STOPPED]\n\n`,
-            ));
-            controller.close();
-          },
-        }), { headers: { 'Content-Type': 'text/event-stream' } }),
-      },
-      {
-        test: '/api/agents/chat/63/', method: 'GET',
-        handler: () => jsonResponse({ messages: [], total_count: 0, has_more: false }),
-      },
-    ]);
-
-    const originalRemoveItem = Storage.prototype.removeItem;
-    const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(function (this: Storage, key: string) {
-      if (key === 'exo:v4:chat-runtime:63') {
-        throw new DOMException('QuotaExceededError', 'QuotaExceededError');
-      }
-      return originalRemoveItem.call(this, key);
-    });
-
-    try {
-      const { result, unmount } = renderHook(() => useChatRuntime({ conversationId: 63 }), { wrapper: wrapper() });
-
-      act(() => { void result.current.sendMessage({ content: 'failing retry turn' }); });
-
-      await waitFor(() => expect(result.current.status).toBe('interrupted'));
-      expect(result.current.busy).toBe(true);
-      expect(readRuntimeLease(63).state).toBe('valid');
-      expect(result.current.runtimeAssistant).toBeNull();
-
-      // Retry fails again
-      act(() => { result.current.retryStorage(); });
-
-      // Remains blocked, busy, lease owned, no overlay
-      expect(result.current.status).toBe('interrupted');
-      expect(result.current.busy).toBe(true);
-      expect(readRuntimeLease(63).state).toBe('valid');
-      expect(result.current.runtimeAssistant).toBeNull();
-
-      unmount();
-    } finally {
-      removeItemSpy.mockRestore();
-    }
   });
 });

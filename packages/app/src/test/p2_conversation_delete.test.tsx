@@ -8,13 +8,12 @@ import { deleteConversation } from '../features/chat/chatDelete';
 import { ConversationDeleteConfirmDialog } from '../features/chat/ConversationDeleteConfirmDialog';
 import { ConversationDeleteMenu } from '../features/chat/ConversationDeleteMenu';
 import {
-  deleteBusyReason,
   deriveDeleteDisplay,
   retireConversationCaches,
 } from '../features/chat/chatDeleteUi';
 import { queryKeys } from '../features/chat/queries';
 import { RecentConversationList } from '../features/chat/RecentConversationList';
-import { persistRuntimeLease } from '../features/chat/runtime/storage';
+import { writeRuntimeMarker } from '../features/chat/runtime/storage';
 
 const deletedIds = new Set<number>();
 
@@ -23,7 +22,7 @@ const deletedIds = new Set<number>();
  *
  * Self-contained by design (no test/helpers.tsx): exercises the frozen
  * backend contract (204/400-protected/404-absent/409-busy/500-fail-closed/
- * network-ambiguous), the busy lease gate, identity-bound settlement, cache
+ * network-ambiguous), no local busy gate, identity-bound settlement, cache
  * retirement scope, and the three list entrances with isolated mocked HTTP.
  */
 
@@ -186,17 +185,9 @@ describe('deriveDeleteDisplay — pure UI copy mapping', () => {
   });
 });
 
-describe('busy lease gate', () => {
-  it('active lease blocks deletion with explanation', async () => {
-    persistRuntimeLease(null, {
-      version: 1,
-      operation: 'send',
-      conversationId: 101,
-      transport: 'sse',
-      startedAt: Date.now(),
-      updatedAt: Date.now(),
-      disposition: 'active',
-    });
+describe('no local busy gate', () => {
+  it('an unsettled local runtime marker does not block DELETE; the backend decides', async () => {
+    writeRuntimeMarker({ conversationId: 101, operation: 'send', transport: 'sse', startedAt: Date.now() });
     const reqs: { url: string; init?: RequestInit }[] = [];
     begin(reqs);
     const onDeleted = vi.fn();
@@ -210,25 +201,11 @@ describe('busy lease gate', () => {
         performDelete={() => deleteConversation(101)}
       />,
     );
-    // Busy gate: the confirm button is disabled with a busy label, and the
-    // busy explanation is visible without ever firing a DELETE.
-    const confirm = screen.getByRole('button', { name: /无法删除/ });
-    expect((confirm as HTMLButtonElement).disabled).toBe(true);
-    expect(reqs.some((r) => r.init?.method === 'DELETE')).toBe(false);
-    expect(screen.getByRole('alert').textContent).toMatch(/运行|进行/);
-    expect(onDeleted).not.toHaveBeenCalled();
-  });
-
-  it('corrupt lease quarantines and maps to a blocking explanation (pure gate)', () => {
-    // A structurally invalid lease is quarantined (removed) and reported as
-    // a blocking reason — the delete flow must never treat it as idle.
-    window.localStorage.setItem('exo:v4:chat-runtime:101', '{not json');
-    const reason = deleteBusyReason(101);
-    expect(reason).toMatch(/损坏/);
-    expect(window.localStorage.getItem('exo:v4:chat-runtime:101')).toBeNull(); // quarantined
-    // Absent (after quarantine) is NOT idle proof per contract — but the
-    // pure gate returns null for absent (backend 409 is authoritative).
-    expect(deleteBusyReason(101)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /确认删除/ }));
+    await waitFor(() => {
+      expect(onDeleted).toHaveBeenCalledWith(101);
+    });
+    expect(reqs.filter((r) => r.init?.method === 'DELETE').length).toBe(1);
   });
 });
 
