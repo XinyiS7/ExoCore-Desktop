@@ -21,7 +21,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'chat', label: 'Chat', icon: MessageSquare, to: '/', enabled: true },
   { id: 'groups', label: 'Groups', icon: Users, enabled: false, phase: 'P2' },
   { id: 'river', label: 'River', icon: Waves, to: '/river', enabled: true },
-  { id: 'library', label: 'Library', icon: Library, enabled: false, phase: 'P4/P5' },
+  { id: 'library', label: 'Library', icon: Library, to: '/library', enabled: true },
 ];
 
 export const isChatActive = (pathname: string) =>
@@ -31,3 +31,6 @@ export const isChatActive = (pathname: string) =>
   /^\/agents(?:\/|$)/.test(pathname) ||
   // P2B: Project Hub/Detail stay under the Chat product area's active state (D8).
   /^\/projects(?:\/|$)/.test(pathname);
+
+/** P4: Library is Collection only; item detail stays under its active state. */
+export const isLibraryActive = (pathname: string) => /^\/library(?:\/|$)/.test(pathname);

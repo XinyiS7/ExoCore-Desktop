@@ -8,6 +8,7 @@ import { AgentHubPage } from '../features/agents/AgentHubPage';
 import { AgentProfilePage } from '../features/agents/AgentProfilePage';
 import { AgentHeartbeatPage } from '../features/heartbeat/AgentHeartbeatPage';
 import { RiverPage } from '../features/river/RiverPage';
+import { CollectionWallPage } from '../features/collection/CollectionWallPage';
 import { ProjectHubPage } from '../features/projects/ProjectHubPage';
 import { ProjectDetailPage } from '../features/projects/ProjectDetailPage';
 import { AccountPage } from '../features/account/AccountPage';
@@ -43,6 +44,8 @@ export const router = createBrowserRouter(
         { path: 'agents/:presetId/heartbeat', element: <AgentHeartbeatPage /> },
         // P3 CP4: production River surface; basename-relative (/app/river in build).
         { path: 'river', element: <RiverPage /> },
+        // P4 (#61): Library is the Collection wall; item detail nests on top of it.
+        { path: 'library', element: <CollectionWallPage /> },
         // P2B: Project Hub (L1) + directly addressable Project Detail (L2, D8).
         { path: 'projects', element: <ProjectHubPage /> },
         { path: 'projects/:projectId', element: <ProjectDetailPage /> },

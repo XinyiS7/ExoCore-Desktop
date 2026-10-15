@@ -516,10 +516,8 @@ describe('Agent Profile Memory summary (P2A Stage A)', () => {
     await screen.findByText('0 条记忆（含共享/全局）');
     expect(screen.getByText('暂无记忆标签。')).toBeTruthy();
     expect(screen.getByText('记忆管理入口将在 P5 Library 阶段提供。')).toBeTruthy();
-    // static text: no Library navigation was enabled anywhere
-    expect(screen.getByRole('button', { name: /Library/ }).getAttribute('aria-disabled')).toBe(
-      'true',
-    );
+    // static text: P4 Library is Collection only and exposes no Memory entry
+    expect(screen.queryByRole('link', { name: /Memory|记忆/ })).toBeNull();
   });
 });
 

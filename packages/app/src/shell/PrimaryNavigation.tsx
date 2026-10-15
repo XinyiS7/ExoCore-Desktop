@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Bell, Settings, User } from 'lucide-react';
 import { useUserAvatar } from '../shared/userAvatar';
-import { isChatActive, NAV_ITEMS, type NavItem } from './navigation';
+import { isChatActive, isLibraryActive, NAV_ITEMS, type NavItem } from './navigation';
 import { useNotifications } from '../features/notifications/notificationContext';
 
 /**
@@ -15,7 +15,9 @@ function NavItemRow({ item }: { item: NavItem }) {
   const { unreadCount } = useNotifications();
   const Icon = item.icon;
   if (item.enabled && item.to !== undefined) {
-    const active = item.id === 'chat' && isChatActive(pathname);
+    const active =
+      (item.id === 'chat' && isChatActive(pathname)) ||
+      (item.id === 'library' && isLibraryActive(pathname));
     return (
       <Link
         to={item.to}
