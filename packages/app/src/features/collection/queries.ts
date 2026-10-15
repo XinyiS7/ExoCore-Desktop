@@ -1,13 +1,24 @@
 import { useEffect, useMemo } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 import {
+  CollectionApiError,
+  deleteCollectionItem,
   getCollectionItem,
   listCollectionItems,
   listCollectionTags,
   mergeViewIntoDetail,
+  patchCollectionItem,
   recordCollectionView,
+  retryCollectionRepresentation,
 } from './api';
-import type { CollectionDetail, CollectionFilters } from './types';
+import type {
+  CollectionDetail,
+  CollectionFilters,
+  CollectionItemPatch,
+  CollectionPage,
+  RepresentationKind,
+} from './types';
 
 export const COLLECTION_PAGE_LIMIT = 24;
 
@@ -86,6 +97,74 @@ export function useRecordCollectionView() {
         collectionQueryKeys.detail(id),
         (detail) => (detail ? mergeViewIntoDetail(detail, view) : detail),
       );
+    },
+  });
+}
+
+type WallData = InfiniteData<CollectionPage, string | null>;
+
+function updateWallPages(client: QueryClient, update: (page: CollectionPage) => CollectionPage) {
+  client.setQueriesData<WallData>({ queryKey: ['collection', 'pages'] }, (data) =>
+    data ? { ...data, pages: data.pages.map(update) } : data,
+  );
+}
+
+/** Server-confirmed edit (no optimistic write): detail replaced, wall card patched in place. */
+export function usePatchCollectionItem(id: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: CollectionItemPatch) => patchCollectionItem(id, patch),
+    retry: false,
+    onSuccess: (detail, patch) => {
+      client.setQueryData(collectionQueryKeys.detail(id), detail);
+      updateWallPages(client, (page) => ({
+        ...page,
+        items: page.items.map((item) => (item.id === id ? {
+          ...item,
+          title: detail.title,
+          description: detail.description,
+          collection_context: detail.collection_context,
+          tags: detail.tags,
+          updated_at: detail.updated_at,
+        } : item)),
+      }));
+      if (patch.tags !== undefined) void client.invalidateQueries({ queryKey: collectionQueryKeys.tags });
+    },
+  });
+}
+
+/** Permanent delete; an already-missing item (404) settles the same way as 204. */
+export function useDeleteCollectionItem(id: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      try {
+        await deleteCollectionItem(id);
+      } catch (error) {
+        if (error instanceof CollectionApiError && error.code === 'collection_item_not_found') return;
+        throw error;
+      }
+    },
+    retry: false,
+    onSuccess: () => {
+      // The open detail observer closes itself; its cache entry then ages out unobserved.
+      updateWallPages(client, (page) => ({ ...page, items: page.items.filter((item) => item.id !== id) }));
+      void client.invalidateQueries({ queryKey: collectionQueryKeys.tags });
+    },
+  });
+}
+
+/** Retry a failed + retryable derivation; 409 `derivation_not_retryable` refreshes the detail. */
+export function useRetryRepresentation(id: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (kind: RepresentationKind) => retryCollectionRepresentation(id, kind),
+    retry: false,
+    onSuccess: (detail) => { client.setQueryData(collectionQueryKeys.detail(id), detail); },
+    onError: (error) => {
+      if (error instanceof CollectionApiError && error.code === 'derivation_not_retryable') {
+        void client.invalidateQueries({ queryKey: collectionQueryKeys.detail(id), exact: true });
+      }
     },
   });
 }

@@ -12,6 +12,7 @@ import { AgentProfilePage } from '../features/agents/AgentProfilePage';
 import { AgentHeartbeatPage } from '../features/heartbeat/AgentHeartbeatPage';
 import { RiverPage } from '../features/river/RiverPage';
 import { CollectionWallPage } from '../features/collection/CollectionWallPage';
+import { PolaroidExpanded } from '../features/collection/PolaroidExpanded';
 import { ProjectHubPage } from '../features/projects/ProjectHubPage';
 import { ProjectDetailPage } from '../features/projects/ProjectDetailPage';
 import { AccountPage } from '../features/account/AccountPage';
@@ -211,7 +212,9 @@ export function renderApp(
               <Route path="agents/:presetId" element={<AgentProfilePage />} />
               <Route path="agents/:presetId/heartbeat" element={<AgentHeartbeatPage />} />
               <Route path="river" element={<RiverPage />} />
-              <Route path="library" element={<CollectionWallPage />} />
+              <Route path="library" element={<CollectionWallPage />}>
+                <Route path="items/:itemId" element={<PolaroidExpanded />} />
+              </Route>
               <Route path="projects" element={<ProjectHubPage />} />
               <Route path="projects/:projectId" element={<ProjectDetailPage />} />
               <Route path="account" element={<AccountPage />} />
