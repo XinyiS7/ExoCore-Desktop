@@ -77,19 +77,21 @@ ExoCore V4
 │   ├── legacy Chronicle event
 │   └── Task / completion events
 │
-└── Library
-    ├── Collection
-    │   ├── Text
-    │   ├── Image
-    │   ├── Audio
-    │   └── Document
-    │
-    └── Memory
-        ├── MemoryPlasmid Library
-        ├── Trigger & Tags
-        ├── Recall Lab
-        └── History exact lookup
+└── Library = Collection
+    ├── Text
+    ├── Image
+    ├── Audio
+    └── Document
+
+Agent Profile
+└── Memory
+    ├── MemoryPlasmid Library
+    ├── Trigger & Tags
+    ├── Recall Lab
+    └── History exact lookup
 ```
+
+> [rev 2026-10-15：Alicia 决定 / 起草：砚，XinyiS7/ExoCore#61] Memory 不再挂在 Library 下，改在 Agent Profile 管理；Library 只放 Collection。
 
 Settings 从头像 / More 稳定可达，但不是一级产品区域。
 
@@ -196,7 +198,7 @@ Collection 是情感藏品：因为“想留下来”而存在。
 
 Memory 是 Agent recall substrate：因为“未来交流可能需要知道”而存在。
 
-二者同属 Library，但平级、不同 CRUD、不同数据模型。
+~~二者同属 Library，但平级~~；二者 CRUD 和数据模型都不同。Collection 是 Library 的全部内容，Memory 放在 Agent Profile（[rev 2026-10-15：Alicia 决定 / 起草：砚，XinyiS7/ExoCore#61]）。
 
 ### 6.2 Item 与 Asset
 
@@ -212,19 +214,19 @@ StoredAsset    = 文件原件身份、稳定 hash、物理生命周期
 - 同一表情包第十六次被发送并收藏，可以留下第十六次独立情境；
 - 删除 Item 不得误删仍被引用的 Asset；实际 GC 为独立生命周期问题。
 
-### 6.3 Derived semantic material
+### 6.3 Derived material（rev 2026-10-15，按 REQ rev 2026-10-09 / migration 0007 改写）
 
-- image：neutral description；
-- audio：可人工校准的 canonical transcript；
-- document：extracted text / canonical summary；
-- image 的 g045 主观点评属于另一 typed derivation，可预留类型但后置生成；
-- 模型的主观“听感”不伪装成客观 STT 落库。
+- 所有 item 都只有一个客观 `description` 字段（≤500）；主观感受写进收藏理由或评论；
+- image：`image_preview`（确定性派生）；
+- audio：`audio_playback`（确定性派生，必要时转码）；
+- document：`document_extracted_text`（确定性派生，可人工校准）；
+- ~~neutral description、canonical transcript、canonical summary、g045 主观点评 derivation~~ 已删除，不再预留。
 
 ### 6.4 RAG direction
 
 - Collection 未来是独立 RAG target；
 - 长期授权按 Agent type `g045`，不按易变化 DB preset ID；
-- V4 Collection 首期只建立原件、canonical semantic material、搜索与授权结构；
+- V4 Collection 首期只建立原件、`description` 与确定性派生、搜索与授权结构；
 - 暂不接 current `memory_search`。
 
 ### 6.5 历史附件
@@ -401,9 +403,9 @@ Roadmap author 可以基于依赖重新合并或拆小，但必须遵守：
 - mobile bottom bar 的具体四项与 More 交互；
 - Memo thread 的 inline / drawer / detail 展开；
 - Diary 全文 popup / drawer / inline；
-- Library landing 默认展示 Collection 还是 split chooser；
+- ~~Library landing 默认展示 Collection 还是 split chooser~~（已决定：Library = Collection，[rev 2026-10-15：Alicia 决定 / 起草：砚，XinyiS7/ExoCore#61]）；
 - Collection Item Detail 的 desktop/mobile 信息密度；
-- image g045 subjective impression 的生成时机；
+- ~~image g045 subjective impression 的生成时机~~（Superseded，rev 2026-10-15：已不再预留）；
 - Collection random browse；
 - multimodal embedding model/version；
 - Android Capacitor 具体承载方式；

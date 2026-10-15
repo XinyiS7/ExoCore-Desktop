@@ -122,23 +122,27 @@ Collection 是用户主动选择留下的静态藏品区，强调浏览、翻看
 Collection 与 River 的关键差异：
 
 - River 默认按发生时间阅读；
-- Collection 默认按类型、Tags、搜索、最近收藏或随机翻看浏览；
+- Collection 默认按类型、Tags、关键词搜索、最近 30 天、月份、含链接浏览（rev 2026-10-15；随机翻看后置）；
 - 同一内容可以既出现在 River，又被收藏，但必须通过来源关联避免两份正文独立漂移。
 
 ### 4.2 支持类型与双层表示
 
-| 类型 | 不可替代的原件 | 可检索语义表示 |
+| 类型 | 不可替代的原件 | `description` 与确定性派生 |
 |---|---|---|
-| 文字 | 原始文字 | 原文，可附用户备注 |
-| 图片 | 原始上传图像 | 中性视觉描述 |
-| 语音 | 原始音频 | 可人工校准的 canonical transcript |
-| 文档 | 原始文件 | 提取文本或摘要 |
+| 文字 | 原始文字 | 原文 + 单一客观 `description` + 收藏理由 |
+| 图片 | 原始上传图像 | 单一客观 `description`；确定性派生 `image_preview` |
+| 语音 | 原始音频 | 单一客观 `description`；确定性派生 `audio_playback` |
+| 文档 | 原始文件 | 单一客观 `description`；确定性派生 `document_extracted_text`（可人工校准） |
+
+> [rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61] 本表已按 REQ_20261005 rev 2026-10-09 / migration 0007 改写：neutral description、canonical transcript、summary 这几种 representation 已经删除；客观描述只放在一个 `description` 字段里（≤500），派生 representation 只剩上表的三种确定性派生。
 
 核心原则：
 
-> 原件负责不失真，语义表示负责被理解、搜索与再次带回聊天。[vellwarren / BunnyHome Gallery inspiration，Alicia approved direction]
+> 原件负责不失真，`description` 与确定性派生负责被理解、搜索与再次带回聊天。[vellwarren / BunnyHome Gallery inspiration，Alicia approved direction]
 
-中性描述、STT、人格第一印象和 embedding 是不同性质的派生内容，不得塞进一个无语义区分的万能 `description` 字段。
+~~中性描述、STT、人格第一印象和 embedding 是不同性质的派生内容，不得塞进一个无语义区分的万能 `description` 字段。~~
+
+> [rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61] 上一段已被 REQ_20261005 rev 2026-10-09 取代：`description` 现在就是唯一的客观描述字段，主观印象写进收藏理由或评论，embedding 不属于 representation。
 
 ### 4.3 静态浏览体验
 
@@ -149,11 +153,11 @@ Collection 主视图至少支持：
 ```
 
 - 图片使用适合不同比例的 Gallery/瀑布流；
-- 语音卡片显示播放入口、时长与 STT 摘要；
+- 语音卡片显示明确的播放入口（不显示时长和 STT；契约里没有这些数据）；
 - 文字以可阅读卡片展示；
-- 文档显示类型、标题与提取摘要；
-- 支持 Tags、关键词搜索、最近收藏；随机翻看属于可后置展示方式，不阻塞首期；
-- 条目详情显示原件、语义表示、来源、收藏时间和“带去聊天”。
+- 文档显示类型和标题；
+- 支持六种筛选：类型、Tag、关键词（字面匹配）、最近 30 天、自然月、含链接（只匹配文字藏品正文里的 `http(s)://`）；随机翻看属于可后置展示方式，不阻塞首期。筛选细节委托给 `Plan/V4_Phase_4_Library_Collection_Detailed_Plan.md` §4.3；
+- 条目详情显示原件、`description`、派生状态、收藏理由、来源、收藏时间、统计、评论，以及“带回聊天”（[rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61]：人侧带回是让藏品卡随 Alicia 的下一条消息发出，不再进入草稿；详见 REQ rev 2026-10-15）。
 
 ### 4.4 从会话附件晋升为收藏
 
@@ -180,16 +184,16 @@ SessionAttachment
 ```text
 Image Collection Item
 ├── Original Asset       原始上传字节，永不被预览处理覆盖
-├── Derived Preview      可重建的压缩预览
-├── Neutral Description  可编辑/可重建但有版本来源
+├── Derived Preview      可重建的压缩预览（image_preview）
 └── Embedding             可完全重建的索引
 
 Audio Collection Item
 ├── Original Audio
-├── Derived Playback      必要时的兼容转码
-├── Canonical Transcript  尽可能客观还原实际说话内容，可人工校准
+├── Derived Playback      必要时的兼容转码（audio_playback）
 └── Embedding             可完全重建的索引
 ```
+
+> [rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61] 结构图中原有的 Neutral Description 和 Canonical Transcript 两个节点已经删除；客观描述统一放在 item 的 `description` 字段，不作为 representation。
 
 当前聊天图片上传可能只保留处理版，因此既有图片不能未经核验就宣称为无损原件。
 
@@ -215,16 +219,16 @@ Legacy Chronicle = 历史数据来源，不再要求继续作为独立新产品�
 
 ### 4.7 RAG 与未来多模态 embedding
 
-Collection 首期基建必须形成独立、可搜索的 RAG target 语义，并以 **Agent type `g045`** 作为长期授权对象；不得绑定某个可能变化的数据库 preset ID。首期只建立原件、canonical semantic material、搜索边界和未来授权结构，**暂不接入当前 `memory_search`**，因为记忆搜索本身仍在持续调整。
+Collection 首期基建必须形成独立、可搜索的 RAG target 语义，并以 **Agent type `g045`** 作为长期授权对象；不得绑定某个可能变化的数据库 preset ID。首期只建立原件、`description` 与确定性派生、搜索边界和未来授权结构，**暂不接入当前 `memory_search`**，因为记忆搜索本身仍在持续调整。
 
 本 Spec 不冻结 `embedding-002` 升级方案。
 
 冻结原则：
 
-- 原件与 canonical 语义文本不依赖某个 embedding 型号；
+- 原件、`description` 与确定性派生不依赖某个 embedding 型号；
 - embedding 记录必须可删除、重建，并能辨识模型版本与模态；
-- RAG 结果必须说明命中的是原文、STT、图片描述还是其他派生表示；
-- 模型仅获得描述或 STT 时，不得声称正在重新查看像素或聆听原音频；
+- RAG 结果必须说明命中的是原文、`description`、收藏理由还是提取文本；
+- 模型只拿到描述时，不得声称正在重新查看像素或聆听原音频；
 - 用户必须可以要求“重新看原图”或“重新听/处理原音频”。
 
 ## 5. Memory：首期聚焦 MemoryPlasmid 管理
@@ -377,8 +381,9 @@ Chat / Groups / River / Library
 其中：
 
 ```text
-Library
-├── Collection
+Library = Collection
+
+Agent Profile
 └── Memory
     ├── MemoryPlasmid
     ├── Trigger & Tags
@@ -386,7 +391,7 @@ Library
     └── History（次级 / 精确查找）
 ```
 
-Collection 与 Memory 在 Library 内是**平级业务区**：前者是主动留下、翻看和回味的情感藏品，后者是为了维持会话连续性而可查看、可修正的 Agent recall substrate。它们可以共享壳、搜索设施与深链，但不得共享含混的数据模型或 CRUD。
+> [rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61] Library 只放 Collection；Memory（MemoryPlasmid 等）改在 Agent Profile 里管理（P5）。原因是两者服务的任务不同：Collection 是主动留下、翻看和回味的情感藏品；Memory 是为了维持会话连续性，可以查看和修正的 Agent recall substrate。数据模型和 CRUD 分离的原则不变。一级产品区域 `Chat / Groups / River / Library` 不变。
 
 Settings 属低频系统管理，稳定放入头像 / More；具体 route 可以继续存在。移动端底栏如何呈现这四个产品区域，留到 App Shell 低保真原型比较后冻结。
 
@@ -419,13 +424,13 @@ Settings 属低频系统管理，稳定放入头像 / More；具体 route 可以
 | 决策 | 状态 |
 |---|---|
 | 一级产品区域 | **Frozen：`Chat / Groups / River / Library`** |
-| Library 内 Collection / Memory 关系 | **Frozen：平级业务区，语义与 CRUD 分离** |
+| Library 内 Collection / Memory 关系 | **Frozen（rev 2026-10-15）：Library = Collection；Memory 在 Agent Profile；语义与 CRUD 分离** |
 | River 名称与主题句 | **Frozen：`River`；`River flows in you.` 长期展示于首页顶部** |
 | 未完成 Task | **Frozen：顶部 Open Tasks shelf + 主轴原事件珠子** |
 | Memo 数据来源 | **Delegated：优先研究 Timeline/Tweet → Memo 演化；回复 thread 必须保留** |
 | Chronicle | **Frozen direction：新产品领域倾向退役；旧表作 legacy archive/source，不 destructive migration** |
-| 图片“中立描述 + g045 主观点评” | **P2：字段类型预留；首期只要求可检索中立描述，主观点评后置** |
-| 语音文本 | **Frozen：单一可人工校准 canonical transcript；不持久化模型主观听感作为 STT** |
+| 图片“中立描述 + g045 主观点评” | **Superseded（REQ rev 2026-10-09）：单一客观 `description`；主观感受写进收藏理由或评论** |
+| 语音文本 | **Superseded（REQ rev 2026-10-09）：不再有 transcript representation；语音只保留 `audio_playback` 派生和 `description`** |
 | Collection RAG | **Frozen direction：独立 target，按 agent type `g045` 长期授权；首期暂不接 current `memory_search`** |
 | 自动召回反馈 | **Frozen：相关 / 无关 / 内容有误 / 本轮漏召回；首期只持久记录** |
 | 历史附件 | **Deferred：首期只做未来/实时收藏；历史人工添加以后再做** |
@@ -440,18 +445,18 @@ Settings 属低频系统管理，稳定放入头像 / More；具体 route 可以
 
 1. River 可在同一时间主轴辨识 Memo、Heartbeat 总结、Diary、Legacy Chronicle Event 与 Task；Memo reply thread 不参与主轴全局排序。
 2. Heartbeat 技术账本不默认污染 River，且可从总结条目追溯。
-3. Collection 可统一浏览文字、图片、语音和文档，同时明确区分原件与语义表示。
+3. Collection 可统一浏览文字、图片、语音和文档，同时明确区分原件、`description` 与派生状态。
 4. 收藏后的原件不依赖原 Conversation 或 SessionAttachment 的存续。
 5. 图片预览处理不得覆盖 Collection 保存的原始上传字节。
-6. 语音收藏可播放原音频并查看可人工校准的 canonical transcript；transcript 缺失或失败必须显式显示。
-7. Collection 条目可追溯来源，并能被重新带入聊天。
+6. 语音收藏可以播放（优先 `audio_playback`，否则原件）；派生状态（pending / succeeded / failed / unavailable）必须显式显示（rev 2026-10-15，取代 transcript 条目）。
+7. Collection 条目可以追溯来源，并能以藏品卡的形式被重新带入聊天（Alicia 和 Agent 两侧的卡片同源）。
 8. MemoryPlasmid 可按 Agent、Tag、scope、来源、处理状态和触发词状态管理。
 9. 自动召回结果可从对应 User Message 查看，不依附 Assistant Thinking 文本。
 10. 自动召回反馈能够区分相关、无关、内容错误与漏召回语义，且不会立即静默修改质粒参数。
 11. 主动 `memory_search` 仍作为 ToolCall 展示，不强迫聊天现场评分。
 12. Recall Lab 能对指定词或自然语言查询展示可解释结果，并记录应命中、不应命中和遗漏判断。
 13. Thinking、ToolCall、Recall UI 不继续堆入一个巨型 MessageBubble 实现。
-14. embedding 索引可重建，升级或失效不损坏 Collection 原件与 canonical 语义内容。
+14. embedding 索引可以重建；升级或失效都不损坏 Collection 原件与 `description`。
 15. 同一 StoredAsset 可被不同收藏时刻重复引用；资产去重不得抹掉重复收藏本身的情境信息。
 16. 旧 Chronicle 未被明确 promotion 的条目继续可审计保留，但不得因迁移策略自动进入 Collection 或污染新 River。
 

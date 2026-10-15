@@ -46,7 +46,7 @@
 
 - 一个 V4 SPA / PWA，位于现有 `ExoCore-Desktop` monorepo 的独立新 package；默认不开新 repo。
 - 一级产品区域：`Chat / Groups / River / Library`。
-- `Library = Collection + Memory`，二者平级但 CRUD 与模型严格分离。
+- ~~`Library = Collection + Memory`~~ → **`Library = Collection`；Memory 在 Agent Profile 管理**，CRUD 与模型严格分离 [rev 2026-10-15：Alicia 决定 / 起草：砚，XinyiS7/ExoCore#61]。
 - `Conversation = Agent × Optional Project`；无 Project 状态名为 `Drift`。
 - 普通 Conversation 只有一个 canonical chat；GroupChat 保持独立实体和运行逻辑。
 - River 是后端聚合的 time read model，不是新的万能 source-of-truth 表。
@@ -99,7 +99,7 @@ P0 Contract & Baseline Freeze
                      └── P2C Core Shell + Account + Settings
                           └── [B6 PASS] P2D Assistant-message Notifications [C2]
                                └── [B2 PASS] P3 River + Memo
-                                    └── [B1 PASS] P4 Library Shell + Collection
+                                    └── [B1 PASS] P4 Library (= Collection)
                                          └── [B3 PASS] P5 Memory Library
                                               └── [B4 PASS] P6 Recall Observability
                                                    └── P7 Production Cutover
@@ -173,8 +173,8 @@ C0 后端并行轨：B1–B6 可分别提前施工与验收
 | **P2D — C2 PASS** | assistant-message arrival 的前台原位刷新、后台 Web Push、未读与 typed deeplink | P2C + B6 | Workspaces、Shell、Settings、Notifications 的统一 Core C2 ownership |
 | **P2G — deferred** | Group list/create/room/send/broadcast，保持独立 GroupChat runtime | Alicia future release | GroupChat only；不阻塞 C2/P3，未施工期间 V3-primary |
 | **P3 — C3 PASS** | River + Memo + Tasks/Calendar + Diary/Heartbeat/legacy event | C2 + B2 | **已完成：五源时间阅读与本期来源操作转移；Chronicle highlight/bookmark 暂留 V3** |
-| **P4** | Library container/navigation + Collection managed originals 与四类浏览/收藏路径 | P3 + B1 | Library shell、Collection、新 bookmark writes |
-| **P5** | 向既有 Library shell 加入 MemoryPlasmid、Trigger/Tags、History exact lookup | P4 + B3 | V3 Memory 管理入口 |
+| **P4** | Library（= Collection）navigation + Collection managed originals 与四类浏览/收藏/人侧带回路径 | P3 + B1 | Library、Collection、新 bookmark writes |
+| **P5** | 在 Agent Profile 内交付 MemoryPlasmid、Trigger/Tags、History exact lookup（rev 2026-10-15，不再进入 Library） | P4 + B3 | V3 Memory 管理入口 |
 | **P6** | Recall Receipt + feedback + Recall Lab runtime observability | P5 + B4（并继承 P1 chat） | 自动 recall 可观察与反馈能力 |
 | **P7** | 单 SPA production cutover；V3 保持完整 rollback artifact | P2–P6 全 PASS | 整个 V4 Web/PWA production 入口 |
 | **P8** | 观察期结束后的 Legacy retirement 与受控清理 | P7 + Alicia 明确批准 | 删除已无 ownership 的 V3 表面 |
@@ -423,18 +423,20 @@ B2 必须稳定提供：
 
 ---
 
-## 10. Phase 4 — Library Shell + Collection
+## 10. Phase 4 — Library (= Collection)
 
 ### Objective
 
-首次建立 canonical Library container/navigation，并在其中交付不依赖 Conversation/SessionAttachment 存续的长期藏品能力。P4 owns Library shell + Collection；P5 只向同一 shell 加入平级 Memory，不得重造 Library 容器。[model not supplied / R1 reviewer，Alicia approved]
+首次建立 canonical Library 导航，并在其中交付不依赖 Conversation/SessionAttachment 存续的长期藏品能力。P4 owns Library = Collection。[model not supplied / R1 reviewer，Alicia approved]
+
+> [rev 2026-10-15：Alicia 决定 / 起草：砚，XinyiS7/ExoCore#61] 原文中“P5 只向同一 shell 加入平级 Memory”已作废：Library 只放 Collection，P5 的 Memory 管理改在 Agent Profile 交付。详细计划见 `Plan/V4_Phase_4_Library_Collection_Detailed_Plan.md`。
 
 ### Scope boundary
 
-- Library container/navigation 与 Collection canonical routes。
+- Library 导航与 Collection canonical routes（`/library`、`/library/items/:id`）。
 - CollectionItem 与 StoredAsset 的分离身份。
 - text/image/audio/document 四类浏览、详情、Tags、搜索、最近收藏与来源追溯。
-- 文件原件、preview、neutral description、canonical transcript、document extracted material 等 typed representations。
+- 文件原件、单一客观 `description`，以及三种确定性派生 representation：`image_preview`、`audio_playback`、`document_extracted_text`（rev 2026-10-15：按 REQ rev 2026-10-09 / migration 0007 改写，neutral description 和 canonical transcript 已删除）。
 - 从**新且 provenance 可靠**的会话内容显式收藏；P4 接管新文字 bookmark write ownership。
 - 旧 Chronicle highlight 只进入候选/promotion 流程，不自动批量迁移。
 - 建立独立 Collection search target identity 与按 Agent type `g045` 的长期 authorization boundary；首期不连接 current `memory_search`。
@@ -462,12 +464,12 @@ B1 必须稳定提供：
 
 ### Exit gate
 
-- 四种类型均可稳定展示；原件与 semantic material 在 UI 和 contract 上可区分。
-- 图片 preview 不覆盖 managed original；audio transcript 缺失/失败可见。
+- 四种类型均可稳定展示；原件、`description` 与派生状态在 UI 和 contract 上可区分。
+- 图片 preview 不覆盖 managed original；三种派生的状态（含失败）可见。
 - 相同 StoredAsset 可被多个收藏 occurrence 引用，描述与情境不被合并丢失。
 - 删除 Item 不会误删仍被引用的 Asset。
-- Library container/navigation 由 P4 成为 canonical owner；后续 Memory 复用该壳。
-- Collection 可“带去聊天”，并具有独立 search target identity 与 `g045` authorization boundary，但尚不接 current `memory_search`。
+- Library 导航由 P4 成为 canonical owner；Memory 不进入 Library（rev 2026-10-15）。
+- Collection 支持人侧带回：选中的藏品作为藏品卡随 Alicia 的下一条消息发出，不进草稿；模型只看到 descriptor（rev 2026-10-15，REQ §5.6）。Collection 具有独立 search target identity 与 `g045` authorization boundary，但尚不接 current `memory_search`。
 
 ### Checkpoint / rollback
 
@@ -484,12 +486,12 @@ B1 必须稳定提供：
 
 ### Scope boundary
 
-- 复用 P4 的 canonical Library container/navigation，加入与 Collection 平级的 Memory 区；不得另建第二套 Library shell。
+- ~~复用 P4 的 canonical Library container/navigation，加入与 Collection 平级的 Memory 区~~ → Memory 管理的 canonical 入口在 Agent Profile（[rev 2026-10-15：Alicia 决定 / 起草：砚，XinyiS7/ExoCore#61]）；不建第二套管理实现。
 - MemoryPlasmid Library、detail、Agent/scope/Tags/source/status/trigger/body filters。
 - 可编辑真实允许修改的 content、scope、Tags、trigger keywords、weight。
 - Trigger & Tags 管理和关联检查。
 - History grep-like exact lookup：hit count、context snippets、expandable source。
-- Agent Profile 的 Memory 只提供摘要与带 Agent filter 的深链，不复制管理实现。
+- ~~Agent Profile 的 Memory 只提供摘要与带 Agent filter 的深链~~ → Agent Profile 承载 Memory 的完整管理实现（rev 2026-10-15）。
 - 不含 runtime Recall Receipt、自动反馈、自动权重优化或 Collection RAG。
 
 ### Backend handoff — B3 hard gate
@@ -505,11 +507,11 @@ B3 必须稳定提供：
 
 - P4 PASS。
 - B3 backend contract 与独立验收 PASS。
-- Library landing 与 Memory navigation mockup 已冻结。
+- Agent Profile 内 Memory 区的 mockup 已冻结（rev 2026-10-15：不再有 Library landing）。
 
 ### Exit gate
 
-- Library 和 Agent deep link 进入同一 Memory 实现并正确应用 Agent filter。
+- 各处 deep link 进入 Agent Profile 内的同一 Memory 实现，并正确应用 Agent filter（rev 2026-10-15）。
 - MemoryPlasmid、History、Project Knowledge 在名称、来源和可操作字段上不混淆。
 - 搜索与组合筛选由后端执行；前端不加载全量数据伪装分页。
 - 修改正文引起的 processing 状态和失败可见，不把 pending/failed 条目伪装成 ready。
@@ -683,7 +685,7 @@ Handoff acceptance 只判断稳定接口、权限、分页/identity/error 语义
 | Aura / conversation现场主题 | chat-core chat surface | **Migrate** | P1D/C1 | 作为 chat-local capability，不降级为全局低频设置 | V3 chat-core |
 | Project files in chat | chat-core drawer/header | **Migrate** | P1D/C1 | chat-local 文件访问保持 | V3 chat-core |
 | Project workspace files/knowledge | chat-core Project views | **Migrate** | P2 | workspace 与 chat 引用同一事实来源 | V3 Project views |
-| Agent Hub / Profile | chat-core | **Replace within canonical Chat area** | P2 | 身份、Prompt、会话入口、Memory deep link 保持 | V3 Agent views |
+| Agent Hub / Profile | chat-core | **Replace within canonical Chat area** | P2 | 身份、Prompt、会话入口保持；Memory 管理由 P5 在 Agent Profile 内承载（rev 2026-10-15） | V3 Agent views |
 | Project Hub / Detail | chat-core | **Replace within canonical Chat area** | P2 | 项目详情、会话、files/knowledge 入口保持 | V3 Project views |
 | Message TTS playback | 无 V4 owner；后端 B5 建设中 | **Add thin message-level consumer** | P2T/C2 | lazy render、真实 render 状态、播放时间轴、single-owner playback、failure isolation、no autoplay | Disable voice control；canonical text remains |
 | GroupChat | chat-core Groupchat views | **Defer, later migrate with separate runtime** | P2G（未排期） | list/create/room/send/broadcast/recovery 不伪装普通 chat | V3 Groupchat views |
@@ -697,9 +699,9 @@ Handoff acceptance 只判断稳定接口、权限、分页/identity/error 语义
 | Diary | backend/domain existing surface | **Add canonical River read path** | P3 | preview/full read 同一 canonical content | Existing backend/read path |
 | Chronicle milestone/moment | chronicle | **Replace active time-reading UI; retain legacy source/archive** | P3/P8 | P3 转移时间阅读；archive 持续可审计；P8 才可清理旧表面 | V3 Chronicle |
 | Chronicle highlight/bookmark | chat-core → Chronicle | **Keep V3 through P3; replace new writes with Collection** | P4 | P3 无 ownership 真空；P4 新收藏写 Collection；旧数据仅 candidate | V3 highlight read/write path |
-| Library container/navigation | 无 canonical V3 owner | **New shared shell** | P4 | P4 owns container/routes；P5 复用而不重建 | Disable V4 Library exposure |
+| Library navigation | 无 canonical V3 owner | **New（Library = Collection）** | P4 | P4 owns routes；Memory 不进 Library（rev 2026-10-15） | Disable V4 Library exposure |
 | Collection | 无稳定 V3 owner | **New capability** | P4 | B1 data integrity + four-type browser + target identity + `g045` agent-type authorization | Disable V4 Collection exposure |
-| MemoryPlasmid management | chat-core AgentMemory/MemoryConsole（语义不完整） | **Replace inside P4 Library shell** | P5 | filters/edit/status/deep link 完整；不复制 Library 容器 | V3 memory surfaces |
+| MemoryPlasmid management | chat-core AgentMemory/MemoryConsole（语义不完整） | **Replace inside Agent Profile**（rev 2026-10-15） | P5 | filters/edit/status/deep link 完整；单一管理实现 | V3 memory surfaces |
 | History exact lookup | V3 HistoryChunk management | **Replace UX, preserve source** | P5 | grep-like count/context/expand | V3 History surface |
 | Automatic recall receipt/feedback | 无合格 V3 owner | **New capability** | P6 | B4 attempt identity + feedback persistence | Disable receipt exposure |
 | Active `memory_search` ToolCall | chat-core tool event | **Migrate, not merge with auto recall** | P1D/C1；P6 verify | 始终保留普通 ToolCall 语义 | V3 chat-core |
@@ -753,7 +755,7 @@ Roadmap handoff 前按 acceptance scope 做消融：
 - 为未来规模预建 Conversation server filtering：R2 尚无 blocker 证据。
 - 新 repo、SSR、Zustand、Capacitor、原生推送重做：当前 acceptance 不需要。
 - legacy attachment inbox、全量附件迁移、`.webm 001` 自动封存：provenance 不足且 Alicia 已明确后置。
-- Collection → current `memory_search` retrieval wiring、embedding 升级、主观图片点评、随机浏览：均不阻塞 Collection 首期；P4 仍必须建立 target identity 与 `g045` authorization boundary。
+- Collection → current `memory_search` retrieval wiring、embedding 升级、随机浏览（主观图片点评已 Superseded，rev 2026-10-15）：均不阻塞 Collection 首期；P4 仍必须建立 target identity 与 `g045` authorization boundary。
 - 自动 feedback 调权、自动 Tag 合并、History semantic ranking：超出冻结目标。
 - destructive Chronicle cleanup 与 Council retirement：必须另行批准。
 - Phase 2 以后源码文件预测：在未来源码与后端契约未就绪时属于脆弱猜测。
@@ -775,7 +777,7 @@ Roadmap handoff 前按 acceptance scope 做消融：
 - [x] P1A–P1D 已完成，只有统一 C1 转移了 Chat ownership；
 - [x] V3 capability matrix 保留所有未转移 owner；GroupChat 明确留在 V3-primary；
 - [x] P3 不提前接管 highlight/bookmark；P4 才把新 bookmark writes 转给 Collection；
-- [x] P4 owns Library shell，P5 复用；P1 owns `AssistantRunTrace`，P6 只扩展 recall；
+- [x] P4 owns Library（= Collection），P5 Memory 在 Agent Profile（rev 2026-10-15）；P1 owns `AssistantRunTrace`，P6 只扩展 recall；
 - [x] P7 cutover 后 V3 保持完整 rollback reference；只有 P8 可受控清理；
 - [x] 后续仍不在 backend contract/上游 gate 前提前写源码级计划；
 - [x] TTS/notification active scope 与 Groups/Live/电话/Capacitor deferred scope 已分离。

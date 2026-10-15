@@ -12,7 +12,7 @@
 
 一个应用壳 + 四大产品区域：**Chat / Groups / River / Library**。Settings 从头像 / More 稳定可达但不占一级产品槽位。三级结构是复杂对象路径的上限与常用模式，不要求所有板块机械凑满三级。
 
-**推荐 mockup 绘制顺序：先画 ① App Shell → ② Chat 首页 → ③ River 中轴时间线 → ④ Library 首页/切换关系**。前两张决定迁移起点，后两张决定新产品区的长期 IA。
+**推荐 mockup 绘制顺序：先画 ① App Shell → ② Chat 首页 → ③ River 中轴时间线 → ④ Library（= Collection）拍立得墙**。前两张决定迁移起点，后两张决定新产品区的长期 IA。
 
 ---
 
@@ -40,7 +40,7 @@
 **关键设计点：**
 - Agent × Project 是**组合筛选维度，不是两套会话树**——同一会话只存一份；从 Agent 进突出 Project 标签，从 Project 进突出 Agent 标签。
 - 无 Project 的对话称 **Drift**（名称已冻结）。
-- Agent Profile 内嵌 **Memory 摘要 + 管理入口**（深链）。
+- Agent Profile 内承载 **Memory 的完整管理**（MemoryPlasmid、Trigger & Tags、Recall Lab、History）（[rev 2026-10-15：Alicia 决定 / 起草：砚，XinyiS7/ExoCore#61]）。
 - Chat 页承载聊天流、模型控制、附件、音频等能力，但界面应让**模型控制等浮层不挤压消息区**。
 
 ---
@@ -75,20 +75,19 @@
 
 ---
 
-## 板块四：Library — 长期留下的内容与记忆管理
+## 板块四：Library — 长期留下的藏品（Library = Collection）
+
+> [rev 2026-10-15：Alicia 决定 / 起草：砚，XinyiS7/ExoCore#61] Library 只放 Collection；Memory 的各级页面（Plasmid Library、Plasmid Detail、Recall Lab）移到板块一的 Agent Profile 里。
 
 | 层级 | 页面 | 说明 |
 |---|---|---|
-| 板块首页 | **Library** | Collection / Memory 两个平级业务入口 |
-| 第2级 | **Collection Browser** | 文字 / 图片 / 语音 / 文档；Tags、搜索、最近收藏 |
-| 第3级 | **Collection Item Detail** | 原件、canonical semantic material、来源、收藏情境、带去聊天 |
-| 第2级 | **Memory / Plasmid Library** | Agent、scope、Tags、source、trigger、status、正文搜索 |
-| 第3级 | **MemoryPlasmid Detail** | 正文、触发词、Tags、weight、来源与处理状态 |
-| 第2级 | **Recall Lab** | Plasmid 检索检查 + History grep-like 精确查找 |
+| 板块首页 | **Library = Collection Browser**（拍立得墙） | 文字 / 图片 / 语音 / 文档；Tags、搜索、最近 30 天、月份、含链接 |
+| 第2级 | **Collection Item 放大态** | 原件、`description` 与派生状态、收藏理由、来源、统计、评论、带回聊天 |
+| （Agent Profile 内） | **Memory / Plasmid Library、MemoryPlasmid Detail、Recall Lab** | 内容同原表，归属改到 Agent Profile |
 
 **关键设计点：**
 - Collection 是“主动留下来回味的藏品”；Memory 是“为了会话连续性而可查看、可修正的 recall substrate”。
-- 两者可共享搜索壳和 Tags 视觉，但不能共享含混的数据模型或 CRUD。
+- 两者不共享含混的数据模型或 CRUD。
 - Collection 首期必须有稳定展示面；随机翻看后置。
 - Settings 不再是一级板块，从头像 / More 进入现有设置中心。
 
@@ -104,6 +103,9 @@
 - [ ] Agent Hub 列表
 - [ ] Project Hub 列表
 - [ ] Agent Profile 详情
+- [ ] Agent Profile 内 MemoryPlasmid Library + Detail（rev 2026-10-15）
+- [ ] Agent Profile 内 Trigger & Tags
+- [ ] Agent Profile 内 Recall Lab（Plasmid + History grep-like）
 - [ ] Project Detail 详情
 - [ ] Chat 页（canonical 唯一实现）
 
@@ -118,11 +120,8 @@
 - [ ] 单项详情 / 编辑
 - [ ] 日历陪伴视图
 
-**Library 板块**
-- [ ] Library 首页 / Collection-Memory 切换关系
-- [ ] Collection Browser + Item Detail
-- [ ] MemoryPlasmid Library + Detail
-- [ ] Recall Lab（Plasmid + History grep-like）
+**Library 板块**（rev 2026-10-15：Library = Collection；Memory 三项已移到 Chat 板块的 Agent Profile 下）
+- [ ] Collection 拍立得墙 + 放大态
 
 **低频系统入口**
 - [ ] 头像 / More → Settings 中心
@@ -136,7 +135,7 @@
 | 移动端底栏最终四项与 More 交互 | App Shell 原型验收前 |
 | Memo thread 在小屏使用 inline / drawer / detail 哪种展开 | River mockup 前 |
 | Diary 全文使用 popup / drawer / inline | River mockup 前；不影响 API 契约 |
-| Library 首页是 split landing 还是默认进入 Collection | Library mockup 前 |
+| ~~Library 首页是 split landing 还是默认进入 Collection~~ | **已决定（rev 2026-10-15）：Library = Collection** |
 | Collection Item Detail 的 desktop/mobile 信息密度 | Collection mockup 前 |
 
 ---
