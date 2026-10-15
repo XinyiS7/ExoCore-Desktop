@@ -227,6 +227,25 @@ Runtime regenerate 当前仅支持 text-only 目标；目标 Message 自带附�
 - 失败合成**不产生** audio attachment / transcript：Desktop 在 assistant 行只渲染安全失败文案（`send_voice_msg 调用失败` + code），不创建 audio player、不显示任何被截断的 tool 参数；completed Message 存在时改由 durable `voice_tool_errors[]` 提供同值，live 与 durable 按 turn/position 去重。render 成功后的本地 artifact publish/transaction failure 走 terminal generic system error 并整体回滚，不伪造 positioned `voice_tool_error` 或 durable failed outcome；内部安全码 `artifact_publish_failed` 不进入这两个 positioned 投影。
 - 完整 voice player、播放结束后的 transcript 展示与通知行为不属于本事件，留给后续 checkpoint；本事件不扩张既有 `assistant_trace` DTO。
 
+### 1.3.5 collection_items — 人侧带回藏品（#61 CP-B2，additive）
+
+**请求字段：** `POST /api/agents/chat/<session_id>/` 可选 body 字段 `collection_items`（正整数藏品 id 列表）。缺省或 `[]` 行为不变。
+
+- 形状：必须是 JSON list，元素为正整数；bool、0、负数、字符串、对象、非整数一律非法。重复 id 按首次出现折叠，折叠后的顺序即卡片顺序；去重后最多 5 个。
+- 形状校验先于通用空请求门：合法非空列表本身即可发送（`content` 可为空，即 card-only 回合）。
+- 仅 G045 会话可带；`edit_message_id`（edit/regenerate）不得携带新卡。
+- 整请求错误：在偏好写入、Message 落盘与任何预留之前返回 `400 {"code","error"}`，不含 `item_id`：
+  - `collection_bring_invalid`（形状非法或非 G045 会话）；
+  - `collection_bring_too_many`；
+  - `collection_bring_unsupported_with_edit`。
+- 逐项错误：预检阶段返回 `422 {"code","message","item_id"}`，零写入（原件损坏/缺失时仅如实把 StoredAsset 标为 missing）：
+  - `collection_bring_item_not_found`；
+  - `collection_bring_original_unavailable`；
+  - `collection_bring_empty_text`。
+- 接受后（HTTP 已返回流）才发现的同三种逐项失败，以 SSE `error` 事件 `{code, message, item_id}` 报出，绝不表现为 `internal_error`；该回合整体回滚，不留半成功的消息、卡片、附件或计数。
+- 成功：新 user Message 与其全部卡片（`collection_shows[]`，见 §1.5.2）、图片/音频/文档原件副本（`attachments[]` 中 `source="collection_item"` 的 ready 行）以及每张卡一次 `show_count` 同时落地；`Message.content` 只存正文，永不含藏品文本或标签。STOP 或生成失败不撤销已接受的 user 行与卡片。
+- 重新生成（`edit_message_id` 指向已带卡的 user 行）原样重放已持久化的卡，不新建卡/附件/副本，不再计数。
+
 ### 1.4 Superior Session — Agent 自主调度
 
 **POST /api/agents/sessions/init/** — 创建 Conversation（Standard / Superior(g045) 通用）
@@ -380,7 +399,7 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
   - `producer`：产生用户卡的 registry 登记名：`agy_generate_image`、`collection_bring_back`、`collection_heartbeat_bring_back`（#54）。`send_voice_msg` 仍在 registry 登记，但不产生用户卡（#51），历史语音的 Artifact 行也不再投影到本数组。
   - `kind`：`agy_generate_image` 为 `image`；两个藏品 producer 为 `text | image | audio | file`。Desktop 按 producer 校验 kind：非藏品 producer 只收 `image | file`（`audio` 项丢弃），未知 kind 一律丢弃。
   - `position`：同一 assistant 消息、同一 producer 内的产物序号，从 0 起。
-  - `human`：`{ title, detail | null }`，由后端从唯一 descriptor 渲染，前端不自行拼装。非藏品 producer 的 `title`/`detail` ≤ 2000 字符（超限项丢弃）；藏品 producer 的 `detail` 仅为非空的 `收藏理由：…`，**不设长度上限、不截断**，理由为空则为 `null`（`title` 仍 ≤ 2000）。
+  - `human`：`{ title, detail | null }`，由后端从唯一 descriptor 渲染，前端不自行拼装。非藏品 producer 的 `title`/`detail` ≤ 2000 字符（超限项丢弃）；藏品 producer 的 `detail` 仅为非空的 `收藏理由：…`，**不设长度上限、不截断**，理由为空则为 `null`（`title` 仍 ≤ 2000）；藏品 `text` 卡另有 `human.text`：完整文本快照（#61，不截断），media 卡无此字段。
   - `collectible`：由 registry 决定，本期恒为 `false`，没有收藏按钮。
   - `presentation_attachment`：指向同一消息 `attachments[]` 中的 ready 媒体行，可为 `null`。
 - **排序**：后端按 `(position, producer, id)` 输出。
@@ -400,13 +419,37 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
   - `collection_bring_back`：live Direct / AGY 轮次，卡片随该轮 completed assistant 回复落地；failed/STOP 不落卡。
   - `collection_heartbeat_bring_back`：心跳每次带回当场投递一条**正文为空**的 Prime assistant 消息（`platform="PushService"`），只有卡片和附件——artifact-only 消息，前端不得显示“空消息”。
   - `title` 恒为 `从藏品馆带回 · <文本|图片|音频|文档> #<item_id>`，按藏品真实 kind（descriptor `item_kind`），与附件实际 kind 无关；面向人的 `detail` 仅显示非空的 `收藏理由：…`，不显示来源、原时间、藏品标题、客观描述或文本全文。完整信息仍保留在 descriptor、工具结果与模型 continuity。
-  - 分工：`text` 无附件（`presentation_attachment=null`），全文保留在 descriptor 与模型 continuity；image/audio 原件复制为同消息 `attachments[]` 中 `source="collection_item"` 的 ready 行，由 `attachments[]` 渲染一次；超出附件媒体白名单的图片/音频（如 HEIC、M4A）降级为 `kind="file"` 附件，字节不变，经 content 端点以 `attachment` 下载；document 恒为 `file`。
+  - 分工：`text` 无附件（`presentation_attachment=null`），全文保留在 descriptor 与模型 continuity，并经 `human.text` 展示；image/audio 原件复制为同消息 `attachments[]` 中 `source="collection_item"` 的 ready 行，由 `attachments[]` 渲染一次；超出附件媒体白名单的图片/音频（如 HEIC、M4A）降级为 `kind="file"` 附件，字节不变，经 content 端点以 `attachment` 下载；document 恒为 `file`。
   - `source="collection_item"` 的音频不是语音：不走 transcript，也不出现在 `voice_tool_errors[]`。
   - 卡片无收藏按钮（`collectible=false`）；Desktop 对两个藏品 producer 使用同一克制的藏品标记。
 - **模型历史契约**（后端内部，不改 API shape）
   - API 自管历史（Direct Gemini/DeepSeek 等，含消费 AGY 历史的会话）：在产物之前最近的 user 消息下附加 `<assistant_artifact>` 第二名单。voice 携带原始 spoken content；image 携带描述或“画面描述暂不可用”，按装配时的当前状态读取。有 Artifact 的 voice 不再重复输出 legacy `<voice_message>`。
   - Runtime（AGY）bootstrap/rebase/continuity delta：不输出 Artifact 第二名单；`<voice_message>` 新旧语音照常投影。Runtime wire、manifest、`RuntimePresentation` schema 与 prefix digest 都不变。
   - `collection_bring_back` 属 user 锚第二名单（同 voice/image 规则）。`collection_heartbeat_bring_back` 例外：anchor 为空，continuity 投影在它自己的 assistant 消息上（`<voice_message>` 之后），API 自管历史（raw/hot 或 cache buffer，二者之一）与 Runtime 新 session bootstrap/rebase 的长首条历史都恰好出现一次；continuity delta 不接；canonical `Message.content` 不写。
+
+### 1.5.2 collection_shows[] — 人侧带回卡（#61 CP-B2，additive）
+
+同一消息列表/详情接口的每条消息新增 `collection_shows[]`。只有带回过藏品的 user 行非空；assistant 行与其他行恒为 `[]`。
+
+```json
+[
+  {
+    "key": "user_collection_show:12",
+    "item_id": 34,
+    "item_kind": "text",
+    "position": 0,
+    "title": "从藏品馆带回 · 文本 #34",
+    "detail": "收藏理由：……",
+    "text": "完整文本快照"
+  }
+]
+```
+
+- **字段**：`key` 稳定去重键；`item_id` 为发送时快照（藏品之后被编辑或删除，已发送的卡不变）；`item_kind` 为 `text | image | audio | document`；`position` 从 0 起，按此排序；`title` 同 #54 规则；`detail` 仅在收藏理由非空时出现；`text` 仅 text 卡出现（完整快照）。
+- **媒体**：image/audio/document 原件副本仍只由同消息 `attachments[]` 的 `source="collection_item"` 行渲染一次，本数组不复制 URL 或文件元数据。
+- **登记例外**：`AssistantArtifact` 仍只属 assistant；`UserCollectionShow` 是 user 侧唯一的卡片侧表。
+- **次数纪律**：每张卡在发送当轮模型输入中恰好一次，之后每条历史投影（raw/hot、cache buffer、Runtime bootstrap/rebase、continuity delta）恰好一次；重新生成原样重放，不再计数。人侧带回只增加 `show_count`，从不增加 `view_count`；Agent 之后 `inspect_original` 仍按既有 Agent view 规则计数。
+- 批量投影，查询数与历史长度无关（空历史亦然）。
 
 ### 1.6 Conversation Cache — 上下文缓存
 
@@ -1667,7 +1710,6 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 | `GET /items/<id>/original/` | 200/404 | 读取原件 bytes |
 | `GET /items/<id>/representations/<kind>/content/` | 200/404 | 读取派生 artifact |
 | `POST /items/<id>/representations/<kind>/retry/` | 200 | 重试真实 failed + retryable 自动派生 |
-| `POST /items/<id>/bring-to-chat/` | 200/201 | text 回 composer payload；file 复制回 G045 会话附件域 |
 | `GET /tags/` | 200 | 当前非空 Tag 及 Item 数量 |
 
 `GET /items/` query：
@@ -1774,9 +1816,8 @@ producer 投影为 `human` / `manual-v1`。不可变 source、kind、asset 与�
       "updated_at": "<ISO-8601>"
     }
   ],
-  "capabilities": ["update","delete","bring_to_chat","read_original"],
+  "capabilities": ["update","delete","read_original"],
   "original_content_url": "/api/collection/items/<id>/original/",
-  "bring_to_chat_url": "/api/collection/items/<id>/bring-to-chat/",
   "comments": [
     {"author_type": "human", "author_label": "Alicia", "body": "...", "created_at": "<ISO-8601>"}
   ],
@@ -1813,22 +1854,13 @@ producer 投影为 `human` / `manual-v1`。不可变 source、kind、asset 与�
   `document_extraction_unavailable`）是可展示的派生状态，
   不是独立 HTTP 错误信封。
 
-### 13.5 原件、派生内容与 bring-to-chat
+### 13.5 原件与派生内容
 
 - 原件/派生内容以 `FileResponse` 返回，并带
   `Cache-Control: private, max-age=0` 与 `X-Content-Type-Options: nosniff`。
 - 内容不存在、Asset 不可读或 trusted-agent 未授权统一映射为：
   `404 {"error":"Collection content not found","code":"collection_item_not_found"}`；
   客户端不得据此推断隐藏资源是否存在。
-- `POST bring-to-chat` 请求为 `{"conversation_id": <positive-int>}`。目标身份由服务端
-  重新加载 Conversation → AgentPreset，必须为 G045。
-- text 成功返回 200：
-  `{"mode":"text","composer_payload":{"text":"...","source":{"type":"collection_item","id":<int>}}}`；
-  不自动发送消息。
-- file 成功返回 201，包含 `mode="attachment"`、`pending_attachment_id` 和新的安全
-  `attachment` 投影（id / display_name / original_filename / mime_type / file_size /
-  provenance_id / source）。它复制到 chat 附件域并创建新 provenance；不会让
-  SessionAttachment 直接引用 Collection 文件，也不会把 Collection 生命周期交给聊天。
 
 ### 13.6 实际公共错误词表
 
@@ -1843,9 +1875,8 @@ producer 投影为 `human` / `manual-v1`。不可变 source、kind、asset 与�
 | `source_type_mismatch` | 400 | source type/kind/selection 不匹配 |
 | `source_provenance_unavailable` | 409 | provenance 不存在或不是已确认新上传 occurrence |
 | `asset_missing` | 409 | 创建收藏时 managed original 已不可用 |
-| `asset_verification_failed` | 409 | bring-to-chat 原件 hash/size/copy 校验失败 |
+| `asset_verification_failed` | 409 | Collection 原件 hash/size 校验失败（`CollectionAssetError`）；chat 附件原件确认失败（SSE） |
 | `derivation_not_retryable` | 409 | representation 不在 failed + retryable 自动派生状态 |
-| `collection_target_not_g045` | 403 | bring-to-chat 目标 Conversation 不是 G045 |
 
 `collection_agent_unauthorized` 是 trusted-agent service 的授权 code；HTTP 内容读取故意
 将它掩蔽为上述统一 404，不直接发给前端。当前没有公开 Asset 删除 API，因此不公开
