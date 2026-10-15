@@ -6,6 +6,7 @@
 **Acceptance owner:** Solaire / `gpt-5.6-sol`
 **Frozen on:** 2026-10-15
 **Status:** FROZEN — Construction must not modify
+**Amendment A1 (2026-10-15, Acceptance-owned):** records the frozen CP-B2 Plan/spec references only; no UI gate changed.
 
 ---
 
@@ -56,10 +57,13 @@ Evidence subtree: 56f6f7ad5122119f49cd34a6b34b5aae9ca8c5fb
 Canvas version: 1792093963-f8cb; Alicia approved all nine boards on 2026-10-15
 Backend CP-B1 contract: ../ExoCore/Plan/Collection_Library_CP_B1_Acceptance_Spec.md
   frozen commits 6773ce2e + Amendment A1 dab2e34a; blob 5e5b9cb07b7ae3a1403b1b81305f3692e8a065b0
-Backend CP-B2 contract: PENDING — hard release gate before Desktop CP5, not a prerequisite for CP1–CP4
+Backend CP-B2 Plan: ../ExoCore/Plan/Collection_Human_Bring_Back_Plan.md
+  commit da7ce119; blob 96a15c145eb768e649a7807123da6af40599521b
+Backend CP-B2 acceptance: ../ExoCore/Plan/Collection_Human_Bring_Back_CP_B2_Acceptance_Spec.md
+  commit 9b4103b4; blob ccf6db21f41d425d2d1533ffee210cdae9c4c4f4
 ```
 
-CP1–CP4 may proceed against this frozen contract. CP5 construction is prohibited until the CP-B2 Plan and acceptance spec are frozen and their commit/hash is recorded in a narrow Acceptance-owned amendment that changes no UI gate.
+CP1–CP5 may proceed against this frozen contract. CP5 integration and acceptance remain blocked until the CP-B2 backend implementation is available; final Desktop acceptance remains blocked until CP-B2 final PASS.
 
 ## 5. Gate matrix
 
