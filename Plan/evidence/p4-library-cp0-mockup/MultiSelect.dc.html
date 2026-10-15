@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>多选带回</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#0a0a0c}
+a{color:#4f8cff}a:hover{color:#7aa8ff}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; flex-direction: column; background: #0a0a0c; color: #e9e9ee; font-family: 'Sarasa Gothic Mono', 'LXGW WenKai', monospace; overflow: hidden; position: relative">
+  <header style="padding: 20px 40px 20px 112px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid rgba(255,255,255,0.09); background: #101014">
+    <button type="button" aria-label="退出选择" style="width: 40px; height: 40px; border-radius: 8px; border: 0; background: transparent; color: #9a9aa6; font-size: 20px">×</button>
+    <h1 style="margin: 0; font-size: 18px; font-weight: 600">已选 {{count}} / 5</h1>
+    <span style="font-size: 13px; color: #9a9aa6">多选只用于带回聊天</span>
+    <div style="flex: 1"></div>
+    <sc-if value="{{atLimit}}" hint-placeholder-val="{{false}}"><span role="status" style="font-size: 13px; color: #e8b64c">每次最多带回 5 件</span></sc-if>
+  </header>
+  <section aria-label="藏品" style="flex: 1; padding: 28px 40px 0 112px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 28px 24px; align-content: start">
+    <sc-for list="{{cards}}" as="c" hint-placeholder-count="12">
+      <button type="button" aria-pressed="{{c.sel}}" onClick="{{c.toggle}}" style="all: unset; cursor: pointer; display: flex; flex-direction: column; background: #ece8df; color: #24221e; padding: 10px 10px 0; border-radius: 3px; box-shadow: {{c.ring}}; position: relative; opacity: {{c.dim}}">
+        <span style="position: absolute; top: 16px; right: 16px; width: 26px; height: 26px; border-radius: 13px; border: 2px solid #fff; background: {{c.dot}}; color: #fff; font-size: 13px; display: flex; align-items: center; justify-content: center; z-index: 1">{{c.order}}</span>
+        <span style="aspect-ratio: 1 / 1; background: {{c.bg}}; display: block"></span>
+        <span style="padding: 10px 2px 12px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'LXGW WenKai', serif; font-size: 14px; font-weight: 600">{{c.title}}</span><span style="font-size: 11px; color: #6b665b">{{c.kind}}</span></span>
+      </button>
+    </sc-for>
+  </section>
+  <footer style="position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 20px; background: #16161c; border: 1px solid rgba(255,255,255,0.16); border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.5)">
+    <span style="font-size: 14px">按选择顺序带回</span>
+    <button type="button" style="height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.16); background: transparent; color: #9a9aa6; font: inherit; font-size: 13px">清空</button>
+    <a href="Picker.dc.html" style="height: 40px; padding: 0 18px; border-radius: 8px; background: #4f8cff; color: #fff; font-size: 14px; display: flex; align-items: center; text-decoration: none">带回聊天（{{count}}）</a>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { sel: [0, 3, 4] }; }
+  renderVals() {
+    const sel = this.state.sel;
+    const bgs = { 文字: '#f7f4ec', 图片: '#5d6b78', 语音: '#d9d3c4', 文档: '#d9d3c4' };
+    const raw = [['夜里那句话', '文字'], ['窗台上的猫', '图片'], ['哼的那段旋律', '语音'], ['记忆压缩那篇', '文档'], ['早安的版本 3', '文字'], ['雨后的路灯', '图片'], ['那个链接', '文字'], ['语音 · 晚安', '语音'], ['未命名', '图片'], ['文档 #41', '文档'], ['他说的第一句', '文字'], ['桌面一角', '图片']];
+    const atLimit = sel.length >= 5;
+    const cards = raw.map(([title, kind], i) => {
+      const idx = sel.indexOf(i);
+      const on = idx >= 0;
+      return {
+        title, kind, bg: bgs[kind], sel: on ? 'true' : 'false',
+        order: on ? String(idx + 1) : '',
+        dot: on ? '#4f8cff' : 'rgba(0,0,0,0.25)',
+        ring: on ? '0 0 0 3px #4f8cff, 0 6px 18px rgba(0,0,0,0.45)' : '0 6px 18px rgba(0,0,0,0.45)',
+        dim: !on && atLimit ? '0.45' : '1',
+        toggle: () => {
+          const s = this.state.sel;
+          if (s.includes(i)) this.setState({ sel: s.filter((x) => x !== i) });
+          else if (s.length < 5) this.setState({ sel: [...s, i] });
+        },
+      };
+    });
+    return { cards, count: sel.length, atLimit };
+  }
+}
+</script>
+</body>
+</html>

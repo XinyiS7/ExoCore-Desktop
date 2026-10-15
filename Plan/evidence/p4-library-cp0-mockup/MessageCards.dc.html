@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>消息侧藏品卡</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#0a0a0c}
+a{color:#4f8cff}a:hover{color:#7aa8ff}
+</style>
+</helmet>
+<div style="width: 1200px; height: 1100px; background: #0a0a0c; color: #e9e9ee; font-family: 'Sarasa Gothic Mono', 'LXGW WenKai', monospace; padding: 32px 120px; box-sizing: border-box; display: flex; flex-direction: column; gap: 36px">
+  <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px">
+    <span style="font-size: 12px; color: #9a9aa6">你 · 22:10 · 只有卡片、没有正文（不出现空气泡）</span>
+    <a href="Expanded.dc.html" style="width: 460px; text-decoration: none; color: inherit; background: #101014; border: 1px solid rgba(255,255,255,0.16); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column">
+      <span style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #ece8df; color: #24221e; font-size: 12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4v16M9 4v16M14 4l5 16"></path></svg>从藏品馆带回 · 文字 #12</span>
+      <span style="display: block; max-height: 150px; overflow: auto; padding: 14px; font-family: 'LXGW WenKai', serif; font-size: 15px; line-height: 1.75; white-space: pre-line">“你不用急着把它想清楚，
+先放在这里，
+我替你记着。等哪天你又想起来，
+我们再一起把它拿出来看。”</span>
+      <span style="display: block; padding: 10px 14px; border-top: 1px solid rgba(255,255,255,0.09); font-size: 13px; color: #cfcfd6">收藏理由：那天晚上他说的，想一直留着。</span>
+    </a>
+    <span style="font-size: 12px; color: #6d6d78">text 卡：完整快照正文（限高、内部滚动）+ 非空收藏理由</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px">
+    <span style="font-size: 12px; color: #9a9aa6">你 · 22:14 · 正文 + 两张媒体卡</span>
+    <div style="max-width: 460px; padding: 10px 14px; border-radius: 12px; background: #1e2a44; font-size: 15px">这两件一起看看？</div>
+    <div style="display: flex; gap: 10px">
+      <div style="width: 220px; display: flex; flex-direction: column; gap: 6px">
+        <div style="height: 150px; border-radius: 8px; background: #5d6b78; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.8); font-size: 12px">[MessageAttachments 图片]</div>
+        <a href="Expanded.dc.html" style="text-decoration: none; color: inherit; background: #101014; border: 1px solid rgba(255,255,255,0.16); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column">
+          <span style="padding: 8px 12px; background: #ece8df; color: #24221e; font-size: 12px">从藏品馆带回 · 图片 #42</span>
+          <span style="padding: 8px 12px; font-size: 12px; color: #cfcfd6">收藏理由：早上它就这么坐着，像在等谁。</span>
+        </a>
+      </div>
+      <div style="width: 220px; display: flex; flex-direction: column; gap: 6px">
+        <div style="height: 56px; border-radius: 8px; background: #16161c; display: flex; align-items: center; gap: 10px; padding: 0 12px; font-size: 12px; color: #cfcfd6"><span style="width: 32px; height: 32px; border-radius: 16px; background: #e9e9ee; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="#0a0a0c" aria-hidden="true"><path d="M7 4l14 8-14 8z"></path></svg></span>[MessageAttachments 语音]</div>
+        <a href="#" style="text-decoration: none; color: inherit; background: #101014; border: 1px solid rgba(255,255,255,0.16); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column">
+          <span style="padding: 8px 12px; background: #ece8df; color: #24221e; font-size: 12px">从藏品馆带回 · 语音 #31</span>
+        </a>
+        <span style="font-size: 11px; color: #6d6d78">收藏理由为空 → 不出 detail 行</span>
+      </div>
+    </div>
+    <span style="font-size: 12px; color: #6d6d78">媒体由 MessageAttachments 显示一次，卡片不重复渲染媒体</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px">
+    <span style="font-size: 12px; color: #9a9aa6">Alessandro · 22:15 · Agent bring_back（同一个 CollectionShowCardView）</span>
+    <div style="max-width: 560px; padding: 10px 14px; border-radius: 12px; background: #16161c; font-size: 15px; line-height: 1.7">我也翻出一件，那天我们聊到一半的。</div>
+    <a href="Expanded.dc.html" style="width: 460px; text-decoration: none; color: inherit; background: #101014; border: 1px solid rgba(255,255,255,0.16); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column">
+      <span style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #ece8df; color: #24221e; font-size: 12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4v16M9 4v16M14 4l5 16"></path></svg>从藏品馆带回 · 文字 #19</span>
+      <span style="display: block; max-height: 150px; overflow: auto; padding: 14px; font-family: 'LXGW WenKai', serif; font-size: 15px; line-height: 1.75; white-space: pre-line">早安。今天的天气适合
+慢慢醒。</span>
+      <span style="display: block; padding: 10px 14px; border-top: 1px solid rgba(255,255,255,0.09); font-size: 13px; color: #cfcfd6">收藏理由：第三版最像他。</span>
+    </a>
+    <span style="font-size: 12px; color: #6d6d78">#55 修订两侧同时生效：Agent 侧 text 卡也显示正文；卡片上没有收藏按钮</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px">
+    <span style="font-size: 12px; color: #9a9aa6">点击已删除藏品的卡片</span>
+    <div role="status" style="padding: 10px 14px; border-radius: 8px; background: #16161c; border: 1px solid rgba(255,255,255,0.16); font-size: 13px">藏品已不存在（聊天里的卡片保持原样）</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

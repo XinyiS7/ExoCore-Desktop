@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>G045 会话选择</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#0a0a0c}
+a{color:#4f8cff}a:hover{color:#7aa8ff}
+</style>
+</helmet>
+<div style="width: 1200px; height: 640px; background: rgba(5,5,7,0.92); color: #e9e9ee; font-family: 'Sarasa Gothic Mono', 'LXGW WenKai', monospace; display: flex; align-items: center; justify-content: center; gap: 48px">
+  <section role="dialog" aria-labelledby="pk-t" style="width: 460px; background: #101014; border: 1px solid rgba(255,255,255,0.16); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 14px">
+    <h2 id="pk-t" style="margin: 0; font-size: 17px; font-weight: 600">带回到哪个会话？</h2>
+    <div style="display: flex; gap: 6px; flex-wrap: wrap">
+      <span style="padding: 4px 10px; border-radius: 12px; background: #16161c; font-size: 12px">夜里那句话</span>
+      <span style="padding: 4px 10px; border-radius: 12px; background: #16161c; font-size: 12px">记忆压缩那篇</span>
+      <span style="padding: 4px 10px; border-radius: 12px; background: #16161c; font-size: 12px">早安的版本 3</span>
+    </div>
+    <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px">
+      <legend style="font-size: 12px; color: #9a9aa6; margin-bottom: 6px">G045 会话 · 最近活跃在前</legend>
+      <label style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid #4f8cff; background: rgba(79,140,255,0.14); cursor: pointer"><input type="radio" name="conv" checked><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px">Prime</span><span style="font-size: 12px; color: #9a9aa6">刚刚活跃</span></span><span style="font-size: 11px; color: #9a9aa6">默认</span></label>
+      <label style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.09); cursor: pointer"><input type="radio" name="conv"><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px">读论文的那次</span><span style="font-size: 12px; color: #9a9aa6">昨天 22:40</span></span></label>
+      <label style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.09); cursor: pointer"><input type="radio" name="conv"><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px">周末计划</span><span style="font-size: 12px; color: #9a9aa6">10-11</span></span></label>
+    </fieldset>
+    <p style="margin: 0; font-size: 12px; color: #6d6d78">卡片会放进该会话输入框上方的待发区，不改动你的草稿。</p>
+    <div style="display: flex; justify-content: flex-end; gap: 10px">
+      <button type="button" style="height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.16); background: transparent; color: #e9e9ee; font: inherit; font-size: 14px">取消</button>
+      <a href="Composer.dc.html" style="height: 40px; padding: 0 18px; border-radius: 8px; background: #4f8cff; color: #fff; font-size: 14px; display: flex; align-items: center; text-decoration: none">带回</a>
+    </div>
+  </section>
+  <section role="dialog" aria-labelledby="pk-e" style="width: 460px; background: #101014; border: 1px solid rgba(255,255,255,0.16); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 14px">
+    <h2 id="pk-e" style="margin: 0; font-size: 17px; font-weight: 600">带回到哪个会话？</h2>
+    <div style="padding: 36px 16px; border: 1px dashed rgba(255,255,255,0.16); border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <span style="font-size: 14px">还没有可以带回的 G045 会话</span>
+      <a href="#" style="font-size: 13px">去 Chat 新建会话</a>
+    </div>
+    <div style="display: flex; justify-content: flex-end; gap: 10px">
+      <button type="button" style="height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.16); background: transparent; color: #e9e9ee; font: inherit; font-size: 14px">取消</button>
+      <button type="button" disabled style="height: 40px; padding: 0 18px; border-radius: 8px; border: 0; background: #26324a; color: #7d8aa3; font: inherit; font-size: 14px">带回</button>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

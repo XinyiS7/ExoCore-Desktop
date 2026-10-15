@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>删除藏品确认</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#0a0a0c}
+</style>
+</helmet>
+<div style="width: 880px; height: 560px; position: relative; background: rgba(5,5,7,0.9); color: #e9e9ee; font-family: 'Sarasa Gothic Mono', 'LXGW WenKai', monospace; display: flex; align-items: center; justify-content: center">
+  <section role="alertdialog" aria-labelledby="dlg-t" aria-describedby="dlg-d" style="width: 480px; background: #101014; border: 1px solid rgba(255,255,255,0.16); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 48px rgba(0,0,0,0.6)">
+    <h2 id="dlg-t" style="margin: 0; font-size: 18px; font-weight: 600">删除“窗台上的猫”？</h2>
+    <p id="dlg-d" style="margin: 0; font-size: 14px; line-height: 1.7; color: #cfcfd6">永久删除这件藏品，不可恢复。它的收藏理由、评论、浏览统计和本藏品的标签关联会一起删除（标签本身仍保留在其他藏品上）。已经带进聊天的藏品卡不受影响。</p>
+    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px">
+      <button type="button" autofocus style="height: 40px; padding: 0 18px; border-radius: 8px; border: 2px solid #4f8cff; background: transparent; color: #e9e9ee; font: inherit; font-size: 14px">取消</button>
+      <button type="button" style="height: 40px; padding: 0 18px; border-radius: 8px; border: 0; background: #c93a3a; color: #fff; font: inherit; font-size: 14px">永久删除</button>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

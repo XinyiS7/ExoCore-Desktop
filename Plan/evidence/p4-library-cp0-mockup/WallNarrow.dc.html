@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Library 窄屏</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#0a0a0c}
+a{color:#4f8cff}a:hover{color:#7aa8ff}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; display: flex; flex-direction: column; background: #0a0a0c; color: #e9e9ee; font-family: 'Sarasa Gothic Mono', 'LXGW WenKai', monospace; overflow: hidden">
+  <header style="padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.09)">
+    <div style="display: flex; align-items: center; gap: 8px">
+      <h1 style="margin: 0; font-size: 20px; font-weight: 600; flex: 1">Library</h1>
+      <button type="button" aria-label="搜索" style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.16); background: transparent; color: #9a9aa6; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></button>
+      <button type="button" style="height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.16); background: transparent; color: #e9e9ee; font: inherit; font-size: 14px">选择</button>
+    </div>
+    <div style="display: flex; gap: 6px; overflow-x: auto">
+      <button type="button" aria-pressed="true" style="flex-shrink: 0; height: 32px; padding: 0 12px; border: 0; border-radius: 16px; background: #4f8cff; color: #fff; font: inherit; font-size: 13px">全部</button>
+      <button type="button" style="flex-shrink: 0; height: 32px; padding: 0 12px; border: 1px solid rgba(255,255,255,0.16); border-radius: 16px; background: transparent; color: #9a9aa6; font: inherit; font-size: 13px">文字</button>
+      <button type="button" style="flex-shrink: 0; height: 32px; padding: 0 12px; border: 1px solid rgba(255,255,255,0.16); border-radius: 16px; background: transparent; color: #9a9aa6; font: inherit; font-size: 13px">图片</button>
+      <button type="button" style="flex-shrink: 0; height: 32px; padding: 0 12px; border: 1px solid rgba(255,255,255,0.16); border-radius: 16px; background: transparent; color: #9a9aa6; font: inherit; font-size: 13px">语音</button>
+      <button type="button" style="flex-shrink: 0; height: 32px; padding: 0 12px; border: 1px solid rgba(255,255,255,0.16); border-radius: 16px; background: transparent; color: #9a9aa6; font: inherit; font-size: 13px">文档</button>
+      <button type="button" style="flex-shrink: 0; height: 32px; padding: 0 12px; border: 1px solid rgba(255,255,255,0.16); border-radius: 16px; background: transparent; color: #9a9aa6; font: inherit; font-size: 13px">筛选 ▾</button>
+    </div>
+  </header>
+  <section aria-label="藏品，一次一张" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 0 16px; position: relative">
+    <div style="position: absolute; left: -210px; top: 110px; width: 270px; height: 360px; background: #ece8df; opacity: 0.25; border-radius: 3px; transform: rotate(-3deg)"></div>
+    <div style="position: absolute; right: -210px; top: 110px; width: 270px; height: 360px; background: #ece8df; opacity: 0.25; border-radius: 3px; transform: rotate(3deg)"></div>
+    <a href="Expanded.dc.html" style="width: 286px; background: #ece8df; color: #24221e; padding: 14px 14px 0; border-radius: 3px; text-decoration: none; box-shadow: 0 10px 28px rgba(0,0,0,0.5); transform: rotate(-0.8deg); position: relative">
+      <div style="aspect-ratio: 1 / 1; background: #5d6b78; display: flex; align-items: center; justify-content: center"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="1.4" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 17l-5-5-9 8"></path></svg></div>
+      <div style="padding: 14px 2px 16px; display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; align-items: center; gap: 8px"><span style="font-family: 'LXGW WenKai', serif; font-size: 17px; font-weight: 600; flex: 1">窗台上的猫</span><span aria-label="有收藏理由" style="width: 9px; height: 9px; border-radius: 5px; background: #c2562b"></span></div>
+        <span style="font-size: 12px; color: #6b665b">2026-10-13 08:40</span>
+        <span style="font-size: 12px; color: #6b665b">#猫 #早晨</span>
+      </div>
+    </a>
+    <div style="display: flex; align-items: center; gap: 20px">
+      <button type="button" aria-label="上一张" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid rgba(255,255,255,0.16); background: transparent; color: #e9e9ee; font-size: 18px">‹</button>
+      <span style="font-size: 13px; color: #9a9aa6">2 / 24 · 左右滑动</span>
+      <button type="button" aria-label="下一张" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid rgba(255,255,255,0.16); background: transparent; color: #e9e9ee; font-size: 18px">›</button>
+    </div>
+    <p style="margin: 0; font-size: 12px; color: #6d6d78">滑到倒数第 3 张时预取下一页；到底后显示“已到底”</p>
+  </section>
+  <nav aria-label="主导航" style="height: 64px; display: flex; border-top: 1px solid rgba(255,255,255,0.09); background: #101014">
+    <a href="#" style="flex: 1; display: flex; align-items: center; justify-content: center; color: #9a9aa6; font-size: 12px; text-decoration: none">Chat</a>
+    <a href="#" style="flex: 1; display: flex; align-items: center; justify-content: center; color: #9a9aa6; font-size: 12px; text-decoration: none">River</a>
+    <a href="#" aria-current="page" style="flex: 1; display: flex; align-items: center; justify-content: center; color: #4f8cff; font-size: 12px; text-decoration: none">Library</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
