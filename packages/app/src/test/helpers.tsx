@@ -196,7 +196,7 @@ export function renderV4(ui: ReactElement, initialEntries: string[] = ['/']) {
 /** Render the real route tree (shell + pages) with canonical paths. */
 export function renderApp(
   initialEntries: string[] = ['/'],
-  { redirectSettings = false }: { redirectSettings?: boolean } = {},
+  { redirectSettings = false, strict = false }: { redirectSettings?: boolean; strict?: boolean } = {},
 ) {
   const queryClient = makeQueryClient();
   return render(
@@ -235,5 +235,6 @@ export function renderApp(
         </MemoryRouter>
       </AppearanceProvider>
     </QueryClientProvider>,
+    { reactStrictMode: strict },
   );
 }

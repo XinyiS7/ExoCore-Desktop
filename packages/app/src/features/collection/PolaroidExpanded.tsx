@@ -13,7 +13,7 @@ import {
   roleLabel,
   SOURCE_LABELS,
 } from './presentation';
-import { useCollectionItemQuery, useRetryRepresentation } from './queries';
+import { useCollectionItemQuery, useRecordViewOnce, useRetryRepresentation } from './queries';
 import type { CollectionDetail, CollectionRepresentation, RepresentationKind } from './types';
 
 type Mode = 'read' | 'edit' | 'calibrate';
@@ -78,7 +78,9 @@ function ExpandedShell({ title, meta, onClose, locked = false, actions, children
 }
 
 function ExpandedDialog({ id, onClose }: { id: number; onClose: () => void }) {
+  const location = useLocation();
   const query = useCollectionItemQuery(id);
+  const viewStatus = useRecordViewOnce(id, location.key, query.isSuccess);
   const [mode, setMode] = useState<Mode>('read');
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -134,6 +136,7 @@ function ExpandedDialog({ id, onClose }: { id: number; onClose: () => void }) {
             onDone={() => setMode('read')}
           />
         )}
+        {viewStatus === 'error' && <p role="status" className="library-note">本次浏览未记录</p>}
         {mode === 'read' && <ReadingSections detail={detail} onCalibrate={() => setMode('calibrate')} />}
       </div>
       {confirmDelete && (
@@ -287,6 +290,57 @@ function ReadingSections({ detail, onCalibrate }: { detail: CollectionDetail; on
           {!detail.source.available && <span className="library-note">（来源已不可用）</span>}
         </p>
       </section>
+      <ViewerStats detail={detail} />
+      <Comments detail={detail} />
     </>
+  );
+}
+
+/** Backend rows as given: identity label and counts are shown without relabeling (UI-D2). */
+function ViewerStats({ detail }: { detail: CollectionDetail }) {
+  return (
+    <section className="library-section">
+      <h2 id="library-stats-title">统计</h2>
+      {detail.viewer_stats.length === 0 ? <p className="library-note">还没有浏览记录</p> : (
+        <table className="library-stats" aria-labelledby="library-stats-title">
+          <thead>
+            <tr><th scope="col"><span className="library-sr">谁</span></th><th scope="col">看过</th><th scope="col">带回</th><th scope="col">收藏</th></tr>
+          </thead>
+          <tbody>
+            {detail.viewer_stats.map((stat) => (
+              <tr key={`${stat.viewer_type}:${stat.viewer_key}`}>
+                <th scope="row">{stat.label}</th>
+                <td>{stat.view_count}</td>
+                <td>{stat.show_count}</td>
+                <td>{stat.collect_count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
+/** Read-only, oldest first; no reply/edit/delete/like affordances. */
+function Comments({ detail }: { detail: CollectionDetail }) {
+  const ordered = detail.comments
+    .map((comment, index) => ({ comment, index }))
+    .sort((a, b) => Date.parse(a.comment.created_at) - Date.parse(b.comment.created_at) || a.index - b.index)
+    .map(({ comment }) => comment);
+  return (
+    <section className="library-section">
+      <h2>评论</h2>
+      {ordered.length === 0 ? <p className="library-note">暂无评论</p> : (
+        <ol className="library-comments" aria-label="评论">
+          {ordered.map((comment, index) => (
+            <li key={`${comment.created_at}:${index}`}>
+              <div className="library-comment-meta">{comment.author_label} · <time dateTime={comment.created_at}>{localDateTime(comment.created_at)}</time></div>
+              <p>{comment.body}</p>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
   );
 }

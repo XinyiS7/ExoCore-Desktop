@@ -356,16 +356,11 @@ export const collectionImagePreviewUrl = (id: number) => `${itemPath(id)}represe
  * Merge a recorded view into the human statistics row so this opening shows
  * the new count at once; the human row is added first when absent.
  */
-export function mergeViewIntoDetail(detail: CollectionDetail, view: CollectionViewResult): CollectionDetail {
+export function mergeViewIntoDetail(detail: CollectionDetail, view: CollectionViewResult): CollectionDetail | null {
+  // No human row yet: the backend owns its identity/label, so the caller refetches instead.
   const index = detail.viewer_stats.findIndex((stat) => stat.viewer_type === 'human');
+  if (index < 0) return null;
   const viewer_stats = [...detail.viewer_stats];
-  if (index >= 0) {
-    viewer_stats[index] = { ...viewer_stats[index], ...view };
-  } else {
-    viewer_stats.unshift({
-      viewer_type: 'human', viewer_key: 'alicia', label: 'Alicia',
-      show_count: 0, collect_count: 0, ...view,
-    });
-  }
+  viewer_stats[index] = { ...viewer_stats[index], ...view };
   return { ...detail, viewer_stats };
 }

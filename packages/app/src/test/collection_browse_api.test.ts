@@ -90,11 +90,10 @@ describe('Library detail contract', () => {
   it('merges a recorded view into the human row, adding it when absent', () => {
     const detail = normalizeCollectionDetail(detailItem(5));
     const view = { view_count: 3, last_viewed_at: '2026-10-15T09:00:00+00:00' };
-    expect(mergeViewIntoDetail(detail, view).viewer_stats[0]).toMatchObject({ label: 'Alicia', ...view, show_count: 1 });
+    expect(mergeViewIntoDetail(detail, view)!.viewer_stats[0]).toMatchObject({ label: 'Alicia', ...view, show_count: 1 });
     const agentOnly = { ...detail, viewer_stats: detail.viewer_stats.slice(1) };
-    const merged = mergeViewIntoDetail(agentOnly, view).viewer_stats;
-    expect(merged.map((stat) => stat.viewer_type)).toEqual(['human', 'agent']);
-    expect(merged[0]).toMatchObject({ view_count: 3, show_count: 0, collect_count: 0 });
+    // Without a human row nothing is invented; the caller refetches the backend-labelled row.
+    expect(mergeViewIntoDetail(agentOnly, view)).toBeNull();
   });
 });
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useMutationState, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 import {
   CollectionApiError,
@@ -87,18 +87,45 @@ export function useCollectionTagsQuery() {
 }
 
 /** Explicit human view; on success the returned count lands in the cached detail at once. */
-export function useRecordCollectionView() {
+export function useRecordCollectionView(mutationKey?: readonly unknown[]) {
   const client = useQueryClient();
   return useMutation({
+    mutationKey,
     mutationFn: recordCollectionView,
     retry: false,
     onSuccess: (view, id) => {
-      client.setQueryData<CollectionDetail>(
-        collectionQueryKeys.detail(id),
-        (detail) => (detail ? mergeViewIntoDetail(detail, view) : detail),
-      );
+      const detail = client.getQueryData<CollectionDetail>(collectionQueryKeys.detail(id));
+      if (!detail) return;
+      const merged = mergeViewIntoDetail(detail, view);
+      if (merged) client.setQueryData(collectionQueryKeys.detail(id), merged);
+      else void client.invalidateQueries({ queryKey: collectionQueryKeys.detail(id), exact: true });
     },
   });
+}
+
+/** Location entries that already sent their view, per client (survives StrictMode remounts). */
+const recordedEntries = new WeakMap<QueryClient, Set<string>>();
+
+/**
+ * One human view per route location entry (Plan §8): sent once the detail first
+ * rendered; refetch, edit refresh, playback and remounts of the same entry never
+ * resend, and a failure is not retried. Returns the view request status.
+ */
+export function useRecordViewOnce(id: number, entryKey: string, ready: boolean) {
+  const client = useQueryClient();
+  const mutationKey = useMemo(() => ['collection', 'view', entryKey, id] as const, [entryKey, id]);
+  const { mutate } = useRecordCollectionView(mutationKey);
+  useEffect(() => {
+    if (!ready) return;
+    let entries = recordedEntries.get(client);
+    if (!entries) recordedEntries.set(client, (entries = new Set()));
+    const token = `${entryKey}:${id}`;
+    if (entries.has(token)) return;
+    entries.add(token);
+    mutate(id);
+  }, [client, entryKey, id, mutate, ready]);
+  const statuses = useMutationState({ filters: { mutationKey, exact: true }, select: (mutation) => mutation.state.status });
+  return statuses.at(-1);
 }
 
 type WallData = InfiniteData<CollectionPage, string | null>;

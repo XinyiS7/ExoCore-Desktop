@@ -208,6 +208,14 @@
 .library-section a { color: var(--v4-accent); }
 .library-tag-list { display: flex; gap: 6px; flex-wrap: wrap; }
 .library-tag-list span { padding: 2px 10px; border-radius: 12px; border: 1px solid var(--v4-line-strong); font-size: 12px; color: var(--v4-text-dim); }
+.library-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.library-stats { border-collapse: collapse; font-size: 13px; width: 100%; max-width: 360px; }
+.library-stats th, .library-stats td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--v4-line); font-weight: 400; }
+.library-stats thead th { color: var(--v4-text-dim); font-size: 12px; }
+.library-stats th[scope='row'] { text-align: left; color: var(--v4-text); }
+.library-stats td { font-variant-numeric: tabular-nums; }
+.library-comments { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.library-comment-meta { font-size: 12px; color: var(--v4-text-dim); margin-bottom: 4px; }
 .library-extracted summary { cursor: pointer; color: var(--v4-accent); font-size: 13px; }
 .library-extracted p { margin-top: 8px; max-height: 40vh; overflow: auto; }
 .library-btn-danger-ghost { border-color: rgba(255, 107, 107, 0.4); color: var(--v4-danger); }
