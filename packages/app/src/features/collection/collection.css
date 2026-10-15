@@ -1,0 +1,153 @@
+/* P4 Library (#61). Approved CP0 mockup: V4 tokens + polaroid paper. Scoped to
+   Library roots; portal/overlay roots repeat the scope explicitly. */
+.library-page, .library-overlay {
+  --polaroid-paper: #ece8df;
+  --polaroid-ink: #24221e;
+  --polaroid-ink-dim: #6b665b;
+  --polaroid-reason: #c2562b;
+  --polaroid-font: 'LXGW WenKai', var(--v4-font);
+}
+
+/* Direct AppShell Outlet child: the sole page scroll owner. */
+.library-page {
+  flex: 1; min-height: 0; min-width: 0; width: 100%;
+  overflow-y: auto; overscroll-behavior: contain;
+  color: var(--v4-text);
+  display: flex; flex-direction: column;
+}
+
+/* ── Header & filters ───────────────────────────────────────────────────── */
+.library-header {
+  padding: 24px 40px 16px; display: flex; flex-direction: column; gap: 14px;
+  border-bottom: 1px solid var(--v4-line);
+}
+.library-header-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.library-header h1 { margin: 0; font-size: calc(22px * var(--exo-font-scale, 1)); font-weight: 600; }
+.library-subtitle { color: var(--v4-text-dim); font-size: 13px; flex: 1; }
+.library-search {
+  display: flex; align-items: center; gap: 8px; width: 300px; max-width: 100%; height: 40px; padding: 0 12px;
+  background: var(--v4-panel-2); border: 1px solid var(--v4-line-strong); border-radius: var(--v4-radius);
+  color: var(--v4-text-dim);
+}
+.library-search:focus-within { border-color: var(--v4-accent); }
+.library-search input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--v4-text); font: inherit; outline: none; }
+
+.library-filter-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.library-kind-tabs { display: flex; gap: 4px; background: var(--v4-panel); border-radius: var(--v4-radius); padding: 4px; }
+.library-kind-tabs button {
+  height: 32px; padding: 0 14px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--v4-text-dim); font: inherit; font-size: 13px; cursor: pointer;
+}
+.library-kind-tabs button[aria-selected='true'] { background: var(--v4-accent); color: #fff; }
+.library-filter-toggle { display: none; }
+.library-more-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.library-chip {
+  height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid var(--v4-line-strong);
+  background: transparent; color: var(--v4-text-dim); font: inherit; font-size: 13px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.library-chip[aria-pressed='true'] { border-color: var(--v4-accent); background: var(--v4-accent-soft); color: var(--v4-text); }
+.library-chip--tag { height: 28px; padding: 0 10px; font-size: 12px; }
+.library-month input { background: transparent; border: 0; color: inherit; font: inherit; color-scheme: inherit; }
+.library-tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--v4-text-dim); font-size: 13px; margin-left: 12px; }
+.library-note { margin: 0; font-size: 12px; color: var(--v4-text-mute); }
+
+.library-page button:focus-visible, .library-page a:focus-visible, .library-wall:focus-visible {
+  outline: 2px solid var(--v4-accent); outline-offset: 2px;
+}
+
+/* ── Wall ───────────────────────────────────────────────────────────────── */
+.library-body { padding: 28px 40px 48px; display: flex; flex-direction: column; gap: 20px; }
+.library-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.library-live:not(:empty) { position: static; width: auto; height: auto; clip: auto; color: var(--v4-text-dim); font-size: 13px; }
+.library-wall {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 28px 24px; align-content: start;
+}
+.library-stepper { display: none; }
+.library-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 48px 0; color: var(--v4-text-dim); text-align: center; }
+.library-state p { margin: 0; }
+.library-state--inline { padding: 12px 0; }
+.library-more { align-self: center; }
+.library-end { margin: 0; text-align: center; font-size: 12px; color: var(--v4-text-mute); }
+
+/* ── Polaroid ───────────────────────────────────────────────────────────── */
+.polaroid {
+  position: relative; display: flex; flex-direction: column;
+  background: var(--polaroid-paper); color: var(--polaroid-ink);
+  padding: 10px 10px 0; border-radius: 3px;
+  transform: rotate(var(--polaroid-tilt, 0deg));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s ease;
+}
+.polaroid:hover, .polaroid:focus-within { transform: rotate(0deg) translateY(-2px); }
+.polaroid--skeleton { aspect-ratio: 3 / 4; opacity: 0.18; box-shadow: none; }
+.polaroid-content {
+  aspect-ratio: 1 / 1; overflow: hidden; display: flex; align-items: center; justify-content: center;
+  background: #d9d3c4; color: #3a372f;
+}
+.polaroid--text .polaroid-content { background: #f7f4ec; align-items: flex-start; justify-content: flex-start; }
+.polaroid--image .polaroid-content { background: #5d6b78; color: rgba(255, 255, 255, 0.75); }
+.polaroid-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
+.polaroid-preview {
+  margin: 0; padding: 12px; font-size: 12px; line-height: 1.6; color: #2b2925; white-space: pre-line;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical;
+}
+.polaroid-doc { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 11px; letter-spacing: 1px; }
+.polaroid-caption { padding: 10px 2px 12px; display: flex; flex-direction: column; gap: 4px; min-height: 64px; }
+.polaroid-title-row { display: flex; align-items: center; gap: 6px; }
+.polaroid-link {
+  flex: 1; min-width: 0; color: inherit; text-decoration: none;
+  font-family: var(--polaroid-font); font-size: 14px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.polaroid-link::after { content: ''; position: absolute; inset: 0; }
+.polaroid-reason { flex-shrink: 0; width: 8px; height: 8px; border-radius: 4px; background: var(--polaroid-reason); }
+.polaroid-meta { font-size: 11px; color: var(--polaroid-ink-dim); }
+.polaroid--audio .polaroid-content { position: relative; flex-direction: column; gap: 12px; }
+.polaroid-play {
+  position: relative; z-index: 1;
+  width: 40px; height: 40px; border-radius: 20px; background: var(--polaroid-ink); color: var(--polaroid-paper);
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Narrow: one card at a time, swipe + prev/next (same implementation) ── */
+@media (max-width: 767px) {
+  .library-header { padding: 16px; gap: 10px; }
+  .library-subtitle { display: none; }
+  .library-search { width: auto; flex: 1; height: 44px; }
+  .library-filter-row { gap: 8px; }
+  .library-kind-tabs { overflow-x: auto; background: transparent; padding: 0; gap: 6px; }
+  .library-kind-tabs button { flex-shrink: 0; border-radius: 16px; border: 1px solid var(--v4-line-strong); }
+  .library-kind-tabs button[aria-selected='true'] { border-color: var(--v4-accent); }
+  .library-filter-toggle {
+    display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 16px;
+    border: 1px solid var(--v4-line-strong); background: transparent; color: var(--v4-text-dim); font: inherit; font-size: 13px;
+  }
+  .library-more-filters { display: none; width: 100%; }
+  .library-more-filters.is-open { display: flex; }
+  .library-tags { margin-left: 0; }
+
+  .library-body { padding: 20px 0 24px; align-items: stretch; }
+  .library-wall {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 0;
+    scrollbar-width: none;
+  }
+  .library-wall::-webkit-scrollbar { display: none; }
+  .library-wall > .polaroid {
+    flex: 0 0 auto; width: min(286px, calc(100% - 64px)); scroll-snap-align: center;
+    margin: 12px calc((100% - min(286px, calc(100% - 64px))) / 2);
+    padding: 14px 14px 0; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  }
+  .library-wall > .polaroid .polaroid-link { font-size: 17px; }
+  .library-stepper { display: flex; align-items: center; justify-content: center; gap: 20px; color: var(--v4-text-dim); font-size: 13px; }
+  .library-stepper button {
+    width: 44px; height: 44px; border-radius: 22px; border: 1px solid var(--v4-line-strong);
+    background: transparent; color: var(--v4-text); font-size: 18px; cursor: pointer;
+  }
+  .library-stepper button:disabled { opacity: 0.4; cursor: default; }
+  .library-more, .library-end { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .polaroid { transition: none; }
+}
