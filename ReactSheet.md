@@ -1660,7 +1660,8 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 |---|---:|---|
 | `GET /items/` | 200 | cursor 浏览与筛选 |
 | `POST /items/` | 201/200 | 按 discriminated `source` 收藏：新建 201，同一来源已收藏 200（返回既有 Item） |
-| `GET /items/<id>/` | 200 | 详情、来源快照、派生表示与 capabilities |
+| `GET /items/<id>/` | 200 | 详情、来源快照、派生表示、capabilities、评论与各 viewer 统计（不计 view） |
+| `POST /items/<id>/view/` | 200/404 | Alicia 显式浏览一次：`{"view_count": int, "last_viewed_at": "<ISO>"}`；不存在 → 404 `collection_item_not_found`，不计数 |
 | `PATCH /items/<id>/` | 200 | 更新元数据、Tags 或人工 canonical text |
 | `DELETE /items/<id>/` | 204 | 删除 Item occurrence；不在请求中 unlink 原件 |
 | `GET /items/<id>/original/` | 200/404 | 读取原件 bytes |
@@ -1677,6 +1678,9 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 - `q`：title / description / context / text / Tags / succeeded canonical text 的
   lexical substring 搜索，不是 semantic/vector search；
 - `recent=1|true|0|false`：true 表示最近 30 天；
+- `month=YYYY-MM`：本地自然月（`LOCAL_TIME_ZONE`），严格格式，非法 → 400 `invalid_request`；与 `recent` 同传取交集；
+- `link=1|true|0|false`：true 只留 `text_content` 含 `http://` / `https://` 的藏品（标题、描述、Tags、提取文本不算）；
+- `recent` 与 `link` 共用一个布尔解析：大小写不敏感，空值为 false，其他值 → 400 `invalid_request`；
 - `cursor`：签名、filter-bound 的 `(collected_at, id)` 降序游标。
 
 列表信封：
@@ -1728,8 +1732,7 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
   客户端重试即算再收藏一次。
 - 首次收藏的 `collection_context` 保留在 Item 上。重复收藏时的非空
   `collection_context`：既有 context 为空则填为 context；既有 context 非空则不覆盖，
-  追加为一条只增不改的收藏评论。本阶段不
-  提供 `collect_count` / 评论的读取 API。
+  追加为一条只增不改的收藏评论。评论与各 viewer 的计数只在详情里读取（§13.4）。
 - `PATCH` 只接受 `title`、`description`、`collection_context`、`tags`，以及：
 
 ```json
@@ -1773,9 +1776,23 @@ producer 投影为 `human` / `manual-v1`。不可变 source、kind、asset 与�
   ],
   "capabilities": ["update","delete","bring_to_chat","read_original"],
   "original_content_url": "/api/collection/items/<id>/original/",
-  "bring_to_chat_url": "/api/collection/items/<id>/bring-to-chat/"
+  "bring_to_chat_url": "/api/collection/items/<id>/bring-to-chat/",
+  "comments": [
+    {"author_type": "human", "author_label": "Alicia", "body": "...", "created_at": "<ISO-8601>"}
+  ],
+  "viewer_stats": [
+    {
+      "viewer_type": "human", "viewer_key": "alicia", "label": "Alicia",
+      "view_count": 4, "show_count": 1, "collect_count": 1,
+      "last_viewed_at": "<ISO-8601-or-null>"
+    }
+  ]
 }
 ```
+
+- `comments` 按 `created_at, id` 正序，不暴露作者 key；`viewer_stats` 每个 viewer 一行，human 在前。
+  `label` / `author_label`：human → `Alicia`；`preset:N` → 该 `AgentPreset.name`，preset 已不存在 → `preset:N`。
+  两个字段只出现在详情形状（GET / PATCH / POST 创建 / retry 的响应），列表 item 没有。
 
 `source.snapshot.message` 是来源 Message 的 canonical 快照，attachment 与 message
 两类来源同形：`{message_id, conversation_id, index_in_session, role, created_at}`；
