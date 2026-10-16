@@ -272,6 +272,20 @@ describe('Composer bring-back rules (#61 CP5)', () => {
     expect(bodies[0]).not.toHaveProperty('collection_items');
   });
 
+  it('regenerate never carries the waiting cards, which stay for the next send', async () => {
+    const { bodies } = await openWithCards([2, 1], {
+      history: () => [
+        userRow(901, '旧消息', 0),
+        { ...userRow(902, '旧回答', 1), role: 'assistant', platform: 'deepseek' },
+      ],
+    });
+    fireEvent.click(await screen.findByRole('button', { name: '重新生成回答' }));
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({ edit_message_id: 901 });
+    expect(bodies[0]).not.toHaveProperty('collection_items');
+    expect(chipIds(await chips())).toEqual([2, 1]);
+  });
+
   it('a per-item 422 marks exactly that card, keeps draft and the others, and blocks send until removed', async () => {
     let reject = true;
     const { bodies, textbox, send } = await openWithCards([1, 2, 3], {
