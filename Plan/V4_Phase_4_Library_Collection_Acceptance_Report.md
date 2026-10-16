@@ -3,9 +3,9 @@
 > Issue: XinyiS7/ExoCore#61
 > Acceptance owner: Solaire / gpt-5.6-sol
 > Frozen spec: `44194c7` (`Plan/V4_Phase_4_Library_Collection_Acceptance_Spec.md`, blob `d3a7c6a9`)
-> Cycle: R2
+> Cycle: R3
 > Construction baseline: `c8608345adb21272c6b3893b3d6074cff8404bb1`
-> Repair baseline: `8e2b299c44d9de2c1a5640390ef4f50b8e4a9600`
+> Repair baselines: `8e2b299c44d9de2c1a5640390ef4f50b8e4a9600`, `5476b28ff38c42959f800eeb143ac3a0102f600f`
 > Date: 2026-10-16
 
 ## Verdict
@@ -49,6 +49,15 @@ UI-A through UI-G pass source and automated verification. UI-H and the visual/ke
 - Cycle R1 | Baseline `c860834` | Verdict FAIL | Finding F-01 | Construction 1, Acceptance 1.
 - Cycle R2 | Baseline `8e2b299` | Verdict PASS / USER-UI-PENDING | F-01 resolved; source FAIL count reset.
 
-Final PASS still requires Alicia's manual keyboard/visual walkthrough and real Direct/AGY Library behavior under UI-G/UI-H.
+F-02/F-03 source repair passes at `5476b28`: user media/cards align on one edge; selection affordances and persistent action dock match the approved mockup. Final PASS still requires Alicia's visual recheck and remaining real Direct/AGY Library behavior under UI-G/UI-H.
 
 `DEPLOY_STEP: none`
+## Cycle R3 Recheck
+
+- **Baseline:** `5476b28ff38c42959f800eeb143ac3a0102f600f`
+- **Verdict:** PASS / USER-UI-PENDING
+- **F-02 resolved:** user messages with Collection cards apply a role-specific body class; their attachment row and cards share the right edge. Agent layout and wire shape are unchanged.
+- **F-03 resolved:** the wall exposes “选择”, every selection-mode card has a visible dot, selected order is numbered, the state bar remains sticky, the action dock remains visible and clears for the target dialog, and only unselected cards dim at the five-item cap.
+- Focused tests: 23/23 PASS; full app suite: 1575/1575 PASS; build/typecheck, scoped lint, and diff check PASS.
+- Frozen spec and approved mockup evidence remain unchanged.
+- Browser geometry and final real behavior remain Alicia-owned; no acceptance probe or database data was created.
