@@ -6,6 +6,7 @@ import { MessageContent } from './MessageContent';
 import { formatTimeOfDay } from './time';
 import { MessageAttachments } from './attachments/MessageAttachments';
 import { AssistantArtifactCards } from './artifacts/AssistantArtifactCards';
+import { CollectionShowCardView } from './artifacts/CollectionShowCardView';
 import { AssistantRunTrace } from './trace/AssistantRunTrace';
 import { MessageVoiceControl } from './tts/MessageVoiceControl';
 import { VoiceToolErrors } from './voice/VoiceToolErrors';
@@ -106,6 +107,8 @@ function MessageRowItem({
   const hasVoiceToolErrors = voiceToolErrors.length > 0;
   const assistantArtifacts = isAssistant ? message.assistantArtifacts ?? [] : [];
   const hasArtifacts = assistantArtifacts.length > 0;
+  const collectionShows = isUser ? message.collectionShows ?? [] : [];
+  const hasCollectionShows = collectionShows.length > 0;
   const [copied, setCopied] = useState(false);
   const copyTimeoutRef = useRef<number | null>(null);
 
@@ -221,7 +224,11 @@ function MessageRowItem({
         </div>
       </header>
 
-      <div className="app-msg-body">
+      <div
+        className={
+          hasCollectionShows && !hasContentText ? 'app-msg-body app-msg-body--cards-only' : 'app-msg-body'
+        }
+      >
         {isAssistant && (message.assistantRunTrace || hasReasoning) ? (
           <AssistantRunTrace
             reasoning={message.reasoningContent}
@@ -234,7 +241,7 @@ function MessageRowItem({
         ) : null}
         {hasContentText ? (
           <MessageContent content={message.content} />
-        ) : hasAttachments || hasVoiceToolErrors || hasArtifacts ? null : (
+        ) : hasAttachments || hasVoiceToolErrors || hasArtifacts || hasCollectionShows ? null : (
           <span className="app-muted">（空消息）</span>
         )}
         {hasAttachments ? (
@@ -246,6 +253,13 @@ function MessageRowItem({
         ) : null}
         {hasArtifacts ? (
           <AssistantArtifactCards artifacts={assistantArtifacts} />
+        ) : null}
+        {hasCollectionShows ? (
+          <div className="app-collection-shows">
+            {collectionShows.map((card) => (
+              <CollectionShowCardView key={card.key} card={card} />
+            ))}
+          </div>
         ) : null}
         {hasVoiceToolErrors ? <VoiceToolErrors errors={voiceToolErrors} /> : null}
         {isAssistant && hasContentText ? (

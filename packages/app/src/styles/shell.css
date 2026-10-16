@@ -1192,6 +1192,91 @@
   flex-shrink: 0;
 }
 
+/* #61 pending brought-back Collection cards above the composer. */
+.app-compose-collection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.app-compose-collection-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.app-compose-collection-strip--editing {
+  opacity: 0.45;
+}
+
+.app-compose-collection-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 240px;
+  padding: 3px 4px 3px 8px;
+  border: 1px solid var(--v4-line-strong);
+  border-radius: 6px;
+  background: var(--v4-panel);
+  font-size: calc(11.5px * var(--exo-font-scale, 1));
+  color: var(--v4-text);
+}
+
+.app-compose-collection-chip--rejected {
+  border-color: rgba(255, 107, 107, 0.6);
+}
+
+.app-compose-collection-chip-kind {
+  flex-shrink: 0;
+  color: var(--v4-text-mute);
+}
+
+.app-compose-collection-chip--rejected .app-compose-collection-chip-kind {
+  color: var(--v4-danger);
+}
+
+.app-compose-collection-chip-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-compose-collection-chip-remove {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 2px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--v4-text-dim);
+  cursor: pointer;
+}
+
+.app-compose-collection-chip-remove:hover {
+  background: var(--v4-hover-overlay);
+}
+
+.app-compose-collection-chip-remove:focus-visible {
+  outline: 2px solid var(--v4-accent);
+}
+
+.app-compose-collection-count,
+.app-compose-collection-hint {
+  font-size: calc(11px * var(--exo-font-scale, 1));
+  color: var(--v4-text-mute);
+}
+
+.app-compose-collection-alert {
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 107, 107, 0.45);
+  border-radius: 6px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  color: var(--v4-danger);
+}
+
 /* Audio compose bar */
 .app-audio-bar {
   display: flex;
@@ -1513,11 +1598,6 @@ a.app-att-filecard {
   color: var(--v4-text-dim);
 }
 
-/* Collection bring-back (#54): one quiet accent edge, no extra controls. */
-.app-artifact-card--collection {
-  border-left: 2px solid var(--v4-accent);
-}
-
 .app-artifact-card-title {
   color: var(--v4-text);
 }
@@ -1526,6 +1606,109 @@ a.app-att-filecard {
   flex-basis: 100%;
   margin: 0;
   white-space: pre-wrap;
+}
+
+/* Brought-back Collection card (#61 D10): one view for both speakers. The
+   paper header repeats the Library polaroid tokens, scoped to the card. */
+.app-collection-shows {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.app-msg-body > * + .app-collection-shows {
+  margin-top: 8px;
+}
+
+.app-msg--user .app-msg-body--cards-only {
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.app-collection-show {
+  --collection-paper: #ece8df;
+  --collection-ink: #24221e;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(460px, 100%);
+}
+
+.app-artifact-card--collection {
+  margin-top: 2px;
+}
+
+.app-collection-show-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--v4-line-strong);
+  border-left: 2px solid var(--v4-accent);
+  border-radius: 10px;
+  background: var(--v4-bg);
+  color: var(--v4-text);
+}
+
+.app-collection-show-title {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  background: var(--collection-paper);
+  color: var(--collection-ink);
+  font: inherit;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  text-align: left;
+}
+
+.app-collection-show-open {
+  cursor: pointer;
+}
+
+.app-collection-show-open:hover {
+  text-decoration: underline;
+}
+
+.app-collection-show-open:focus-visible,
+.app-collection-show-text:focus-visible {
+  outline: 2px solid var(--v4-accent);
+  outline-offset: -2px;
+}
+
+.app-collection-show-text {
+  max-height: 150px;
+  overflow: auto;
+  padding: 12px 14px;
+  font-family: 'LXGW WenKai', var(--v4-font);
+  font-size: calc(14.5px * var(--exo-font-scale, 1));
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.app-collection-show-detail {
+  margin: 0;
+  padding: 8px 12px;
+  border-top: 1px solid var(--v4-line);
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
+  color: var(--v4-text-dim);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.app-collection-show-title + .app-collection-show-detail {
+  border-top: 0;
+}
+
+.app-collection-show-notice {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--v4-line-strong);
+  border-radius: 8px;
+  background: var(--v4-panel);
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
 }
 
 /* Historical audio bubble — same-origin content_url player (Gate G). */

@@ -117,6 +117,7 @@ describe('AssistantArtifact projection (fail-closed)', () => {
       position: 0,
       title: '生成了图片',
       detail: '画面描述暂不可用',
+      text: null,
       collectible: false,
       presentationAttachmentKey: 'message_attachment:12',
     });
@@ -297,10 +298,13 @@ describe('Collection bring-back cards (#54)', () => {
     expect(node.className).toContain('app-artifact-card--collection');
     expect(node.getAttribute('data-kind')).toBe('text');
     expect(within(node).getByText('从藏品馆带回 · 文本 #21')).toBeTruthy();
-    expect(node.querySelector('.app-artifact-card-detail')?.textContent).toBe(longDetail);
+    expect(node.querySelector('.app-collection-show-detail')?.textContent).toBe(longDetail);
     expect(screen.queryByText('（空消息）')).toBeNull();
     expect(screen.queryByRole('button', { name: '收藏此条消息' })).toBeNull();
-    expect(node.querySelector('button')).toBeNull();
+    // #61 D10: the only control is the shared card's Library link.
+    expect([...node.querySelectorAll('button')].map((b) => b.textContent)).toEqual([
+      '从藏品馆带回 · 文本 #21',
+    ]);
   });
 
   it('collection audio plays once and never enters the voice transcript path', () => {

@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowDown, ArrowLeft } from 'lucide-react';
 import { toAppApiError } from './api';
 import {
@@ -17,6 +17,7 @@ import {
   useVisiblePresetsQuery,
   fetchFreshWindow,
   applyFreshWindow,
+  isG045AgentType,
 } from './queries';
 import { MessageTimeline } from './MessageTimeline';
 import type { MessageView } from './types';
@@ -31,6 +32,8 @@ import { RuntimeStatusBanner } from './RuntimeStatusBanner';
 import { TruncateConfirmModal } from './TruncateConfirmModal';
 import { BranchConfirmModal } from './BranchConfirmModal';
 import { useComposeAttachments } from './attachments/useComposeAttachments';
+import { useComposeCollectionCards } from './attachments/useComposeCollectionCards';
+import { collectionItemRejectionOf } from './attachments/collectionRejection';
 import { useUserAttachmentManager } from './attachments/useUserAttachmentManager';
 import { useAudioRecorder } from './audio/useAudioRecorder';
 import { useAudioTargetGate, useModelCatalogQuery } from './audio/audioTarget';
@@ -77,6 +80,7 @@ function ErrorDetail({ error }: { error: unknown }) {
 export function ConversationPage() {
   const { conversationId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { pendingArrivalsByConversation, consumeExactArrivals } = useNotifications();
 
@@ -138,6 +142,28 @@ export function ConversationPage() {
   // P1C: ordinary file selection/drop shares the selected Conversation target
   // with the recorder, while backend preflight remains the capability owner.
   const compose = useComposeAttachments(id, composeUploadTarget);
+  // #61: Library "带回聊天" hands item ids over in router state; they join the
+  // pending cards once (never the draft) and the state is consumed.
+  const collection = useComposeCollectionCards(id);
+  const conversationReady = conversationQuery.data?.id === id;
+  const collectionCapable = conversationReady && isG045AgentType(conversationQuery.data?.agentType);
+  const broughtItemIds = (location.state as { collectionCards?: unknown } | null)?.collectionCards;
+  const addCollectionCards = collection.addCards;
+  useEffect(() => {
+    if (broughtItemIds === undefined || !conversationReady) return;
+    if (collectionCapable && Array.isArray(broughtItemIds)) {
+      addCollectionCards(broughtItemIds.filter((v): v is number => typeof v === 'number'));
+    }
+    navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
+  }, [
+    broughtItemIds,
+    conversationReady,
+    collectionCapable,
+    addCollectionCards,
+    navigate,
+    location.pathname,
+    location.search,
+  ]);
   const audioRecovery = useAudioRecovery(id, merged?.rows ?? []);
   // P1C: the manager's 204 callback synchronously purges both sendable owners
   // before history/list refresh. This closes the Phase A cross-owner seam.
@@ -259,6 +285,14 @@ export function ConversationPage() {
       thinkingOperationPendingRef.current ||
       audioRecovery.isUploading(),
   });
+
+  // #61: a per-item rejection (422 before acceptance, or an SSE error of an
+  // accepted turn) marks exactly the card it names; whole-request errors none.
+  const rejectCollectionCard = collection.rejectCard;
+  useEffect(() => {
+    const rejection = collectionItemRejectionOf(runtimeError);
+    if (rejection) rejectCollectionCard(rejection.itemId, rejection.label);
+  }, [runtimeError, rejectCollectionCard]);
   const thinkingPending = thinkingOperationPendingRef.current;
   const cacheControl = useCacheControl(id, {
     runtimeUncertain: busy || audioRecovery.isUploading() || thinkingPending,
@@ -809,6 +843,7 @@ export function ConversationPage() {
           audioRecovery={audioRecovery}
           onRetryAudio={handleRetryAudio}
           restoredTurn={restoredTurn}
+          collection={collectionCapable ? collection : undefined}
         />
       ) : null}
 

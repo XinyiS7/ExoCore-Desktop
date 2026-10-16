@@ -36,8 +36,7 @@ export function detailItem(id: number, overrides: Record<string, unknown> = {}) 
     text_content: '一段文字',
     asset: null,
     representations: [],
-    capabilities: ['update', 'delete', 'bring_to_chat'],
-    bring_to_chat_url: `/api/collection/items/${id}/bring-to-chat/`,
+    capabilities: ['update', 'delete'],
     comments: [
       { author_type: 'human', author_label: 'Alicia', body: '第一次', created_at: '2026-10-14T10:00:00+00:00' },
       { author_type: 'agent', author_label: 'Alessandro', body: '我也喜欢', created_at: '2026-10-14T11:00:00+00:00' },

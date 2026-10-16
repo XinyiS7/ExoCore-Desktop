@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, MoreHorizontal, X } from 'lucide-react';
 import { useDialogA11y } from '../chat/dialogA11y';
 import { CollectionApiError } from './api';
+import { BringTargetDialog } from './BringTargetDialog';
 import { CollectionDeleteDialog } from './CollectionDeleteDialog';
 import { CollectionEditForm, ManualCalibrationForm } from './CollectionEditForm';
 import { cardTitle, KIND_LABELS } from './filters';
@@ -61,7 +62,7 @@ function ExpandedShell({ title, meta, onClose, locked = false, actions, children
               <button
                 type="button"
                 className="library-menu-toggle"
-                aria-label="更多：编辑、删除"
+                aria-label="更多：带回聊天、编辑、删除"
                 aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((open) => !open)}
               >
@@ -84,6 +85,7 @@ function ExpandedDialog({ id, onClose }: { id: number; onClose: () => void }) {
   const [mode, setMode] = useState<Mode>('read');
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [bringing, setBringing] = useState(false);
 
   if (query.isPending) {
     return <ExpandedShell title={`#${id}`} onClose={onClose}><p role="status" className="library-state">正在加载藏品…</p></ExpandedShell>;
@@ -104,7 +106,7 @@ function ExpandedDialog({ id, onClose }: { id: number; onClose: () => void }) {
 
   const detail = query.data;
   const title = cardTitle(detail);
-  const locked = saving || confirmDelete;
+  const locked = saving || confirmDelete || bringing;
   return (
     <ExpandedShell
       title={title}
@@ -113,6 +115,7 @@ function ExpandedDialog({ id, onClose }: { id: number; onClose: () => void }) {
       locked={locked}
       actions={mode === 'read' ? (
         <>
+          <button type="button" className="app-btn" onClick={() => setBringing(true)}>带回聊天</button>
           {detail.capabilities.includes('update') && <button type="button" className="app-btn" onClick={() => setMode('edit')}>编辑</button>}
           {detail.capabilities.includes('delete') && (
             <button type="button" className="app-btn library-btn-danger-ghost" onClick={() => setConfirmDelete(true)}>删除</button>
@@ -139,6 +142,9 @@ function ExpandedDialog({ id, onClose }: { id: number; onClose: () => void }) {
         {viewStatus === 'error' && <p role="status" className="library-note">本次浏览未记录</p>}
         {mode === 'read' && <ReadingSections detail={detail} onCalibrate={() => setMode('calibrate')} />}
       </div>
+      {bringing && (
+        <BringTargetDialog itemIds={[detail.id]} titles={[title]} onCancel={() => setBringing(false)} />
+      )}
       {confirmDelete && (
         <CollectionDeleteDialog
           itemId={detail.id}

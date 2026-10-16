@@ -254,6 +254,11 @@ export interface ChatTurnInput {
   content: string;
   pendingAttachments?: number[];
   /**
+   * #61: brought-back Collection item ids in selection order (serialized as
+   * `collection_items`). Ordinary sends only; edit/regenerate never carry them.
+   */
+  collectionItems?: number[];
+  /**
    * Explicit Force Cache send (V3 parity): only the explicit composer entry
    * (Force Cache button / Ctrl+Shift+Enter with sendable attachments) sets
    * true. Ordinary sends omit/false and the client serializes
@@ -319,6 +324,8 @@ export interface DispatchIntent {
   dispatchSettings?: ConversationDispatchSettings;
   /** P1C ordinary/recovery turns only. Edit/regenerate never receive compose IDs. */
   pendingAttachments?: number[];
+  /** #61 ordinary sends only. */
+  collectionItems?: number[];
   /** Explicit Force Cache intent captured at dispatch; honored for `send` only. */
   forceCacheRebuild?: boolean;
   attemptKey?: string;

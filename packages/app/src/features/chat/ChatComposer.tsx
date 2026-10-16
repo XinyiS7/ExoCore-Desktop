@@ -8,6 +8,8 @@ import type {
 } from './runtime/types';
 import { loadConversationDraft, saveConversationDraft } from './runtime/storage';
 import { ComposeAttachmentList } from './attachments/ComposeAttachmentList';
+import { ComposeCollectionCards } from './attachments/ComposeCollectionCards';
+import type { ComposeCollectionApi } from './attachments/useComposeCollectionCards';
 import type { ComposeAttachmentApi } from './attachments/useComposeAttachments';
 import type { ComposeAttachmentEntry } from './attachments/types';
 import { UserAttachmentManager } from './attachments/UserAttachmentManager';
@@ -66,7 +68,11 @@ export interface ChatComposerProps {
     conversationId: number;
     text: string;
     attachmentIds: number[];
+    /** #61 brought-back cards of the failed turn, in their original order. */
+    collectionItemIds?: number[];
   } | null;
+  /** #61 brought-back Collection cards; absent where the page offers none. */
+  collection?: ComposeCollectionApi;
 }
 
 function flattenProjectFiles(entries: readonly ProjectTreeEntry[]): string[] {
@@ -102,6 +108,7 @@ export function ChatComposer({
   audioRecovery,
   onRetryAudio,
   restoredTurn,
+  collection,
 }: ChatComposerProps) {
   const [text, setText] = useState('');
   const [caret, setCaret] = useState(0);
@@ -119,6 +126,12 @@ export function ChatComposer({
   const appliedRestoredTokenRef = useRef<number | null>(null);
   const composeRef = useRef(compose);
   composeRef.current = compose;
+  const collectionRef = useRef(collection);
+  collectionRef.current = collection;
+  const collectionCards = collection?.cards ?? [];
+  const hasRejectedCollectionCard = collectionCards.some((card) => card.status === 'rejected');
+  // An uploaded-audio turn has its own recovery owner and carries no cards.
+  const collectionBlockedByAudio = collectionCards.length > 0 && recorder.status === 'recorded';
 
   const atQuery =
     editingTarget || autocompleteDismissed ? null : extractCurrentAtQuery(text, caret);
@@ -196,6 +209,9 @@ export function ChatComposer({
       if (stashedSubmissionRef.current && stashedSubmissionRef.current.conversationId === conversationId) {
         composeRef.current.restoreEntries(stashedSubmissionRef.current.entries);
       }
+      if (restoredTurn.collectionItemIds && restoredTurn.collectionItemIds.length > 0) {
+        collectionRef.current?.addCards(restoredTurn.collectionItemIds, { restore: true });
+      }
     }
     stashedSubmissionRef.current = null;
   }, [restoredTurn, conversationId]);
@@ -264,7 +280,12 @@ export function ChatComposer({
     }
 
     const currentAttachmentIds = compose.getSuccessfulIds();
-    if (!trimmed && currentAttachmentIds.length === 0 && !hasRecordedAudio) return;
+    const collectionItemIds = collection?.getItemIds() ?? [];
+    if (!trimmed && currentAttachmentIds.length === 0 && !hasRecordedAudio && collectionItemIds.length === 0) {
+      return;
+    }
+    // A rejected card stays until the user removes it; audio turns carry no cards.
+    if (hasRejectedCollectionCard || (hasRecordedAudio && collectionItemIds.length > 0)) return;
 
     // Explicit Force Cache without sendable attachments degrades to an
     // ordinary send — a forced empty request is never manufactured. Edit
@@ -292,6 +313,7 @@ export function ChatComposer({
       outcome = await onSend({
         content: submittedText,
         pendingAttachments: currentAttachmentIds.length > 0 ? currentAttachmentIds : undefined,
+        collectionItems: collectionItemIds.length > 0 ? collectionItemIds : undefined,
         forceCacheRebuild: forceCacheRebuild || undefined,
         dispatchSettings,
       });
@@ -312,6 +334,7 @@ export function ChatComposer({
       setText('');
       saveConversationDraft(conversationId, '');
       compose.clearCompose();
+      collection?.clear();
       if (hasRecordedAudio) recorder.cancel();
       void attachmentManager.refresh();
     }
@@ -459,6 +482,14 @@ export function ChatComposer({
       />
 
       <div className="app-composer">
+        <ComposeCollectionCards
+          cards={collectionCards}
+          overflowed={collection?.overflowed}
+          editing={Boolean(editingTarget)}
+          disabled={busy || runActive}
+          onRemove={(itemId) => collection?.removeCard(itemId)}
+        />
+
         {/* P1C: compose attachment strip (uploading/ok/ok_degraded/failed) */}
         <ComposeAttachmentList
           entries={compose.entries}
@@ -679,9 +710,12 @@ export function ChatComposer({
                   audioRecovery.uploading ||
                   (editingTarget
                     ? text.trim().length === 0
-                    : text.trim().length === 0 &&
-                      compose.successfulIds.length === 0 &&
-                      recorder.status !== 'recorded')
+                    : hasRejectedCollectionCard ||
+                      collectionBlockedByAudio ||
+                      (text.trim().length === 0 &&
+                        compose.successfulIds.length === 0 &&
+                        collectionCards.length === 0 &&
+                        recorder.status !== 'recorded'))
                 }
                 title={
                   dispatchSettings === null
@@ -690,6 +724,10 @@ export function ChatComposer({
                       ? '附件上传中，请稍候'
                     : attachmentManager.deletePending
                       ? '附件删除进行中，请稍候'
+                    : !editingTarget && hasRejectedCollectionCard
+                      ? '先移除发送失败的藏品卡'
+                    : !editingTarget && collectionBlockedByAudio
+                      ? '录音不能和藏品卡一起发送'
                       : editingTarget
                         ? '确认修改并发送'
                         : '发送消息'

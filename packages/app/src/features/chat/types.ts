@@ -4,6 +4,8 @@
  * (Plan §6.2–§6.6, Canonical_API_Snapshot.json).
  */
 
+import type { CollectionKind } from '../collection/types';
+
 // ── Transport rows (server contract) ──────────────────────────────────────
 
 export interface AgentPresetRow {
@@ -170,6 +172,8 @@ export interface MessageRow {
   attachments_meta: AttachmentMeta[] | null;
   /** AssistantArtifact human cards; normalized fail-closed at the API boundary. */
   assistant_artifacts?: unknown;
+  /** #61 human bring-back cards on user rows; normalized fail-closed at the API boundary. */
+  collection_shows?: unknown;
   created_at: string;
 }
 
@@ -257,7 +261,28 @@ export interface MessageView {
    * Optional for pre-artifact fixtures; the API adapter always emits an array.
    */
   assistantArtifacts?: AssistantArtifactView[];
+  /**
+   * #61 human bring-back cards ordered by position (user rows only).
+   * Optional for older fixtures; the API adapter always emits an array.
+   */
+  collectionShows?: CollectionShowCard[];
   createdAt: string;
+}
+
+/**
+ * One brought-back Collection card, whichever speaker brought it (#61 D10).
+ * Agent `assistant_artifacts[]` and human `collection_shows[]` both normalize
+ * to it and render through `CollectionShowCardView`.
+ */
+export interface CollectionShowCard {
+  key: string;
+  /** `null` only for an Agent card whose title is outside the fixed form. */
+  itemId: number | null;
+  itemKind: CollectionKind | null;
+  title: string;
+  detail: string | null;
+  /** Complete snapshotted text; text cards only. */
+  text: string | null;
 }
 
 /** Artifact kinds: attachment kinds plus media-less `text` (collection bring-back). */
@@ -276,6 +301,8 @@ export interface AssistantArtifactView {
   position: number;
   title: string;
   detail: string | null;
+  /** Collection text cards only: the complete snapshotted `human.text` (#61). */
+  text: string | null;
   collectible: boolean;
   /** `message_attachment:${id}` of the linked media row, if any. */
   presentationAttachmentKey: string | null;

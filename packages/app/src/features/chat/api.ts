@@ -2,6 +2,7 @@ import { apiFetch } from 'exo-shared/api';
 import { normalizeVoiceToolErrorList } from './voice/contract';
 import { normalizeMessageAttachments } from './attachments/projection';
 import { normalizeAssistantArtifacts } from './artifacts/projection';
+import { normalizeCollectionShows } from './artifacts/collectionShowCard';
 import type {
   AgentPresetRow,
   AssistantRunTraceItem,
@@ -280,6 +281,7 @@ export function normalizeMessageRow(row: MessageRow): MessageView {
     attachments: normalizeMessageAttachments(row.attachments, row.attachments_meta),
     assistantArtifacts:
       row.role === 'assistant' ? normalizeAssistantArtifacts(row.assistant_artifacts) : [],
+    collectionShows: row.role === 'user' ? normalizeCollectionShows(row.collection_shows) : [],
     createdAt: row.created_at,
   };
 }

@@ -3,7 +3,8 @@ import { Outlet, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
 import { CollectionApiError } from './api';
-import { hasActiveFilters, KIND_LABELS, parseWallFilters, wallFiltersToParams } from './filters';
+import { BringTargetDialog } from './BringTargetDialog';
+import { cardTitle, hasActiveFilters, KIND_LABELS, parseWallFilters, wallFiltersToParams } from './filters';
 import { PolaroidCard } from './PolaroidCard';
 import { collectionQueryKeys, useCollectionTagsQuery, useCollectionWallQuery } from './queries';
 import { COLLECTION_KINDS, type CollectionFilters } from './types';
@@ -12,6 +13,8 @@ import './collection.css';
 const SEARCH_DEBOUNCE_MS = 300;
 /** Narrow flow prefetches the next page from the third-to-last card (Plan §4.2). */
 const PREFETCH_FROM_END = 3;
+/** #61 D9: one bring-back carries at most five items. */
+const BRING_LIMIT = 5;
 
 /** P4 Library: the Collection wall; item detail renders on top through the nested outlet. */
 export function CollectionWallPage() {
@@ -26,6 +29,29 @@ export function CollectionWallPage() {
   const [current, setCurrent] = useState(0);
   const flowRef = useRef<HTMLDivElement>(null);
   const pageRequest = useRef(false);
+  // #61 multi-select exists only to bring items back to chat, in pick order.
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState<{ id: number; title: string }[]>([]);
+  const [limitHit, setLimitHit] = useState(false);
+  const [bringing, setBringing] = useState(false);
+  const toggle = (id: number, title: string) => {
+    setPicked((prev) => {
+      if (prev.some((entry) => entry.id === id)) {
+        setLimitHit(false);
+        return prev.filter((entry) => entry.id !== id);
+      }
+      if (prev.length >= BRING_LIMIT) {
+        setLimitHit(true);
+        return prev;
+      }
+      return [...prev, { id, title }];
+    });
+  };
+  const exitSelecting = () => {
+    setSelecting(false);
+    setPicked([]);
+    setLimitHit(false);
+  };
 
   const items = query.data?.pages.flatMap((page) => page.items) ?? [];
   const error = query.error instanceof CollectionApiError ? query.error : null;
@@ -111,7 +137,28 @@ export function CollectionWallPage() {
               onChange={(event) => setDraftQ(event.target.value)}
             />
           </label>
+          {!selecting && items.length > 0 && (
+            <button type="button" className="app-btn library-select-toggle" onClick={() => setSelecting(true)}>
+              多选
+            </button>
+          )}
         </div>
+        {selecting && (
+          <div className="library-select-bar" role="group" aria-label="多选带回">
+            <button type="button" className="app-btn app-btn-ghost" aria-label="退出选择" onClick={exitSelecting}>×</button>
+            <strong>已选 {picked.length} / {BRING_LIMIT}</strong>
+            <span className="library-note">多选只用于带回聊天</span>
+            {limitHit && <span role="status" className="library-note">每次最多带回 5 件</span>}
+            <span className="library-select-spacer" />
+            <span className="library-note">按选择顺序带回</span>
+            <button type="button" className="app-btn app-btn-ghost" disabled={picked.length === 0} onClick={() => { setPicked([]); setLimitHit(false); }}>
+              清空
+            </button>
+            <button type="button" className="app-btn app-btn-primary" disabled={picked.length === 0} onClick={() => setBringing(true)}>
+              带回聊天（{picked.length}）
+            </button>
+          </div>
+        )}
         <div className="library-filter-row">
           <div role="tablist" aria-label="类型" className="library-kind-tabs">
             <button type="button" role="tab" aria-selected={!filters.kind} onClick={() => patchFilters({ kind: undefined })}>全部</button>
@@ -219,6 +266,17 @@ export function CollectionWallPage() {
                   key={item.id}
                   item={item}
                   to={{ pathname: `/library/items/${item.id}`, search: searchParams.toString() ? `?${searchParams.toString()}` : '' }}
+                  selection={
+                    selecting
+                      ? {
+                          order: (() => {
+                            const index = picked.findIndex((entry) => entry.id === item.id);
+                            return index === -1 ? null : index + 1;
+                          })(),
+                          onToggle: () => toggle(item.id, cardTitle(item)),
+                        }
+                      : undefined
+                  }
                 />
               ))}
             </div>
@@ -246,6 +304,13 @@ export function CollectionWallPage() {
         )}
         {query.isSuccess && !query.hasNextPage && items.length > 0 && <p className="library-end">已到底</p>}
       </section>
+      {bringing && (
+        <BringTargetDialog
+          itemIds={picked.map((entry) => entry.id)}
+          titles={picked.map((entry) => entry.title)}
+          onCancel={() => setBringing(false)}
+        />
+      )}
       <Outlet />
     </main>
   );

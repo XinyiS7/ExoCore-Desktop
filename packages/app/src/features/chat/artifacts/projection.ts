@@ -43,7 +43,7 @@ function parseArtifactItem(candidate: unknown): AssistantArtifactView | null {
   if (typeof collectible !== 'boolean') return null;
 
   if (!isRecord(human)) return null;
-  const { title, detail } = human;
+  const { title, detail, text } = human;
   if (typeof title !== 'string' || title.trim().length === 0 || title.length > TEXT_LIMIT) {
     return null;
   }
@@ -53,6 +53,9 @@ function parseArtifactItem(candidate: unknown): AssistantArtifactView | null {
   ) {
     return null;
   }
+  // #61: collection text cards carry the uncapped `human.text` snapshot.
+  const collectionText = isCollection && kind === 'text' ? text : undefined;
+  if (collectionText !== undefined && typeof collectionText !== 'string') return null;
 
   let presentationAttachmentKey: string | null = null;
   if (candidate.presentation_attachment !== null) {
@@ -69,6 +72,7 @@ function parseArtifactItem(candidate: unknown): AssistantArtifactView | null {
     position,
     title,
     detail: detail && detail.trim().length > 0 ? detail : null,
+    text: typeof collectionText === 'string' ? collectionText : null,
     collectible,
     presentationAttachmentKey,
   };

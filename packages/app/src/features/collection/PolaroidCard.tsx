@@ -9,6 +9,11 @@ interface PolaroidCardProps {
   item: CollectionListItem;
   /** Detail location, carrying the wall's search params so closing restores the filters. */
   to: { pathname: string; search: string };
+  /**
+   * #61 bring-back multi-select: the whole card becomes one toggle and its
+   * links step aside. `order` is the 1-based selection order, null if unpicked.
+   */
+  selection?: { order: number | null; onToggle: () => void };
 }
 
 function ImageThumb({ item }: { item: CollectionListItem }) {
@@ -26,12 +31,14 @@ function ImageThumb({ item }: { item: CollectionListItem }) {
 }
 
 /** One wall card: content area above, title/date/Tags in the paper margin below. */
-export function PolaroidCard({ item, to }: PolaroidCardProps) {
+export function PolaroidCard({ item, to, selection }: PolaroidCardProps) {
   const title = cardTitle(item);
   const tags = item.tags.slice(0, 3).map((tag) => `#${tag}`).join(' ');
+  const selecting = selection !== undefined;
+  const picked = selecting && selection.order !== null;
   return (
     <article
-      className={`polaroid polaroid--${item.kind}`}
+      className={`polaroid polaroid--${item.kind}${picked ? ' is-selected' : ''}`}
       style={{ '--polaroid-tilt': `${cardTilt(item.id)}deg` } as CSSProperties}
     >
       <div className="polaroid-content">
@@ -41,9 +48,11 @@ export function PolaroidCard({ item, to }: PolaroidCardProps) {
           <>
             <Music className="polaroid-icon" size={36} aria-hidden="true" />
             {/* Play = open the detail and start playback there (one view, Plan §5.1). */}
-            <Link className="polaroid-play" to={to} state={{ autoplay: true }} aria-label={`播放 ${title}`}>
-              <Play size={14} aria-hidden="true" />
-            </Link>
+            {selecting ? null : (
+              <Link className="polaroid-play" to={to} state={{ autoplay: true }} aria-label={`播放 ${title}`}>
+                <Play size={14} aria-hidden="true" />
+              </Link>
+            )}
           </>
         )}
         {item.kind === 'document' && (
@@ -55,8 +64,20 @@ export function PolaroidCard({ item, to }: PolaroidCardProps) {
       </div>
       <div className="polaroid-caption">
         <span className="polaroid-title-row">
-          {/* Stretched link: the whole card opens the detail. */}
-          <Link className="polaroid-link" to={to}>{title}</Link>
+          {/* Stretched link (or, while selecting, toggle): the whole card is the target. */}
+          {selecting ? (
+            <button
+              type="button"
+              className="polaroid-link polaroid-select"
+              aria-pressed={picked}
+              onClick={selection.onToggle}
+            >
+              {title}
+            </button>
+          ) : (
+            <Link className="polaroid-link" to={to}>{title}</Link>
+          )}
+          {picked ? <span className="polaroid-order" aria-label={`第 ${selection.order} 件`}>{selection.order}</span> : null}
           {item.collection_context.trim() && <span className="polaroid-reason" role="img" aria-label="有收藏理由" title="有收藏理由" />}
         </span>
         <time className="polaroid-meta" dateTime={item.collected_at}>{cardDate(item.collected_at)}</time>

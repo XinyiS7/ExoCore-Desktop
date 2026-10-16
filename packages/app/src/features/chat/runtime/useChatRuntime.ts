@@ -179,6 +179,7 @@ export function useChatRuntime({
     conversationId: number;
     text: string;
     attachmentIds: number[];
+    collectionItemIds: number[];
   } | null>(null);
   const stashedDraftRef = useRef<string>('');
   const inFlightTurnRef = useRef<{
@@ -187,6 +188,7 @@ export function useChatRuntime({
     clientTurnId?: string;
     content: string;
     pendingAttachments: number[];
+    collectionItems: number[];
     isAudioTurn: boolean;
   } | null>(null);
   const inFlightTurnsRef = useRef<Map<number, {
@@ -195,6 +197,7 @@ export function useChatRuntime({
     clientTurnId?: string;
     content: string;
     pendingAttachments: number[];
+    collectionItems: number[];
     isAudioTurn: boolean;
   }>>(new Map());
   const lastTerminalErrorRef = useRef<ChatRuntimeError | null>(null);
@@ -547,6 +550,7 @@ export function useChatRuntime({
             conversationId: convId,
             text: inFlight.content,
             attachmentIds: inFlight.pendingAttachments,
+            collectionItemIds: inFlight.collectionItems,
           });
         }
       }
@@ -1059,6 +1063,7 @@ export function useChatRuntime({
 
       const trimmedContent = turn.content.trim();
       const pendingAttachments = turn.pendingAttachments ?? [];
+      const collectionItems = turn.collectionItems ?? [];
       // Explicit Force Cache send is an ordinary-send-only intent: destructive
       // (edit/regenerate) turns can never carry it — 编辑历史消息不得误触
       // force rebuild. Retries replay exact content/attachments, never the
@@ -1114,6 +1119,8 @@ export function useChatRuntime({
         return 'rejected';
       }
       const destructive = operation === 'edit' || operation === 'regenerate';
+      // #61: brought-back cards ride ordinary sends only (never edit/regenerate).
+      if (collectionItems.length > 0 && operation !== 'send') return 'rejected';
       let predispatchPersistence: AttemptPersistence = { kind: 'proven_absent' };
 
       if (destructive) {
@@ -1145,7 +1152,12 @@ export function useChatRuntime({
                 };
         }
       }
-      if (operation !== 'regenerate' && trimmedContent.length === 0 && pendingAttachments.length === 0) {
+      if (
+        operation !== 'regenerate' &&
+        trimmedContent.length === 0 &&
+        pendingAttachments.length === 0 &&
+        collectionItems.length === 0
+      ) {
         return 'rejected';
       }
       // Historical edit/regenerate never receives or consumes newly composed
@@ -1179,6 +1191,7 @@ export function useChatRuntime({
         editMessageId,
         dispatchSettings: capturedSettings,
         pendingAttachments: [...pendingAttachments],
+        collectionItems: [...collectionItems],
         forceCacheRebuild,
         attemptKey: turn.attemptKey,
       };
@@ -1206,6 +1219,7 @@ export function useChatRuntime({
           clientTurnId: clientTurnIdForPost,
           content: trimmedContent,
           pendingAttachments: [...pendingAttachments],
+          collectionItems: [...collectionItems],
           isAudioTurn: Boolean(turn.attemptKey),
         };
         inFlightTurnRef.current = inFlightData;
@@ -1276,6 +1290,7 @@ export function useChatRuntime({
             editMessageId: destructive ? editMessageId : undefined,
             clientTurnId: clientTurnIdForPost,
             pendingAttachments: pendingAttachments.length > 0 ? pendingAttachments : undefined,
+            collectionItems: collectionItems.length > 0 ? collectionItems : undefined,
             forceCacheRebuild,
             signal: abortControllerRef.current.signal,
           });
@@ -1313,6 +1328,7 @@ export function useChatRuntime({
           editMessageId: destructive ? editMessageId : undefined,
           clientTurnId: clientTurnIdForPost,
           pendingAttachments: pendingAttachments.length > 0 ? pendingAttachments : undefined,
+          collectionItems: collectionItems.length > 0 ? collectionItems : undefined,
           forceCacheRebuild,
           signal: abortControllerRef.current.signal,
         });

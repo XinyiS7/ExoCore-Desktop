@@ -132,3 +132,16 @@ export interface ComposeAttachmentEntry {
   /** Safe diagnostics surfaced by the UI (never server stack traces). */
   diagnostics: AttachmentDiagnostic[];
 }
+/** #61 D9: a turn carries at most this many brought-back Collection cards. */
+export const COLLECTION_BRING_LIMIT = 5;
+
+/**
+ * One brought-back Collection card waiting above the composer (#61). Only the
+ * item id reaches the wire; kind/title are display reads of the item. A card
+ * the backend rejected by `item_id` keeps its reason until the user removes it.
+ */
+export interface ComposeCollectionCard {
+  itemId: number;
+  status: 'ready' | 'rejected';
+  reason?: string;
+}

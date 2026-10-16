@@ -42,6 +42,11 @@ export interface PostChatOptions {
    */
   pendingAttachments?: number[];
   /**
+   * #61: positive Collection item ids, deduped, at most 5, in selection
+   * order (serialized as `collection_items`). Omitted when none.
+   */
+  collectionItems?: number[];
+  /**
    * Explicit Force Cache send (V3 capability recovery): serializes
    * `force_cache_rebuild=true` ONLY when explicitly true. Ordinary sends
    * omit the field; backend `cache_skipped` stays the authoritative feedback
@@ -133,6 +138,19 @@ function buildChatBody(options: PostChatOptions): Record<string, unknown> {
       }
     }
     body.pending_attachments = options.pendingAttachments;
+  }
+  if (options.collectionItems !== undefined) {
+    const items = options.collectionItems;
+    if (
+      !Array.isArray(items) ||
+      items.length === 0 ||
+      items.length > 5 ||
+      new Set(items).size !== items.length ||
+      items.some((id) => !Number.isInteger(id) || id <= 0)
+    ) {
+      throw new AppApiError('藏品参数格式异常', { code: 'VALIDATION' });
+    }
+    body.collection_items = items;
   }
   return body;
 }
