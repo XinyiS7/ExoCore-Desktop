@@ -57,7 +57,7 @@ describe('Library permanent deletion (UI-C3)', () => {
     const wall = screen.getByLabelText('藏品墙');
     expect(within(wall).queryByRole('link', { name: '藏品 5' })).toBeNull();
     expect(within(wall).getByRole('link', { name: '藏品 6' })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: '文字' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('button', { name: '文字' }).getAttribute('aria-pressed')).toBe('true');
     await waitFor(() => expect(tagCalls()).toBeGreaterThan(tagsBefore));
   });
 

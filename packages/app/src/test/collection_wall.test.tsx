@@ -34,7 +34,7 @@ describe('Library wall filters (UI-B1)', () => {
     await screen.findByText('藏品 1');
     expect(params(listCalls(calls)[0])).toEqual({ limit: '24' });
 
-    fireEvent.click(screen.getByRole('tab', { name: '图片' }));
+    fireEvent.click(screen.getByRole('button', { name: '图片' }));
     await waitFor(() => expect(params(listCalls(calls).at(-1)!)).toEqual({ limit: '24', kind: 'image' }));
     fireEvent.click(screen.getByRole('button', { name: '最近 30 天' }));
     await waitFor(() => expect(params(listCalls(calls).at(-1)!)).toMatchObject({ recent: '1' }));

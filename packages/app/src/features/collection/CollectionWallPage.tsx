@@ -160,10 +160,10 @@ export function CollectionWallPage() {
           </div>
         )}
         <div className="library-filter-row">
-          <div role="tablist" aria-label="类型" className="library-kind-tabs">
-            <button type="button" role="tab" aria-selected={!filters.kind} onClick={() => patchFilters({ kind: undefined })}>全部</button>
+          <div role="group" aria-label="类型" className="library-kind-tabs">
+            <button type="button" aria-pressed={!filters.kind} onClick={() => patchFilters({ kind: undefined })}>全部</button>
             {COLLECTION_KINDS.map((kind) => (
-              <button key={kind} type="button" role="tab" aria-selected={filters.kind === kind} onClick={() => patchFilters({ kind })}>
+              <button key={kind} type="button" aria-pressed={filters.kind === kind} onClick={() => patchFilters({ kind })}>
                 {KIND_LABELS[kind]}
               </button>
             ))}
@@ -257,6 +257,7 @@ export function CollectionWallPage() {
               ref={flowRef}
               className="library-wall"
               tabIndex={0}
+              role="region"
               aria-label="藏品墙"
               onScroll={onFlowScroll}
               onKeyDown={onFlowKey}
@@ -282,7 +283,7 @@ export function CollectionWallPage() {
             </div>
             <div className="library-stepper">
               <button type="button" aria-label="上一张" disabled={current <= 0} onClick={() => goTo(current - 1)}>‹</button>
-              <span>
+              <span aria-live="polite">
                 {Math.min(current + 1, items.length)} / {items.length}{query.hasNextPage ? '+' : ''}
                 {!query.hasNextPage && current >= items.length - 1 ? ' · 已到底' : ''}
               </span>

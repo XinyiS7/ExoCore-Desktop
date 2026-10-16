@@ -43,7 +43,7 @@ describe('Library expanded detail (UI-C1)', () => {
     expect(screen.getByLabelText('藏品墙')).toBeTruthy();
     fireEvent.click(view.getByRole('button', { name: '关闭' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(screen.getByRole('tab', { name: '文字' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('button', { name: '文字' }).getAttribute('aria-pressed')).toBe('true');
   });
 
   it('hides the source link when the source is unavailable', async () => {
