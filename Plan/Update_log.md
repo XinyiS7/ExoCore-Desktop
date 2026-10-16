@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-10-16 — V4 Phase 4：Library（Collection）CP1–CP6 施工完成，待独立验收
+
+**署名：** `[砚 / claude-opus-5-5 builder；Solaire acceptance pending]`
+
+### 成果
+- `/app/library` = Collection：Library 一级入口；拍立得墙（四类、六种 URL 筛选、opaque cursor 续页、宽屏网格 / 窄屏横滑 + 上一张/下一张）；放大态（原件与派生、编辑、人工校准、永久删除二次确认）；浏览统计与只读评论，每次打开/播放只计一次 view。
+- 人侧带回：放大态「带回聊天」与墙上多选（≤5，按选择顺序）；选择器只列 G045 会话、默认 Prime；卡片进入目标会话输入框上方待发区，不改草稿；可只带卡片发送；编辑态 / 重新生成不带卡；单件 422 / SSE `item_id` 只标记对应卡片并阻止发送，整请求错误不标卡；未落盘失败按原顺序还原。
+- 消息侧：用户 `collection_shows[]` 与 Agent collection artifact 统一为一个 `CollectionShowCard` 组件；text 卡显示完整正文（限高滚动），只有卡片的消息不出空气泡；点击标题只读校验后跳转 `/library/items/N`，已删除时提示且卡片保持原样。
+- CP6 可达性：类型筛选改为按下态按钮组（原 tablist 无 tabpanel）；按下态加字重，不只靠颜色；卡片带为带名 region，窄屏位置计数为 live region。
+
+### 提交（ExoCore-Desktop）
+`5696e84` CP1 · `9a25df8` CP2 · `a19cc78` CP3 · `603c1b9` CP4 · `5d1dbaf` + `88b35a3` CP5 · `24ca95e` CP6 可达性。
+
+### 验证与边界
+- 全量 vitest 125 文件 / 1572 测试通过；`pnpm --filter exo-app build` 通过；改动文件 lint 干净。`main` 上 `pnpm lint` 仍有 6 个本 Phase 未触碰文件的既有错误（如 `AgentProfilePage.tsx`、`CollectMessageModal.tsx`）。
+- 偏差（已报 Solaire）：待发卡放在独立 hook `useComposeCollectionCards` 而非 `useComposeAttachments`（避免破坏 acceptance-owned `wav_upload_drop` 测试 mock）；Agent 侧卡片 itemId 由固定标题 `#N` 解析；录音与藏品卡不能同发。
+- 真实 Direct / AGY 带回（UI-H1、§13.3）由 Alicia 在既有阿莱会话中手动验证，agent 不发真实回合、不建测试数据。AGY 路径依赖 Runtime #64（AGY 1.4 门禁）重启生效。
+
+---
+
 ## 2026-10-03 — V4 Phase 3：River & Memo C3 最终独立验收 PASS
 
 **署名：** `[pane7 Builder；Solaire independent acceptance FINAL PASS；Alaric approved UI mockup；Alicia visual approved]`

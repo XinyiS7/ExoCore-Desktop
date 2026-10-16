@@ -32,6 +32,8 @@ If a task requires backend or extension changes:
 ExoCore-Desktop is a **monorepo** containing three independent V3 SPAs and the **temporary V4 package** `exo-app`. Each runs on its own port as a standalone PWA, sharing a single Django backend (port 8000).
 
 > **Migration state (C1 + C3 PASS):** `packages/app` (`exo-app`, port **5176**, production `/app/`) owns ordinary Chat as **V4-primary** and now owns the accepted P3 `/app/river` surface: five-source River reading, Memo/thread/Tags, Task CRUD/source actions, Calendar companion, Diary/Heartbeat full reading, and Chronicle milestone/moment time reading. V3 `chat-core`/Chronicle remain buildable rollback and legacy-source references; `chronicle_highlight`/bookmark stays V3-primary until P4. The whole-product root still redirects to `/chat/` until P7; P2G GroupChat remains V3-primary/deferred, and no V3 surface is deleted before P8. The repo continues to host four SPA/PWA packages; `dev:app` is additive and independent from V3 dev commands. V4 never imports V3 page/components. Verdict: `Plan/V4_Phase_3_River_Memo_acceptance_report.md`.
+>
+> **P4 Library (construction complete, acceptance pending):** `/app/library` (Library = Collection: wall, expanded detail/edit/delete, view stats, human bring-back into G045 chat) is built through CP1–CP6 on `main` (XinyiS7/ExoCore#61). It is not V4-primary until the independent acceptance report lands; real Direct/AGY bring-back is verified by Alicia by hand.
 
 ## Architecture
 
