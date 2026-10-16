@@ -226,7 +226,9 @@ function MessageRowItem({
 
       <div
         className={
-          hasCollectionShows && !hasContentText ? 'app-msg-body app-msg-body--cards-only' : 'app-msg-body'
+          hasCollectionShows
+            ? `app-msg-body app-msg-body--with-cards${hasContentText ? '' : ' app-msg-body--cards-only'}`
+            : 'app-msg-body'
         }
       >
         {isAssistant && (message.assistantRunTrace || hasReasoning) ? (

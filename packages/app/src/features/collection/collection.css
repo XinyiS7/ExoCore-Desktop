@@ -268,23 +268,40 @@
 /* #61 bring-back: wall multi-select (pick order) and the target picker. */
 .library-select-toggle { margin-left: auto; }
 .library-select-bar {
+  position: sticky; top: 0; z-index: 20; margin: 12px 40px 0;
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  margin-top: 12px; padding: 8px 12px; border: 1px solid var(--v4-line-strong); border-radius: 8px;
+  padding: 8px 12px; border: 1px solid var(--v4-line-strong); border-radius: 8px;
   background: var(--v4-panel);
 }
-.library-select-spacer { flex: 1; }
+/* Fixed action dock (#61 F-03): bottom-centre; on narrow it clears the bottombar. */
+.library-select-dock {
+  position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); z-index: 150;
+  display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 20px;
+  max-width: calc(100vw - 32px); box-sizing: border-box;
+  background: var(--v4-panel); border: 1px solid var(--v4-line-strong); border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+.library-page.is-selecting .library-body { padding-bottom: 104px; }
+@media (max-width: 767px) {
+  .library-select-bar { margin: 8px 16px 0; }
+  .library-select-dock { bottom: calc(var(--v4-bb-offset) + env(safe-area-inset-bottom) + 12px); gap: 8px; padding: 8px 8px 8px 14px; }
+}
 .polaroid-select {
   border: 0; padding: 0; background: none; text-align: left; cursor: pointer;
 }
 .polaroid-select:focus-visible { outline: none; }
 .polaroid-select:focus-visible::after { outline: 2px solid var(--v4-accent); outline-offset: 2px; }
 .polaroid.is-selected { outline: 2px solid var(--v4-accent); outline-offset: 3px; }
-.polaroid-order {
-  position: absolute; top: 4px; left: 4px; z-index: 1; pointer-events: none;
-  min-width: 22px; height: 22px; border-radius: 11px; padding: 0 6px;
+.polaroid-dot {
+  position: absolute; top: 16px; right: 16px; z-index: 1; pointer-events: none;
+  min-width: 26px; height: 26px; border-radius: 13px; padding: 0 6px; box-sizing: border-box;
   display: inline-flex; align-items: center; justify-content: center;
-  background: var(--v4-accent); color: #fff; font-size: 12px; font-weight: 600;
+  border: 2px solid #fff; background: rgba(0, 0, 0, 0.25); color: #fff; font-size: 13px; font-weight: 600;
 }
+.polaroid-dot.is-picked { background: var(--v4-accent); }
+/* At the five-item cap only unpicked cards dim; focus brings a card back to full strength. */
+.polaroid.is-dimmed { opacity: 0.45; }
+.polaroid.is-dimmed:focus-within { opacity: 1; }
 .library-bring .app-dialog-body { display: flex; flex-direction: column; gap: 12px; }
 .library-bring-items { display: flex; flex-wrap: wrap; gap: 6px; }
 .library-bring-item {

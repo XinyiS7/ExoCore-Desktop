@@ -157,10 +157,11 @@ describe('message-side cards (#61 CP5)', () => {
         ],
       }),
     );
-    renderTimeline([msg]);
+    const { container } = renderTimeline([msg]);
     const card = screen.getByTestId('collection-show-card');
     expect(card.querySelector('.app-collection-show-text')?.textContent).toBe(FULL_TEXT);
     expect(card.querySelector('.app-collection-show-detail')).toBeNull();
+    expect(container.querySelector('.app-msg-body--with-cards')).toBeNull();
   });
 
   it('a user media card renders its collection_item file once as a same-origin download', () => {
@@ -187,6 +188,8 @@ describe('message-side cards (#61 CP5)', () => {
     const links = container.querySelectorAll('a[download]');
     expect(links).toHaveLength(1);
     expect(links[0].getAttribute('href')).toBe('/api/agents/conversations/42/message-attachments/77/content/');
+    const body = container.querySelector('.app-msg-attachments')?.parentElement;
+    expect(body?.classList.contains('app-msg-body--with-cards')).toBe(true);
     const card = screen.getByTestId('collection-show-card');
     expect(card.querySelector('a, img, audio')).toBeNull();
     expect(card.querySelector('.app-collection-show-text')).toBeNull();

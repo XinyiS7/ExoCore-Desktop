@@ -197,7 +197,7 @@ describe('Library → chat bring-back (#61 CP5)', () => {
   it('wall multi-select keeps pick order, caps at five and brings the cards in that order', async () => {
     setup();
     renderApp(['/library']);
-    fireEvent.click(await screen.findByRole('button', { name: '多选' }));
+    fireEvent.click(await screen.findByRole('button', { name: '选择' }));
     for (const id of [4, 2, 6, 1, 3]) fireEvent.click(screen.getByRole('button', { name: `藏品 ${id}` }));
     expect(screen.getByText('已选 5 / 5')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '藏品 5' }));
@@ -213,10 +213,46 @@ describe('Library → chat bring-back (#61 CP5)', () => {
     expect(screen.getByText('5 / 5')).toBeTruthy();
   });
 
+  it('selection mode: a dot on every card, five picked dims only the unpicked, actions float only while selecting (F-03)', async () => {
+    setup();
+    const { container } = renderApp(['/library']);
+    fireEvent.click(await screen.findByRole('button', { name: '选择' }));
+    const card = (id: number) => screen.getByRole('button', { name: `藏品 ${id}` }).closest('article') as HTMLElement;
+    const dock = () => container.querySelector('.library-select-dock');
+    expect(container.querySelector('.library-page')?.classList.contains('is-selecting')).toBe(true);
+    for (const id of [1, 2, 3, 4, 5, 6]) {
+      expect(card(id).querySelector('.polaroid-dot:not(.is-picked)')?.getAttribute('aria-hidden')).toBe('true');
+    }
+    expect(within(dock() as HTMLElement).getByRole('button', { name: '清空' })).toBeTruthy();
+    expect(within(dock() as HTMLElement).getByRole('button', { name: '带回聊天（0）' })).toBeTruthy();
+
+    for (const id of [4, 2, 6, 1, 3]) fireEvent.click(screen.getByRole('button', { name: `藏品 ${id}` }));
+    expect(card(4).querySelector('.polaroid-dot.is-picked')?.textContent).toBe('1');
+    expect(card(3).querySelector('.polaroid-dot.is-picked')?.getAttribute('aria-label')).toBe('第 5 件');
+    expect(card(5).classList.contains('is-dimmed')).toBe(true);
+    for (const id of [1, 2, 3, 4, 6]) expect(card(id).classList.contains('is-dimmed')).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: '藏品 5' }));
+    expect(screen.getByText('每次最多带回 5 件')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '藏品 6' }));
+    expect(container.querySelectorAll('.polaroid.is-dimmed')).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole('button', { name: '带回聊天（4）' }));
+    await screen.findByRole('dialog', { name: '带回到哪个会话？' });
+    expect(dock()).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '取消' }));
+    expect(dock()).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: '退出选择' }));
+    expect(dock()).toBeNull();
+    expect(container.querySelector('.polaroid-dot')).toBeNull();
+    expect(container.querySelector('.library-page')?.classList.contains('is-selecting')).toBe(false);
+  });
+
   it('router state is consumed once and dedups against cards already waiting', async () => {
     setup();
     renderApp(['/library']);
-    fireEvent.click(await screen.findByRole('button', { name: '多选' }));
+    fireEvent.click(await screen.findByRole('button', { name: '选择' }));
     fireEvent.click(screen.getByRole('button', { name: '藏品 2' }));
     fireEvent.click(screen.getByRole('button', { name: '藏品 2' }));
     fireEvent.click(screen.getByRole('button', { name: '藏品 1' }));
@@ -230,7 +266,7 @@ describe('Library → chat bring-back (#61 CP5)', () => {
   it('a card-only send carries collection_items in order with empty content and clears the cards', async () => {
     const { bodies } = setup();
     renderApp(['/library']);
-    fireEvent.click(await screen.findByRole('button', { name: '多选' }));
+    fireEvent.click(await screen.findByRole('button', { name: '选择' }));
     fireEvent.click(screen.getByRole('button', { name: '藏品 6' }));
     fireEvent.click(screen.getByRole('button', { name: '藏品 2' }));
     fireEvent.click(screen.getByRole('button', { name: '带回聊天（2）' }));
@@ -252,7 +288,7 @@ describe('Composer bring-back rules (#61 CP5)', () => {
   async function openWithCards(ids: number[], s: Setup = {}) {
     const result = setup(s);
     renderApp(['/library']);
-    fireEvent.click(await screen.findByRole('button', { name: '多选' }));
+    fireEvent.click(await screen.findByRole('button', { name: '选择' }));
     for (const id of ids) fireEvent.click(screen.getByRole('button', { name: `藏品 ${id}` }));
     fireEvent.click(screen.getByRole('button', { name: `带回聊天（${ids.length}）` }));
     const dialog = await screen.findByRole('dialog', { name: '带回到哪个会话？' });

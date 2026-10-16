@@ -1628,6 +1628,11 @@ a.app-att-filecard {
   margin-top: 8px;
 }
 
+.app-msg--user .app-msg-body--with-cards .app-msg-attachments {
+  /* #61 F-02: a user's attachments group with their brought-back cards on the right edge. */
+  justify-content: flex-end;
+}
+
 .app-msg--user .app-msg-body--cards-only {
   background: none;
   border: 0;

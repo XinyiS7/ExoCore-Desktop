@@ -11,9 +11,10 @@ interface PolaroidCardProps {
   to: { pathname: string; search: string };
   /**
    * #61 bring-back multi-select: the whole card becomes one toggle and its
-   * links step aside. `order` is the 1-based selection order, null if unpicked.
+   * links step aside. `order` is the 1-based selection order, null if unpicked;
+   * `dimmed` marks an unpicked card once five are picked.
    */
-  selection?: { order: number | null; onToggle: () => void };
+  selection?: { order: number | null; onToggle: () => void; dimmed?: boolean };
 }
 
 function ImageThumb({ item }: { item: CollectionListItem }) {
@@ -36,11 +37,20 @@ export function PolaroidCard({ item, to, selection }: PolaroidCardProps) {
   const tags = item.tags.slice(0, 3).map((tag) => `#${tag}`).join(' ');
   const selecting = selection !== undefined;
   const picked = selecting && selection.order !== null;
+  const dimmed = selecting && !picked && selection.dimmed === true;
   return (
     <article
-      className={`polaroid polaroid--${item.kind}${picked ? ' is-selected' : ''}`}
+      className={`polaroid polaroid--${item.kind}${picked ? ' is-selected' : ''}${dimmed ? ' is-dimmed' : ''}`}
       style={{ '--polaroid-tilt': `${cardTilt(item.id)}deg` } as CSSProperties}
     >
+      {/* Selection dot on every card: empty when unpicked (state is the toggle's aria-pressed), numbered when picked. */}
+      {selecting ? (
+        picked ? (
+          <span className="polaroid-dot is-picked" aria-label={`第 ${selection.order} 件`}>{selection.order}</span>
+        ) : (
+          <span className="polaroid-dot" aria-hidden="true" />
+        )
+      ) : null}
       <div className="polaroid-content">
         {item.kind === 'text' && <p className="polaroid-preview">{item.preview}</p>}
         {item.kind === 'image' && <ImageThumb item={item} />}
@@ -77,7 +87,6 @@ export function PolaroidCard({ item, to, selection }: PolaroidCardProps) {
           ) : (
             <Link className="polaroid-link" to={to}>{title}</Link>
           )}
-          {picked ? <span className="polaroid-order" aria-label={`第 ${selection.order} 件`}>{selection.order}</span> : null}
           {item.collection_context.trim() && <span className="polaroid-reason" role="img" aria-label="有收藏理由" title="有收藏理由" />}
         </span>
         <time className="polaroid-meta" dateTime={item.collected_at}>{cardDate(item.collected_at)}</time>

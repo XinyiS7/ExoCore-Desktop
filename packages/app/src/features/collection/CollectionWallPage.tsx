@@ -122,7 +122,7 @@ export function CollectionWallPage() {
   const linkOutsideText = filters.link && filters.kind !== undefined && filters.kind !== 'text';
 
   return (
-    <main className="library-page">
+    <main className={`library-page${selecting ? ' is-selecting' : ''}`}>
       <header className="library-header">
         <div className="library-header-row">
           <h1>Library</h1>
@@ -139,26 +139,10 @@ export function CollectionWallPage() {
           </label>
           {!selecting && items.length > 0 && (
             <button type="button" className="app-btn library-select-toggle" onClick={() => setSelecting(true)}>
-              多选
+              选择
             </button>
           )}
         </div>
-        {selecting && (
-          <div className="library-select-bar" role="group" aria-label="多选带回">
-            <button type="button" className="app-btn app-btn-ghost" aria-label="退出选择" onClick={exitSelecting}>×</button>
-            <strong>已选 {picked.length} / {BRING_LIMIT}</strong>
-            <span className="library-note">多选只用于带回聊天</span>
-            {limitHit && <span role="status" className="library-note">每次最多带回 5 件</span>}
-            <span className="library-select-spacer" />
-            <span className="library-note">按选择顺序带回</span>
-            <button type="button" className="app-btn app-btn-ghost" disabled={picked.length === 0} onClick={() => { setPicked([]); setLimitHit(false); }}>
-              清空
-            </button>
-            <button type="button" className="app-btn app-btn-primary" disabled={picked.length === 0} onClick={() => setBringing(true)}>
-              带回聊天（{picked.length}）
-            </button>
-          </div>
-        )}
         <div className="library-filter-row">
           <div role="group" aria-label="类型" className="library-kind-tabs">
             <button type="button" aria-pressed={!filters.kind} onClick={() => patchFilters({ kind: undefined })}>全部</button>
@@ -218,6 +202,16 @@ export function CollectionWallPage() {
         {linkOutsideText && <p className="library-note">仅文字藏品正文可能含链接</p>}
       </header>
 
+      {/* Selection status stays pinned while the wall scrolls (#61 F-03). */}
+      {selecting && (
+        <div className="library-select-bar" role="group" aria-label="多选带回">
+          <button type="button" className="app-btn app-btn-ghost" aria-label="退出选择" onClick={exitSelecting}>×</button>
+          <strong>已选 {picked.length} / {BRING_LIMIT}</strong>
+          <span className="library-note">多选只用于带回聊天</span>
+          {limitHit && <span role="status" className="library-note">每次最多带回 5 件</span>}
+        </div>
+      )}
+
       <section className="library-body" aria-label="藏品">
         <div className="library-live" role="status" aria-live="polite">
           {query.isPending && '正在加载藏品…'}
@@ -275,6 +269,7 @@ export function CollectionWallPage() {
                             return index === -1 ? null : index + 1;
                           })(),
                           onToggle: () => toggle(item.id, cardTitle(item)),
+                          dimmed: picked.length >= BRING_LIMIT,
                         }
                       : undefined
                   }
@@ -305,6 +300,18 @@ export function CollectionWallPage() {
         )}
         {query.isSuccess && !query.hasNextPage && items.length > 0 && <p className="library-end">已到底</p>}
       </section>
+      {/* Floating actions exist only while selecting and step aside for the target picker. */}
+      {selecting && !bringing && (
+        <div className="library-select-dock" role="group" aria-label="带回操作">
+          <span className="library-note">按选择顺序带回</span>
+          <button type="button" className="app-btn app-btn-ghost" disabled={picked.length === 0} onClick={() => { setPicked([]); setLimitHit(false); }}>
+            清空
+          </button>
+          <button type="button" className="app-btn app-btn-primary" disabled={picked.length === 0} onClick={() => setBringing(true)}>
+            带回聊天（{picked.length}）
+          </button>
+        </div>
+      )}
       {bringing && (
         <BringTargetDialog
           itemIds={picked.map((entry) => entry.id)}
