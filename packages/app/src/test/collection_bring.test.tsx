@@ -1,6 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useEffect, useState } from 'react';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { installFetch, jsonResponse, renderApp, unmockFetch, type MockRoute } from './helpers';
+import { installFetch, jsonResponse, renderApp, renderV4, unmockFetch, type MockRoute } from './helpers';
+import { ChatComposer, type ChatComposerProps } from '../features/chat/ChatComposer';
+import { useComposeCollectionCards } from '../features/chat/attachments/useComposeCollectionCards';
+import type { AudioRecorderApi } from '../features/chat/audio/useAudioRecorder';
+import type { AudioRecoveryApi } from '../features/chat/audio/audioRecoveryMachine';
+import type { ChatTurnInput, TurnAcceptance } from '../features/chat/runtime/types';
 import { detailItem, listItem } from './collection_fixtures';
 import { loadConversationDraft, saveConversationDraft } from '../features/chat/runtime/storage';
 
@@ -354,5 +360,123 @@ describe('Composer bring-back rules (#61 CP5)', () => {
       expect(nodes.map((n) => n.className.includes('--rejected'))).toEqual([true, false]);
     });
     expect(await screen.findByText('发送失败：“藏品 1”的文字为空，移除后再发送。')).toBeTruthy();
+  });
+});
+
+describe('recorded voice with waiting cards (#61 CP6 F-01)', () => {
+  const BLOCKED = '录音不能和藏品卡一起发送：移除藏品卡后可发语音，取消录音后可发藏品卡。';
+
+  function VoiceAndCards({ reject, onSend, sendRecorded }: {
+    reject: boolean;
+    onSend: (turn: ChatTurnInput) => Promise<TurnAcceptance>;
+    sendRecorded: AudioRecoveryApi['sendRecorded'];
+  }) {
+    const collection = useComposeCollectionCards(42);
+    // Idle at mount like a real clip, so the composer's route-switch cancel runs first.
+    const [status, setStatus] = useState<AudioRecorderApi['status']>('idle');
+    useEffect(() => {
+      collection.addCards([11]);
+      if (reject) collection.rejectCard(11, 'collection_bring_item_not_found');
+      setStatus('recorded');
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    const recorder: AudioRecorderApi = {
+      status,
+      recordingSeconds: 0,
+      blob: status === 'recorded' ? new Blob(['x']) : null,
+      blobUrl: null,
+      error: null,
+      errorMessage: '',
+      mimeType: status === 'recorded' ? 'audio/webm' : null,
+      start: vi.fn(),
+      stop: vi.fn(),
+      cancel: () => setStatus('idle'),
+      fail: vi.fn(),
+    };
+    const audioRecovery: AudioRecoveryApi = {
+      state: null,
+      uploading: false,
+      uploadError: null,
+      retryDecision: { enabled: false, reason: 'none' },
+      onRuntimeOutcome: vi.fn(),
+      sendRecorded,
+      retry: vi.fn(),
+      purgeAttachmentId: vi.fn(),
+      abandon: vi.fn(),
+      dismissUploadError: vi.fn(),
+      isUploading: () => false,
+      hasSnapshot: () => false,
+    };
+    const props: ChatComposerProps = {
+      conversationId: 42,
+      status: 'idle',
+      busy: false,
+      dispatchSettings: { model: 'deepseek-v4-flash', endpoint: 7, thinkingLevel: 'medium', cacheEnabled: true, sessionType: 'full' },
+      targetNotice: null,
+      projectId: null,
+      pendingProjectInsert: null,
+      onProjectInsertConsumed: vi.fn(),
+      onSend,
+      onStop: vi.fn(),
+      editingTarget: null,
+      onCancelEdit: vi.fn(),
+      onConfirmEdit: vi.fn(),
+      compose: {
+        entries: [], anyUploading: false, successfulIds: [], getSuccessfulIds: () => [], uploadingCount: 0,
+        addFiles: vi.fn(), removeEntry: vi.fn(), purgeAttachmentId: vi.fn(), clearCompose: vi.fn(), restoreEntries: vi.fn(),
+      },
+      attachmentManager: {
+        rows: [], loading: false, notice: null, frozenInCache: false, deletePending: false,
+        isDeletePending: () => false, refresh: vi.fn(), remove: vi.fn(), dismissNotice: vi.fn(),
+      },
+      recorder,
+      audioGate: { state: 'supported', target: { model: 'deepseek-v4-flash', endpoint: 7 } },
+      audioRecovery,
+      onRetryAudio: vi.fn(),
+      collection,
+    };
+    return <ChatComposer {...props} />;
+  }
+
+  function mount(reject: boolean) {
+    installFetch([{ test: '/api/collection/items/11/', method: 'GET', handler: () => jsonResponse(detailItem(11)) }]);
+    const onSend = vi.fn(async (_turn: ChatTurnInput): Promise<TurnAcceptance> => 'accepted');
+    const sendRecorded = vi.fn().mockResolvedValue('accepted' as TurnAcceptance);
+    renderV4(<VoiceAndCards reject={reject} onSend={onSend} sendRecorded={sendRecorded} />);
+    return { onSend, sendRecorded };
+  }
+
+  const voiceSend = () => screen.getByRole('button', { name: '发送语音' }) as HTMLButtonElement;
+
+  it('pending cards: voice send is disabled with an announced reason; cancelling the clip lets the cards send', async () => {
+    const { onSend, sendRecorded } = mount(false);
+    await waitFor(() => expect(screen.getByLabelText('待发藏品卡')).toBeTruthy());
+    expect(voiceSend().disabled).toBe(true);
+    expect(voiceSend().getAttribute('aria-describedby')).toBe('app-audio-send-blocked');
+    expect(screen.getByText(BLOCKED).getAttribute('role')).toBe('status');
+    fireEvent.click(voiceSend());
+    expect(sendRecorded).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: '取消录音' }));
+    expect(screen.queryByRole('button', { name: '发送语音' })).toBeNull();
+    expect(screen.queryByText(BLOCKED)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '发送消息' }));
+    await waitFor(() => expect(onSend).toHaveBeenCalledTimes(1));
+    expect(onSend.mock.calls[0][0].collectionItems).toEqual([11]);
+    expect(sendRecorded).not.toHaveBeenCalled();
+  });
+
+  it('rejected card: voice send is disabled with the reason; removing the card lets the clip send', async () => {
+    const { onSend, sendRecorded } = mount(true);
+    await waitFor(() => expect(screen.getByLabelText('待发藏品卡')).toBeTruthy());
+    expect(voiceSend().disabled).toBe(true);
+    expect(screen.getByText(BLOCKED)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /^移除/ }));
+    await waitFor(() => expect(voiceSend().disabled).toBe(false));
+    expect(screen.queryByText(BLOCKED)).toBeNull();
+    fireEvent.click(voiceSend());
+    await waitFor(() => expect(sendRecorded).toHaveBeenCalledTimes(1));
+    expect(onSend).not.toHaveBeenCalled();
   });
 });

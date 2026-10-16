@@ -508,6 +508,11 @@ export function ChatComposer({
             attachmentManager.deletePending
           }
           onSend={recorder.status === 'recorded' ? () => void handleSubmit() : undefined}
+          sendBlockedReason={
+            collectionBlockedByAudio
+              ? '录音不能和藏品卡一起发送：移除藏品卡后可发语音，取消录音后可发藏品卡。'
+              : null
+          }
         />
         <AudioRecoveryBar
           recovery={audioRecovery}

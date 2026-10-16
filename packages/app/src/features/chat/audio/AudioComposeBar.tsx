@@ -12,6 +12,11 @@ export interface AudioComposeBarProps {
    * runtime integration; until then it is omitted (no dead buttons).
    */
   onSend?: () => void;
+  /**
+   * #61: why the recorded clip cannot be sent right now (pending Collection
+   * cards). Send is disabled and the reason is announced; cancel stays usable.
+   */
+  sendBlockedReason?: string | null;
 }
 
 /**
@@ -20,7 +25,7 @@ export interface AudioComposeBarProps {
  * - recorded: local preview + cancel (+ send once Task 4 wires it);
  * - error: stable message + close.
  */
-export function AudioComposeBar({ recorder, busy, onSend }: AudioComposeBarProps) {
+export function AudioComposeBar({ recorder, busy, onSend, sendBlockedReason = null }: AudioComposeBarProps) {
   const [playbackError, setPlaybackError] = useState(false);
   useEffect(() => {
     if (recorder.status !== 'recorded') setPlaybackError(false);
@@ -69,9 +74,10 @@ export function AudioComposeBar({ recorder, busy, onSend }: AudioComposeBarProps
             type="button"
             className="app-btn app-btn-primary app-btn-xs"
             onClick={onSend}
-            disabled={busy}
-            title="发送语音"
+            disabled={busy || sendBlockedReason !== null}
+            title={sendBlockedReason ?? '发送语音'}
             aria-label="发送语音"
+            aria-describedby={sendBlockedReason !== null ? 'app-audio-send-blocked' : undefined}
           >
             发送
           </button>
@@ -86,6 +92,11 @@ export function AudioComposeBar({ recorder, busy, onSend }: AudioComposeBarProps
         >
           取消
         </button>
+        {onSend && sendBlockedReason !== null ? (
+          <span id="app-audio-send-blocked" className="app-audio-send-blocked" role="status">
+            {sendBlockedReason}
+          </span>
+        ) : null}
       </div>
     );
   }
