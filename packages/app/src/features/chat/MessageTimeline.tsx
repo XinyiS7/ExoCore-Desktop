@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bookmark, Check, Copy, Edit2, GitBranch, RotateCw } from 'lucide-react';
+import { Check, Copy, Edit2, GitBranch, RotateCw } from 'lucide-react';
 import type { AssistantRunTraceProjection, MessageRole, MessageView } from './types';
 import type { OptimisticUserRow, RuntimeAssistantRow } from './runtime/types';
 import { MessageContent } from './MessageContent';
@@ -11,6 +11,8 @@ import { AssistantRunTrace } from './trace/AssistantRunTrace';
 import { MessageVoiceControl } from './tts/MessageVoiceControl';
 import { VoiceToolErrors } from './voice/VoiceToolErrors';
 import { CollectMessageModal } from '../collection/CollectMessageModal';
+import { MessageCollectMenu } from './MessageCollectMenu';
+import { hasCollectMenuItems } from './collectMenuItems';
 
 function runtimeTraceProjection(row: RuntimeAssistantRow): AssistantRunTraceProjection | null {
   if (!row.assistantTrace) return null;
@@ -142,86 +144,6 @@ function MessageRowItem({
             {[message.platform, message.modelVersion].filter(Boolean).join(' · ')}
           </span>
         ) : null}
-
-        {/* Action buttons (disabled during active run, §7.1, §7.4, §7.5).
-            The P2T voice control is deliberately NOT run-locked (D7) and shares
-            this cluster instead of adding a second `margin-left: auto` column. */}
-        <div className="app-msg-actions">
-          {isUser && hasContentText ? (
-            <button
-              type="button"
-              className="app-msg-action-btn"
-              onClick={handleCopyContent}
-              title={copied ? '已复制消息内容' : '复制消息内容'}
-              aria-label={copied ? '已复制消息内容' : '复制消息内容'}
-            >
-              {copied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
-              {copied ? '已复制' : '复制'}
-            </button>
-          ) : null}
-          {conversationId !== undefined &&
-          isAssistant &&
-          voice !== null &&
-          voice !== undefined &&
-          voice.available ? (
-            <MessageVoiceControl
-              conversationId={conversationId}
-              messageId={message.id}
-              voice={voice}
-            />
-          ) : null}
-          {(isUser || isAssistant) && hasContentText ? (
-            <button
-              type="button"
-              className="app-msg-action-btn app-msg-action-btn--collect"
-              onClick={() => onCollectMessage?.(message)}
-              title="收藏此条消息"
-              aria-label="收藏此条消息"
-            >
-              <Bookmark size={12} aria-hidden="true" />
-              收藏
-            </button>
-          ) : null}
-          {isUser && onEditMessage && (
-            <button
-              type="button"
-              className="app-msg-action-btn"
-              disabled={isRunActive}
-              onClick={() => onEditMessage(message.id, message.content, isLatestUser)}
-              title="编辑此条消息"
-              aria-label="编辑此条消息"
-            >
-              <Edit2 size={12} aria-hidden="true" />
-              编辑
-            </button>
-          )}
-          {isUser && onRegenerateMessage && (
-            <button
-              type="button"
-              className="app-msg-action-btn"
-              disabled={isRunActive}
-              onClick={() => onRegenerateMessage(message.id, isLatestUser)}
-              title="重新生成回答"
-              aria-label="重新生成回答"
-            >
-              <RotateCw size={12} aria-hidden="true" />
-              重生成
-            </button>
-          )}
-          {isAssistant && onBranchMessage && (
-            <button
-              type="button"
-              className="app-msg-action-btn"
-              disabled={isRunActive}
-              onClick={() => onBranchMessage(message.id, message.content)}
-              title="从该回答派生新会话"
-              aria-label="从该回答派生新会话"
-            >
-              <GitBranch size={12} aria-hidden="true" />
-              分支
-            </button>
-          )}
-        </div>
       </header>
 
       <div
@@ -264,8 +186,14 @@ function MessageRowItem({
           </div>
         ) : null}
         {hasVoiceToolErrors ? <VoiceToolErrors errors={voiceToolErrors} /> : null}
-        {isAssistant && hasContentText ? (
-          <div className="app-msg-footer">
+      </div>
+
+      {/* Unified action bar below the message (#72 U3). Edit / regenerate /
+          branch stay run-locked (§7.1, §7.4, §7.5); the P2T voice control
+          deliberately is not (D7). */}
+      {isUser || isAssistant ? (
+        <div className="app-msg-actions">
+          {hasContentText ? (
             <button
               type="button"
               className="app-msg-action-btn"
@@ -276,9 +204,62 @@ function MessageRowItem({
               {copied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
               {copied ? '已复制' : '复制'}
             </button>
-          </div>
-        ) : null}
-      </div>
+          ) : null}
+          {conversationId !== undefined &&
+          isAssistant &&
+          voice !== null &&
+          voice !== undefined &&
+          voice.available ? (
+            <MessageVoiceControl
+              conversationId={conversationId}
+              messageId={message.id}
+              voice={voice}
+            />
+          ) : null}
+          {isAssistant && onBranchMessage && (
+            <button
+              type="button"
+              className="app-msg-action-btn"
+              disabled={isRunActive}
+              onClick={() => onBranchMessage(message.id, message.content)}
+              title="从该回答派生新会话"
+              aria-label="从该回答派生新会话"
+            >
+              <GitBranch size={12} aria-hidden="true" />
+              分支
+            </button>
+          )}
+          {hasCollectMenuItems(message) ? (
+            <MessageCollectMenu message={message} onCollectBody={() => onCollectMessage?.(message)} />
+          ) : null}
+          {isUser && onEditMessage && (
+            <button
+              type="button"
+              className="app-msg-action-btn"
+              disabled={isRunActive}
+              onClick={() => onEditMessage(message.id, message.content, isLatestUser)}
+              title="编辑此条消息"
+              aria-label="编辑此条消息"
+            >
+              <Edit2 size={12} aria-hidden="true" />
+              编辑
+            </button>
+          )}
+          {isUser && onRegenerateMessage && (
+            <button
+              type="button"
+              className="app-msg-action-btn"
+              disabled={isRunActive}
+              onClick={() => onRegenerateMessage(message.id, isLatestUser)}
+              title="重新生成回答"
+              aria-label="重新生成回答"
+            >
+              <RotateCw size={12} aria-hidden="true" />
+              重生成
+            </button>
+          )}
+        </div>
+      ) : null}
     </article>
   );
 }

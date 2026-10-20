@@ -14,25 +14,10 @@ function loadShellCss(): string {
   throw new Error(`Cannot locate shell.css from cwd: ${process.cwd()}`);
 }
 
-function extractMediaBlock(css: string, query: string): { block: string; fullMatch: string } {
-  const qIdx = css.indexOf(query);
-  if (qIdx === -1) throw new Error(`Query "${query}" not found in css`);
-  const open = css.indexOf('{', qIdx);
-  if (open === -1) throw new Error(`Opening brace not found after "${query}"`);
-  let depth = 0;
-  for (let i = open; i < css.length; i++) {
-    if (css[i] === '{') depth++;
-    else if (css[i] === '}') {
-      depth--;
-      if (depth === 0) {
-        return {
-          block: css.slice(open + 1, i),
-          fullMatch: css.slice(qIdx, i + 1),
-        };
-      }
-    }
-  }
-  throw new Error(`Unmatched braces for "${query}"`);
+/** #72 U4: 收藏 opens a menu; 收藏正文 continues into the modal flow. */
+function openCollectBody(trigger: HTMLElement = screen.getByRole('button', { name: '收藏此条消息' })) {
+  fireEvent.click(trigger);
+  fireEvent.click(screen.getByRole('menuitem', { name: '收藏正文' }));
 }
 
 function makeMessage(partial: Partial<MessageView> & { id: number; role: MessageView['role'] }): MessageView {
@@ -77,16 +62,11 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
     expect(buttons[0]).toHaveTextContent('收藏');
     expect(buttons[1]).toHaveTextContent('收藏');
 
-    // F-01: Collection action must have dedicated modifier class
-    expect(buttons[0]).toHaveClass('app-msg-action-btn', 'app-msg-action-btn--collect');
-    expect(buttons[1]).toHaveClass('app-msg-action-btn', 'app-msg-action-btn--collect');
-
-    // Sibling action buttons (e.g. copy) retain standard action button class without --collect
-    const copyButtons = screen.getAllByRole('button', { name: /复制消息内容/ });
-    expect(copyButtons.length).toBeGreaterThan(0);
-    for (const copyBtn of copyButtons) {
-      expect(copyBtn).toHaveClass('app-msg-action-btn');
-      expect(copyBtn).not.toHaveClass('app-msg-action-btn--collect');
+    // #72 U4: the trigger is an ordinary, always-visible action that opens a menu
+    for (const button of buttons) {
+      expect(button).toHaveClass('app-msg-action-btn');
+      expect(button).not.toHaveClass('app-msg-action-btn--collect');
+      expect(button).toHaveAttribute('aria-haspopup', 'menu');
     }
 
     // Frozen UI rule: never render filled-state or active collected class
@@ -94,7 +74,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
     expect(buttons[1]).not.toHaveClass('active');
   });
 
-  it('suppresses "收藏" button for empty content, pure artifact, optimistic, and streaming messages', () => {
+  it('suppresses "收藏" for empty, system, optimistic and streaming rows; attachment-only rows get a placeholder-only menu', () => {
     const messages: MessageView[] = [
       // Empty string
       makeMessage({ id: 1, role: 'user', content: '' }),
@@ -154,8 +134,14 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
       />,
     );
 
-    // None of the empty, system, optimistic, or streaming items may have the collect button
-    expect(screen.queryByRole('button', { name: '收藏此条消息' })).not.toBeInTheDocument();
+    // Only the attachment-only row (#4) offers 收藏, and only as a placeholder
+    const triggers = screen.getAllByRole('button', { name: '收藏此条消息' });
+    expect(triggers).toHaveLength(1);
+    fireEvent.click(triggers[0]);
+    expect(screen.queryByRole('menuitem', { name: '收藏正文' })).toBeNull();
+    const placeholder = screen.getByRole('menuitem', { name: /document\.pdf/ });
+    expect(placeholder).toBeDisabled();
+    expect(placeholder).toHaveTextContent('待后端支持');
   });
 
   it('opens modal, submits canonical content with optional note, and shows created outcome', async () => {
@@ -187,8 +173,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
       />,
     );
 
-    const collectBtn = screen.getByRole('button', { name: '收藏此条消息' });
-    fireEvent.click(collectBtn);
+    openCollectBody();
 
     // Modal dialog is displayed
     const dialog = screen.getByRole('dialog', { name: '收藏消息正文' });
@@ -254,7 +239,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '收藏此条消息' }));
+    openCollectBody();
     fireEvent.click(screen.getByRole('button', { name: '确认收藏' }));
 
     // Verifies outcome differentiation
@@ -293,7 +278,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '收藏此条消息' }));
+    openCollectBody();
     const submitBtn = screen.getByRole('button', { name: '确认收藏' });
 
     // Click submit multiple times in rapid succession
@@ -336,7 +321,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '收藏此条消息' }));
+    openCollectBody();
     fireEvent.click(screen.getByRole('button', { name: '确认收藏' }));
 
     const errorBanner = await screen.findByRole('alert');
@@ -357,7 +342,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '收藏此条消息' }));
+    openCollectBody();
     expect(handleCollect).toHaveBeenCalledTimes(1);
     expect(handleCollect).toHaveBeenCalledWith(msg);
 
@@ -365,70 +350,43 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('ensures only collection button receives app-msg-action-btn--collect across all timeline actions', () => {
-    const onEdit = vi.fn();
-    const onRegenerate = vi.fn();
-    const onBranch = vi.fn();
+  it('lists assistant artifacts as disabled placeholders and closes on Escape', () => {
+    const message = makeMessage({
+      id: 3,
+      role: 'assistant',
+      content: 'Here is the picture',
+      assistantArtifacts: [
+        {
+          key: 'assistant_artifact:9',
+          id: 9,
+          producer: 'agy_generate_image',
+          kind: 'image',
+          position: 0,
+          title: '生成了图片',
+          detail: null,
+          text: null,
+          collectible: false,
+          presentationAttachmentKey: null,
+        },
+      ],
+    });
+    render(<MessageTimeline messages={[message]} hasOlder={false} loadingMore={false} onLoadMore={() => {}} />);
 
-    const messages: MessageView[] = [
-      makeMessage({ id: 1, role: 'user', content: 'User text' }),
-      makeMessage({ id: 2, role: 'assistant', content: 'Assistant text' }),
-    ];
+    const trigger = screen.getByRole('button', { name: '收藏此条消息' });
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('menuitem', { name: '收藏正文' })).toBeEnabled();
+    const artifactItem = screen.getByRole('menuitem', { name: /生成了图片/ });
+    expect(artifactItem).toBeDisabled();
+    expect(artifactItem).toHaveTextContent('待后端支持');
 
-    render(
-      <MessageTimeline
-        messages={messages}
-        hasOlder={false}
-        loadingMore={false}
-        onLoadMore={() => {}}
-        onEditMessage={onEdit}
-        onRegenerateMessage={onRegenerate}
-        onBranchMessage={onBranch}
-      />,
-    );
-
-    const allButtons = screen.getAllByRole('button');
-    const collectButtons = allButtons.filter((btn) =>
-      btn.classList.contains('app-msg-action-btn--collect'),
-    );
-    const otherActionButtons = allButtons.filter(
-      (btn) =>
-        btn.classList.contains('app-msg-action-btn') &&
-        !btn.classList.contains('app-msg-action-btn--collect'),
-    );
-
-    // Persisted user and assistant message rows each have 1 collection button
-    expect(collectButtons).toHaveLength(2);
-
-    // Other action buttons (copy, edit, regenerate, branch) exist and do NOT have --collect class
-    expect(otherActionButtons.length).toBeGreaterThan(0);
-    for (const btn of otherActionButtons) {
-      expect(btn).not.toHaveClass('app-msg-action-btn--collect');
-    }
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(trigger).toHaveFocus();
   });
 
-  it('satisfies hover/focus-within reveal and accessibility stylesheet contract (F-01)', () => {
+  it('keeps the collect action visible at rest: no hover-only reveal rule (#72 U3)', () => {
     const css = loadShellCss();
-
-    // Verify media query scoping to pointer-hover desktop devices
-    const { block: mediaBlock, fullMatch } = extractMediaBlock(
-      css,
-      '@media (hover: hover) and (pointer: fine)',
-    );
-
-    // Hidden at rest in pointer-hover media
-    expect(mediaBlock).toMatch(/\.app-msg-action-btn--collect\s*\{[^}]*opacity:\s*0/);
-    expect(mediaBlock).toMatch(/\.app-msg-action-btn--collect\s*\{[^}]*pointer-events:\s*none/);
-
-    // Revealed on message row hover and focus-within
-    expect(mediaBlock).toMatch(/\.app-msg:hover\s+\.app-msg-action-btn--collect/);
-    expect(mediaBlock).toMatch(/\.app-msg:focus-within\s+\.app-msg-action-btn--collect/);
-    expect(mediaBlock).toMatch(/\.app-msg-action-btn--collect:focus/);
-    expect(mediaBlock).toMatch(/opacity:\s*1/);
-    expect(mediaBlock).toMatch(/pointer-events:\s*auto/);
-
-    // Outside the pointer-hover media block, the action is not hidden (fallback for touch/non-hover devices)
-    const cssWithoutMedia = css.replace(fullMatch, '');
-    expect(cssWithoutMedia).not.toMatch(/\.app-msg-action-btn--collect\s*\{[^}]*opacity:\s*0/);
+    expect(css).not.toMatch(/app-msg-action-btn--collect/);
   });
 });

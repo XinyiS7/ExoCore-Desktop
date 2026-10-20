@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { installFetch, renderV4 } from './helpers';
 import { MessageTimeline } from '../features/chat/MessageTimeline';
 import { normalizeMessageRow } from '../features/chat/api';
@@ -203,7 +203,7 @@ describe('AssistantArtifact cards in the timeline', () => {
     expect(fn.mock.calls.length).toBe(callsBefore);
   });
 
-  it('renders several cards in order on an artifact-only message without a collect entry', () => {
+  it('renders several cards in order on an artifact-only message with a placeholder-only collect menu', () => {
     const cards = normalizeAssistantArtifacts([
       { ...imageCardRaw, ref: { type: 'assistant_artifact', id: 9 }, position: 1, presentation_attachment: null },
       { ...imageCardRaw, human: { title: '生成了图片', detail: '海边的灯塔' } },
@@ -219,7 +219,12 @@ describe('AssistantArtifact cards in the timeline', () => {
     ]);
     expect(within(rendered[0]).getByText('海边的灯塔')).toBeTruthy();
     expect(screen.queryByText('（空消息）')).toBeNull();
-    expect(screen.queryByRole('button', { name: '收藏此条消息' })).toBeNull();
+    // #72 U4: no body to collect; artifacts are listed but disabled until #74.
+    fireEvent.click(screen.getByRole('button', { name: '收藏此条消息' }));
+    expect(screen.queryByRole('menuitem', { name: '收藏正文' })).toBeNull();
+    const items = screen.getAllByRole('menuitem');
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) expect(item).toBeDisabled();
   });
 });
 
