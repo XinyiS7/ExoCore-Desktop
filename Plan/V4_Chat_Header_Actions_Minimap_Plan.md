@@ -1,7 +1,7 @@
 # V4 Chat 会话页：Header 两行化 + 消息操作下移 + 用户消息 Minimap
 
-> **状态：Draft（2026-10-20，待 Alicia 定稿）。** 只做了只读调研，生产代码未动。
-> **Issue：** 待定稿后开（`area:desktop`，`enhancement`，P2）。
+> **状态：定稿（2026-10-20，Alicia 确认）。** 生产代码尚未动工。
+> **Issue：** XinyiS7/ExoCore#72
 > **基线：** ExoCore-Desktop `main@c0c1372`；ExoCore `main@0273cc7c`（只读）。
 > **来源：** 2026-10-20 Alicia 草图与对话。定位为重构完成前的临时改善，不改后端契约。
 
@@ -41,14 +41,15 @@
 
 ```
 第一行：← {上级名}   {会话名}  · {项目名}            [项目文件]  [☰]
-第二行：[Agent]  模型·端点  思考 X  SSE  缓存余量 −              more
+第二行：[Agent]  模型  思考 X  SSE  缓存余量 −              more
 ```
 
+- 模型项：各宽度统一只显示模型名，不再拼端点；完整 `模型 · 端点` 留在 title 提示与战术面板，逐条消息头的 `platform · modelVersion` 不变（2026-10-20 Alicia 定）。
 - 项目名：淡色纯文字，不加 badge、不跳转；Drift 会话显示 `Drift`。项目页可经"项目文件"抽屉进入。
 - Agent chip：保留边框和到 `/agents/:id` 的跳转。
 - "战术面板"按钮改名 `more`，仍打开 `TacticalHud`；✦氛围标签从条上移除（面板内已有）。
 - 删除 `<MoreMenu className="app-more--top" />`；侧边栏的 MoreMenu 不动。
-- 宽屏：两行各自 `justify-content: space-between`。窄屏：标题与状态项 ellipsis；≤390px 时隐藏规则改为保留 Agent、目标、`more`，`☰` 恒可见。
+- 宽屏：两行各自 `justify-content: space-between`。窄屏：标题与状态项 ellipsis；≤390px 时隐藏规则改为保留 Agent、模型、`more`，`☰` 恒可见。
 
 ### 2.2 严格上级（U2）
 
