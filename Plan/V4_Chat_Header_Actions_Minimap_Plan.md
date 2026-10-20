@@ -29,6 +29,7 @@
 2. 返回链接指向"严格上级"（进入会话的来源页）。
 3. 消息操作统一放到消息下方；收藏常驻并带二级菜单（artifact/附件项占位置灰）。
 4. 用户消息 Minimap + 前端字符串搜索 + 点击跳转 + 加载更早。
+5. 消息头以头像代替名字（验收时追加，见 U7）。
 
 **非目标**
 - 宽屏侧边栏折叠（另开 issue）。
@@ -99,6 +100,9 @@
 | U4 收藏菜单 | 新 `features/chat/MessageCollectMenu.tsx`；`MessageTimeline.tsx` | 菜单开合、正文可用、占位置灰 |
 | U5 Minimap | 新 `minimap/excerpt.ts`、`minimap/useMessageMinimap.ts`、`minimap/MessageMinimap.tsx`、css；`ConversationPage.tsx`、`MessageTimeline.tsx`（`data-message-id`） | `excerpt` 单测；搜索/跳转/加载更早组件测试 |
 | U6 登记 | GitHub issue ×2 | — |
+| U7 消息头像（验收时追加） | 新 `features/chat/MessageAvatar.tsx`；`MessageTimeline.tsx`、`ConversationPage.tsx`（传 `assistantPresetId`）、`shared/agentAvatar.ts`（presetId 可空）、`styles/shell.css` | 头像 alt/title 为名字、无链接、user 头像在右；图片失败回退首字 |
+
+U7 排版（Alicia 选定"头像缩进行内"）：约 20px 圆形头像与时间、模型同一行并垂直居中，正文仍占满宽度。assistant 为 `头像 · 时间 ··· 模型`，user 为 `时间 · 头像` 靠右。名字只出现在头像 alt / title，头像不带跳转；system / developer 行保留文字标签；乐观 user 行与流式 assistant 行同样处理。头像来自现有 `useUserAvatar` / `useAgentAvatar`，在时间线顶层各取一次后下发。
 
 每个单元完成即提交，提交写 `refs XinyiS7/ExoCore#N`。
 

@@ -191,7 +191,7 @@ describe('AssistantArtifact cards in the timeline', () => {
       makeMsg({ content: '画好了', attachments: [imageAttachment], assistantArtifacts: [imageCard] }),
     ]);
 
-    expect(container.querySelectorAll('img')).toHaveLength(1);
+    expect(container.querySelectorAll('.app-msg-body img')).toHaveLength(1);
     const card = screen.getByTestId('assistant-artifact-card');
     expect(within(card).getByText('生成了图片')).toBeTruthy();
     expect(within(card).getByText('画面描述暂不可用')).toBeTruthy();
@@ -356,7 +356,7 @@ describe('Collection bring-back cards (#54)', () => {
     expect(links[0].getAttribute('href')).toBe(fallback.contentUrl);
     expect(links[0].getAttribute('download')).toBe('photo.heic');
     expect(container.querySelectorAll('div.app-att-filecard')).toHaveLength(1);
-    expect(container.querySelectorAll('img')).toHaveLength(0);
+    expect(container.querySelectorAll('.app-msg-body img')).toHaveLength(0);
     expect(within(screen.getByTestId('assistant-artifact-card')).getByText('从藏品馆带回 · 图片 #24')).toBeTruthy();
   });
 });

@@ -13,6 +13,9 @@ import { VoiceToolErrors } from './voice/VoiceToolErrors';
 import { CollectMessageModal } from '../collection/CollectMessageModal';
 import { MessageCollectMenu } from './MessageCollectMenu';
 import { hasCollectMenuItems } from './collectMenuItems';
+import { MessageAvatar } from './MessageAvatar';
+import { useUserAvatar } from '../../shared/userAvatar';
+import { useAgentAvatar } from '../../shared/agentAvatar';
 
 function runtimeTraceProjection(row: RuntimeAssistantRow): AssistantRunTraceProjection | null {
   if (!row.assistantTrace) return null;
@@ -72,6 +75,8 @@ export interface MessageTimelineProps {
   onBranchMessage?: (id: number, snippet: string) => void;
   onCollectMessage?: (message: MessageView) => void;
   assistantName?: string;
+  /** Preset whose avatar heads assistant rows; null for preset-less chats. */
+  assistantPresetId?: number | null;
 }
 
 function MessageRowItem({
@@ -84,6 +89,7 @@ function MessageRowItem({
   onBranchMessage,
   onCollectMessage,
   assistantName,
+  avatarUrl,
 }: {
   message: MessageView;
   conversationId?: number;
@@ -94,9 +100,14 @@ function MessageRowItem({
   onBranchMessage?: (id: number, snippet: string) => void;
   onCollectMessage?: (message: MessageView) => void;
   assistantName?: string;
+  /** Set for user / assistant rows; other roles keep a text label. */
+  avatarUrl?: string;
 }) {
   const isAssistant = message.role === 'assistant';
   const isUser = message.role === 'user';
+  const roleLabel = isAssistant
+    ? (assistantName || ROLE_LABELS.assistant)
+    : (ROLE_LABELS[message.role] ?? message.role);
   const voice = message.voice;
   const attachments = message.attachments;
   const attachmentsMeta = message.attachmentsMeta ?? [];
@@ -139,9 +150,11 @@ function MessageRowItem({
       data-message-id={message.id}
     >
       <header className="app-msg-head">
-        <span className="app-msg-role">
-          {message.role === 'assistant' ? (assistantName || ROLE_LABELS.assistant) : (ROLE_LABELS[message.role] ?? message.role)}
-        </span>
+        {avatarUrl !== undefined ? (
+          <MessageAvatar src={avatarUrl} name={roleLabel} />
+        ) : (
+          <span className="app-msg-role">{roleLabel}</span>
+        )}
         <span className="app-msg-time">{formatTimeOfDay(message.createdAt)}</span>
         {isAssistant && (message.platform || message.modelVersion) ? (
           <span className="app-msg-model">
@@ -283,8 +296,13 @@ export function MessageTimeline({
   onBranchMessage,
   onCollectMessage,
   assistantName,
+  assistantPresetId,
 }: MessageTimelineProps) {
   const [collectTarget, setCollectTarget] = useState<MessageView | null>(null);
+  const userAvatarUrl = useUserAvatar();
+  const agentAvatarUrl = useAgentAvatar(assistantPresetId ?? null, assistantName);
+  const avatarFor = (role: MessageRole) =>
+    role === 'user' ? userAvatarUrl : role === 'assistant' ? agentAvatarUrl : undefined;
 
   const handleCollectMessage = (target: MessageView) => {
     if (onCollectMessage) {
@@ -342,6 +360,7 @@ export function MessageTimeline({
           onBranchMessage={onBranchMessage}
           onCollectMessage={handleCollectMessage}
           assistantName={assistantName}
+          avatarUrl={avatarFor(message.role)}
         />
       ))}
 
@@ -353,7 +372,7 @@ export function MessageTimeline({
           data-role="user"
         >
           <header className="app-msg-head">
-            <span className="app-msg-role">你</span>
+            <MessageAvatar src={userAvatarUrl} name={ROLE_LABELS.user} />
             <span className="app-msg-time">{formatTimeOfDay(shownOptimisticUser.createdAt)}</span>
             <span className="app-muted" style={{ fontSize: '10.5px' }}>
               （发送中…）
@@ -378,7 +397,7 @@ export function MessageTimeline({
           data-role="assistant"
         >
           <header className="app-msg-head">
-            <span className="app-msg-role">{assistantName || 'Agent'}</span>
+            <MessageAvatar src={agentAvatarUrl} name={assistantName || ROLE_LABELS.assistant} />
             {runtimeAssistant.isStreaming ? (
               <span className="app-muted" style={{ fontSize: '10.5px' }}>
                 {runtimeAssistant.statusText || '生成中…'}

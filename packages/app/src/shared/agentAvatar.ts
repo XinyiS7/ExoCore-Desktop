@@ -8,12 +8,15 @@ export const AGENT_AVATAR_PREFIX = 'exo_agent_avatar_';
 
 /**
  * Returns current avatar string for an agent (data URL or fallback DiceBear URL).
+ * A preset-less conversation (presetId null) gets the name-seeded fallback.
  */
-export function getAgentAvatarUrl(presetId: number, agentName?: string): string {
+export function getAgentAvatarUrl(presetId: number | null, agentName?: string): string {
+  const fallback = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(agentName || String(presetId ?? 'agent'))}`;
+  if (presetId === null) return fallback;
   try {
     return sharedGetAgentAvatar(presetId, agentName);
   } catch {
-    return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(agentName || String(presetId))}`;
+    return fallback;
   }
 }
 
@@ -27,7 +30,7 @@ export function saveAgentAvatar(presetId: number, dataUrl: string): void {
 /**
  * Hook observing agent avatar changes (same tab via StorageEvent dispatch and cross-tab).
  */
-export function useAgentAvatar(presetId: number, agentName?: string): string {
+export function useAgentAvatar(presetId: number | null, agentName?: string): string {
   const [avatarUrl, setAvatarUrl] = useState<string>(() => getAgentAvatarUrl(presetId, agentName));
 
   useEffect(() => {

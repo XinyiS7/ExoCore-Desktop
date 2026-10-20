@@ -749,6 +749,7 @@ export function ConversationPage() {
                   onRegenerateMessage={handleRegenerateMessage}
                   onBranchMessage={handleBranchMessage}
                   assistantName={assistantName}
+                  assistantPresetId={conversation?.agentPresetId ?? null}
                 />
               )
             ) : null}
@@ -775,6 +776,7 @@ export function ConversationPage() {
                 onRegenerateMessage={handleRegenerateMessage}
                 onBranchMessage={handleBranchMessage}
                 assistantName={assistantName}
+                assistantPresetId={conversation?.agentPresetId ?? null}
               />
             ) : null}
           </div>

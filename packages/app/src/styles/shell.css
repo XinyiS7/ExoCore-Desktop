@@ -685,9 +685,36 @@
 
 .app-msg-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
+}
+
+/* #72 U7: the user's head mirrors to the right edge (time · avatar). */
+.app-msg--user .app-msg-head {
+  flex-direction: row-reverse;
+}
+
+.app-msg-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(20px * var(--exo-font-scale, 1));
+  height: calc(20px * var(--exo-font-scale, 1));
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--v4-line-strong);
+  background: var(--v4-panel-2);
+  font-size: calc(10.5px * var(--exo-font-scale, 1));
+  color: var(--v4-text-dim);
+}
+
+.app-msg-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .app-msg-role {

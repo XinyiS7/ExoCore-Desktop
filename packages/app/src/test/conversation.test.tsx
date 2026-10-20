@@ -76,7 +76,8 @@ describe('canonical read path — timeline & paging', () => {
     const texts = articles.map((a) => a.textContent ?? '');
     expect(texts[0]).toContain('Hello');
     expect(texts[0]).toContain('world');
-    expect(texts[0]).toContain('你');
+    // #72 U7: the role name moved from text into the head avatar's title.
+    expect(articles[0].querySelector('.app-msg-avatar')?.getAttribute('title')).toBe('你');
     expect(texts[1]).toContain('Heading');
     expect(texts[2]).toContain('System');
     expect(texts[3]).toContain('Developer');

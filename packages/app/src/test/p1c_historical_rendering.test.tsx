@@ -157,7 +157,7 @@ describe('Task 5 — historical attachment rendering (Gate G)', () => {
     expect(screen.getByText('photo.jpg')).toBeTruthy();
     expect(screen.getByText('图片加载失败')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /查看图片/ })).toBeNull();
-    expect(document.querySelector('img')).toBeNull();
+    expect(document.querySelector('.app-msg-body img')).toBeNull();
   });
 
   it('audio load/play failure is visible and disables playback', () => {

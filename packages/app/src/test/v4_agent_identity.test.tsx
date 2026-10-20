@@ -67,8 +67,8 @@ describe('V4 Agent Identity Display (#5)', () => {
       />
     );
 
-    expect(screen.getByText('Alaric')).toBeInTheDocument();
-    expect(screen.queryByText('Agent')).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Alaric' })).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Agent' })).not.toBeInTheDocument();
   });
 
   it('falls back to "Agent" in MessageTimeline when assistantName is omitted', () => {
@@ -90,7 +90,7 @@ describe('V4 Agent Identity Display (#5)', () => {
       />
     );
 
-    expect(screen.getByText('Agent')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Agent' })).toBeInTheDocument();
   });
 
   it('formatAuthor resolves agent:ID to preset name if found, else original author', () => {
