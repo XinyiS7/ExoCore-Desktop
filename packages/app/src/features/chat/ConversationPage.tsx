@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowDown, ArrowLeft } from 'lucide-react';
+import { ArrowDown, ArrowLeft, Menu } from 'lucide-react';
 import { toAppApiError } from './api';
 import {
   findPersistedMessage,
@@ -21,6 +21,7 @@ import {
 } from './queries';
 import { MessageTimeline } from './MessageTimeline';
 import { readBackTarget } from './backTarget';
+import { MessageMinimap } from './minimap/MessageMinimap';
 import type { MessageView } from './types';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDocumentTitle } from '../../shared/useDocumentTitle';
@@ -205,6 +206,9 @@ export function ConversationPage() {
   const projectInsertKeyRef = useRef(0);
   const [projectDrawerOpen, setProjectDrawerOpen] = useState(false);
   const [hudOpen, setHudOpen] = useState(false);
+  const [minimapOpen, setMinimapOpen] = useState(false);
+  const minimapToggleRef = useRef<HTMLButtonElement>(null);
+  const closeMinimap = useCallback(() => setMinimapOpen(false), []);
   const handleCloseHud = useCallback(() => setHudOpen(false), []);
   const [controlNotice, setControlNotice] = useState<string | null>(null);
   const [pendingProjectInsert, setPendingProjectInsert] = useState<{
@@ -239,6 +243,7 @@ export function ConversationPage() {
     setBranchModal({ isOpen: false, targetMessage: null });
     setProjectDrawerOpen(false);
     setHudOpen(false);
+    setMinimapOpen(false);
     setControlNotice(null);
     setPendingProjectInsert(null);
     setIsAwayFromBottom(false);
@@ -626,6 +631,18 @@ export function ConversationPage() {
               项目文件
             </button>
           ) : null}
+          <button
+            ref={minimapToggleRef}
+            type="button"
+            className="app-icon-btn app-minimap-toggle"
+            onClick={() => setMinimapOpen((prev) => !prev)}
+            aria-label="用户消息导航"
+            aria-expanded={minimapOpen}
+            title="用户消息导航与搜索"
+            disabled={merged === undefined}
+          >
+            <Menu size={16} aria-hidden="true" />
+          </button>
         </div>
         <div className="app-topbar-row app-topbar-row--state">
           {conversation?.agentPresetId !== null && conversation?.agentPresetId !== undefined ? (
@@ -761,6 +778,19 @@ export function ConversationPage() {
               />
             ) : null}
           </div>
+
+          {merged !== undefined ? (
+            <MessageMinimap
+              messages={merged.rows}
+              scrollRef={scrollRef}
+              toggleRef={minimapToggleRef}
+              open={minimapOpen}
+              onClose={closeMinimap}
+              hasOlder={merged.hasOlder}
+              loadingMore={pagesQuery.isFetchingNextPage}
+              onLoadMore={handleLoadMore}
+            />
+          ) : null}
 
           {isAwayFromBottom ? (
             <button

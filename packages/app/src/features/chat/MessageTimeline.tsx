@@ -133,7 +133,11 @@ function MessageRowItem({
   };
 
   return (
-    <article className={`app-msg app-msg--${message.role}`} data-role={message.role}>
+    <article
+      className={`app-msg app-msg--${message.role}`}
+      data-role={message.role}
+      data-message-id={message.id}
+    >
       <header className="app-msg-head">
         <span className="app-msg-role">
           {message.role === 'assistant' ? (assistantName || ROLE_LABELS.assistant) : (ROLE_LABELS[message.role] ?? message.role)}

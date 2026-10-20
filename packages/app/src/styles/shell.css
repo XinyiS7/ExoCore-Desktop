@@ -886,6 +886,140 @@
   font-size: calc(10.5px * var(--exo-font-scale, 1));
 }
 
+/* Jump target highlight from the user-message minimap (#72 U5) */
+.app-msg--flash .app-msg-body {
+  animation: app-msg-flash 1.6s ease-out;
+}
+
+@keyframes app-msg-flash {
+  0%,
+  35% {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--v4-accent) 55%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-msg--flash .app-msg-body {
+    animation: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--v4-accent) 55%, transparent);
+  }
+}
+
+/* User-message minimap (#72 U5): floats over the timeline's top-right
+   corner; it never joins the timeline flow or becomes a scroll owner of the
+   page — only its own list scrolls. */
+.app-minimap {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(260px, calc(100% - 24px));
+  max-height: min(60%, 480px);
+  padding: 8px;
+  background: var(--v4-panel-2);
+  border: 1px solid var(--v4-line-strong);
+  border-radius: var(--v4-radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.app-minimap-search {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--v4-line);
+  border-radius: 6px;
+  background: var(--v4-panel);
+  color: var(--v4-text);
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
+}
+
+.app-minimap-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.app-minimap-item {
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  border: none;
+  border-left: 2px solid var(--v4-line);
+  border-radius: 0 4px 4px 0;
+  background: none;
+  color: var(--v4-text-dim);
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.app-minimap-item:hover,
+.app-minimap-item:focus-visible {
+  background: var(--v4-panel);
+  color: var(--v4-text);
+  outline: none;
+}
+
+.app-minimap-item--active {
+  border-left-color: var(--v4-accent);
+  color: var(--v4-text);
+}
+
+.app-minimap-hit {
+  background: color-mix(in srgb, var(--v4-accent) 30%, transparent);
+  color: var(--v4-text);
+  border-radius: 2px;
+}
+
+.app-minimap-older-row {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 4px;
+}
+
+.app-minimap-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  color: var(--v4-text-mute);
+}
+
+.app-minimap-empty p,
+.app-minimap-foot {
+  margin: 0;
+}
+
+.app-minimap-foot {
+  font-size: calc(10.5px * var(--exo-font-scale, 1));
+  color: var(--v4-text-mute);
+  text-align: right;
+}
+
+.app-minimap-toggle {
+  flex-shrink: 0;
+}
+
+.app-minimap-toggle[aria-expanded="true"] {
+  color: var(--v4-accent);
+}
+
 .app-msg--optimistic {
   opacity: 0.85;
 }
