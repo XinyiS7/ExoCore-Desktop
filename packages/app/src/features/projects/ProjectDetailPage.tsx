@@ -7,6 +7,7 @@ import { useConversationsQuery, useVisiblePresetsQuery } from '../chat/queries';
 import { useProjectDetailQuery } from '../chat/control/queries';
 import { toAppApiError } from '../chat/api';
 import { formatDateTime } from '../chat/time';
+import { conversationEntryState } from '../chat/backTarget';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
 import { useDocumentTitle } from '../../shared/useDocumentTitle';
 import { MoreMenu } from '../../shell/PrimaryNavigation';
@@ -107,7 +108,8 @@ function FilterOption({
  * erase a still-valid selection. Mounts only after the Project identity is
  * confirmed because it is that owner's lens (§5.6).
  */
-function ProjectConversationLens({ projectId }: { projectId: number }) {
+function ProjectConversationLens({ projectId, projectName }: { projectId: number; projectName: string }) {
+  const entryState = conversationEntryState(`/projects/${projectId}`, projectName);
   const conversationsQuery = useConversationsQuery();
   const presetsQuery = useVisiblePresetsQuery();
 
@@ -190,7 +192,7 @@ function ProjectConversationLens({ projectId }: { projectId: number }) {
           <ul className="app-recent-list" aria-label="该项目下的会话">
             {visibleRows.map((row) => (
               <li key={row.id} className="app-recent-item">
-                <Link to={`/chat/${row.id}`} className="app-recent-row">
+                <Link to={`/chat/${row.id}`} state={entryState} className="app-recent-row">
                   <span className="app-recent-name">{row.name || `会话 #${row.id}`}</span>
                   <span className="app-recent-time">
                     {formatDateTime(row.lastMessageAt ?? row.createdAt)}
@@ -332,7 +334,7 @@ function ProjectDetail({ projectId }: { projectId: number }) {
             <ProjectFilesSection projectId={projectId} />
             <ProjectKnowledgeSection projectId={projectId} />
 
-            <ProjectConversationLens projectId={projectId} />
+            <ProjectConversationLens projectId={projectId} projectName={project.name || `项目 #${project.id}`} />
           </div>
         ) : null}
       </div>
@@ -356,7 +358,9 @@ function ProjectDetail({ projectId }: { projectId: number }) {
           onClose={() => setCreateConversationOpen(false)}
           onCreated={(result) => {
             setCreateConversationOpen(false);
-            navigate(`/chat/${result.conversationId}`);
+            navigate(`/chat/${result.conversationId}`, {
+              state: conversationEntryState(`/projects/${project.id}`, project.name || `项目 #${project.id}`),
+            });
           }}
         />
       ) : null}

@@ -20,6 +20,7 @@ import {
   isG045AgentType,
 } from './queries';
 import { MessageTimeline } from './MessageTimeline';
+import { readBackTarget } from './backTarget';
 import type { MessageView } from './types';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDocumentTitle } from '../../shared/useDocumentTitle';
@@ -80,6 +81,7 @@ export function ConversationPage() {
   const { conversationId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const backTarget = readBackTarget(location.state);
   const queryClient = useQueryClient();
   const { pendingArrivalsByConversation, consumeExactArrivals } = useNotifications();
 
@@ -598,9 +600,9 @@ export function ConversationPage() {
       />
       <header className="app-topbar app-topbar--conversation">
         <div className="app-topbar-row">
-          <Link to="/" className="app-back-link">
+          <Link to={backTarget.path} className="app-back-link">
             <ArrowLeft size={16} aria-hidden="true" />
-            Chat Home
+            {backTarget.label}
           </Link>
           <div className="app-topbar-title app-topbar-title--conversation">
             <h1 className="app-h1">

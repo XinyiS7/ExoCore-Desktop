@@ -6,6 +6,7 @@ import { CreateConversationDialog } from '../chat/CreateConversationDialog';
 import { ConversationDeleteMenu } from '../chat/ConversationDeleteMenu';
 import { isG045AgentType, useConversationsQuery } from '../chat/queries';
 import { formatDateTime } from '../chat/time';
+import { conversationEntryState } from '../chat/backTarget';
 import type { ConversationSummary } from '../chat/types';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
 import { useDocumentTitle } from '../../shared/useDocumentTitle';
@@ -109,6 +110,7 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
 
   const preset = presetQuery.data;
   const avatarUrl = useAgentAvatar(presetId, preset?.name);
+  const entryState = conversationEntryState(`/agents/${presetId}`, preset?.name || `Agent #${presetId}`);
 
   const handlePromptSave = async (prompt: string) => {
     if (!preset) return;
@@ -405,7 +407,11 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
                             />
                           </button>
                         ) : null}
-                        <Link to={`/chat/${row.id}`} className="app-recent-row">
+                        <Link
+                          to={`/chat/${row.id}`}
+                          state={entryState}
+                          className="app-recent-row"
+                        >
                           <span className="app-recent-name">{row.name || `会话 #${row.id}`}</span>
                           <span className="app-recent-time">
                             {formatDateTime(row.lastMessageAt ?? row.createdAt)}
@@ -470,7 +476,7 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
           onClose={() => setDialogOpen(false)}
           onCreated={(result) => {
             setDialogOpen(false);
-            navigate(`/chat/${result.conversationId}`);
+            navigate(`/chat/${result.conversationId}`, { state: entryState });
           }}
         />
       ) : null}

@@ -6,6 +6,7 @@ import { toAppApiError } from './api';
 import { ConversationDeleteMenu } from './ConversationDeleteMenu';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
 import { formatDateTime } from './time';
+import { conversationEntryState } from './backTarget';
 import { useNotifications } from '../notifications/notificationContext';
 
 function identityLabel(presetId: number | null, presetName: string | undefined): string {
@@ -84,7 +85,11 @@ export function RecentConversationList({ onRequestCreate, onDeletedConversation 
       <ul className="app-recent-list" aria-label="最近会话">
         {conversations.map((conversation) => (
           <li key={conversation.id} className="app-recent-item">
-            <Link to={`/chat/${conversation.id}`} className="app-recent-row">
+            <Link
+              to={`/chat/${conversation.id}`}
+              state={conversationEntryState('/', 'Chat Home')}
+              className="app-recent-row"
+            >
               <span className="app-recent-name">{conversation.name || `会话 #${conversation.id}`}</span>
               <span className="app-recent-time">{formatDateTime(conversation.lastMessageAt ?? conversation.createdAt)}</span>
               <span className="app-recent-meta">

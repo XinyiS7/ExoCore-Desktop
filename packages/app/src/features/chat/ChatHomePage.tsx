@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from './queries';
 import type { CreateConversationResult } from './types';
 import { RecentConversationList } from './RecentConversationList';
+import { conversationEntryState } from './backTarget';
 import { CreateConversationDialog } from './CreateConversationDialog';
 import { MoreMenu } from '../../shell/PrimaryNavigation';
 import { useDocumentTitle } from '../../shared/useDocumentTitle';
@@ -23,7 +24,7 @@ export function ChatHomePage() {
   const handleCreated = (result: CreateConversationResult) => {
     setDialogOpen(false);
     // Canonical conversation_id is contract-required (P1A-B0); navigate once.
-    navigate(`/chat/${result.conversationId}`);
+    navigate(`/chat/${result.conversationId}`, { state: conversationEntryState('/', 'Chat Home') });
   };
 
   const openCreate = () => setDialogOpen(true);
