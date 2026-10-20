@@ -115,7 +115,6 @@ export function MessageMinimap({
                 type="button"
                 className={`app-minimap-item${entry.id === activeId ? ' app-minimap-item--active' : ''}`}
                 aria-current={entry.id === activeId ? 'location' : undefined}
-                title={entry.head}
                 onClick={() => jumpTo(entry.id)}
               >
                 <EntryText entry={entry} />
