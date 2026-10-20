@@ -74,6 +74,28 @@ describe('P1D Tactical HUD (Plan Task 3 / D2, §8.6)', () => {
     return { open: overrides.open ?? true };
   }
 
+  it('shows only the model name and keeps the full target in the tooltip (#72 U1)', () => {
+    const onOpen = vi.fn();
+    render(
+      <HudStateStrip
+        model="deepseek-v4-flash"
+        endpointLabel="deepseek-api"
+        thinkingLabel="auto"
+        transport="sse"
+        cacheSummary="无缓存"
+        cacheReleaseEligible={false}
+        cacheReleaseDisabled={false}
+        cacheReleasing={false}
+        onReleaseCache={vi.fn()}
+        onOpen={onOpen}
+      />,
+    );
+    const target = screen.getByTitle('执行目标：deepseek-v4-flash · deepseek-api');
+    expect(target).toHaveTextContent(/^deepseek-v4-flash$/);
+    fireEvent.click(screen.getByRole('button', { name: 'more' }));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
   it('exposes the same cache release command only when eligible and unlocked', () => {
     const release = vi.fn();
     const stripProps = {
@@ -83,7 +105,6 @@ describe('P1D Tactical HUD (Plan Task 3 / D2, §8.6)', () => {
       transport: 'sse' as const,
       cacheSummary: '无缓存',
       cacheReleasing: false,
-      auraLabel: '默认',
       onOpen: vi.fn(),
       onReleaseCache: release,
     };
@@ -130,7 +151,6 @@ describe('P1D Tactical HUD (Plan Task 3 / D2, §8.6)', () => {
       transport: 'sse' as const,
       cacheSummary: '缓存 120s',
       cacheReleasing: false,
-      auraLabel: '默认',
       onReleaseCache,
       onOpen: vi.fn(),
     };

@@ -22,7 +22,6 @@ import {
 import { MessageTimeline } from './MessageTimeline';
 import type { MessageView } from './types';
 import { useQueryClient } from '@tanstack/react-query';
-import { MoreMenu } from '../../shell/PrimaryNavigation';
 import { useDocumentTitle } from '../../shared/useDocumentTitle';
 import { EmptyState, ErrorState, LoadingState } from '../../shared/AsyncState';
 import { useNotifications } from '../notifications/notificationContext';
@@ -597,76 +596,71 @@ export function ConversationPage() {
         theme="dark"
         generating={status === 'streaming' || status === 'polling'}
       />
-      <header className="app-topbar app-topbar--detail">
-        <Link to="/" className="app-back-link">
-          <ArrowLeft size={16} aria-hidden="true" />
-          Chat Home
-        </Link>
-        <div className="app-topbar-title app-topbar-title--detail">
-          <h1 className="app-h1">
-            {conversation?.name ?? (conversationQuery.isPending ? '加载中…' : `会话 #${id}`)}
-          </h1>
-          <span className="app-topbar-sub">
-            {conversation?.agentPresetId !== null && conversation?.agentPresetId !== undefined ? (
-              <Link
-                to={`/agents/${conversation.agentPresetId}`}
-                className="app-chip app-chip--link"
-              >
-                {agentLabel}
-              </Link>
-            ) : (
-              <span className="app-chip">{agentLabel}</span>
-            )}
-            {conversation?.projectId !== null && conversation?.projectId !== undefined ? (
-              <Link
-                to={`/projects/${conversation.projectId}`}
-                className="app-chip app-chip--link"
-              >
-                {conversation.projectName ?? `项目 #${conversation.projectId}`}
-              </Link>
-            ) : (
-              <span className={`app-chip${conversation?.projectId === null ? ' app-chip--drift' : ''}`}>
-                {conversation?.projectName ?? 'Drift'}
+      <header className="app-topbar app-topbar--conversation">
+        <div className="app-topbar-row">
+          <Link to="/" className="app-back-link">
+            <ArrowLeft size={16} aria-hidden="true" />
+            Chat Home
+          </Link>
+          <div className="app-topbar-title app-topbar-title--conversation">
+            <h1 className="app-h1">
+              {conversation?.name ?? (conversationQuery.isPending ? '加载中…' : `会话 #${id}`)}
+            </h1>
+            {conversation !== undefined ? (
+              <span className="app-topbar-project">
+                {conversation.projectId !== null
+                  ? conversation.projectName ?? `项目 #${conversation.projectId}`
+                  : 'Drift'}
               </span>
-            )}
-            {presetsQuery.isError ? (
-              <button
-                type="button"
-                className="app-link-btn"
-                onClick={() => void presetsQuery.refetch()}
-              >
-                Agent 名称加载失败，重试
-              </button>
             ) : null}
-          </span>
+          </div>
+          {conversation?.projectId ? (
+            <button
+              type="button"
+              className="app-btn app-btn-ghost app-btn-sm"
+              onClick={() => setProjectDrawerOpen(true)}
+              aria-label="打开项目文件"
+            >
+              项目文件
+            </button>
+          ) : null}
         </div>
-        <HudStateStrip
-          model={controls.target.model}
-          endpointLabel={endpointLabel}
-          thinkingLabel={controls.thinkingLevel}
-          transport={transport}
-          cacheSummary={cacheSummary}
-          cacheReleaseEligible={
-            cacheControl.presentation.state === 'active' ||
-            cacheControl.presentation.state === 'snapshot_only'
-          }
-          cacheReleaseDisabled={cacheControl.mutationsLocked}
-          cacheReleasing={cacheControl.releasing}
-          onReleaseCache={cacheControl.release}
-          auraLabel={aura.palettes.find((palette) => palette.id === aura.selectedId)?.label ?? '默认'}
-          onOpen={() => setHudOpen(true)}
-        />
-        {conversation?.projectId ? (
-          <button
-            type="button"
-            className="app-btn app-btn-ghost app-btn-sm"
-            onClick={() => setProjectDrawerOpen(true)}
-            aria-label="打开项目文件"
-          >
-            项目文件
-          </button>
-        ) : null}
-        <MoreMenu className="app-more--top" />
+        <div className="app-topbar-row app-topbar-row--state">
+          {conversation?.agentPresetId !== null && conversation?.agentPresetId !== undefined ? (
+            <Link
+              to={`/agents/${conversation.agentPresetId}`}
+              className="app-chip app-chip--link"
+            >
+              {agentLabel}
+            </Link>
+          ) : (
+            <span className="app-chip">{agentLabel}</span>
+          )}
+          {presetsQuery.isError ? (
+            <button
+              type="button"
+              className="app-link-btn"
+              onClick={() => void presetsQuery.refetch()}
+            >
+              Agent 名称加载失败，重试
+            </button>
+          ) : null}
+          <HudStateStrip
+            model={controls.target.model}
+            endpointLabel={endpointLabel}
+            thinkingLabel={controls.thinkingLevel}
+            transport={transport}
+            cacheSummary={cacheSummary}
+            cacheReleaseEligible={
+              cacheControl.presentation.state === 'active' ||
+              cacheControl.presentation.state === 'snapshot_only'
+            }
+            cacheReleaseDisabled={cacheControl.mutationsLocked}
+            cacheReleasing={cacheControl.releasing}
+            onReleaseCache={cacheControl.release}
+            onOpen={() => setHudOpen(true)}
+          />
+        </div>
       </header>
 
       {conversationQuery.isPending ? (

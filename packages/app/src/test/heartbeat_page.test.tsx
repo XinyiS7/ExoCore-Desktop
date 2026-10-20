@@ -1778,10 +1778,10 @@ describe('Heartbeat Page & Profile Entry (CP-A, Plan §2.1 / §2.2)', () => {
       expect(agentChipLink).toHaveClass('app-chip--link');
       expect(agentChipLink.getAttribute('href')).toBe('/agents/1');
 
-      // Drift chip is NOT a link
-      const driftChip = screen.getByText('Drift');
-      expect(driftChip.tagName.toLowerCase()).toBe('span');
-      expect(driftChip).toHaveClass('app-chip--drift');
+      // Drift label is plain text, NOT a link (#72 U1)
+      const driftLabel = screen.getByText('Drift');
+      expect(driftLabel.tagName.toLowerCase()).toBe('span');
+      expect(driftLabel).toHaveClass('app-topbar-project');
 
       // 3. Click Agent chip -> navigates to Agent Profile
       fireEvent.click(agentChipLink);
@@ -1813,7 +1813,7 @@ describe('Heartbeat Page & Profile Entry (CP-A, Plan §2.1 / §2.2)', () => {
       await screen.findByText('Note sent via full journey');
     });
 
-    it('renders clickable Project chip in Chat topbar when project is assigned', async () => {
+    it('renders the Project name as plain text in Chat topbar when project is assigned', async () => {
       installFetch([
         {
           test: '/api/agents/conversations/43/',
@@ -1855,9 +1855,12 @@ describe('Heartbeat Page & Profile Entry (CP-A, Plan §2.1 / §2.2)', () => {
       renderApp(['/chat/43']);
 
       await screen.findByText('Project Chat');
-      const projectChipLink = screen.getByRole('link', { name: 'Project Alpha' });
-      expect(projectChipLink).toHaveClass('app-chip--link');
-      expect(projectChipLink.getAttribute('href')).toBe('/projects/10');
+      // #72 U1: project name is muted text, not a badge or link; the project
+      // stays reachable through the 项目文件 drawer.
+      const projectLabel = screen.getByText('Project Alpha');
+      expect(projectLabel).toHaveClass('app-topbar-project');
+      expect(screen.queryByRole('link', { name: 'Project Alpha' })).toBeNull();
+      expect(screen.getByRole('button', { name: '打开项目文件' })).toBeInTheDocument();
     });
 
     it('renders Agent Hub and Project Hub entries as distinct app-btn buttons on Chat Home', async () => {

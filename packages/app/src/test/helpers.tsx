@@ -128,7 +128,7 @@ export function installRuntimeFetch(routes: MockRoute[], fallback?: RouteHandler
 
 /** Select transport through the production-owned Tactical HUD control. */
 export async function selectRuntimeTransport(transport: 'sse' | 'async') {
-  fireEvent.click(await screen.findByRole('button', { name: '战术面板' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'more' }));
   fireEvent.change(await screen.findByRole('combobox', { name: '选择传输模式' }), {
     target: { value: transport },
   });

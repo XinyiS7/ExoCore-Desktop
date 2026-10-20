@@ -21,7 +21,6 @@ export interface HudStateStripProps {
   cacheReleaseDisabled: boolean;
   cacheReleasing: boolean;
   onReleaseCache: () => void;
-  auraLabel: string;
   onOpen: () => void;
 }
 
@@ -35,14 +34,15 @@ export function HudStateStrip({
   cacheReleaseDisabled,
   cacheReleasing,
   onReleaseCache,
-  auraLabel,
   onOpen,
 }: HudStateStripProps) {
+  // The strip shows only the model; the full target stays in the tooltip, the
+  // HUD and each assistant message head.
   const targetText = model ? (endpointLabel ? `${model} · ${endpointLabel}` : model) : '目标未解析';
   return (
     <div className="v4-strip" role="group" aria-label="会话状态摘要">
       <span className="v4-strip-item" title={`执行目标：${targetText}`}>
-        {targetText}
+        {model || '目标未解析'}
       </span>
       <span className="v4-strip-item" title={`思考级别：${thinkingLabel}`}>
         思考 {thinkingLabel}
@@ -67,13 +67,13 @@ export function HudStateStrip({
           </button>
         ) : null}
       </span>
-      {auraLabel ? (
-        <span className="v4-strip-item" title={`氛围：${auraLabel}`}>
-          ✦ {auraLabel}
-        </span>
-      ) : null}
-      <button type="button" className="app-btn app-btn-ghost app-btn-sm v4-strip-trigger" onClick={onOpen}>
-        战术面板
+      <button
+        type="button"
+        className="app-btn app-btn-ghost app-btn-sm v4-strip-trigger"
+        onClick={onOpen}
+        title="打开战术面板"
+      >
+        more
       </button>
     </div>
   );

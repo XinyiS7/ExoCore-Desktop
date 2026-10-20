@@ -70,10 +70,9 @@ describe('P1D final frontend integration', () => {
     const before = stage?.style.getPropertyValue('--aura-mid');
     const storageSpy = vi.spyOn(Storage.prototype, 'setItem');
 
-    fireEvent.click(screen.getByRole('button', { name: '战术面板' }));
+    fireEvent.click(screen.getByRole('button', { name: 'more' }));
     fireEvent.click(await screen.findByRole('button', { name: '选择 Deep Ocean' }));
     await waitFor(() => expect(stage?.style.getPropertyValue('--aura-mid')).not.toBe(before));
-    expect(screen.getByTitle('氛围：Deep Ocean')).toHaveTextContent('Deep Ocean');
     expect(storageSpy.mock.calls.filter(([key]) => key === 'exo:v4:pref:aura:90')).toHaveLength(1);
   });
 
@@ -162,7 +161,7 @@ describe('P1D final frontend integration', () => {
     await screen.findByText('memory_search');
     expect(container.querySelector<HTMLDetailsElement>('.v4-trace')?.open).toBe(false);
 
-    fireEvent.click(screen.getByRole('button', { name: '战术面板' }));
+    fireEvent.click(screen.getByRole('button', { name: 'more' }));
     expect(await screen.findByText(/已收到 1 次运行用量上报；这不代表所有已接受请求/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '关闭战术面板' }));
 

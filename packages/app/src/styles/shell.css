@@ -361,8 +361,8 @@
   color: var(--v4-text);
 }
 
-/* Conversation detail keeps navigation and both P1D controls operable on
-   narrow screens instead of compressing five regions into one flex row. */
+/* Detail pages keep back · title · more operable on narrow screens instead
+   of compressing every region into one flex row. */
 @media (max-width: 767px) {
   .app-topbar--detail {
     display: grid;
@@ -390,12 +390,6 @@
     white-space: nowrap;
   }
 
-  .app-topbar--detail > .v4-strip {
-    grid-area: strip;
-    width: 100%;
-    min-width: 0;
-  }
-
   .app-topbar--detail > .app-btn {
     grid-area: project;
     justify-self: end;
@@ -408,10 +402,80 @@
   }
 }
 
+/* Conversation detail header: two rows at every width. Row 1 is navigation
+   (back · title · project · actions), row 2 is state (agent · strip · more).
+   Wide screens push each row's trailing controls to the far edge; narrow
+   screens ellipsize text and keep the trailing controls visible. */
+.app-topbar--conversation {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.app-topbar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.app-topbar-title--conversation {
+  flex: 1;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.app-topbar-title--conversation .app-h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.app-topbar-project {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  color: var(--v4-text-mute);
+}
+
+.app-topbar-project::before {
+  content: "· ";
+}
+
+.app-topbar-row > .app-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.app-topbar-row--state > .app-chip {
+  flex-shrink: 0;
+}
+
+.app-topbar-row--state > .v4-strip {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .app-topbar--conversation {
+    padding-inline: max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right));
+  }
+
+  .app-topbar-row {
+    gap: 8px;
+  }
+}
+
 @media (max-width: 390px) {
-  /* Preserve a truthful target summary plus the full HUD trigger; the HUD
-     exposes the remaining state without forcing horizontal page overflow. */
-  .app-topbar--detail > .v4-strip .v4-strip-item:not(:first-child) {
+  /* Keep agent, model and the HUD trigger; the HUD exposes the rest. */
+  .app-topbar-row--state .v4-strip-item:not(:first-child),
+  .app-topbar-row--state .v4-strip-cache {
     display: none;
   }
 }
@@ -1980,7 +2044,7 @@ a.app-att-filecard {
 }
 
 .v4-strip-trigger {
-  margin-left: 4px;
+  margin-left: auto;
   flex-shrink: 0;
 }
 
