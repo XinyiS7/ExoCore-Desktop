@@ -472,14 +472,6 @@
   }
 }
 
-@media (max-width: 390px) {
-  /* Keep agent, model and the HUD trigger; the HUD exposes the rest. */
-  .app-topbar-row--state .v4-strip-item:not(:first-child),
-  .app-topbar-row--state .v4-strip-cache {
-    display: none;
-  }
-}
-
 /* ── Scroll containers (single scroll owner per page) ───────────────────── */
 
 .app-scroll {
@@ -2193,6 +2185,11 @@ a.app-att-filecard {
   text-overflow: ellipsis;
   max-width: 140px;
   flex-shrink: 1;
+}
+
+/* Set by useStripFit when the full set would ellipsize; the HUD shows the rest. */
+.v4-strip--compact .v4-strip-item--optional {
+  display: none;
 }
 
 .v4-strip-cache {

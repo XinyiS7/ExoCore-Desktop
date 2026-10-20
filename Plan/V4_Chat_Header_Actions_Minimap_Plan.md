@@ -49,7 +49,7 @@
 - Agent chip：保留边框和到 `/agents/:id` 的跳转。
 - "战术面板"按钮改名 `more`，仍打开 `TacticalHud`；✦氛围标签从条上移除（面板内已有）。
 - 删除 `<MoreMenu className="app-more--top" />`；侧边栏的 MoreMenu 不动。
-- 宽屏：两行各自 `justify-content: space-between`。窄屏：标题与状态项 ellipsis；≤390px 时隐藏规则改为保留 Agent、模型、`more`，`☰` 恒可见。
+- 宽屏：两行各自 `justify-content: space-between`。窄屏：标题 ellipsis；状态条按实测宽度收缩——全部状态项无法并排完整显示时只留模型、思考、缓存三项（验收时 Alicia 定，替代原 ≤390px 断点），`☰` 恒可见。
 
 ### 2.2 严格上级（U2）
 

@@ -6,7 +6,9 @@
  * summaries of pane-5-owned runtime/preference state; the expanded Tactical
  * HUD owns all interaction.
  */
+import { useRef } from 'react';
 import type { ChatTransport } from '../runtime/types';
+import { useStripFit } from './useStripFit';
 
 export interface HudStateStripProps {
   /** Effective target model name ('' while unresolved). */
@@ -39,15 +41,26 @@ export function HudStateStrip({
   // The strip shows only the model; the full target stays in the tooltip, the
   // HUD and each assistant message head.
   const targetText = model ? (endpointLabel ? `${model} · ${endpointLabel}` : model) : '目标未解析';
+  const stripRef = useRef<HTMLDivElement>(null);
+  // When the pills cannot all show in full, keep model, thinking and cache.
+  const compact = useStripFit(
+    stripRef,
+    [model, thinkingLabel, transport, cacheSummary, cacheReleaseEligible].join('|'),
+  );
   return (
-    <div className="v4-strip" role="group" aria-label="会话状态摘要">
+    <div
+      ref={stripRef}
+      className={`v4-strip${compact ? ' v4-strip--compact' : ''}`}
+      role="group"
+      aria-label="会话状态摘要"
+    >
       <span className="v4-strip-item" title={`执行目标：${targetText}`}>
         {model || '目标未解析'}
       </span>
       <span className="v4-strip-item" title={`思考级别：${thinkingLabel}`}>
         思考 {thinkingLabel}
       </span>
-      <span className="v4-strip-item" title={`传输模式：${transport === 'sse' ? '实时（SSE）' : '可恢复（轮询）'}`}>
+      <span className="v4-strip-item v4-strip-item--optional" title={`传输模式：${transport === 'sse' ? '实时（SSE）' : '可恢复（轮询）'}`}>
         {transport === 'sse' ? 'SSE' : '轮询'}
       </span>
       <span className="v4-strip-cache">
