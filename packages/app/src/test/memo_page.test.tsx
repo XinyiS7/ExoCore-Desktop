@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { RiverPage } from '../features/river/RiverPage';
+import type { RiverItem } from '../features/river/types';
 import { jsonResponse, renderV4, unmockFetch } from './helpers';
 import { installMemoServer } from './memo_test_server';
 
@@ -220,7 +221,7 @@ describe('CP2 arbitrary parent threads', () => {
     const memo = server.memos.get(7)!;
     memo.content = '完整的长篇根正文内容，包含多段详情描述。';
     server.river = (_url, payload) => {
-      const item = payload.items.find((it: any) => it.target?.memo_id === 7) as any;
+      const item = (payload.items as RiverItem[]).find((it) => it.source_type === 'memo' && it.target.memo_id === 7);
       if (item) item.preview = '根预览节选…';
       return jsonResponse(payload);
     };

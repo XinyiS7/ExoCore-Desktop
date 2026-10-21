@@ -10,7 +10,7 @@ describe('V4 Collection API adapter (Issue #32 Step 1B)', () => {
 
   it('posts to /api/collection/items/ preserving trailing slash and canonical content verbatim', async () => {
     const rawContent = '  First line with leading space\n\nSecond line with trailing space   ';
-    let capturedBody: any = null;
+    let capturedBody = null as Record<string, unknown> | null;
 
     const { calls } = installFetch([
       {
@@ -57,7 +57,7 @@ describe('V4 Collection API adapter (Issue #32 Step 1B)', () => {
   });
 
   it('omits collection_context when note is absent or empty whitespace', async () => {
-    let capturedBody: any = null;
+    let capturedBody = null as Record<string, unknown> | null;
 
     installFetch([
       {
@@ -86,7 +86,7 @@ describe('V4 Collection API adapter (Issue #32 Step 1B)', () => {
         text: 'hello world',
       },
     });
-    expect(capturedBody.collection_context).toBeUndefined();
+    expect(capturedBody?.collection_context).toBeUndefined();
   });
 
   it('returns already_collected outcome on repeat collect (HTTP 200)', async () => {

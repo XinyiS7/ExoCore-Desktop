@@ -145,7 +145,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
   });
 
   it('opens modal, submits canonical content with optional note, and shows created outcome', async () => {
-    let capturedBody: any = null;
+    let capturedBody = null as Record<string, unknown> | null;
     installFetch([
       {
         test: '/api/collection/items/',
