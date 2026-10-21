@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Activity, ArrowLeft, Bot, Camera, Edit3, Pencil, Plus, Star } from 'lucide-react';
 import { toAppApiError } from '../chat/api';
@@ -136,7 +136,7 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
     });
   };
 
-  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';

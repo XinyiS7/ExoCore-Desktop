@@ -5,6 +5,7 @@ import { MemoComposer } from './MemoComposer';
 import { MemoContent } from './MemoContent';
 import { MemoTagsDialog } from './MemoTagsDialog';
 import type { MemoReplyDrafts } from './replyDrafts';
+import { formatAuthor } from './formatAuthor';
 
 function orderedReplies(rootId: number, replies: Memo[]) {
   const children = new Map<number, Memo[]>();
@@ -20,15 +21,6 @@ function orderedReplies(rootId: number, replies: Memo[]) {
     stack.push(...(children.get(row.memo.id) ?? []).map((memo) => ({ memo, depth: row.depth + 1 })).reverse());
   }
   return rows;
-}
-function formatAuthor(author: string, presetById?: Map<number, string>): string {
-  if (author.startsWith('agent:')) {
-    const id = Number(author.slice(6));
-    if (!Number.isNaN(id) && presetById?.has(id)) {
-      return presetById.get(id)!;
-    }
-  }
-  return author;
 }
 
 export function MemoThread({ rootId, open, writes, replyDrafts, canReply, canEditTags, presetById }: {

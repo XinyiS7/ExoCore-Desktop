@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MemoContent } from '../memo/MemoContent';
 import { MemoThread } from '../memo/MemoThread';
 import { MemoTagsDialog } from '../memo/MemoTagsDialog';
+import { formatAuthor } from '../memo/formatAuthor';
 import { useMemoThreadQuery, type MemoWrites } from '../memo/queries';
 import type { MemoReplyDrafts } from '../memo/replyDrafts';
 import type { ReadingItem, RiverItem, RiverSource } from './types';
@@ -16,16 +17,6 @@ const SOURCE_GLYPHS: Record<RiverSource, string> = {
 function formatAgentName(id: number | null | undefined, presetById?: Map<number, string>): string {
   if (id === null || id === undefined) return '未知 Agent';
   return presetById?.get(id) ?? `Agent #${id}`;
-}
-
-export function formatAuthor(author: string, presetById?: Map<number, string>): string {
-  if (author.startsWith('agent:')) {
-    const id = Number(author.slice(6));
-    if (!Number.isNaN(id) && presetById?.has(id)) {
-      return presetById.get(id)!;
-    }
-  }
-  return author;
 }
 
 export function RiverItemCard({ item, onRead, onOpenTask, onOpenLegacy, memoWrites, replyDrafts, presetById }: { item: RiverItem; onRead: (item: ReadingItem) => void; onOpenTask: (entryId: number) => void; onOpenLegacy: (item: Extract<RiverItem, { source_type: 'chronicle' }>) => void; memoWrites: MemoWrites; replyDrafts: MemoReplyDrafts; presetById?: Map<number, string> }) {

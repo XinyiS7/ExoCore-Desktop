@@ -39,15 +39,18 @@ export function CollectMessageModal({
     locked: submitting,
   });
 
+  // Reset only when a different message is targeted; the parent may pass a
+  // fresh object for the same message on every render.
+  const targetId = targetMessage?.id;
   useEffect(() => {
-    if (isOpen && targetMessage) {
+    if (isOpen && targetId !== undefined) {
       setNote('');
       setError(null);
       setOutcome(null);
       submittingRef.current = false;
       setSubmitting(false);
     }
-  }, [isOpen, targetMessage?.id]);
+  }, [isOpen, targetId]);
 
   if (!isOpen || !targetMessage) {
     return null;
