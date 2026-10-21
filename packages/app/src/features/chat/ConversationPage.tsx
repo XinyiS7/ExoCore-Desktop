@@ -299,6 +299,16 @@ export function ConversationPage() {
     const rejection = collectionItemRejectionOf(runtimeError);
     if (rejection) rejectCollectionCard(rejection.itemId, rejection.label);
   }, [runtimeError, rejectCollectionCard]);
+
+  // #77: ToolCollection results are anchored as manageable attachments when
+  // the turn ends, after the send-time refresh, so re-list on busy → idle.
+  const refreshAttachments = attachmentManager.refresh;
+  const wasBusyRef = useRef(busy);
+  useEffect(() => {
+    const wasBusy = wasBusyRef.current;
+    wasBusyRef.current = busy;
+    if (wasBusy && !busy) void refreshAttachments();
+  }, [busy, refreshAttachments]);
   const thinkingPending = thinkingOperationPendingRef.current;
   const cacheControl = useCacheControl(id, {
     runtimeUncertain: busy || audioRecovery.isUploading() || thinkingPending,
