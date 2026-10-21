@@ -625,7 +625,7 @@ export function ConversationPage() {
       <AuraStage
         paletteId={aura.selectedId}
         theme="dark"
-        generating={status === 'streaming' || status === 'polling'}
+        generating={busy || status === 'streaming' || status === 'polling' || status === 'submitting' || status === 'stopping'}
       />
       <header className="app-topbar app-topbar--conversation">
         <div className="app-topbar-row">

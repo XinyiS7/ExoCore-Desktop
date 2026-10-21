@@ -15,6 +15,7 @@ export default defineConfig(({ command }) => ({
       devOptions: { enabled: false },
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
       manifest: {
         id: 'exocore-app',
