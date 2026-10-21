@@ -53,6 +53,16 @@
   background: #cbc5bb url('/themes/bloodborne/wall_marble.png') center top / cover fixed no-repeat !important;
 }
 
+/* ── Bloodborne organic aura blend (如鲜血与余火浸润古砖) ── */
+[data-theme-pack='bloodborne']:not([data-theme='light']) .v4-aura-layer {
+  mix-blend-mode: screen;
+}
+
+[data-theme-pack='bloodborne'][data-theme='light'] .v4-aura-layer {
+  mix-blend-mode: multiply;
+  opacity: 0.45;
+}
+
 /* ── Frosted glass surfaces ── */
 [data-theme-pack='bloodborne'] .app-pane,
 [data-theme-pack='bloodborne'] .chat-thread,
