@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Globe, Heart } from 'lucide-react';
 import { chronicleApi } from 'exo-shared';
 
@@ -49,7 +49,7 @@ export default function ChronicleEntryModal({ entry, presets = [], onClose, onSa
       const payload = toPayload(form);
       if (isEdit) {
         // PATCH: preset is immutable after creation
-        const { preset, ...patch } = payload;
+        const { preset: _preset, ...patch } = payload;
         await chronicleApi.updateChronicleEntry(entry.id, patch);
       } else {
         await chronicleApi.createChronicleEntry(payload);

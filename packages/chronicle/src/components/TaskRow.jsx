@@ -1,5 +1,5 @@
 // src/components/tasks/TaskRow.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Circle, RefreshCw, Target, ChevronDown, ChevronUp,
   MoreHorizontal, Check, ExternalLink, Pin, PinOff,

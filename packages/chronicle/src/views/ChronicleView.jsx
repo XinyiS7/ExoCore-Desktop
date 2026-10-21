@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Globe, Heart, Filter } from 'lucide-react';
 import ChronicleEntryRow from '../components/ChronicleEntryRow';
 import ChronicleEntryModal from '../components/ChronicleEntryModal';

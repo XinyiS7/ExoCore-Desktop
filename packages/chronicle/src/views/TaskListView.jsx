@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, X, ChevronLeft, Check } from 'lucide-react';
 import MiniCalendar from '../components/MiniCalendar';
 import TaskCreateModal from '../components/TaskCreateModal';

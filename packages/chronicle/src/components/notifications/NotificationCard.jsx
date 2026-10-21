@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ExternalLink, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { useNotificationContext } from '../../contexts/NotificationContext';
+import { ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { useNotificationContext } from '../../contexts/notificationContextValue';
 
 /**
  * Format a timestamp as relative time (Chinese).

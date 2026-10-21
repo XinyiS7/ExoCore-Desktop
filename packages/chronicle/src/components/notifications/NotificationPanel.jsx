@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
-import { useNotificationContext } from '../../contexts/NotificationContext';
+import { useNotificationContext } from '../../contexts/notificationContextValue';
 import NotificationCard from './NotificationCard';
 
 export default function NotificationPanel() {

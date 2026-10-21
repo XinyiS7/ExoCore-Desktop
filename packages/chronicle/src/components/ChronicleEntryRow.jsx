@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { MoreHorizontal, Edit2, Trash2, Globe, Heart } from 'lucide-react';
 
 const SCOPE_ICONS = {

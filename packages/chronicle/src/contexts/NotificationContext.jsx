@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { subscribe, removeNotification } from '../stores/notificationStore';
-
-const NotificationContext = createContext(null);
+import { NotificationContext } from './notificationContextValue';
 
 export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
@@ -22,7 +21,9 @@ export function NotificationProvider({ children }) {
           },
           params: item.presetId ? { preset_id: item.presetId } : {},
         });
-      } catch (_) { /* silent */ }
+      } catch (err) {
+        console.warn('[notifications] dismiss ack failed', err);
+      }
     }
     removeNotification(item.id);
   }, []);
@@ -39,7 +40,9 @@ export function NotificationProvider({ children }) {
           },
           params: item.presetId ? { preset_id: item.presetId } : {},
         });
-      } catch (_) { /* silent */ }
+      } catch (err) {
+        console.warn('[notifications] navigate ack failed', err);
+      }
     }
     removeNotification(item.id);
     // 真正导航到目标页
@@ -55,10 +58,4 @@ export function NotificationProvider({ children }) {
       {children}
     </NotificationContext.Provider>
   );
-}
-
-export function useNotificationContext() {
-  const ctx = useContext(NotificationContext);
-  if (!ctx) throw new Error('useNotificationContext must be used inside <NotificationProvider>');
-  return ctx;
 }

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Routes, Route, NavLink } from 'react-router-dom';
 import { MessageCircle, CheckSquare, Calendar, BookOpen } from 'lucide-react';
 import { useProfile, useFont } from 'exo-shared';

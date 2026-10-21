@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import CalendarWidget from '../components/CalendarWidget';
-import MiniCalendar from '../components/MiniCalendar';
 import { tasksApi } from 'exo-shared';
 
 export default function CalendarView() {
   const today = new Date().toISOString().slice(0, 10);
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedDate] = useState(today);
   const [dayTasks, setDayTasks] = useState([]);
   const [todayEvents, setTodayEvents] = useState([]);
   const [loading, setLoading] = useState(false);

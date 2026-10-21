@@ -1,5 +1,5 @@
 // src/components/tasks/TaskCreateModal.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Pin } from 'lucide-react';
 import { tasksApi } from 'exo-shared';
 const createEntry = tasksApi.createTask;

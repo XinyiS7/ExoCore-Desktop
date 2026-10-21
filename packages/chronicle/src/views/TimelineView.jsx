@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Send, Activity, CornerDownLeft } from 'lucide-react';
 import { tweetsApi, agentsApi } from 'exo-shared';
 import { getAgentAvatar, getUserAvatar } from 'exo-shared';
