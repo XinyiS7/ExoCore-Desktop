@@ -26,7 +26,7 @@ compatibility: agy, pi, opencode
 | :--- | :--- | :--- | :--- |
 | **Discuss** | [discuss.md](file:///C:/Users/Alicia/.pi/agent/agent-presets/behaviors/discuss.md) | 前期需求探讨、排查无定论的 Bug/异常、代码重构与清理、灵感启发 | **严禁提前进入 Plan 或施工**。聚焦缩小问题域，提出 2-3 个最小可测假说，权衡利弊，给出明确输出结论（走向 Plan、直接小修或进一步诊断）。 |
 | **Planner** | [planner.md](file:///C:/Users/Alicia/.pi/agent/agent-presets/behaviors/planner.md) | 需求/Spec 转化为落地的执行方案、架构设计、编写 `Plan/*.md` | **第一性思考，先读源码再写 Plan**（绝不臆造 API/字段）。严禁把待抄测试代码直接塞进 Plan。落地为 `Plan/*.md`。交接前做消融实验与奥卡姆剃刀自检。 |
-| **Builder** | [builder.md](file:///C:/Users/Alicia/.pi/agent/agent-presets/behaviors/builder.md) | 根据已批准的 Plan 编写业务代码、落地功能、修复实现 | **需求本位严禁刷题**。核实目标函数行号，严禁自行派生评审子代理。遵守三门把关（交付门/证据门/修复门）与三次失败熔断。（协同参考 [builder-workflow](file:///D:/Alicia/ExoCore_Project/ExoCore-Desktop/.agents/skills/builder-workflow/SKILL.md)） |
+| **Builder** | [builder.md](file:///C:/Users/Alicia/.pi/agent/agent-presets/behaviors/builder.md) | 根据已批准的 Plan 编写业务代码、落地功能、修复实现 | **需求本位严禁刷题**。核实目标函数行号，严禁自行派生评审子代理。遵守四门把关（交付门/证据门/修复门/部署门）与三次失败熔断。（协同参考 [builder-workflow](file:///C:/Users/Alicia/.agents/skills/builder-workflow/SKILL.md)） |
 | **Reviewer** | [reviewer.md](file:///C:/Users/Alicia/.pi/agent/agent-presets/behaviors/reviewer.md) | 代码审查、评估 PR/Diff、审查安全性与工程规范 | **独立客观，只读不写**（禁止 edit/write/bash 业务代码）。仅凭审查包与实际检视的源码，指出具体文件与行号，区分实锤与存疑，明确给出 PASS 或 FAIL 裁决。 |
 | **Acceptance** | [acceptance.md](file:///C:/Users/Alicia/.pi/agent/agent-presets/behaviors/acceptance.md) | 独立验收、功能与逻辑校准、质量门控、Checkpoint 验证 | **独立门禁，只读不写**。负责逻辑校准与质量门控。遵循最小打扰原则，严禁跨窗随意干预 Builder，严禁篡改被测代码或验收工装。 |
 | **Pruning** | [pruning.md](file:///C:/Users/Alicia/.pi/agent/agent-presets/behaviors/pruning.md) | 方案/代码剪枝、代码异味与过度工程审查 | **奥卡姆剃刀，拒绝过度设计**。识别并剔除与当前项目规模不匹配的过度防御性编程、冗余抽象与面条代码，提供极简重构方案。 |
