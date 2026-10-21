@@ -27,7 +27,7 @@ const DEFAULT_SCALE   = 100; // percent (80–150)
 const FONT_STACKS = {
   sarasa:  "'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace",
   wenkai:  "'LXGW WenKai', 'Sarasa Gothic Mono', 'Georgia', serif",
-  maple:   "'TT-黎ミンY10 B', 'FOT-Reimin', 'DFPKaiW5-GB', 'DFPKaiShuW5-B5', 'Cormorant Garamond', 'Cinzel', 'Source Han Serif SC', 'Noto Serif SC', 'Maple Mono', Consolas, monospace",
+  maple:   "'TT-黎ミンY10 B', 'FOT-Reimin', 'DFPKaiW5-GB', 'DFPKaiShuW5-B5', 'Cormorant Garamond', 'Cinzel', 'KaiTi', 'STKaiti', 'Source Han Serif SC', 'Noto Serif SC', Consolas, monospace",
 };
 
 // Get the actual CSS font stack for a font key
@@ -38,7 +38,7 @@ export function getFontStack(fontKey) {
 export const AVAILABLE_FONTS = [
   { value: 'sarasa', label: 'Sarasa Gothic Mono',  preview: '更纱等宽黑体 — 春江潮水连海平' },
   { value: 'wenkai', label: '霞鹜文楷 LXGW WenKai', preview: '霞鹜文楷 — 落霞与孤鹜齐飞' },
-  { value: 'maple',  label: 'Maple Mono / 黎ミン (Bloodborne)', preview: '黎明明朝体 / 华康楷体 — 恐惧古老之血' },
+  { value: 'maple',  label: '黎ミン · 华康楷体 (Bloodborne)', preview: '黎明明朝体 / 华康楷体 — 恐惧古老之血' },
 ];
 
 // ── Font scale config (percentage slider) ──

@@ -4,6 +4,13 @@
    - Preserves neutral base defaults; active ONLY when data-theme-pack is set.
    ══════════════════════════════════════════════════════════════════════════ */
 
+[data-theme-pack='bloodborne'] {
+  --v4-font: 'TT-黎ミンY10 B', 'FOT-Reimin', 'DFPKaiW5-GB', 'DFPKaiShuW5-B5', 'Cormorant Garamond', 'Cinzel', 'KaiTi', 'STKaiti', 'Source Han Serif SC', 'Noto Serif SC', serif;
+  --font-system: 'TT-黎ミンY10 B', 'FOT-Reimin', 'DFPKaiW5-GB', 'DFPKaiShuW5-B5', 'Cormorant Garamond', 'Cinzel', 'KaiTi', 'STKaiti', 'Source Han Serif SC', 'Noto Serif SC', serif;
+  --font-message: 'TT-黎ミンY10 B', 'FOT-Reimin', 'DFPKaiW5-GB', 'DFPKaiShuW5-B5', 'Cormorant Garamond', 'Cinzel', 'KaiTi', 'STKaiti', 'Source Han Serif SC', 'Noto Serif SC', serif;
+  --font-code: 'TT-黎ミンY10 B', 'FOT-Reimin', 'DFPKaiW5-GB', 'DFPKaiShuW5-B5', 'Cormorant Garamond', 'Cinzel', 'Source Han Serif SC', 'Noto Serif SC', monospace;
+}
+
 /* ── Dark: 亚楠暗夜 (Yharnam Night) ── */
 [data-theme-pack='bloodborne'],
 [data-theme-pack='bloodborne'][data-theme='dark'] {

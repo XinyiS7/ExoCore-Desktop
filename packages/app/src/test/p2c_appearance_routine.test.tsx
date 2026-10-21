@@ -259,9 +259,9 @@ describe('Phase 2C CP C-2 — Settings Shell, Appearance, Routine & Notification
       expect(localStorage.getItem('exo_font_system')).toBe('wenkai');
       expect(document.documentElement.getAttribute('data-font-system')).toBe('wenkai');
 
-      // Message font switch to maple
+      // Message font switch to maple (Bloodborne stack)
       const msgGroup = screen.getByRole('radiogroup', { name: '会话正文字体' });
-      const mapleMsg = within(msgGroup).getByRole('radio', { name: /Maple Mono/i });
+      const mapleMsg = within(msgGroup).getByRole('radio', { name: /黎ミン|Bloodborne|Maple Mono/i });
       fireEvent.click(mapleMsg);
 
       expect(localStorage.getItem('exo_font_message')).toBe('maple');
