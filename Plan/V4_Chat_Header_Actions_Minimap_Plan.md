@@ -1,6 +1,6 @@
 # V4 Chat 会话页：Header 两行化 + 消息操作下移 + 用户消息 Minimap
 
-> **状态：定稿（2026-10-20，Alicia 确认）。** 生产代码尚未动工。
+> **状态：已验收（2026-10-21，Alicia 确认）。** U1–U5、U7 已施工；U6 登记为 #73、#74。
 > **Issue：** XinyiS7/ExoCore#72
 > **基线：** ExoCore-Desktop `main@c0c1372`；ExoCore `main@0273cc7c`（只读）。
 > **来源：** 2026-10-20 Alicia 草图与对话。定位为重构完成前的临时改善，不改后端契约。
