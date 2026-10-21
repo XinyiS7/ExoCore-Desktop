@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useState, type ReactNode } from 'react';
@@ -82,7 +82,8 @@ describe('P1D Tactical HUD (Plan Task 3 / D2, §8.6)', () => {
         endpointLabel="deepseek-api"
         thinkingLabel="auto"
         transport="sse"
-        cacheSummary="无缓存"
+        cacheSummary=""
+        cacheDetail="无缓存"
         cacheReleaseEligible={false}
         cacheReleaseDisabled={false}
         cacheReleasing={false}
@@ -96,6 +97,46 @@ describe('P1D Tactical HUD (Plan Task 3 / D2, §8.6)', () => {
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
+  it('shows thinking as a bare level and cache as remaining seconds beside release (#72)', () => {
+    const { rerender } = render(
+      <HudStateStrip
+        model="gemini-3.8-flash"
+        endpointLabel="gemini"
+        thinkingLabel="medium"
+        transport="sse"
+        cacheSummary="120s"
+        cacheDetail="远端缓存剩余 120s"
+        cacheReleaseEligible
+        cacheReleaseDisabled={false}
+        cacheReleasing={false}
+        onReleaseCache={vi.fn()}
+        onOpen={vi.fn()}
+      />,
+    );
+    expect(screen.getByTitle('思考级别：medium')).toHaveTextContent(/^medium$/);
+    const cache = screen.getByTitle('远端缓存剩余 120s');
+    expect(cache).toHaveTextContent(/^120s−$/);
+    expect(within(cache).getByRole('button', { name: '释放上下文缓存' })).toBeTruthy();
+
+    // Nothing to show and nothing to release: the cache slot disappears.
+    rerender(
+      <HudStateStrip
+        model="gemini-3.8-flash"
+        endpointLabel="gemini"
+        thinkingLabel="medium"
+        transport="sse"
+        cacheSummary=""
+        cacheDetail="无缓存"
+        cacheReleaseEligible={false}
+        cacheReleaseDisabled={false}
+        cacheReleasing={false}
+        onReleaseCache={vi.fn()}
+        onOpen={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTitle('无缓存')).toBeNull();
+  });
+
   it('exposes the same cache release command only when eligible and unlocked', () => {
     const release = vi.fn();
     const stripProps = {
@@ -103,7 +144,8 @@ describe('P1D Tactical HUD (Plan Task 3 / D2, §8.6)', () => {
       endpointLabel: 'deepseek-api',
       thinkingLabel: 'auto',
       transport: 'sse' as const,
-      cacheSummary: '无缓存',
+      cacheSummary: '',
+      cacheDetail: '无缓存',
       cacheReleasing: false,
       onOpen: vi.fn(),
       onReleaseCache: release,
@@ -120,7 +162,7 @@ describe('P1D Tactical HUD (Plan Task 3 / D2, §8.6)', () => {
     rerender(
       <HudStateStrip
         {...stripProps}
-        cacheSummary="缓存 30s"
+        cacheSummary="30s"
         cacheReleaseEligible
         cacheReleaseDisabled
       />,
@@ -133,7 +175,7 @@ describe('P1D Tactical HUD (Plan Task 3 / D2, §8.6)', () => {
     rerender(
       <HudStateStrip
         {...stripProps}
-        cacheSummary="本地快照"
+        cacheSummary="快照"
         cacheReleaseEligible
         cacheReleaseDisabled={false}
       />,
@@ -149,7 +191,8 @@ describe('P1D Tactical HUD (Plan Task 3 / D2, §8.6)', () => {
       endpointLabel: 'deepseek-api',
       thinkingLabel: 'auto',
       transport: 'sse' as const,
-      cacheSummary: '缓存 120s',
+      cacheSummary: '120s',
+      cacheDetail: '远端缓存剩余 120s',
       cacheReleasing: false,
       onReleaseCache,
       onOpen: vi.fn(),

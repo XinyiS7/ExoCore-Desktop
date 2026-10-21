@@ -480,15 +480,29 @@ export function ConversationPage() {
   const agentLabel = assistantName ?? '未知 Agent';
   const endpointLabel =
     controls.compatibleEndpoints.find((endpoint) => endpoint.id === controls.target.endpoint)?.name ?? '';
+  const cacheRemaining =
+    cacheControl.presentation.state === 'active'
+      ? Math.max(0, cacheControl.presentation.cache.remainingSeconds ?? 0)
+      : 0;
+  // Strip text stays short (remaining seconds next to the release button);
+  // the tooltip and the HUD carry the full wording.
   const cacheSummary =
+    cacheControl.presentation.state === 'active'
+      ? `${cacheRemaining}s`
+      : cacheControl.presentation.state === 'snapshot_only'
+        ? '快照'
+        : cacheControl.presentation.state === 'error'
+          ? '缓存异常'
+          : '';
+  const cacheDetail =
     cacheControl.presentation.state === 'loading'
       ? '缓存读取中'
       : cacheControl.presentation.state === 'error'
         ? '缓存不可用'
         : cacheControl.presentation.state === 'active'
-          ? `缓存 ${Math.max(0, cacheControl.presentation.cache.remainingSeconds ?? 0)}s`
+          ? `远端缓存剩余 ${cacheRemaining}s`
           : cacheControl.presentation.state === 'snapshot_only'
-            ? '本地快照'
+            ? '本地快照，无远端缓存'
             : '无缓存';
 
   const handleLoadMore = () => {
@@ -670,6 +684,7 @@ export function ConversationPage() {
             thinkingLabel={controls.thinkingLevel}
             transport={transport}
             cacheSummary={cacheSummary}
+            cacheDetail={cacheDetail}
             cacheReleaseEligible={
               cacheControl.presentation.state === 'active' ||
               cacheControl.presentation.state === 'snapshot_only'

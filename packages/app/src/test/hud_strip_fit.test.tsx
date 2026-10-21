@@ -27,7 +27,8 @@ function renderStrip() {
       endpointLabel="gemini"
       thinkingLabel="medium"
       transport="sse"
-      cacheSummary="本地快照"
+      cacheSummary="快照"
+      cacheDetail="本地快照，无远端缓存"
       cacheReleaseEligible={false}
       cacheReleaseDisabled={false}
       cacheReleasing={false}

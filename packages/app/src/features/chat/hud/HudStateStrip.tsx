@@ -17,8 +17,10 @@ export interface HudStateStripProps {
   endpointLabel: string;
   thinkingLabel: string;
   transport: ChatTransport;
-  /** Cache summary produced by the cache control owner. */
+  /** Short cache text for the strip ('' hides it), e.g. `120s` or `快照`. */
   cacheSummary: string;
+  /** Full cache description for the tooltip. */
+  cacheDetail: string;
   cacheReleaseEligible: boolean;
   cacheReleaseDisabled: boolean;
   cacheReleasing: boolean;
@@ -32,6 +34,7 @@ export function HudStateStrip({
   thinkingLabel,
   transport,
   cacheSummary,
+  cacheDetail,
   cacheReleaseEligible,
   cacheReleaseDisabled,
   cacheReleasing,
@@ -42,11 +45,13 @@ export function HudStateStrip({
   // HUD and each assistant message head.
   const targetText = model ? (endpointLabel ? `${model} · ${endpointLabel}` : model) : '目标未解析';
   const stripRef = useRef<HTMLDivElement>(null);
-  // When the pills cannot all show in full, keep model, thinking and cache.
+  // When the items cannot all show in full, keep model, thinking and cache.
+  // The countdown ticks every second, so only its length re-measures.
   const compact = useStripFit(
     stripRef,
-    [model, thinkingLabel, transport, cacheSummary, cacheReleaseEligible].join('|'),
+    [model, thinkingLabel, transport, cacheSummary.length, cacheReleaseEligible].join('|'),
   );
+  const showCache = cacheSummary !== '' || cacheReleaseEligible;
   return (
     <div
       ref={stripRef}
@@ -58,28 +63,28 @@ export function HudStateStrip({
         {model || '目标未解析'}
       </span>
       <span className="v4-strip-item" title={`思考级别：${thinkingLabel}`}>
-        思考 {thinkingLabel}
+        {thinkingLabel}
       </span>
       <span className="v4-strip-item v4-strip-item--optional" title={`传输模式：${transport === 'sse' ? '实时（SSE）' : '可恢复（轮询）'}`}>
         {transport === 'sse' ? 'SSE' : '轮询'}
       </span>
-      <span className="v4-strip-cache">
-        <span className="v4-strip-item" title={cacheSummary}>
-          {cacheSummary}
+      {showCache ? (
+        <span className="v4-strip-cache" title={cacheDetail}>
+          {cacheSummary ? <span className="v4-strip-item">{cacheSummary}</span> : null}
+          {cacheReleaseEligible ? (
+            <button
+              type="button"
+              className="v4-strip-cache-release"
+              onClick={onReleaseCache}
+              disabled={cacheReleaseDisabled}
+              aria-label="释放上下文缓存"
+              title={cacheReleasing ? '正在释放上下文缓存' : '释放上下文缓存'}
+            >
+              −
+            </button>
+          ) : null}
         </span>
-        {cacheReleaseEligible ? (
-          <button
-            type="button"
-            className="v4-strip-cache-release"
-            onClick={onReleaseCache}
-            disabled={cacheReleaseDisabled}
-            aria-label="释放上下文缓存"
-            title={cacheReleasing ? '正在释放上下文缓存' : '释放上下文缓存'}
-          >
-            −
-          </button>
-        ) : null}
-      </span>
+      ) : null}
       <button
         type="button"
         className="app-btn app-btn-ghost app-btn-sm v4-strip-trigger"
