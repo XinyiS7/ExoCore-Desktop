@@ -617,7 +617,7 @@ Query: `preset_id`（必填），可选 `scope` / `source` / `is_processed`。`i
     "cache_transport": "runtime_managed",
     "attachment_transports": [],
     "supported_families": [],
-    "supported_models": ["gemini-3.8-flash"],
+    "supported_models": ["gemini-3.8-flash", "gemini-4-argon"],
     "model_name_overrides": {}
   }]
 }
@@ -1934,7 +1934,7 @@ SSE 和 async polling 共用的稳定 error payload：
 | deepseek | DeepSeek 官方 | https://api.deepseek.com/v1 | openai | inline_chunk | inline_text, inline_image | direct_api | internal_http | true | preserve |
 | openrouter | OpenRouter | https://openrouter.ai/api/v1 | openai | inline_chunk | inline_text, inline_image | direct_api | internal_http | true | preserve |
 | glm | GLM 官方 | https://open.bigmodel.cn/api/paas/v4 | openai | inline_chunk | inline_text | direct_api | internal_http | true | preserve |
-| antigravity | Antigravity Subscription | "" | runtime | runtime_managed | — | managed_runtime | subscription_runtime | false | gemini-3.8-flash（exact；tier 归 Runtime。3.1 Pro / 3.6 Flash 已被 AGY 下线，#51） |
+| antigravity | Antigravity Subscription | "" | runtime | runtime_managed | — | managed_runtime | subscription_runtime | false | gemini-3.8-flash / gemini-4-argon（exact；tier 归 Runtime。3.1 Pro / 3.6 Flash 已被 AGY 下线，#51） |
 
 supported_families:
 - gemini: (gemini)  
@@ -1944,7 +1944,11 @@ supported_families:
 - antigravity: ()
 
 antigravity 的 requested model → AGY slug 解析只在 Subscription Runtime：只接受 `gemini-*`，
-去掉结尾 `-preview` 后加 `-high`（如 `gemini-3.8-flash` → `gemini-3.8-flash-high`）；任何 thinking level 的 effective effort 一律
-`high`；slug 是否可用由 Runtime 侧 `agy models` 门判定（`frozen_execution_unavailable`）。
+去掉结尾 `-preview` 后接 AGY 的固定档位后缀（如 `gemini-4-argon` + `low` → `gemini-4-argon-low`）。
+thinking level → 档位：`off`/`low` → `low`，`medium`/`auto` → `medium`，`high`/`max` → `high`
+（与 #58 gateway 口径一致：`off` = 最低思考档，`max` 折叠最高档，`auto` 落 AGY 默认档 medium）。
+档位只由 slug 承载，**不发送 `--effort`**（`gemini-4-argon-low` 明确拒绝该 flag）。
+slug 是否可用由 Runtime 侧 `agy models` 门判定（`frozen_execution_unavailable`）；缺档直接拒绝，不降级。
 backend Endpoint 不保存 tier 映射，`model_name_overrides` 恒为空；可配对模型以上表 exact
-`supported_models` 为准。同一会话内换模型沿用同一 Runtime binding 并续接原 AGY conversation。
+`supported_models` 为准。同一会话内换模型或换档位沿用同一 Runtime binding 并续接原 AGY conversation
+（dispose + 以新 `--model` 重新 spawn，等于一次 prompt cache 冷启动）。
