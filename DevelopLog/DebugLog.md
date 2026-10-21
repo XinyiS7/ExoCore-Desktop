@@ -300,6 +300,13 @@
   - Multiple bugs with the same symptom (inline code rendering wrong) can coexist: (a) CSS pseudo-elements adding backticks, (b) `isInline` detection broken by `rehype-highlight`'s `hljs` class. Fix them all, not just the first one you find.
   - The `normalizeMarkdown()` function (Unicode + HTML entity normalization) is a useful defense layer even though it wasn't the root cause here — LLMs can and do emit non-standard characters.
 
+### [2026-06-16] Sidebar 图标 hover 闪白（`transition-all` + SVG `currentColor`）
+
+- **Context**: `DesktopSidebar.jsx` — 侧边栏 logo 与导航项 hover 时短暂闪白；图标用 `stroke="currentColor"`，按钮挂 `transition-all` + `duration-300/500`。
+- **Precaution**: `transition-all` 连 `filter` / `text-shadow` 一起过渡。hover 进入时 `filter: drop-shadow(...)`，离开时重置为 `none`，中间帧被浏览器渲染成白亮伪影；SVG 的 `currentColor` 让描边跟着父元素 `color` 变化，与 filter 过渡叠加后更明显。与 lucide-react 无关（它零 CSS），白闪完全来自项目自己的过渡。
+- **Quick Fix**: 含 SVG 的按钮一律 `transition-colors`（只动 `color/background/border/fill/stroke`），时长 ≤ 200ms，hover 只改 `color`；需要 glow 就用 CSS `:hover` 并接受瞬变，不要在 JS `onMouseEnter/Leave` 里改 `filter` / `textShadow`。
+- **来源**: 由已退役的 `.agents/skills/footgun/SidebarWhiteHover.md` 迁入（2026-10-21 skill 去重），原文含逐条链路分析与 before/after 代码，如需细节见 Desktop 仓 `538978b^`。
+
 ---
 
 ## Tool Loop Mistakes
