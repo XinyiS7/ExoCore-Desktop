@@ -2,7 +2,9 @@ import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'rea
 import { Check, Copy } from 'lucide-react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
+import rehypeKatex from 'rehype-katex';
 
 /**
  * Read-only persisted-message renderer (Plan §6.6 / Task 7.5).
@@ -183,8 +185,8 @@ export function MessageContent({ content }: { content: string }) {
   return (
     <div className="app-md">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeHighlight, rehypeKatex]}
         components={MD_COMPONENTS}
       >
         {content}

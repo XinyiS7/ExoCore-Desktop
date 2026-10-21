@@ -315,6 +315,31 @@ describe('Phase 2C CP C-2 — Settings Shell, Appearance, Routine & Notification
       expect(screen.getByText('会话正文 (Message Typography)')).toBeInTheDocument();
       expect(screen.getByText('代码语法 (Code & Syntax)')).toBeInTheDocument();
     });
+
+    it('toggles theme packs and sets data-theme-pack attribute', async () => {
+      renderApp(['/settings/appearance']);
+
+      expect(await screen.findByRole('heading', { name: '外观与体验' })).toBeInTheDocument();
+
+      const defaultClean = screen.getByRole('radio', { name: /默认白板基准/i });
+      const bloodbornePack = screen.getByRole('radio', { name: /血源诅咒/i });
+
+      // Default is 'default' (attribute removed for clean baseline)
+      expect(defaultClean).toHaveAttribute('aria-checked', 'true');
+      expect(document.documentElement.getAttribute('data-theme-pack')).toBeNull();
+
+      // Switch to Bloodborne theme pack
+      fireEvent.click(bloodbornePack);
+      expect(bloodbornePack).toHaveAttribute('aria-checked', 'true');
+      expect(document.documentElement.getAttribute('data-theme-pack')).toBe('bloodborne');
+      expect(localStorage.getItem('exo_theme_pack')).toBe('bloodborne');
+
+      // Switch back to default
+      fireEvent.click(defaultClean);
+      expect(defaultClean).toHaveAttribute('aria-checked', 'true');
+      expect(document.documentElement.getAttribute('data-theme-pack')).toBeNull();
+      expect(localStorage.getItem('exo_theme_pack')).toBeNull();
+    });
   });
 
   // ── 3. Routine Panel ────────────────────────────────────────────────────────

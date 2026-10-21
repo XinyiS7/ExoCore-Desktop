@@ -1,0 +1,125 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Bloodborne Theme Pack (血源美学专属主题包)
+   - Scope: [data-theme-pack="bloodborne"], .theme-bloodborne
+   - Preserves neutral base defaults; active ONLY when data-theme-pack is set.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Dark: 亚楠暗夜 (Yharnam Night) ── */
+[data-theme-pack='bloodborne'],
+[data-theme-pack='bloodborne'][data-theme='dark'] {
+  --v4-panel: rgba(14, 16, 21, 0.85);
+  --v4-panel-2: rgba(18, 21, 28, 0.88);
+  --v4-line: rgba(255, 255, 255, 0.09);
+  --v4-line-strong: rgba(197, 160, 89, 0.35);
+  --v4-text: #dfdbd1;
+  --v4-text-dim: #979590;
+  --v4-text-mute: #83828d;
+  --v4-accent: #c5a059;
+  --v4-accent-soft: rgba(197, 160, 89, 0.16);
+  --v4-code-bg: rgba(11, 12, 16, 0.92);
+  --bb-arcane-glow: #4f8cff;
+  --bb-blood-crimson: #9e2a2b;
+}
+
+[data-theme-pack='bloodborne']:not([data-theme='light']) body,
+[data-theme-pack='bloodborne'][data-theme='dark'] body {
+  background: #060709 url('/themes/bloodborne/wall_dark.png') center top / cover fixed no-repeat !important;
+}
+
+/* ── Light: 大教堂石棺 (Cathedral Marble Sarcophagus) ── */
+[data-theme-pack='bloodborne'][data-theme='light'] {
+  --v4-panel: rgba(236, 232, 224, 0.88);
+  --v4-panel-2: rgba(242, 238, 230, 0.92);
+  --v4-line: rgba(0, 0, 0, 0.12);
+  --v4-line-strong: rgba(145, 108, 41, 0.45);
+  --v4-text: #1d1b18;
+  --v4-text-dim: #635f58;
+  --v4-text-mute: #736e67;
+  --v4-accent: #916c29;
+  --v4-accent-soft: rgba(145, 108, 41, 0.16);
+  --v4-code-bg: rgba(236, 232, 224, 0.96);
+  --bb-arcane-glow: #1f4b8c;
+  --bb-blood-crimson: #841818;
+}
+
+[data-theme-pack='bloodborne'][data-theme='light'] body {
+  background: #cbc5bb url('/themes/bloodborne/wall_marble.png') center top / cover fixed no-repeat !important;
+}
+
+/* ── Frosted glass surfaces ── */
+[data-theme-pack='bloodborne'] .app-pane,
+[data-theme-pack='bloodborne'] .chat-thread,
+[data-theme-pack='bloodborne'] .chat-message-bubble,
+[data-theme-pack='bloodborne'] .river-card,
+[data-theme-pack='bloodborne'] .library-card,
+[data-theme-pack='bloodborne'] .settings-card {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* ── Cryptic insight quote (神神叨叨的引言微光) ── */
+[data-theme-pack='bloodborne']:not([data-theme='light']) .app-md blockquote,
+[data-theme-pack='bloodborne'][data-theme='dark'] .app-md blockquote {
+  position: relative;
+  margin: 1.2em 0;
+  padding: 12px 18px 12px 22px;
+  background: linear-gradient(90deg, rgba(79, 140, 255, 0.08) 0%, rgba(197, 160, 89, 0.04) 40%, rgba(10, 11, 15, 0.6) 100%);
+  border-left: 3px solid transparent;
+  border-image: linear-gradient(180deg, #5b95ff 0%, #c5a059 65%, rgba(197, 160, 89, 0.2) 100%) 1;
+  border-radius: 0 8px 8px 0;
+  box-shadow: -2px 0 14px rgba(79, 140, 255, 0.35);
+  color: #c6cbd6;
+  line-height: 1.7;
+  letter-spacing: 0.03em;
+}
+
+[data-theme-pack='bloodborne'][data-theme='light'] .app-md blockquote {
+  position: relative;
+  margin: 1.2em 0;
+  padding: 12px 18px 12px 22px;
+  background: linear-gradient(90deg, rgba(31, 75, 140, 0.09) 0%, rgba(145, 108, 41, 0.06) 45%, rgba(242, 238, 230, 0.75) 100%);
+  border-left: 3px solid transparent;
+  border-image: linear-gradient(180deg, #1f4b8c 0%, #916c29 65%, rgba(145, 108, 41, 0.25) 100%) 1;
+  border-radius: 0 8px 8px 0;
+  box-shadow: -2px 0 12px rgba(31, 75, 140, 0.25);
+  color: #282522;
+  line-height: 1.7;
+  letter-spacing: 0.03em;
+}
+
+/* ── Typography emphasis ── */
+[data-theme-pack='bloodborne']:not([data-theme='light']) .app-md em,
+[data-theme-pack='bloodborne'][data-theme='dark'] .app-md em {
+  color: #83828d;
+}
+
+[data-theme-pack='bloodborne'][data-theme='light'] .app-md em {
+  color: #736e67;
+}
+
+[data-theme-pack='bloodborne']:not([data-theme='light']) .app-md strong,
+[data-theme-pack='bloodborne'][data-theme='dark'] .app-md strong {
+  color: #ffffff;
+}
+
+[data-theme-pack='bloodborne'][data-theme='light'] .app-md strong {
+  color: #050403;
+}
+
+/* ── Workshop manuscript display math card ── */
+[data-theme-pack='bloodborne']:not([data-theme='light']) .app-md .katex-display,
+[data-theme-pack='bloodborne'][data-theme='dark'] .app-md .katex-display {
+  border: 1px solid rgba(197, 160, 89, 0.3);
+  background: rgba(11, 12, 16, 0.92);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  padding: 12px 18px;
+}
+
+[data-theme-pack='bloodborne'][data-theme='light'] .app-md .katex-display {
+  border: 1px solid rgba(145, 108, 41, 0.35);
+  background: rgba(236, 232, 224, 0.96);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 12px 18px;
+}

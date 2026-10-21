@@ -6,6 +6,9 @@
     <meta name="theme-color" content="#0a0a0c" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>ExoCore V4</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,400;1,600&display=swap" rel="stylesheet" />
     <script>
       (function() {
         try {
@@ -13,6 +16,12 @@
           var storedTheme = localStorage.getItem('exo_theme');
           if (storedTheme === 'light') theme = 'light';
           document.documentElement.setAttribute('data-theme', theme);
+
+          var themePack = localStorage.getItem('exo_theme_pack');
+          if (themePack) {
+            document.documentElement.setAttribute('data-theme-pack', themePack);
+          }
+
           var metaTheme = document.querySelector('meta[name="theme-color"]');
           if (metaTheme) {
             metaTheme.setAttribute('content', theme === 'light' ? '#f8f9fb' : '#0a0a0c');

@@ -1,4 +1,4 @@
-import { Sun, Moon, Type, Sliders, Check } from 'lucide-react';
+import { Sun, Moon, Type, Sliders, Check, Sparkles } from 'lucide-react';
 import { useAppearance } from '../../app/appearanceContext';
 import { useDocumentTitle } from '../../shared/useDocumentTitle';
 
@@ -8,6 +8,8 @@ export function AppearancePanel() {
   const {
     theme,
     setTheme,
+    themePack,
+    setThemePack,
     systemFont,
     setSystemFont,
     messageFont,
@@ -65,6 +67,43 @@ export function AppearancePanel() {
               <Sun size={16} aria-hidden="true" />
               <span>浅色模式 (Light)</span>
               {theme === 'light' ? <Check size={14} className="theme-opt-check" /> : null}
+            </button>
+          </div>
+        </section>
+
+        {/* Theme Pack Settings Card */}
+        <section className="settings-card" aria-labelledby="themepack-heading">
+          <div className="settings-card-header">
+            <div className="settings-card-icon-wrap">
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <h2 id="themepack-heading" className="settings-card-title">美化主题包</h2>
+              <p className="settings-card-desc">选择或切换特定世界观的沉浸式视觉底纹与高阶排版氛围</p>
+            </div>
+          </div>
+
+          <div className="theme-toggle-group" role="radiogroup" aria-label="美化主题包">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={themePack === 'none'}
+              className={`theme-opt-btn${themePack === 'none' ? ' theme-opt-btn--active' : ''}`}
+              onClick={() => setThemePack('none')}
+            >
+              <span>默认白板基准 (Default Clean)</span>
+              {themePack === 'none' ? <Check size={14} className="theme-opt-check" /> : null}
+            </button>
+
+            <button
+              type="button"
+              role="radio"
+              aria-checked={themePack === 'bloodborne'}
+              className={`theme-opt-btn${themePack === 'bloodborne' ? ' theme-opt-btn--active' : ''}`}
+              onClick={() => setThemePack('bloodborne')}
+            >
+              <span>血源诅咒 · 亚楠工坊 (Bloodborne)</span>
+              {themePack === 'bloodborne' ? <Check size={14} className="theme-opt-check" /> : null}
             </button>
           </div>
         </section>

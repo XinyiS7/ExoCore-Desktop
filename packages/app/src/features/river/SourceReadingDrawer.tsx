@@ -2,7 +2,9 @@ import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
+import rehypeKatex from 'rehype-katex';
 import { useDialogA11y } from '../chat/dialogA11y';
 import { AppApiError } from '../chat/api';
 import { useCanonicalDiaryQuery } from '../diary/queries';
@@ -61,7 +63,7 @@ export function SourceReadingDrawer({ item, onClose, presetById }: { item: Readi
           {query.isSuccess && content !== undefined && <>
             <p className="river-reading-count">全文 {Array.from(content).length} 字符</p>
             {content.length > 0
-              ? <div className="river-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{content}</ReactMarkdown></div>
+              ? <div className="river-markdown"><ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]}>{content}</ReactMarkdown></div>
               : <p>此条全文为空。</p>}
           </>}
         </div>

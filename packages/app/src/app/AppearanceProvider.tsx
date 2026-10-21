@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useState, useCallback, useEffect, useMemo, type ReactNode } from 'react';
 import { useTheme } from 'exo-shared/hooks/useTheme';
 import { useFont } from 'exo-shared/hooks/useFont';
 import { AppearanceContext, type AppearanceContextValue } from './appearanceContext';
@@ -6,6 +6,37 @@ import { AppearanceContext, type AppearanceContextValue } from './appearanceCont
 export function AppearanceProvider({ children }: { children: ReactNode }) {
   const themeState = useTheme();
   const fontState = useFont();
+
+  const [themePack, setThemePackState] = useState<string>(() => {
+    try {
+      return localStorage.getItem('exo_theme_pack') || 'none';
+    } catch {
+      return 'none';
+    }
+  });
+
+  const setThemePack = useCallback((pack: string) => {
+    setThemePackState(pack);
+    try {
+      if (pack && pack !== 'none') {
+        localStorage.setItem('exo_theme_pack', pack);
+        document.documentElement.setAttribute('data-theme-pack', pack);
+      } else {
+        localStorage.removeItem('exo_theme_pack');
+        document.documentElement.removeAttribute('data-theme-pack');
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    if (themePack && themePack !== 'none') {
+      document.documentElement.setAttribute('data-theme-pack', themePack);
+    } else {
+      document.documentElement.removeAttribute('data-theme-pack');
+    }
+  }, [themePack]);
 
   // Keep <meta name="theme-color"> strictly in sync with V4 --v4-bg.
   // Overwrites V3 #050505 or #faf8f5 set by the shared hook to enforce V4 chrome:
@@ -29,6 +60,8 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       theme: themeState.theme,
       setTheme: themeState.setTheme,
       toggleTheme: themeState.toggleTheme,
+      themePack,
+      setThemePack,
       systemFont: fontState.systemFont,
       messageFont: fontState.messageFont,
       codeFont: fontState.codeFont,
@@ -44,6 +77,8 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       themeState.theme,
       themeState.setTheme,
       themeState.toggleTheme,
+      themePack,
+      setThemePack,
       fontState.systemFont,
       fontState.messageFont,
       fontState.codeFont,

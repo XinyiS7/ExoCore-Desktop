@@ -6,6 +6,8 @@ export interface AppearanceContextValue {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
+  themePack: string;
+  setThemePack: (pack: string) => void;
   systemFont: string;
   messageFont: string;
   codeFont: string;

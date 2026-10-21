@@ -21,9 +21,9 @@
   --v4-code-bg: #0d0d11;
   --v4-code-head-bg: rgba(255, 255, 255, 0.03);
   --v4-scrollbar-thumb: rgba(255, 255, 255, 0.18);
-  --font-system: 'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
-  --font-message: 'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
-  --font-code: 'Maple Mono', 'Sarasa Gothic Mono', 'Consolas', monospace;
+  --font-system: 'Sarasa Gothic Mono', 'LXGW WenKai', 'TT-黎ミンY10 B', 'FOT-Reimin', 'DFPKaiW5-GB', 'Cormorant Garamond', 'Cinzel', 'Source Han Serif SC', 'Noto Serif SC', 'Maple Mono', monospace;
+  --font-message: 'Sarasa Gothic Mono', 'LXGW WenKai', 'TT-黎ミンY10 B', 'FOT-Reimin', 'DFPKaiW5-GB', 'Cormorant Garamond', 'Cinzel', 'Source Han Serif SC', 'Noto Serif SC', 'Maple Mono', monospace;
+  --font-code: 'TT-黎ミンY10 B', 'FOT-Reimin', 'DFPKaiW5-GB', 'DFPKaiShuW5-B5', 'Cormorant Garamond', 'Cinzel', 'Source Han Serif SC', 'Noto Serif SC', 'Maple Mono', Consolas, monospace;
   --v4-font: var(--font-system, system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif);
   --v4-mono: var(--font-code, ui-monospace, 'Cascadia Code', 'Sarasa Mono SC', Consolas, monospace);
   --v4-bb-offset: 65px;
@@ -49,9 +49,9 @@
   --v4-code-bg: #f4f5f8;
   --v4-code-head-bg: rgba(0, 0, 0, 0.03);
   --v4-scrollbar-thumb: rgba(0, 0, 0, 0.22);
-  --font-system: 'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
-  --font-message: 'Sarasa Gothic Mono', 'LXGW WenKai', 'Maple Mono', monospace;
-  --font-code: 'Maple Mono', 'Sarasa Gothic Mono', 'Consolas', monospace;
+  --font-system: 'Sarasa Gothic Mono', 'LXGW WenKai', 'TT-黎ミンY10 B', 'FOT-Reimin', 'DFPKaiW5-GB', 'Cormorant Garamond', 'Cinzel', 'Source Han Serif SC', 'Noto Serif SC', 'Maple Mono', monospace;
+  --font-message: 'Sarasa Gothic Mono', 'LXGW WenKai', 'TT-黎ミンY10 B', 'FOT-Reimin', 'DFPKaiW5-GB', 'Cormorant Garamond', 'Cinzel', 'Source Han Serif SC', 'Noto Serif SC', 'Maple Mono', monospace;
+  --font-code: 'TT-黎ミンY10 B', 'FOT-Reimin', 'DFPKaiW5-GB', 'DFPKaiShuW5-B5', 'Cormorant Garamond', 'Cinzel', 'Source Han Serif SC', 'Noto Serif SC', 'Maple Mono', Consolas, monospace;
   --v4-font: var(--font-system, system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif);
   --v4-mono: var(--font-code, ui-monospace, 'Cascadia Code', 'Sarasa Mono SC', Consolas, monospace);
   --v4-bb-offset: 65px;
@@ -318,6 +318,18 @@ a {
   margin: 0.4em 0;
 }
 
+.app-md em {
+  font-style: italic;
+  color: var(--v4-text-mute);
+  font-size: 0.96em;
+  letter-spacing: 0.02em;
+}
+
+.app-md strong {
+  font-weight: 700;
+  color: var(--v4-text);
+}
+
 .app-md ul,
 .app-md ol {
   margin: 0.4em 0;
@@ -329,9 +341,11 @@ a {
 }
 
 .app-md blockquote {
-  margin: 0.5em 0;
-  padding: 2px 12px;
-  border-left: 3px solid var(--v4-line-strong);
+  margin: 0.6em 0;
+  padding: 6px 14px;
+  border-left: 3px solid var(--v4-accent, var(--v4-line-strong));
+  background: var(--v4-hover-overlay);
+  border-radius: 0 4px 4px 0;
   color: var(--v4-text-dim);
 }
 
@@ -358,10 +372,18 @@ a {
   text-decoration: underline;
 }
 
+.app-md .katex {
+  font-size: 1.05em;
+}
+
 .app-md .katex-display {
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 4px 0;
+  padding: 8px 12px;
+  margin: 0.6em 0;
+  border: 1px solid var(--v4-line);
+  border-radius: var(--v4-radius);
+  background: var(--v4-code-bg);
 }
 
 .app-inline-code {
