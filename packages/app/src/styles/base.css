@@ -37,8 +37,8 @@
   --v4-line: rgba(0, 0, 0, 0.08);
   --v4-line-strong: rgba(0, 0, 0, 0.16);
   --v4-text: #18181b;
-  --v4-text-dim: #52525b;
-  --v4-text-mute: #71717a;
+  --v4-text-dim: #3f3f46;
+  --v4-text-mute: #52525b;
   --v4-accent: #2563eb;
   --v4-accent-soft: rgba(37, 99, 235, 0.12);
   --v4-danger: #dc2626;
@@ -320,7 +320,7 @@ a {
 
 .app-md em {
   font-style: italic;
-  color: var(--v4-text-mute);
+  color: var(--v4-text-dim);
   font-size: 0.96em;
   letter-spacing: 0.02em;
 }

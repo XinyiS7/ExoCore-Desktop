@@ -441,11 +441,12 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: calc(12px * var(--exo-font-scale, 1));
-  color: var(--v4-text-mute);
+  color: var(--v4-text-dim);
 }
 
 .app-topbar-project::before {
   content: "· ";
+  color: var(--v4-text-mute);
 }
 
 .app-topbar-row > .app-btn {

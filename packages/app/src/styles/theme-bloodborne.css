@@ -35,17 +35,17 @@
 
 /* ── Light: 大教堂石棺 (Cathedral Marble Sarcophagus) ── */
 [data-theme-pack='bloodborne'][data-theme='light'] {
-  --v4-panel: rgba(236, 232, 224, 0.88);
-  --v4-panel-2: rgba(242, 238, 230, 0.92);
-  --v4-line: rgba(0, 0, 0, 0.12);
-  --v4-line-strong: rgba(145, 108, 41, 0.45);
-  --v4-text: #1d1b18;
-  --v4-text-dim: #635f58;
-  --v4-text-mute: #736e67;
-  --v4-accent: #916c29;
-  --v4-accent-soft: rgba(145, 108, 41, 0.16);
-  --v4-code-bg: rgba(236, 232, 224, 0.96);
-  --bb-arcane-glow: #1f4b8c;
+  --v4-panel: rgba(236, 232, 224, 0.90);
+  --v4-panel-2: rgba(242, 238, 230, 0.94);
+  --v4-line: rgba(0, 0, 0, 0.15);
+  --v4-line-strong: rgba(120, 88, 30, 0.45);
+  --v4-text: #181613;
+  --v4-text-dim: #3e3a33;
+  --v4-text-mute: #544e45;
+  --v4-accent: #8b6520;
+  --v4-accent-soft: rgba(139, 101, 32, 0.16);
+  --v4-code-bg: rgba(232, 227, 218, 0.96);
+  --bb-arcane-glow: #1a427a;
   --bb-blood-crimson: #841818;
 }
 
@@ -107,11 +107,11 @@
 /* ── Typography emphasis ── */
 [data-theme-pack='bloodborne']:not([data-theme='light']) .app-md em,
 [data-theme-pack='bloodborne'][data-theme='dark'] .app-md em {
-  color: #83828d;
+  color: #9d9ba8;
 }
 
 [data-theme-pack='bloodborne'][data-theme='light'] .app-md em {
-  color: #736e67;
+  color: #3e3830;
 }
 
 [data-theme-pack='bloodborne']:not([data-theme='light']) .app-md strong,
