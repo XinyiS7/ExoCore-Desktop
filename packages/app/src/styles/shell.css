@@ -1852,36 +1852,12 @@ a.app-att-filecard {
   color: var(--v4-warn);
 }
 
-/* AssistantArtifact info cards — beside media, never rendering media itself. */
+/* Agent Collection cards (#84 collection_card surface), below the media row. */
 .app-artifact-cards {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin-top: 6px;
-}
-
-.app-artifact-card {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 8px;
-  max-width: 480px;
-  padding: 7px 10px;
-  border: 1px solid var(--v4-line);
-  border-radius: 8px;
-  background: var(--v4-panel);
-  font-size: calc(12px * var(--exo-font-scale, 1));
-  color: var(--v4-text-dim);
-}
-
-.app-artifact-card-title {
-  color: var(--v4-text);
-}
-
-.app-artifact-card-detail {
-  flex-basis: 100%;
-  margin: 0;
-  white-space: pre-wrap;
 }
 
 /* Brought-back Collection card (#61 D10): one view for both speakers. The

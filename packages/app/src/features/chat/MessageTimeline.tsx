@@ -5,8 +5,7 @@ import type { OptimisticUserRow, RuntimeAssistantRow } from './runtime/types';
 import { MessageContent } from './MessageContent';
 import { formatTimeOfDay } from './time';
 import { MessageAttachments } from './attachments/MessageAttachments';
-import { AssistantArtifactCards } from './artifacts/AssistantArtifactCards';
-import { CollectionShowCardView } from './artifacts/CollectionShowCardView';
+import { MessagePresentations } from './presentations/MessagePresentations';
 import { AssistantRunTrace } from './trace/AssistantRunTrace';
 import { MessageVoiceControl } from './tts/MessageVoiceControl';
 import { VoiceToolErrors } from './voice/VoiceToolErrors';
@@ -118,10 +117,9 @@ function MessageRowItem({
   const hasContentText = Boolean(message.content?.trim());
   const voiceToolErrors = isAssistant ? message.voiceToolErrors ?? [] : [];
   const hasVoiceToolErrors = voiceToolErrors.length > 0;
-  const assistantArtifacts = isAssistant ? message.assistantArtifacts ?? [] : [];
-  const hasArtifacts = assistantArtifacts.length > 0;
-  const collectionShows = isUser ? message.collectionShows ?? [] : [];
-  const hasCollectionShows = collectionShows.length > 0;
+  const presentations = isUser || isAssistant ? message.presentations ?? [] : [];
+  const hasPresentations = presentations.length > 0;
+  const hasUserCards = isUser && presentations.some((item) => item.card !== null);
   const [copied, setCopied] = useState(false);
   const copyTimeoutRef = useRef<number | null>(null);
 
@@ -165,7 +163,7 @@ function MessageRowItem({
 
       <div
         className={
-          hasCollectionShows
+          hasUserCards
             ? `app-msg-body app-msg-body--with-cards${hasContentText ? '' : ' app-msg-body--cards-only'}`
             : 'app-msg-body'
         }
@@ -182,7 +180,7 @@ function MessageRowItem({
         ) : null}
         {hasContentText ? (
           <MessageContent content={message.content} />
-        ) : hasAttachments || hasVoiceToolErrors || hasArtifacts || hasCollectionShows ? null : (
+        ) : hasAttachments || hasVoiceToolErrors || hasPresentations ? null : (
           <span className="app-muted">（空消息）</span>
         )}
         {hasAttachments ? (
@@ -192,15 +190,12 @@ function MessageRowItem({
             conversationId={conversationId}
           />
         ) : null}
-        {hasArtifacts ? (
-          <AssistantArtifactCards artifacts={assistantArtifacts} />
-        ) : null}
-        {hasCollectionShows ? (
-          <div className="app-collection-shows">
-            {collectionShows.map((card) => (
-              <CollectionShowCardView key={card.key} card={card} />
-            ))}
-          </div>
+        {hasPresentations ? (
+          <MessagePresentations
+            presentations={presentations}
+            role={isUser ? 'user' : 'assistant'}
+            conversationId={conversationId}
+          />
         ) : null}
         {hasVoiceToolErrors ? <VoiceToolErrors errors={voiceToolErrors} /> : null}
       </div>

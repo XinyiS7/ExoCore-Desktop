@@ -350,23 +350,33 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('lists assistant artifacts as disabled placeholders and closes on Escape', () => {
+  it('lists presented items as disabled placeholders and closes on Escape', () => {
     const message = makeMessage({
       id: 3,
       role: 'assistant',
       content: 'Here is the picture',
-      assistantArtifacts: [
+      presentations: [
         {
           key: 'assistant_artifact:9',
-          id: 9,
-          producer: 'agy_generate_image',
-          kind: 'image',
+          surface: 'image',
+          owner: 'agy_generate_image',
           position: 0,
-          title: '生成了图片',
-          detail: null,
-          text: null,
-          collectible: false,
-          presentationAttachmentKey: null,
+          label: '生成的图片',
+          card: null,
+          media: {
+            key: 'message_attachment:12',
+            ref: { type: 'message_attachment', id: 12 },
+            kind: 'image',
+            source: 'agy_image',
+            status: 'ready',
+            position: 0,
+            displayName: 'image-0.png',
+            mimeType: 'image/png',
+            fileSize: 2048,
+            contentUrl: '/api/agents/conversations/42/message-attachments/12/content/',
+            durationMs: null,
+            errorCode: null,
+          },
         },
       ],
     });
@@ -376,7 +386,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
     fireEvent.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('menuitem', { name: '收藏正文' })).toBeEnabled();
-    const artifactItem = screen.getByRole('menuitem', { name: /生成了图片/ });
+    const artifactItem = screen.getByRole('menuitem', { name: /生成的图片/ });
     expect(artifactItem).toBeDisabled();
     expect(artifactItem).toHaveTextContent('待后端支持');
 

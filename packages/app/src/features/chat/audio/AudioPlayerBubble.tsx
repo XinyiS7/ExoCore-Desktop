@@ -22,6 +22,12 @@ export interface AudioPlayerBubbleProps {
   meta?: AttachmentMeta;
   /** Canonical conversation identity for scoped transcript requests. */
   conversationId?: number;
+  /**
+   * Set only by the #84 voice surface: this player may request its archived
+   * transcript after natural end. Every other audio (user input, collection
+   * originals) stays a plain player.
+   */
+  transcriptEligible?: boolean;
 }
 
 /**
@@ -31,10 +37,15 @@ export interface AudioPlayerBubbleProps {
  * - pointer click AND keyboard (left/right arrows) seek an accessible
  *   slider control;
  * - one global mutual-exclusion owner pauses any previously playing item;
- * - ready voice_msg audio fetches exact transcript at most once per mount upon natural end;
+ * - voice-surface audio fetches exact transcript at most once per mount upon natural end;
  * - fails closed silently on transcript error/404 without breaking playback.
  */
-export function AudioPlayerBubble({ meta, attachment, conversationId }: AudioPlayerBubbleProps) {
+export function AudioPlayerBubble({
+  meta,
+  attachment,
+  conversationId,
+  transcriptEligible = false,
+}: AudioPlayerBubbleProps) {
   const rawSrc = attachment ? attachment.contentUrl : meta?.content_url;
   const src = validatedAudioContentUrl(rawSrc) ?? '';
   const uniqueId = useId();
@@ -42,9 +53,9 @@ export function AudioPlayerBubble({ meta, attachment, conversationId }: AudioPla
   const audioId = `audio_${uniqueId}_${identity}`;
 
   const isEligibleVoice =
+    transcriptEligible &&
     Boolean(attachment) &&
     attachment?.kind === 'audio' &&
-    attachment?.source === 'voice_msg' &&
     attachment?.ref.type === 'message_attachment' &&
     typeof conversationId === 'number' &&
     conversationId > 0 &&

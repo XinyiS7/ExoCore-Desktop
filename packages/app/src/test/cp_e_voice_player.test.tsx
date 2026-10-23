@@ -72,6 +72,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     const { container } = renderV4(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
+
+        transcriptEligible
         conversationId={42}
       />,
     );
@@ -89,6 +91,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     const { container: foreignContainer } = renderV4(
       <AudioPlayerBubble
         attachment={foreignAtt}
+
+        transcriptEligible
         conversationId={42}
       />,
     );
@@ -112,6 +116,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     const { container } = renderV4(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
+
+        transcriptEligible
         conversationId={42}
       />,
     );
@@ -154,6 +160,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     const { container } = renderV4(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
+
+        transcriptEligible
         conversationId={42}
       />,
     );
@@ -210,6 +218,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     const { container, unmount } = renderV4(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
+
+        transcriptEligible
         conversationId={42}
       />,
     );
@@ -225,6 +235,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     const { container: newContainer } = renderV4(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
+
+        transcriptEligible
         conversationId={42}
       />,
     );
@@ -246,6 +258,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     const { container } = renderV4(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
+
+        transcriptEligible
         conversationId={42}
       />,
     );
@@ -336,6 +350,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     const { container, rerender } = render(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
+
+        transcriptEligible
         conversationId={42}
       />,
     );
@@ -359,6 +375,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     rerender(
       <AudioPlayerBubble
         attachment={refreshedAttachment}
+
+        transcriptEligible
         conversationId={42}
       />,
     );
@@ -416,6 +434,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     const { container, rerender } = render(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
+
+        transcriptEligible
         conversationId={42}
       />,
     );
@@ -429,6 +449,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     rerender(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
+
+        transcriptEligible
         conversationId={99}
       />,
     );
@@ -453,6 +475,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     const { container, unmount } = renderV4(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
+
+        transcriptEligible
         conversationId={42}
       />,
     );
@@ -494,6 +518,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
       const { container, unmount } = renderV4(
         <AudioPlayerBubble
           attachment={readyVoiceAttachment}
+
+          transcriptEligible
           conversationId={42}
         />,
       );
@@ -526,6 +552,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     const { container } = renderV4(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
+
+        transcriptEligible
         conversationId={42}
       />,
     );
@@ -556,6 +584,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     const { container } = renderV4(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
+
+        transcriptEligible
         conversationId={42}
       />,
     );
@@ -588,6 +618,8 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
     const { container, unmount } = renderV4(
       <AudioPlayerBubble
         attachment={readyVoiceAttachment}
+
+        transcriptEligible
         conversationId={42}
       />,
     );
@@ -617,10 +649,12 @@ describe('CP-E E3 — voice player and natural-ended transcript reveal', () => {
       },
     ]);
 
-    // Canonical audio attachment with source: 'user'
+    // #84: eligibility comes only from the voice surface flag, never from
+    // `source` — a voice_msg-sourced row without the flag (e.g. a Collection
+    // original) stays a plain player.
     const nonVoiceAtt: MessageAttachmentView = {
       ...readyVoiceAttachment,
-      source: 'user',
+      source: 'voice_msg',
     };
 
     const { container } = renderV4(

@@ -243,7 +243,7 @@ Runtime regenerate 当前仅支持 text-only 目标；目标 Message 自带附�
   - `collection_bring_original_unavailable`；
   - `collection_bring_empty_text`。
 - 接受后（HTTP 已返回流）才发现的同三种逐项失败，以 SSE `error` 事件 `{code, message, item_id}` 报出，绝不表现为 `internal_error`；该回合整体回滚，不留半成功的消息、卡片、附件或计数。
-- 成功：新 user Message 与其全部卡片（`collection_shows[]`，见 §1.5.2）、图片/音频/文档原件副本（`attachments[]` 中 `source="collection_item"` 的 ready 行）以及每张卡一次 `show_count` 同时落地；`Message.content` 只存正文，永不含藏品文本或标签。STOP 或生成失败不撤销已接受的 user 行与卡片。
+- 成功：新 user Message 与其全部卡片（`presentations[]` 的 `collection_card` 项，见 §1.5.1）、图片/音频/文档原件副本（各卡认领的 `media`，`source="collection_item"`）以及每张卡一次 `show_count` 同时落地；`Message.content` 只存正文，永不含藏品文本或标签。STOP 或生成失败不撤销已接受的 user 行与卡片。
 - 重新生成（`edit_message_id` 指向已带卡的 user 行）原样重放已持久化的卡，不新建卡/附件/副本，不再计数。
 
 ### 1.4 Superior Session — Agent 自主调度
@@ -376,80 +376,66 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
 
 **DELETE /api/agents/conversations/<pk>/attachments/delete/** — 批量删除
 
-### 1.5.1 assistant_artifacts[] — AI 产物信息卡（#32，additive）
+### 1.5.1 presentations[] — 消息呈现管理门（#84，替换旧 assistant_artifacts[] / collection_shows[]）
 
-`GET /api/agents/conversations/<cid>/messages/` 的每条消息新增独立 `assistant_artifacts[]`，与 `attachments[]` 分开，不挤入附件数组。非 assistant 行和无产物的 assistant 行都是 `[]`。
+`GET /api/agents/conversations/<cid>/messages/` 与单条消息读模型的每条消息有 `presentations[]`：后端管理门按 owner 登记的 **surface** 决定这条消息下呈现什么，前端按 surface 选组件。旧字段 `assistant_artifacts[]`、`collection_shows[]` 已移出契约（无兼容双字段）；`attachments[]` / `attachments_meta[]` 只保留 **user 输入附件**语义（`SessionAttachment`），不再含任何 `message_attachment` 行。
 
 ```json
 [
   {
-    "ref": { "type": "assistant_artifact", "id": 31 },
-    "producer": "agy_generate_image",
-    "kind": "image",
+    "key": "assistant_artifact:31",
+    "surface": "image",
+    "owner": "agy_generate_image",
     "position": 0,
-    "human": { "title": "生成了图片", "detail": "画面描述暂不可用" },
-    "collectible": false,
-    "presentation_attachment": { "type": "message_attachment", "id": 88 }
+    "label": "生成的图片",
+    "card": null,
+    "media": {
+      "ref": { "type": "message_attachment", "id": 88 },
+      "kind": "image", "source": "agy_image", "status": "ready", "position": 0,
+      "display_name": "image-0.png", "mime_type": "image/png", "file_size": 2048,
+      "content_url": "/api/agents/conversations/95/message-attachments/88/content/",
+      "duration_ms": null, "error_code": null
+    }
+  },
+  {
+    "key": "user_collection_show:12",
+    "surface": "collection_card",
+    "owner": "user_collection_show",
+    "position": 0,
+    "label": "从藏品馆带回 · 文本 #34",
+    "card": { "item_id": 34, "item_kind": "text", "title": "从藏品馆带回 · 文本 #34", "detail": "收藏理由：……", "text": "完整文本快照" },
+    "media": null
   }
 ]
 ```
 
-- **字段**
-  - `ref`：opaque 主键引用。
-  - `producer`：产生用户卡的 registry 登记名：`agy_generate_image`、`collection_bring_back`、`collection_heartbeat_bring_back`（#54）。`send_voice_msg` 仍在 registry 登记，但不产生用户卡（#51），历史语音的 Artifact 行也不再投影到本数组。
-  - `kind`：`agy_generate_image` 为 `image`；两个藏品 producer 为 `text | image | audio | file`。Desktop 按 producer 校验 kind：非藏品 producer 只收 `image | file`（`audio` 项丢弃），未知 kind 一律丢弃。
-  - `position`：同一 assistant 消息、同一 producer 内的产物序号，从 0 起。
-  - `human`：`{ title, detail | null }`，由后端从唯一 descriptor 渲染，前端不自行拼装。非藏品 producer 的 `title`/`detail` ≤ 2000 字符（超限项丢弃）；藏品 producer 的 `detail` 仅为非空的 `收藏理由：…`，**不设长度上限、不截断**，理由为空则为 `null`（`title` 仍 ≤ 2000）；藏品 `text` 卡另有 `human.text`：完整文本快照（#61，不截断），media 卡无此字段。
-  - `collectible`：由 registry 决定，本期恒为 `false`，没有收藏按钮。
-  - `presentation_attachment`：指向同一消息 `attachments[]` 中的 ready 媒体行，可为 `null`。
-- **排序**：后端按 `(position, producer, id)` 输出。
-- **前端规范化**：Desktop fail-closed，逐项校验，畸形项丢弃，按 key 去重。
-- **不暴露的内容**：不复制 URL 或文件元数据，媒体仍只由 `attachments[]` 渲染一次。不含 raw args、路径、descriptor 原文、prompt、错误详情或内部模型配置。
-- **语音**（`send_voice_msg`）：不产生用户卡（#51 删除了原“发送了语音”盲盒卡）。
-  - 音频仍只由 `attachments[]` 的 ready `source="voice_msg"` 行渲染为播放器；transcript 仍在自然播放结束后按需拉取。
-  - 内部 Artifact 行、音频附件与模型历史（见下方“模型历史契约”）不变。
-  - failed 合成不建立 Artifact，继续由 `voice_tool_errors[]` 投影失败。
-- **AGY 生成图**（`agy_generate_image`，kind `image`，附件 `source="agy_image"`）
-  - 图片与 `pending` Artifact 在 assistant finalize 的同一事务内落地。
-  - 提交后由后台单 worker 调用 `vision_helper` 一次（60 秒单请求，不自动重试），条件更新为 `ready` 或 `failed`。
-  - `ready` 时 `detail` 是不超过 500 字的视觉描述。`pending` 与 `failed` 的 `detail` 都固定为 `"画面描述暂不可用"`，两者对外不可区分，也不暴露失败码。
-  - 描述状态不单独出接口；Desktop 不轮询、不等待，下次正常刷新消息列表时自然更新。
-  - 进程中断留下的 `pending` 永久保持，不做重试或恢复。
-- **藏品带回**（`use_collection_item(action="bring_back")`，#54）
-  - `collection_bring_back`：live Direct / AGY 轮次，卡片随该轮 completed assistant 回复落地；failed/STOP 不落卡。
-  - `collection_heartbeat_bring_back`：心跳每次带回当场投递一条**正文为空**的 Prime assistant 消息（`platform="PushService"`），只有卡片和附件——artifact-only 消息，前端不得显示“空消息”。
-  - `title` 恒为 `从藏品馆带回 · <文本|图片|音频|文档> #<item_id>`，按藏品真实 kind（descriptor `item_kind`），与附件实际 kind 无关；面向人的 `detail` 仅显示非空的 `收藏理由：…`，不显示来源、原时间、藏品标题、客观描述或文本全文。完整信息仍保留在 descriptor、工具结果与模型 continuity。
-  - 分工：`text` 无附件（`presentation_attachment=null`），全文保留在 descriptor 与模型 continuity，并经 `human.text` 展示；image/audio 原件复制为同消息 `attachments[]` 中 `source="collection_item"` 的 ready 行，由 `attachments[]` 渲染一次；超出附件媒体白名单的图片/音频（如 HEIC、M4A）降级为 `kind="file"` 附件，字节不变，经 content 端点以 `attachment` 下载；document 恒为 `file`。
-  - `source="collection_item"` 的音频不是语音：不走 transcript，也不出现在 `voice_tool_errors[]`。
-  - 卡片无收藏按钮（`collectible=false`）；Desktop 对两个藏品 producer 使用同一克制的藏品标记。
+- **字段**（每项固定 7 键）
+  - `key`：稳定去重键，`assistant_artifact:<id>` 或 `user_collection_show:<id>`。
+  - `surface`：`image | voice | collection_card`。未知 surface 前端丢弃该项，不影响同消息其它项。
+  - `owner`：assistant 侧为 registry producer（`agy_generate_image`、`send_voice_msg`、`collection_bring_back`、`collection_heartbeat_bring_back`）；user 侧恒为 `user_collection_show`。
+  - `position`：owner 内序号（从 0 起）。
+  - `label`：image 为 `生成的图片`、voice 为 `语音消息`、collection_card 为卡片 `title`；用作 alt / 收藏菜单名。
+  - `card`：**恒在**；仅 `collection_card` 为 `{item_id, item_kind, title, detail|null, text|null}`，其余 surface 为 `null`。`title` 恒为 `从藏品馆带回 · <文本|图片|音频|文档> #<item_id>`（按 descriptor `item_kind`）；`detail` 仅非空的 `收藏理由：…`（不截断）；`text` 仅 text 卡为完整快照。两侧同一份共享渲染（`show_descriptors.project_human_card`）。
+  - `media`：owner 认领的挂载附件，形状与原 canonical 附件行相同（`ref / kind / source / status / position / display_name / mime_type / file_size / content_url / duration_ms / error_code`），只在 ready 且 kind 属于该 surface 时内联。
+- **fail closed**：`image` / `voice` 的媒体不 ready 或缺失 → 整项不出；`collection_card` 无 ready 媒体仍出卡，`media=null`（text 卡恒为 `null`）。未登记 producer 的 Artifact、无 owner 的历史挂载附件（早于 Artifact 建设的 `voice_msg` / `agy_image` 等）留在库里但**不投影**，不追溯。
+- **每个媒体恰好出现一次**：只在认领它的那一项 `media` 里；不再从 `attachments[]` 渲染。
+- **排序**：assistant 行按 `(position, producer, id)`；user 行按 `position`。非 assistant/user 行恒为 `[]`。
+- **descriptor 不给人看**：图片描述、语音正文、藏品来源/原时间/客观描述等只留在 descriptor 与模型 continuity，备作续写与日后收藏描述；image 无任何描述文本框。
+- **批量**：列表投影至多两次查询（assistant / user 各一），与历史长度无关。
+- **各 surface 的前端呈现**
+  - `image`：只显示图片（复用附件缩略图/灯箱与同源 `content_url` 规则）。
+  - `voice`：复用语音播放器；自然播放结束后按需拉 transcript（见 §12「voice attachment transcript」），资格由 voice surface 显式给出。
+  - `collection_card`：沿用藏品卡渲染；有 `media` 时原件（图片/音频播放器/文件卡）只渲染一次，与同条消息其它媒体同排于卡片之上（沿旧布局）。藏品音频不是语音：不拉 transcript，也不进 `voice_tool_errors[]`。超出媒体白名单的图片/音频（如 HEIC、M4A）为 `kind="file"`，经 content 端点以 `attachment` 下载；document 恒为 `file`。
+  - 只有 `presentations[]` 而正文为空的消息（如心跳带回的 Prime assistant 消息，`platform="PushService"`）不得显示“空消息”。
+- **端点**：媒体字节仍由 `GET /api/agents/conversations/<cid>/message-attachments/<id>/content/` 与 `.../transcript/` 服务；旧 `GET /api/agents/conversations/<cid>/messages/<message_pk>/attachments/`（D3）已删除，404。
+- **AGY 生成图**（`agy_generate_image`）：图片与 `pending` Artifact 在 assistant finalize 同一事务内落地；提交后后台单 worker 调 `vision_helper` 一次（60 秒，不重试）写 descriptor 描述，仅供模型 continuity；进程中断留下的 `pending` 永久保持。
+- **语音**（`send_voice_msg`）：failed 合成不建 Artifact，继续由 `voice_tool_errors[]` 投影失败。
+- **藏品带回**：`collection_bring_back`（live Direct / AGY，随该轮 completed assistant 回复落地，failed/STOP 不落卡）；`collection_heartbeat_bring_back`（心跳当场投递正文为空的 Prime assistant 消息）；人侧带回（§1.3.5）为 user 行的 `UserCollectionShow` 快照：藏品之后被编辑或删除，已发送的卡与原件副本不变。人侧带回只增加 `show_count`，从不增加 `view_count`；每张卡在发送当轮模型输入中恰好一次，之后每条历史投影（raw/hot、cache buffer、Runtime bootstrap/rebase、continuity delta）恰好一次；重新生成原样重放，不再计数。
 - **模型历史契约**（后端内部，不改 API shape）
   - API 自管历史（Direct Gemini/DeepSeek 等，含消费 AGY 历史的会话）：在产物之前最近的 user 消息下附加 `<assistant_artifact>` 第二名单。voice 携带原始 spoken content；image 携带描述或“画面描述暂不可用”，按装配时的当前状态读取。有 Artifact 的 voice 不再重复输出 legacy `<voice_message>`。
   - Runtime（AGY）bootstrap/rebase/continuity delta：不输出 Artifact 第二名单；`<voice_message>` 新旧语音照常投影。Runtime wire、manifest、`RuntimePresentation` schema 与 prefix digest 都不变。
   - `collection_bring_back` 属 user 锚第二名单（同 voice/image 规则）。`collection_heartbeat_bring_back` 例外：anchor 为空，continuity 投影在它自己的 assistant 消息上（`<voice_message>` 之后），API 自管历史（raw/hot 或 cache buffer，二者之一）与 Runtime 新 session bootstrap/rebase 的长首条历史都恰好出现一次；continuity delta 不接；canonical `Message.content` 不写。
-
-### 1.5.2 collection_shows[] — 人侧带回卡（#61 CP-B2，additive）
-
-同一消息列表/详情接口的每条消息新增 `collection_shows[]`。只有带回过藏品的 user 行非空；assistant 行与其他行恒为 `[]`。
-
-```json
-[
-  {
-    "key": "user_collection_show:12",
-    "item_id": 34,
-    "item_kind": "text",
-    "position": 0,
-    "title": "从藏品馆带回 · 文本 #34",
-    "detail": "收藏理由：……",
-    "text": "完整文本快照"
-  }
-]
-```
-
-- **字段**：`key` 稳定去重键；`item_id` 为发送时快照（藏品之后被编辑或删除，已发送的卡不变）；`item_kind` 为 `text | image | audio | document`；`position` 从 0 起，按此排序；`title` 同 #54 规则；`detail` 仅在收藏理由非空时出现；`text` 仅 text 卡出现（完整快照）。
-- **媒体**：image/audio/document 原件副本仍只由同消息 `attachments[]` 的 `source="collection_item"` 行渲染一次，本数组不复制 URL 或文件元数据。
-- **登记例外**：`AssistantArtifact` 仍只属 assistant；`UserCollectionShow` 是 user 侧唯一的卡片侧表。
-- **次数纪律**：每张卡在发送当轮模型输入中恰好一次，之后每条历史投影（raw/hot、cache buffer、Runtime bootstrap/rebase、continuity delta）恰好一次；重新生成原样重放，不再计数。人侧带回只增加 `show_count`，从不增加 `view_count`；Agent 之后 `inspect_original` 仍按既有 Agent view 规则计数。
-- 批量投影，查询数与历史长度无关（空历史亦然）。
+- **推送预览**（§8）：正文优先；无正文时任一 `voice` 项 → `<Agent 名> 给你发来了一条语音消息`；否则第一项：`image` → `生成了图片`，`collection_card` → 卡片 `title`。无正文且无可见项的回复不可见、不入推送。
 
 ### 1.6 Conversation Cache — 上下文缓存
 
@@ -1023,8 +1009,8 @@ type AssistantMessageArrivedV1 = {
 
 - `dedupe_key` 恒为 `assistant-message:<message_id>`，与 DB OneToOne 一致。前端以 `event_id` 推进 cursor、以 `dedupe_key` 去重（例如同一 arrival 已由 Push 处理）。
 - **`preview` 只从 canonical `Message.content` 派生**：内容过滤后折叠空白，最多 **160** 个 Unicode code point；`truncated` 表示过滤后文本超限。不读取 reasoning、`tool_calls`、私有语音指令或附件正文。锁屏沿用该 bounded preview。
-- **card-only arrival（#54）**：正文为空、无 ready voice、但有 registry user card 的 assistant 消息（心跳藏品带回，或只带回卡片的 Direct/AGY 回复）同样 eligible；`preview.text` 为第一张卡片的 `human.title`（如 `从藏品馆带回 · 图片 #12`），policy 仍为 `bounded_text`。未登记 producer 或无 user card 的产物不使消息 eligible。心跳带回走 `send_message` 同一 Prime 投递路径（`source=send_message`，`ignore.allowed=true`）。
-- **voice-only arrival（CP-C）**：正文为空且本回合至少一个 ready voice attachment 时，`preview.policy` 仍为 `bounded_text`，`preview.text` 由服务端固定生成 `<agent display name> 给你发来了一条语音消息`；不新增 preview policy、不读取 transcript、不从 content 构造 preview。text + voice 仍走正文 preview。点击沿既有 conversation/message target 清除提醒，不记录也不推断用户是否播放。
+- **presentation-only arrival（#54 / #84）**：正文为空、但管理门有可见 `presentations[]` 项的 assistant 消息（心跳藏品带回、只带回卡片或只生成图片的 Direct/AGY 回复）同样 eligible；无 voice 时 `preview.text` 为第一项的 surface 预览：`image` → `生成了图片`，`collection_card` → 卡片 `title`（如 `从藏品馆带回 · 图片 #12`），policy 仍为 `bounded_text`。未登记 producer、无 owner 的历史附件或媒体未 ready 的 image/voice 不使消息 eligible。心跳带回走 `send_message` 同一 Prime 投递路径（`source=send_message`，`ignore.allowed=true`）。
+- **voice-only arrival（CP-C / #84）**：正文为空且管理门有任一 `voice` 项（`send_voice_msg` owner 认领的 ready audio，与 image 等并存时亦然）时，`preview.policy` 仍为 `bounded_text`，`preview.text` 由服务端固定生成 `<agent display name> 给你发来了一条语音消息`；不新增 preview policy、不读取 transcript、不从 content 构造 preview。text + voice 仍走正文 preview。点击沿既有 conversation/message target 清除提醒，不记录也不推断用户是否播放。
 - `title_hint`：`send_message` 的 title 过滤后 <=200 字符；为 `null` 时前端以 `agent.name` 作标题。
 - `ignore`：typed、封闭的显式忽略许可指示，恒存在。仅 `source=send_message` 的 arrival 为 `{"allowed": true}`；ordinary Chat 恒为 `{"allowed": false}`。前端必须以该字段决定是否提供「忽略」affordance，禁止从 title/agent/`register_ack` 推断。该字段不随是否已忽略而变化（重复忽略幂等）。
 - `register_ack` 为 **legacy-only** 字段：仅当该 arrival 仍链接一个可解码的 v1 通知信封 Register（旧 `send_message` 流程遗留）且至少一台设备 `sent` 时给出 `{register_id, preset_id}`。新 `send_message` 不再预建 Register，两种传输均为 `null`；显式忽略产生的固定文案 Register **不是** ACK 目标（同样为 `null`）。
@@ -1564,7 +1550,7 @@ shared server 冻结，不代表 Moonlight 已接入。
 - 失败合成不建立 attachment / transcript，因此前端不得据该字段创建 audio player、附件占位或显示原文；assistant 行只展示 bounded safe code（`send_voice_msg 调用失败` + code）。
 - live 与 durable 按 turn/position 去重；completed Message 的 code 不重复显示。
 
-**CP-C/CP-E voice attachment transcript（additive）**：成功语音在普通 `attachments[]` 中仅投影 ready `source="voice_msg"` audio attachment，不携带 transcript。按需读取：
+**CP-C/CP-E voice attachment transcript（additive）**：成功语音在 `presentations[]` 的 `voice` 项中内联 ready audio `media`（#84，不再出现在 `attachments[]`），不携带 transcript。按需读取：
 
 `GET /api/agents/conversations/<conversation_id>/message-attachments/<attachment_id>/transcript/`
 
@@ -1574,7 +1560,7 @@ shared server 冻结，不代表 Moonlight 已接入。
 
 - **服务端约束**：仅当前 conversation 内 `source="voice_msg"`、ready audio且存在 rendered attempt时返回 200；其它附件、跨 conversation或缺失 outcome一律 scoped 404。该 API 无 playback-complete写入，不建立已播放状态。
 - **V4 前端消费规范（CP-E）**：
-  - 仅 ready `source="voice_msg"` 且 `ref.type="message_attachment"` 的 audio 气泡在自然播放结束（`ended` 事件）后发起请求；
+  - 仅 `voice` surface 的播放器在自然播放结束（`ended` 事件）后发起请求（资格由 surface 显式给出，藏品音频不请求）；
   - 每个组件挂载周期内至多请求一次（once per mount），成功后在气泡下方展示 exact archived transcript；
   - 严禁在 mount、play、pause、全局互斥强制暂停、媒体加载错误或 unmount 时发起请求；
   - 遇到 404、格式异常或网络错误时静默 fail-closed，绝不泄漏响应原文，绝不打断音频播放；

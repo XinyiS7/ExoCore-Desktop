@@ -4,7 +4,7 @@ import { AttachmentFileCard } from './AttachmentFileCard';
 import { AudioPlayerBubble } from '../audio/AudioPlayerBubble';
 
 export interface MessageAttachmentsProps {
-  /** CP-E canonical unified attachments projection. */
+  /** CP-E canonical attachments projection: user input attachments only (#84). */
   attachments?: MessageAttachmentView[] | null;
   /** Canonical `attachments_meta` rows for legacy fallback — never inferred from IDs. */
   meta?: AttachmentMeta[] | null;
@@ -21,8 +21,11 @@ export interface MessageAttachmentsProps {
  * In CP-E:
  * - canonical attachments[] controls membership when present;
  * - non-ready (pending / failed / malformed) rows fail closed without a player;
- * - ready voice message audio renders through AudioPlayerBubble;
  * - legacy attachments_meta remains a fallback when canonical attachments is absent.
+ *
+ * Since #84 these are the user's input attachments only; anything an owner
+ * mounted (voice, generated images, Collection originals) renders once
+ * through `MessagePresentations`.
  */
 export function MessageAttachments({ attachments, meta, conversationId }: MessageAttachmentsProps) {
   if (attachments !== undefined && attachments !== null) {

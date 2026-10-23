@@ -30,7 +30,8 @@ function parseAttachmentRef(raw: unknown): AttachmentRef | null {
   return { type: type as AttachmentRefType, id };
 }
 
-function parseCanonicalAttachmentItem(
+/** One canonical attachment row; also parses a presentation's inlined `media` (#84). */
+export function parseCanonicalAttachmentItem(
   candidate: unknown,
   legacyMap: Map<number, AttachmentMeta>,
 ): MessageAttachmentView | null {

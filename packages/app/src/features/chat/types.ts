@@ -167,13 +167,11 @@ export interface MessageRow {
   token_count: number | null;
   index_in_session: number;
   attachment_ids: number[];
-  /** CP-E canonical message presentation attachments; normalized fail-closed. */
+  /** User input attachments only (#84); normalized fail-closed. */
   attachments?: unknown;
   attachments_meta: AttachmentMeta[] | null;
-  /** AssistantArtifact human cards; normalized fail-closed at the API boundary. */
-  assistant_artifacts?: unknown;
-  /** #61 human bring-back cards on user rows; normalized fail-closed at the API boundary. */
-  collection_shows?: unknown;
+  /** #84 presentation gate items; normalized fail-closed at the API boundary. */
+  presentations?: unknown;
   created_at: string;
 }
 
@@ -252,31 +250,24 @@ export interface MessageView {
   attachmentIds: number[];
   attachmentsMeta: AttachmentMeta[] | null;
   /**
-   * CP-E canonical unified attachments projection.
+   * CP-E canonical attachments projection, user input attachments only (#84).
    * Emitted as array by normalizeMessageRow; optional for pre-CP-E fixture compatibility.
    */
   attachments?: MessageAttachmentView[];
   /**
-   * AssistantArtifact info cards ordered by (position, producer, id).
-   * Optional for pre-artifact fixtures; the API adapter always emits an array.
+   * #84 presentation gate items in backend order; each claimed media appears
+   * only here. Optional for older fixtures; the API adapter always emits an array.
    */
-  assistantArtifacts?: AssistantArtifactView[];
-  /**
-   * #61 human bring-back cards ordered by position (user rows only).
-   * Optional for older fixtures; the API adapter always emits an array.
-   */
-  collectionShows?: CollectionShowCard[];
+  presentations?: PresentationView[];
   createdAt: string;
 }
 
 /**
- * One brought-back Collection card, whichever speaker brought it (#61 D10).
- * Agent `assistant_artifacts[]` and human `collection_shows[]` both normalize
- * to it and render through `CollectionShowCardView`.
+ * One brought-back Collection card, whichever speaker brought it (#61 D10):
+ * the `card` of a `collection_card` presentation (#84).
  */
 export interface CollectionShowCard {
   key: string;
-  /** `null` only for an Agent card whose title is outside the fixed form. */
   itemId: number | null;
   itemKind: CollectionKind | null;
   title: string;
@@ -285,27 +276,21 @@ export interface CollectionShowCard {
   text: string | null;
 }
 
-/** Artifact kinds: attachment kinds plus media-less `text` (collection bring-back). */
-export type AssistantArtifactKind = MessageAttachmentKind | 'text';
+/** #84 surfaces the backend gate declares; unknown surfaces are dropped. */
+export type PresentationSurface = 'image' | 'voice' | 'collection_card';
 
-/**
- * Producer-neutral info card for one assistant-produced presentation. Media
- * stay in `attachments`; the card links to its media row by attachment key.
- */
-export interface AssistantArtifactView {
-  /** `assistant_artifact:${id}` */
+/** One `presentations[]` item: what the gate decided this message shows. */
+export interface PresentationView {
+  /** `assistant_artifact:${id}` or `user_collection_show:${id}` */
   key: string;
-  id: number;
-  producer: string;
-  kind: AssistantArtifactKind;
+  surface: PresentationSurface;
+  owner: string;
   position: number;
-  title: string;
-  detail: string | null;
-  /** Collection text cards only: the complete snapshotted `human.text` (#61). */
-  text: string | null;
-  collectible: boolean;
-  /** `message_attachment:${id}` of the linked media row, if any. */
-  presentationAttachmentKey: string | null;
+  label: string;
+  /** Non-null only for `collection_card`. */
+  card: CollectionShowCard | null;
+  /** Claimed ready media; required for image/voice, optional for cards. */
+  media: MessageAttachmentView | null;
 }
 
 export interface MessagePage {

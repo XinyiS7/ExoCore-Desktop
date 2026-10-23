@@ -4,34 +4,35 @@ import { installFetch, jsonResponse, renderV4, unmockFetch } from './helpers';
 import { Route, Routes } from 'react-router-dom';
 import { MessageTimeline } from '../features/chat/MessageTimeline';
 import { normalizeMessageRow } from '../features/chat/api';
-import {
-  collectionShowCardFromArtifact,
-  normalizeCollectionShows,
-} from '../features/chat/artifacts/collectionShowCard';
-import { normalizeAssistantArtifacts } from '../features/chat/artifacts/projection';
+import { normalizePresentations } from '../features/chat/presentations/projection';
 import type { MessageRow, MessageView } from '../features/chat/types';
 import { detailItem } from './collection_fixtures';
 
 const FULL_TEXT = '你不用急着把它想清楚，\n先放在这里，\n我替你记着。'.repeat(20);
 
-const userShow = (itemId: number, kind: string, position: number, extra: Record<string, unknown> = {}) => ({
-  key: `user_collection_show:${itemId}`,
-  item_id: itemId,
-  item_kind: kind,
-  position,
-  title: `从藏品馆带回 · ${{ text: '文本', image: '图片', audio: '音频', document: '文档' }[kind]} #${itemId}`,
-  ...extra,
-});
+const LABELS: Record<string, string> = { text: '文本', image: '图片', audio: '音频', document: '文档' };
 
-const agentArtifact = (id: number, kind: string, human: Record<string, unknown>) => ({
-  ref: { type: 'assistant_artifact', id },
-  producer: 'collection_bring_back',
-  kind,
-  position: 0,
-  human,
-  collectible: false,
-  presentation_attachment: null,
-});
+const showCard = (
+  key: string,
+  itemId: number,
+  kind: string,
+  position: number,
+  extra: { detail?: string | null; text?: string | null; media?: Record<string, unknown> | null } = {},
+) => {
+  const title = `从藏品馆带回 · ${LABELS[kind]} #${itemId}`;
+  return {
+    key,
+    surface: 'collection_card',
+    owner: key.startsWith('user_') ? 'user_collection_show' : 'collection_bring_back',
+    position,
+    label: title,
+    card: { item_id: itemId, item_kind: kind, title, detail: extra.detail ?? null, text: extra.text ?? null },
+    media: extra.media ?? null,
+  };
+};
+
+const userShow = (itemId: number, kind: string, position: number, extra = {}) =>
+  showCard(`user_collection_show:${itemId}`, itemId, kind, position, extra);
 
 const row = (overrides: Partial<MessageRow> & Record<string, unknown>): MessageRow => ({
   id: 1,
@@ -71,21 +72,14 @@ function renderTimeline(messages: MessageView[]) {
 
 afterEach(() => unmockFetch());
 
-describe('one CollectionShowCard for both speakers (#61 D10)', () => {
-  it('collection_shows[] and a collection artifact normalize to the same card shape', () => {
-    const [human] = normalizeCollectionShows([
+describe('one CollectionShowCard for both speakers (#61 D10 / #84)', () => {
+  it('user and agent collection_card items normalize to the same card shape', () => {
+    const [human, agent] = normalizePresentations([
       userShow(12, 'text', 0, { detail: '收藏理由：想一直留着。', text: FULL_TEXT }),
+      showCard('assistant_artifact:7', 12, 'text', 0, { detail: '收藏理由：想一直留着。', text: FULL_TEXT }),
     ]);
-    const [artifact] = normalizeAssistantArtifacts([
-      agentArtifact(7, 'text', {
-        title: '从藏品馆带回 · 文本 #12',
-        detail: '收藏理由：想一直留着。',
-        text: FULL_TEXT,
-      }),
-    ]);
-    const agent = collectionShowCardFromArtifact(artifact);
-    const { key: humanKey, ...humanRest } = human;
-    const { key: agentKey, ...agentRest } = agent;
+    const { key: humanKey, ...humanRest } = human.card!;
+    const { key: agentKey, ...agentRest } = agent.card!;
     expect(humanKey).toBe('user_collection_show:12');
     expect(agentKey).toBe('assistant_artifact:7');
     expect(agentRest).toEqual(humanRest);
@@ -98,44 +92,28 @@ describe('one CollectionShowCard for both speakers (#61 D10)', () => {
     });
   });
 
-  it('drops malformed shows individually, orders by position and keeps text only for text cards', () => {
-    const cards = normalizeCollectionShows([
-      userShow(3, 'image', 2),
+  it('drops malformed cards individually, keeps backend order and text only for text cards', () => {
+    const items = normalizePresentations([
       userShow(1, 'text', 0, { text: '正文' }),
-      { ...userShow(9, 'video', 1) },
-      { ...userShow(8, 'image', 1), text: 'not allowed' },
-      { ...userShow(4, 'audio', 1), item_id: 0 },
+      userShow(9, 'video', 1),
+      { ...userShow(8, 'image', 1), card: { ...userShow(8, 'image', 1).card, text: 'not allowed' } },
+      { ...userShow(4, 'audio', 1), card: { ...userShow(4, 'audio', 1).card, item_id: 0 } },
       userShow(2, 'document', 1, { detail: '' }),
-      userShow(1, 'text', 5),
+      userShow(3, 'image', 2),
     ]);
-    expect(cards.map((c) => [c.itemId, c.itemKind, c.text, c.detail])).toEqual([
+    expect(items.map((i) => [i.card?.itemId, i.card?.itemKind, i.card?.text, i.card?.detail])).toEqual([
       [1, 'text', '正文', null],
       [2, 'document', null, null],
       [3, 'image', null, null],
     ]);
-    expect(normalizeCollectionShows('nope')).toEqual([]);
-  });
-
-  it('an artifact title outside the fixed form keeps a readable card without a link', () => {
-    const [artifact] = normalizeAssistantArtifacts([
-      agentArtifact(7, 'image', { title: '某张图', detail: null }),
-    ]);
-    expect(collectionShowCardFromArtifact(artifact)).toMatchObject({ itemId: null, itemKind: null });
-  });
-
-  it('the API adapter emits collectionShows on user rows only', () => {
-    const shows = [userShow(5, 'text', 0, { text: 't' })];
-    expect(normalizeMessageRow(row({ collection_shows: shows })).collectionShows).toHaveLength(1);
-    expect(
-      normalizeMessageRow(row({ role: 'assistant', collection_shows: shows })).collectionShows,
-    ).toEqual([]);
+    expect(normalizePresentations('nope')).toEqual([]);
   });
 });
 
 describe('message-side cards (#61 CP5)', () => {
   it('a card-only user message: no empty bubble, full text inside the card, never in the body text', () => {
     const msg = normalizeMessageRow(
-      row({ collection_shows: [userShow(12, 'text', 0, { detail: '收藏理由：想一直留着。', text: FULL_TEXT })] }),
+      row({ presentations: [userShow(12, 'text', 0, { detail: '收藏理由：想一直留着。', text: FULL_TEXT })] }),
     );
     const { container } = renderTimeline([msg]);
     expect(screen.queryByText('（空消息）')).toBeNull();
@@ -152,9 +130,7 @@ describe('message-side cards (#61 CP5)', () => {
       row({
         role: 'assistant',
         content: '我也翻出一件。',
-        assistant_artifacts: [
-          agentArtifact(7, 'text', { title: '从藏品馆带回 · 文本 #19', detail: null, text: FULL_TEXT }),
-        ],
+        presentations: [showCard('assistant_artifact:7', 19, 'text', 0, { text: FULL_TEXT })],
       }),
     );
     const { container } = renderTimeline([msg]);
@@ -168,20 +144,22 @@ describe('message-side cards (#61 CP5)', () => {
     const msg = normalizeMessageRow(
       row({
         content: '这件一起看看？',
-        attachments: [{
-          ref: { type: 'message_attachment', id: 77 },
-          kind: 'file',
-          source: 'collection_item',
-          status: 'ready',
-          position: 0,
-          display_name: '记忆压缩.pdf',
-          mime_type: 'application/pdf',
-          file_size: 2048,
-          content_url: '/api/agents/conversations/42/message-attachments/77/content/',
-          duration_ms: null,
-          error_code: null,
-        }],
-        collection_shows: [userShow(31, 'document', 0, { detail: '收藏理由：那篇。' })],
+        presentations: [userShow(31, 'document', 0, {
+          detail: '收藏理由：那篇。',
+          media: {
+            ref: { type: 'message_attachment', id: 77 },
+            kind: 'file',
+            source: 'collection_item',
+            status: 'ready',
+            position: 0,
+            display_name: '记忆压缩.pdf',
+            mime_type: 'application/pdf',
+            file_size: 2048,
+            content_url: '/api/agents/conversations/42/message-attachments/77/content/',
+            duration_ms: null,
+            error_code: null,
+          },
+        })],
       }),
     );
     const { container } = renderTimeline([msg]);
@@ -200,7 +178,7 @@ describe('message-side cards (#61 CP5)', () => {
     const { calls } = installFetch([
       { test: '/api/collection/items/12/', method: 'GET', handler: () => jsonResponse(detailItem(12)) },
     ]);
-    renderTimeline([normalizeMessageRow(row({ collection_shows: [userShow(12, 'image', 0)] }))]);
+    renderTimeline([normalizeMessageRow(row({ presentations: [userShow(12, 'image', 0)] }))]);
     fireEvent.click(screen.getByRole('button', { name: '从藏品馆带回 · 图片 #12' }));
     expect(await screen.findByText('Library item page')).toBeTruthy();
     expect(calls.every((c) => (c.init?.method ?? 'GET') === 'GET')).toBe(true);
@@ -215,7 +193,7 @@ describe('message-side cards (#61 CP5)', () => {
       },
     ]);
     renderTimeline([
-      normalizeMessageRow(row({ collection_shows: [userShow(12, 'text', 0, { text: '正文' })] })),
+      normalizeMessageRow(row({ presentations: [userShow(12, 'text', 0, { text: '正文' })] })),
     ]);
     fireEvent.click(screen.getByRole('button', { name: '从藏品馆带回 · 文本 #12' }));
     expect(await screen.findByText('藏品已不存在（聊天里的卡片保持原样）')).toBeTruthy();
