@@ -262,7 +262,7 @@ describe('#74 Library (D3)', () => {
           text_content: '',
           source: artifactSource(available),
           asset: { sha256: 'abc', file_size: 2048, mime_type: 'audio/wav', status: 'ready' },
-          capabilities: ['update', 'delete', 'bring_to_chat', 'read_original'],
+          capabilities: ['update', 'delete', 'read_original'],
           original_content_url: '/api/collection/items/5/original/',
         })),
       },
