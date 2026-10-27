@@ -93,12 +93,12 @@ describe('Library view counting (UI-D1)', () => {
 });
 
 describe('Library social detail (UI-D2)', () => {
-  it('shows backend labels and counts as given and comments oldest first, read-only', async () => {
+  it('shows backend labels and counts as given and comments newest first, deletable only when allowed', async () => {
     setup({
       detail: () => jsonResponse(detailItem(5, {
         comments: [
-          { author_type: 'agent', author_label: 'Alessandro', body: '后来的', created_at: '2026-10-14T11:00:00+00:00' },
-          { author_type: 'human', author_label: 'Alicia', body: '先说的', created_at: '2026-10-14T10:00:00+00:00' },
+          { id: 41, author_type: 'agent', author_label: 'Alessandro', body: '后来的', created_at: '2026-10-14T11:00:00+00:00', can_delete: false },
+          { id: 40, author_type: 'human', author_label: 'Alicia', body: '先说的', created_at: '2026-10-14T10:00:00+00:00', can_delete: true },
         ],
       })),
       view: () => new Promise<Response>(() => undefined),
@@ -114,8 +114,9 @@ describe('Library social detail (UI-D2)', () => {
     expect(view.queryByText('你')).toBeNull();
 
     const comments = view.getByRole('list', { name: '评论' });
-    expect(within(comments).getAllByRole('listitem').map((item) => item.querySelector('p')?.textContent)).toEqual(['先说的', '后来的']);
+    const items = within(comments).getAllByRole('listitem');
+    expect(items.map((item) => item.querySelector('p')?.textContent)).toEqual(['后来的', '先说的']);
     expect(within(comments).getByText(/^Alicia ·/)).toBeTruthy();
-    expect(within(comments).queryAllByRole('button')).toHaveLength(0);
+    expect(items.map((item) => within(item).queryAllByRole('button').map((button) => button.textContent))).toEqual([[], ['删除']]);
   });
 });

@@ -216,6 +216,9 @@
 .library-stats td { font-variant-numeric: tabular-nums; }
 .library-comments { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .library-comment-meta { font-size: 12px; color: var(--v4-text-dim); margin-bottom: 4px; }
+.library-comment-form { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.library-comment-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.library-comment-confirm { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px; }
 .library-extracted summary { cursor: pointer; color: var(--v4-accent); font-size: 13px; }
 .library-extracted p { margin-top: 8px; max-height: 40vh; overflow: auto; }
 .library-btn-danger-ghost { border-color: rgba(255, 107, 107, 0.4); color: var(--v4-danger); }

@@ -114,10 +114,12 @@ export interface CollectionAsset {
 }
 
 export interface CollectionComment {
+  id: number;
   author_type: 'human' | 'agent';
   author_label: string;
   body: string;
   created_at: string;
+  can_delete: boolean;
 }
 
 export interface CollectionViewerStat {

@@ -2,7 +2,9 @@ import { useEffect, useMemo } from 'react';
 import { useInfiniteQuery, useMutation, useMutationState, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 import {
+  addCollectionComment,
   CollectionApiError,
+  deleteCollectionComment,
   deleteCollectionItem,
   getCollectionItem,
   listCollectionItems,
@@ -178,6 +180,26 @@ export function useDeleteCollectionItem(id: number) {
       updateWallPages(client, (page) => ({ ...page, items: page.items.filter((item) => item.id !== id) }));
       void client.invalidateQueries({ queryKey: collectionQueryKeys.tags });
     },
+  });
+}
+
+/** Server-confirmed comment write: the returned detail replaces the cached one. */
+export function useAddCollectionComment(id: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: string) => addCollectionComment(id, body),
+    retry: false,
+    onSuccess: (detail) => { client.setQueryData(collectionQueryKeys.detail(id), detail); },
+  });
+}
+
+/** Server-confirmed delete of one of Alicia's comments (no optimistic removal). */
+export function useDeleteCollectionComment(id: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (commentId: number) => deleteCollectionComment(id, commentId),
+    retry: false,
+    onSuccess: (detail) => { client.setQueryData(collectionQueryKeys.detail(id), detail); },
   });
 }
 

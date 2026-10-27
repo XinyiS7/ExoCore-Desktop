@@ -38,8 +38,8 @@ export function detailItem(id: number, overrides: Record<string, unknown> = {}) 
     representations: [],
     capabilities: ['update', 'delete'],
     comments: [
-      { author_type: 'human', author_label: 'Alicia', body: '第一次', created_at: '2026-10-14T10:00:00+00:00' },
-      { author_type: 'agent', author_label: 'Alessandro', body: '我也喜欢', created_at: '2026-10-14T11:00:00+00:00' },
+      { id: 31, author_type: 'human', author_label: 'Alicia', body: '第一次', created_at: '2026-10-14T10:00:00+00:00', can_delete: true },
+      { id: 32, author_type: 'agent', author_label: 'Alessandro', body: '我也喜欢', created_at: '2026-10-14T11:00:00+00:00', can_delete: false },
     ],
     viewer_stats: [
       {

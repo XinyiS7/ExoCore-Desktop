@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, MoreHorizontal, X } from 'lucide-react';
 import { useDialogA11y } from '../chat/dialogA11y';
@@ -14,8 +14,14 @@ import {
   roleLabel,
   SOURCE_LABELS,
 } from './presentation';
-import { useCollectionItemQuery, useRecordViewOnce, useRetryRepresentation } from './queries';
-import type { CollectionDetail, CollectionRepresentation, RepresentationKind } from './types';
+import {
+  useAddCollectionComment,
+  useCollectionItemQuery,
+  useDeleteCollectionComment,
+  useRecordViewOnce,
+  useRetryRepresentation,
+} from './queries';
+import type { CollectionComment, CollectionDetail, CollectionRepresentation, RepresentationKind } from './types';
 
 type Mode = 'read' | 'edit' | 'calibrate';
 
@@ -328,25 +334,101 @@ function ViewerStats({ detail }: { detail: CollectionDetail }) {
   );
 }
 
-/** Read-only, oldest first; no reply/edit/delete/like affordances. */
+/** Same rule as the backend: code points after trim (an emoji is one, not two UTF-16 units). */
+const COMMENT_LIMIT = 2000;
+
+/**
+ * Flat comments; Alicia writes and deletes her own. Shown newest first: the API order
+ * (oldest first, ties by id) is reversed here only. No reply/edit/like.
+ */
 function Comments({ detail }: { detail: CollectionDetail }) {
   const ordered = detail.comments
     .map((comment, index) => ({ comment, index }))
-    .sort((a, b) => Date.parse(a.comment.created_at) - Date.parse(b.comment.created_at) || a.index - b.index)
+    .sort((a, b) => Date.parse(b.comment.created_at) - Date.parse(a.comment.created_at) || b.index - a.index)
     .map(({ comment }) => comment);
   return (
     <section className="library-section">
       <h2>评论</h2>
+      <CommentComposer itemId={detail.id} />
       {ordered.length === 0 ? <p className="library-note">暂无评论</p> : (
         <ol className="library-comments" aria-label="评论">
-          {ordered.map((comment, index) => (
-            <li key={`${comment.created_at}:${index}`}>
-              <div className="library-comment-meta">{comment.author_label} · <time dateTime={comment.created_at}>{localDateTime(comment.created_at)}</time></div>
-              <p>{comment.body}</p>
-            </li>
-          ))}
+          {ordered.map((comment) => <CommentRow key={comment.id} itemId={detail.id} comment={comment} />)}
         </ol>
       )}
     </section>
+  );
+}
+
+function CommentComposer({ itemId }: { itemId: number }) {
+  const [draft, setDraft] = useState('');
+  const add = useAddCollectionComment(itemId);
+  const length = Array.from(draft.trim()).length;
+  const tooLong = length > COMMENT_LIMIT;
+  const blocked = length === 0 || tooLong || add.isPending;
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (blocked) return;
+    add.mutate(draft, { onSuccess: () => setDraft('') });
+  };
+  return (
+    <form className="library-comment-form" onSubmit={submit} aria-label="发表评论">
+      <textarea
+        className="app-input library-textarea"
+        aria-label="评论内容"
+        value={draft}
+        rows={3}
+        aria-describedby={tooLong ? 'library-comment-count' : undefined}
+        aria-invalid={tooLong}
+        onChange={(event) => setDraft(event.target.value)}
+      />
+      <div className="library-comment-actions">
+        {tooLong && (
+          <span id="library-comment-count" className="library-count is-over">
+            {length} / {COMMENT_LIMIT}，超出上限
+          </span>
+        )}
+        <button type="submit" className="app-btn library-btn-small" disabled={blocked}>
+          {add.isPending ? '发表中…' : '发表'}
+        </button>
+      </div>
+      {add.isError && <p role="alert" className="library-note">发表失败：{add.error.message}</p>}
+    </form>
+  );
+}
+
+/** Inline confirm before DELETE; on failure the comment stays with its error and can be retried. */
+function CommentRow({ itemId, comment }: { itemId: number; comment: CollectionComment }) {
+  const [confirming, setConfirming] = useState(false);
+  const remove = useDeleteCollectionComment(itemId);
+  const cancel = () => { setConfirming(false); remove.reset(); };
+  return (
+    <li>
+      <div className="library-comment-meta">{comment.author_label} · <time dateTime={comment.created_at}>{localDateTime(comment.created_at)}</time></div>
+      <p>{comment.body}</p>
+      {comment.can_delete && (confirming ? (
+        <div className="library-comment-confirm" role="group" aria-label="确认删除评论">
+          <span>确认删除？</span>
+          <button
+            type="button"
+            className="app-btn library-btn-small library-btn-danger"
+            disabled={remove.isPending}
+            onClick={() => remove.mutate(comment.id)}
+          >
+            {remove.isPending ? '删除中…' : '删除'}
+          </button>
+          <button type="button" className="app-btn library-btn-small" disabled={remove.isPending} onClick={cancel}>取消</button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="app-btn library-btn-small library-btn-danger-ghost"
+          aria-label="删除这条评论"
+          onClick={() => setConfirming(true)}
+        >
+          删除
+        </button>
+      ))}
+      {remove.isError && <p role="alert" className="library-note">删除失败：{remove.error.message}</p>}
+    </li>
   );
 }

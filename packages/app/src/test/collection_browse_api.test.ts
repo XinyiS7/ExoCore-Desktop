@@ -65,7 +65,10 @@ describe('Library detail contract', () => {
       type: 'message', key: '88', available: true,
       message: { message_id: 88, conversation_id: 12, index_in_session: 3, role: 'assistant', created_at: '2026-10-13T08:00:00+00:00' },
     });
-    expect(detail.comments.map((comment) => comment.author_label)).toEqual(['Alicia', 'Alessandro']);
+    expect(detail.comments.map(({ id, author_label, can_delete }) => [id, author_label, can_delete])).toEqual([
+      [31, 'Alicia', true],
+      [32, 'Alessandro', false],
+    ]);
     expect(detail.viewer_stats[1]).toMatchObject({ label: 'Alessandro', last_viewed_at: null });
     expect(detail.original_content_url).toBeNull();
   });
@@ -79,7 +82,9 @@ describe('Library detail contract', () => {
   });
 
   it.each([
-    detailItem(5, { comments: [{ author_type: 'bot', author_label: 'x', body: '', created_at: '2026-10-14T10:00:00Z' }] }),
+    detailItem(5, { comments: [{ id: 1, author_type: 'bot', author_label: 'x', body: '', created_at: '2026-10-14T10:00:00Z', can_delete: false }] }),
+    detailItem(5, { comments: [{ author_type: 'human', author_label: 'Alicia', body: 'x', created_at: '2026-10-14T10:00:00Z', can_delete: true }] }),
+    detailItem(5, { comments: [{ id: 1, author_type: 'human', author_label: 'Alicia', body: 'x', created_at: '2026-10-14T10:00:00Z' }] }),
     detailItem(5, { viewer_stats: [{ viewer_type: 'human', viewer_key: 'alicia', label: 'Alicia', view_count: -1, show_count: 0, collect_count: 0, last_viewed_at: null }] }),
     detailItem(5, { comments: undefined }),
     detailItem(5, { representations: [{ kind: 'audio_transcript' }] }),

@@ -240,10 +240,12 @@ function normalizeAsset(value: unknown): CollectionAsset | null {
 function normalizeComment(value: unknown): CollectionComment {
   const row = record(value);
   return {
+    id: integer(row.id, 1),
     author_type: choice(row.author_type, ['human', 'agent'] as const),
     author_label: text(row.author_label),
     body: text(row.body),
     created_at: timestamp(row.created_at),
+    can_delete: boolean(row.can_delete),
   };
 }
 
@@ -347,6 +349,20 @@ export function deleteCollectionItem(id: number): Promise<void> {
 export function retryCollectionRepresentation(id: number, kind: RepresentationKind): Promise<CollectionDetail> {
   return collectionRequest(
     () => apiFetch(`${itemPath(id)}representations/${kind}/retry/`, { method: 'POST' }),
+    normalizeCollectionDetail,
+  );
+}
+
+export function addCollectionComment(id: number, body: string): Promise<CollectionDetail> {
+  return collectionRequest(
+    () => apiFetch(`${itemPath(id)}comments/`, { method: 'POST', body: { body } }),
+    normalizeCollectionDetail,
+  );
+}
+
+export function deleteCollectionComment(id: number, commentId: number): Promise<CollectionDetail> {
+  return collectionRequest(
+    () => apiFetch(`${itemPath(id)}comments/${commentId}/`, { method: 'DELETE' }),
     normalizeCollectionDetail,
   );
 }
