@@ -1696,6 +1696,8 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 | `POST /items/<id>/view/` | 200/404 | Alicia 显式浏览一次：`{"view_count": int, "last_viewed_at": "<ISO>"}`；不存在 → 404 `collection_item_not_found`，不计数 |
 | `PATCH /items/<id>/` | 200 | 更新元数据、Tags 或人工 canonical text |
 | `DELETE /items/<id>/` | 204 | 删除 Item occurrence；不在请求中 unlink 原件 |
+| `POST /items/<id>/comments/` | 201 | Alicia 发表评论：`{"body": "<text>"}`，trim 后 1–2000 个码点；返回完整详情形状（#92） |
+| `DELETE /items/<id>/comments/<comment_id>/` | 200 | 删除 Alicia 自己（`author_type=human`）的一条评论；返回完整详情形状（#92） |
 | `GET /items/<id>/original/` | 200/404 | 读取原件 bytes |
 | `GET /items/<id>/representations/<kind>/content/` | 200/404 | 读取派生 artifact |
 | `POST /items/<id>/representations/<kind>/retry/` | 200 | 重试真实 failed + retryable 自动派生 |
@@ -1815,7 +1817,7 @@ producer 投影为 `human` / `manual-v1`。不可变 source、kind、asset 与�
   "capabilities": ["update","delete","read_original"],
   "original_content_url": "/api/collection/items/<id>/original/",
   "comments": [
-    {"author_type": "human", "author_label": "Alicia", "body": "...", "created_at": "<ISO-8601>"}
+    {"id": <int>, "author_type": "human", "author_label": "Alicia", "body": "...", "created_at": "<ISO-8601>", "can_delete": true}
   ],
   "viewer_stats": [
     {
@@ -1827,7 +1829,7 @@ producer 投影为 `human` / `manual-v1`。不可变 source、kind、asset 与�
 }
 ```
 
-- `comments` 按 `created_at, id` 正序，不暴露作者 key；`viewer_stats` 每个 viewer 一行，human 在前。
+- `comments` 按 `created_at, id` 正序，不暴露作者 key；`can_delete` 只在 `author_type=human` 时为 true，前端据此显示删除入口，不自行推断（#92；Library 展示时倒序为新到旧）；`viewer_stats` 每个 viewer 一行，human 在前。
   `label` / `author_label`：human → `Alicia`；`preset:N` → 该 `AgentPreset.name`，preset 已不存在 → `preset:N`。
   两个字段只出现在详情形状（GET / PATCH / POST 创建 / retry 的响应），列表 item 没有。
 
@@ -1876,6 +1878,9 @@ conversation_id, message}`；Artifact 删除后 `source.available=false`，快�
 | `asset_missing` | 409 | 创建收藏时 managed original 已不可用 |
 | `asset_verification_failed` | 409 | Collection 原件 hash/size 校验失败（`CollectionAssetError`）；chat 附件原件确认失败（SSE） |
 | `derivation_not_retryable` | 409 | representation 不在 failed + retryable 自动派生状态 |
+| `invalid_comment` | 400 | 评论 `body` 非字符串、trim 后为空或超过 2000 个码点（#92）；请求体非对象或缺 `body` 仍是 `invalid_request` |
+| `comment_not_found` | 404 | 该 Item 下没有这条评论（#92） |
+| `comment_not_deletable` | 403 | 试图删除 Agent 评论（#92），评论保留 |
 
 `collection_agent_unauthorized` 是 trusted-agent service 的授权 code；HTTP 内容读取故意
 将它掩蔽为上述统一 404，不直接发给前端。当前没有公开 Asset 删除 API，因此不公开
