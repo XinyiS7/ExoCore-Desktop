@@ -11,7 +11,7 @@ import { MessageVoiceControl } from './tts/MessageVoiceControl';
 import { VoiceToolErrors } from './voice/VoiceToolErrors';
 import { CollectMessageModal } from '../collection/CollectMessageModal';
 import { MessageCollectMenu } from './MessageCollectMenu';
-import { hasCollectMenuItems } from './collectMenuItems';
+import { hasCollectMenuItems, type CollectChoice } from './collectMenuItems';
 import { MessageAvatar } from './MessageAvatar';
 import { useUserAvatar } from '../../shared/userAvatar';
 import { useAgentAvatar } from '../../shared/agentAvatar';
@@ -72,6 +72,7 @@ export interface MessageTimelineProps {
   onEditMessage?: (id: number, content: string, isLatestUser: boolean) => void;
   onRegenerateMessage?: (id: number, isLatestUser: boolean) => void;
   onBranchMessage?: (id: number, snippet: string) => void;
+  /** Replaces the built-in modal for 收藏正文 only; attachments / artifacts always use it (#74). */
   onCollectMessage?: (message: MessageView) => void;
   assistantName?: string;
   /** Preset whose avatar heads assistant rows; null for preset-less chats. */
@@ -86,7 +87,7 @@ function MessageRowItem({
   onEditMessage,
   onRegenerateMessage,
   onBranchMessage,
-  onCollectMessage,
+  onCollect,
   assistantName,
   avatarUrl,
 }: {
@@ -97,7 +98,7 @@ function MessageRowItem({
   onEditMessage?: (id: number, content: string, isLatestUser: boolean) => void;
   onRegenerateMessage?: (id: number, isLatestUser: boolean) => void;
   onBranchMessage?: (id: number, snippet: string) => void;
-  onCollectMessage?: (message: MessageView) => void;
+  onCollect?: (message: MessageView, choice: CollectChoice) => void;
   assistantName?: string;
   /** Set for user / assistant rows; other roles keep a text label. */
   avatarUrl?: string;
@@ -242,7 +243,7 @@ function MessageRowItem({
             </button>
           )}
           {hasCollectMenuItems(message) ? (
-            <MessageCollectMenu message={message} onCollectBody={() => onCollectMessage?.(message)} />
+            <MessageCollectMenu message={message} onCollect={(choice) => onCollect?.(message, choice)} />
           ) : null}
           {isUser && onEditMessage && (
             <button
@@ -293,17 +294,17 @@ export function MessageTimeline({
   assistantName,
   assistantPresetId,
 }: MessageTimelineProps) {
-  const [collectTarget, setCollectTarget] = useState<MessageView | null>(null);
+  const [collectTarget, setCollectTarget] = useState<{ message: MessageView; choice: CollectChoice } | null>(null);
   const userAvatarUrl = useUserAvatar();
   const agentAvatarUrl = useAgentAvatar(assistantPresetId ?? null, assistantName);
   const avatarFor = (role: MessageRole) =>
     role === 'user' ? userAvatarUrl : role === 'assistant' ? agentAvatarUrl : undefined;
 
-  const handleCollectMessage = (target: MessageView) => {
-    if (onCollectMessage) {
+  const handleCollect = (target: MessageView, choice: CollectChoice) => {
+    if (choice.type === 'body' && onCollectMessage) {
       onCollectMessage(target);
     } else {
-      setCollectTarget(target);
+      setCollectTarget({ message: target, choice });
     }
   };
 
@@ -353,7 +354,7 @@ export function MessageTimeline({
           onEditMessage={onEditMessage}
           onRegenerateMessage={onRegenerateMessage}
           onBranchMessage={onBranchMessage}
-          onCollectMessage={handleCollectMessage}
+          onCollect={handleCollect}
           assistantName={assistantName}
           avatarUrl={avatarFor(message.role)}
         />
@@ -426,7 +427,8 @@ export function MessageTimeline({
       {collectTarget ? (
         <CollectMessageModal
           isOpen={Boolean(collectTarget)}
-          targetMessage={collectTarget}
+          targetMessage={collectTarget.message}
+          source={collectTarget.choice.type === 'source' ? collectTarget.choice : undefined}
           onClose={() => setCollectTarget(null)}
         />
       ) : null}

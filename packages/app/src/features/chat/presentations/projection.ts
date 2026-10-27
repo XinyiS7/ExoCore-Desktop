@@ -69,6 +69,8 @@ function parseMedia(raw: unknown, surface: PresentationSurface): MessageAttachme
 function parsePresentation(candidate: unknown): PresentationView | null {
   if (!isRecord(candidate)) return null;
   const { key, surface, owner, position, label, card, media } = candidate;
+  // Fail closed: only an explicit true offers the item for collection (#74).
+  const collectible = candidate.collectible === true;
   if (typeof key !== 'string' || !KEY_PATTERN.test(key)) return null;
   if (typeof surface !== 'string' || !SURFACES.has(surface)) return null;
   if (typeof owner !== 'string' || !OWNER_PATTERN.test(owner)) return null;
@@ -81,13 +83,13 @@ function parsePresentation(candidate: unknown): PresentationView | null {
     if (parsedCard === null) return null;
     const parsedMedia = media === null ? null : parseMedia(media, typed);
     if (media !== null && parsedMedia === null) return null;
-    return { key, surface: typed, owner, position, label, card: parsedCard, media: parsedMedia };
+    return { key, surface: typed, owner, position, label, card: parsedCard, media: parsedMedia, collectible };
   }
 
   if (card !== null) return null;
   const parsedMedia = parseMedia(media, typed);
   if (parsedMedia === null) return null;
-  return { key, surface: typed, owner, position, label, card: null, media: parsedMedia };
+  return { key, surface: typed, owner, position, label, card: null, media: parsedMedia, collectible };
 }
 
 /**

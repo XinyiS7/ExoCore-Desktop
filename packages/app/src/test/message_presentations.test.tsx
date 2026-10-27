@@ -269,7 +269,7 @@ describe('surfaces in the timeline (#84 C3.4 / C3.5)', () => {
     expect(within(screen.getByTestId('assistant-artifact-card')).getByText('从藏品馆带回 · 图片 #24')).toBeTruthy();
   });
 
-  it('a presentation-only message lists only disabled gate items in the collect menu', () => {
+  it('a presentation-only message lists gate items, disabled without collectible (#74 fail-closed)', () => {
     renderTimeline([
       message({
         presentations: [
@@ -283,7 +283,7 @@ describe('surfaces in the timeline (#84 C3.4 / C3.5)', () => {
     fireEvent.click(screen.getByRole('button', { name: '收藏此条消息' }));
     expect(screen.queryByRole('menuitem', { name: '收藏正文' })).toBeNull();
     const items = screen.getAllByRole('menuitem');
-    expect(items.map((item) => item.textContent?.replace('待后端支持', ''))).toEqual([
+    expect(items.map((item) => item.textContent?.replace('不可收藏', ''))).toEqual([
       '语音消息',
       '生成的图片',
     ]);

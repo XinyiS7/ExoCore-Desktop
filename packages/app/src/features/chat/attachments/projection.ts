@@ -115,6 +115,8 @@ export function parseCanonicalAttachmentItem(
   // For a canonical session row, legacy meta with matching id may supply file_uri / original_filename
   // without overriding canonical status, source, kind, position, or content URL.
   if (ref.type === 'session_attachment') {
+    const provenanceId = candidate.provenance_id;
+    view.provenanceId = typeof provenanceId === 'string' && provenanceId.length > 0 ? provenanceId : null;
     const legacy = legacyMap.get(ref.id);
     if (legacy) {
       if (typeof legacy.file_uri === 'string') {

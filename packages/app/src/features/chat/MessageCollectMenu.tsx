@@ -2,23 +2,22 @@
  * Always-visible 收藏 action with a second-level menu (#72 U4).
  *
  * - 收藏正文 opens the existing CollectMessageModal flow (message source).
- * - Each assistant artifact and each ready attachment is listed but disabled
- *   until the backend exposes a collectible source for it (#74); artifacts
- *   already carry a `collectible` flag that is always false today.
+ * - A collectible assistant artifact and a ready attachment with provenance
+ *   open the same modal for that source (#74); the rest stay listed, disabled.
  * - Escape / outside click closes; focus returns to the trigger.
  */
 import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { Bookmark } from 'lucide-react';
 import type { MessageView } from './types';
-import { buildCollectMenuItems } from './collectMenuItems';
+import { buildCollectMenuItems, type CollectChoice } from './collectMenuItems';
 
 export function MessageCollectMenu({
   message,
-  onCollectBody,
+  onCollect,
 }: {
   message: MessageView;
-  onCollectBody: () => void;
+  onCollect: (choice: CollectChoice) => void;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,9 +31,9 @@ export function MessageCollectMenu({
     triggerRef.current?.focus();
   };
 
-  const items = buildCollectMenuItems(message, () => {
+  const items = buildCollectMenuItems(message, (choice) => {
     close();
-    onCollectBody();
+    onCollect(choice);
   });
 
   useEffect(() => {

@@ -94,6 +94,11 @@ export interface MessageAttachmentView {
   contentUrl: string | null;
   durationMs: number | null;
   errorCode: string | null;
+  /**
+   * Session rows only: confirmed upload occurrence that can be collected (#74);
+   * null for older / JSON attachments, absent on other rows.
+   */
+  provenanceId?: string | null;
   /** Enriched from legacy meta for session rows if available */
   fileUri?: string | null;
   originalFilename?: string | null;
@@ -291,6 +296,8 @@ export interface PresentationView {
   card: CollectionShowCard | null;
   /** Claimed ready media; required for image/voice, optional for cards. */
   media: MessageAttachmentView | null;
+  /** Alicia may collect this item (#74); absent (older fixtures) means false. */
+  collectible?: boolean;
 }
 
 export interface MessagePage {

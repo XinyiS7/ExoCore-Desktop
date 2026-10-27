@@ -7,6 +7,8 @@ export const SOURCE_LABELS: Record<CollectionSourceType, string> = {
   message: '聊天消息',
   text: '手动文本',
   chronicle_highlight: '纪事摘录',
+  // #74: an AI voice/image reads as a chat attachment too (no AI-generated mark).
+  assistant_artifact: '聊天附件',
 };
 
 /** Only the two speaker roles are named; anything else is left out rather than guessed. */

@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Bookmark, Check, Info, X } from 'lucide-react';
 import { useDialogA11y } from '../chat/dialogA11y';
 import type { MessageView } from '../chat/types';
-import { collectMessage } from './api';
-import type { CollectMessageResult, CollectOutcome } from './types';
+import { collectMessage, collectSource } from './api';
+import type { CollectMessageResult, CollectOutcome, CollectSource } from './types';
 
 export interface CollectMessageModalProps {
   isOpen: boolean;
   targetMessage: MessageView | null;
+  /** Set to collect one attachment / artifact of the message instead of its text (#74). */
+  source?: { key: string; label: string; source: CollectSource };
   onClose: () => void;
   onSuccess?: (result: CollectMessageResult) => void;
 }
@@ -21,10 +23,12 @@ export interface CollectMessageModalProps {
  * - Duplicate submission is prevented while the request is in flight.
  * - Success feedback differentiates created vs already_collected.
  * - Does not promise reading collect counts or comments; no filled-state.
+ * - With `source` (#74) the same flow collects that attachment / artifact.
  */
 export function CollectMessageModal({
   isOpen,
   targetMessage,
+  source,
   onClose,
   onSuccess,
 }: CollectMessageModalProps) {
@@ -42,6 +46,7 @@ export function CollectMessageModal({
   // Reset only when a different message is targeted; the parent may pass a
   // fresh object for the same message on every render.
   const targetId = targetMessage?.id;
+  const sourceKey = source?.key;
   useEffect(() => {
     if (isOpen && targetId !== undefined) {
       setNote('');
@@ -50,7 +55,7 @@ export function CollectMessageModal({
       submittingRef.current = false;
       setSubmitting(false);
     }
-  }, [isOpen, targetId]);
+  }, [isOpen, targetId, sourceKey]);
 
   if (!isOpen || !targetMessage) {
     return null;
@@ -63,11 +68,13 @@ export function CollectMessageModal({
     setError(null);
 
     try {
-      const result = await collectMessage({
-        messageId: targetMessage.id,
-        content: targetMessage.content,
-        context: note,
-      });
+      const result = source
+        ? await collectSource({ source: source.source, context: note })
+        : await collectMessage({
+            messageId: targetMessage.id,
+            content: targetMessage.content,
+            context: note,
+          });
       setOutcome(result.collectOutcome);
       onSuccess?.(result);
     } catch (err: unknown) {
@@ -91,7 +98,7 @@ export function CollectMessageModal({
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Bookmark size={18} aria-hidden="true" />
             <h2 id="collect-modal-title" className="app-h2">
-              收藏消息正文
+              {source ? '收藏附件' : '收藏消息正文'}
             </h2>
           </div>
           <button
@@ -107,22 +114,29 @@ export function CollectMessageModal({
         </div>
 
         <div className="app-dialog-body">
-          <div className="app-field">
-            <span className="app-field-label">消息原文引述</span>
-            <blockquote
-              className="app-blockquote"
-              style={{
-                margin: '4px 0',
-                fontSize: '13px',
-                maxHeight: '120px',
-                overflowY: 'auto',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-              }}
-            >
-              {targetMessage.content}
-            </blockquote>
-          </div>
+          {source ? (
+            <div className="app-field">
+              <span className="app-field-label">附件</span>
+              <p style={{ margin: '4px 0', fontSize: '13px', wordBreak: 'break-word' }}>{source.label}</p>
+            </div>
+          ) : (
+            <div className="app-field">
+              <span className="app-field-label">消息原文引述</span>
+              <blockquote
+                className="app-blockquote"
+                style={{
+                  margin: '4px 0',
+                  fontSize: '13px',
+                  maxHeight: '120px',
+                  overflowY: 'auto',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {targetMessage.content}
+              </blockquote>
+            </div>
+          )}
 
           <div className="app-field">
             <label htmlFor="collect-note-input" className="app-field-label">
@@ -156,7 +170,7 @@ export function CollectMessageModal({
             <div className="app-banner" role="status" style={{ marginTop: '4px', marginBottom: 0 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Info size={16} aria-hidden="true" />
-                该消息已在收藏中，已记录再次收藏
+                {source ? '该附件已在收藏中，已记录再次收藏' : '该消息已在收藏中，已记录再次收藏'}
               </span>
             </div>
           ) : null}

@@ -74,7 +74,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
     expect(buttons[1]).not.toHaveClass('active');
   });
 
-  it('suppresses "收藏" for empty, system, optimistic and streaming rows; attachment-only rows get a placeholder-only menu', () => {
+  it('suppresses "收藏" for empty, system, optimistic and streaming rows; attachment-only rows without provenance get a disabled-only menu', () => {
     const messages: MessageView[] = [
       // Empty string
       makeMessage({ id: 1, role: 'user', content: '' }),
@@ -141,7 +141,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
     expect(screen.queryByRole('menuitem', { name: '收藏正文' })).toBeNull();
     const placeholder = screen.getByRole('menuitem', { name: /document\.pdf/ });
     expect(placeholder).toBeDisabled();
-    expect(placeholder).toHaveTextContent('待后端支持');
+    expect(placeholder).toHaveTextContent('旧附件不可收藏');
   });
 
   it('opens modal, submits canonical content with optional note, and shows created outcome', async () => {
@@ -350,7 +350,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('lists presented items as disabled placeholders and closes on Escape', () => {
+  it('lists non-collectible presented items as disabled and closes on Escape', () => {
     const message = makeMessage({
       id: 3,
       role: 'assistant',
@@ -388,7 +388,7 @@ describe('V4 Message Collect UI & Modal (Issue #32 Step 1B)', () => {
     expect(screen.getByRole('menuitem', { name: '收藏正文' })).toBeEnabled();
     const artifactItem = screen.getByRole('menuitem', { name: /生成的图片/ });
     expect(artifactItem).toBeDisabled();
-    expect(artifactItem).toHaveTextContent('待后端支持');
+    expect(artifactItem).toHaveTextContent('不可收藏');
 
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
     expect(screen.queryByRole('menu')).toBeNull();

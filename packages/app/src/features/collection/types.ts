@@ -10,8 +10,13 @@ export interface CollectMessageSource {
   text: string;
 }
 
+/** Collectible chat sources other than message text (#74, ReactSheet §13.3). */
+export type CollectSource =
+  | { type: 'attachment'; provenance_id: string }
+  | { type: 'assistant_artifact'; artifact_id: number };
+
 export interface CollectMessagePayload {
-  source: CollectMessageSource;
+  source: CollectMessageSource | CollectSource;
   collection_context?: string;
 }
 
@@ -22,6 +27,11 @@ export interface CollectMessageInput {
    * MUST NEVER be trimmed or rewritten (backend uses exact equality to determine full message scope).
    */
   content: string;
+  context?: string;
+}
+
+export interface CollectSourceInput {
+  source: CollectSource;
   context?: string;
 }
 
@@ -38,7 +48,13 @@ export interface CollectMessageResult {
 export const COLLECTION_KINDS = ['text', 'image', 'audio', 'document'] as const;
 export type CollectionKind = (typeof COLLECTION_KINDS)[number];
 
-export const COLLECTION_SOURCE_TYPES = ['attachment', 'text', 'message', 'chronicle_highlight'] as const;
+export const COLLECTION_SOURCE_TYPES = [
+  'attachment',
+  'text',
+  'message',
+  'chronicle_highlight',
+  'assistant_artifact',
+] as const;
 export type CollectionSourceType = (typeof COLLECTION_SOURCE_TYPES)[number];
 
 export interface CollectionListItem {

@@ -9,6 +9,7 @@ import {
   type CollectMessagePayload,
   type CollectMessageResult,
   type CollectOutcome,
+  type CollectSourceInput,
   type CollectionAsset,
   type CollectionComment,
   type CollectionDetail,
@@ -67,7 +68,19 @@ export async function collectMessage(input: CollectMessageInput): Promise<Collec
     },
   };
 
-  const trimmedContext = input.context?.trim();
+  return postCollect(payload, input.context);
+}
+
+/** Collect a user attachment or an AI artifact (#74); same outcome contract as messages. */
+export async function collectSource(input: CollectSourceInput): Promise<CollectMessageResult> {
+  return postCollect({ source: input.source }, input.context);
+}
+
+async function postCollect(
+  payload: CollectMessagePayload,
+  context: string | undefined,
+): Promise<CollectMessageResult> {
+  const trimmedContext = context?.trim();
   if (trimmedContext) {
     payload.collection_context = trimmedContext;
   }
