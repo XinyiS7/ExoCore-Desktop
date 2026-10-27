@@ -102,6 +102,9 @@ export function MessageCollectMenu({
                 title={item.hint ? `${item.label}（${item.hint}）` : item.label}
                 onClick={item.onSelect}
               >
+                {item.thumbnailUrl ? (
+                  <img className="app-msg-collect-thumb" src={item.thumbnailUrl} alt="" loading="lazy" />
+                ) : null}
                 <span className="app-msg-collect-label">{item.label}</span>
                 {item.hint ? <span className="app-msg-collect-hint">{item.hint}</span> : null}
               </button>

@@ -4,13 +4,7 @@ import type { AttachmentMeta, MessageAttachmentView } from '../types';
 import { globalAudioPlaybackManager } from './audioPlaybackManager';
 import { validatedAudioContentUrl } from '../attachments/mediaUrls';
 import { fetchAttachmentTranscript } from './transcript';
-
-function formatTime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-}
+import { formatTime } from './formatTime';
 
 /** Fixed decorative bars (waveform analysis is NOT a P1C promise). */
 const BAR_HEIGHTS = [40, 70, 45, 90, 60, 30, 80, 55, 100, 75, 50, 85, 40, 65, 35, 50];

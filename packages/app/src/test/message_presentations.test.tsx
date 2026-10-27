@@ -284,7 +284,7 @@ describe('surfaces in the timeline (#84 C3.4 / C3.5)', () => {
     expect(screen.queryByRole('menuitem', { name: '收藏正文' })).toBeNull();
     const items = screen.getAllByRole('menuitem');
     expect(items.map((item) => item.textContent?.replace('不可收藏', ''))).toEqual([
-      '语音消息',
+      '语音消息 · 0:01',
       '生成的图片',
     ]);
     for (const item of items) expect(item).toBeDisabled();

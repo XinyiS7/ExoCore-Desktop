@@ -869,7 +869,7 @@
 
 .app-msg-collect-item {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   width: 100%;
   border: none;
@@ -899,6 +899,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Tells sibling images apart (#74 CP-R1); decorative. */
+.app-msg-collect-thumb {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  object-fit: cover;
 }
 
 .app-msg-collect-hint {

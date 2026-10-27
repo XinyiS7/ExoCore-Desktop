@@ -142,7 +142,7 @@ describe('#74 collect menu (D1 / D2)', () => {
     ]);
     openMenu();
     const items = screen.getAllByRole('menuitem');
-    expect(items.map((item) => item.textContent)).toEqual(['收藏正文', '生成的图片', '语音消息不可收藏']);
+    expect(items.map((item) => item.textContent)).toEqual(['收藏正文', '生成的图片', '语音消息 · 0:01不可收藏']);
     expect(items.map((item) => (item as HTMLButtonElement).disabled)).toEqual([false, false, true]);
   });
 
@@ -197,13 +197,13 @@ describe('#74 collect menu (D1 / D2)', () => {
       message({ id: 3, role: 'assistant', presentations: presentations([wirePresentation(10, 'voice', true)]) }),
     ]);
     openMenu();
-    fireEvent.click(screen.getByRole('menuitem', { name: '语音消息' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '语音消息 · 0:01' }));
     fireEvent.click(screen.getByRole('button', { name: '取消' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(sent).toEqual([]);
 
     openMenu();
-    fireEvent.click(screen.getByRole('menuitem', { name: '语音消息' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '语音消息 · 0:01' }));
     const dialog = within(screen.getByRole('dialog', { name: '收藏附件' }));
     fireEvent.click(dialog.getByRole('button', { name: '确认收藏' }));
 
@@ -286,5 +286,78 @@ describe('#74 Library (D3)', () => {
     const view = within(await screen.findByRole('dialog', { name: /^藏品 / }));
     expect(await view.findByText('（来源已不可用）')).toBeTruthy();
     expect(view.queryByRole('link', { name: '打开来源会话' })).toBeNull();
+  });
+});
+
+describe('#74 CP-R1 telling sibling items apart', () => {
+  const thumbs = () => screen.getAllByRole('menuitem').map((item) => item.querySelector('img')?.getAttribute('src') ?? null);
+
+  it('R1-A: each generated image shows its own thumbnail and collects its own artifact', async () => {
+    const sent = capturePost(201, { id: 31, collect_outcome: 'created' });
+    renderTimeline([
+      message({
+        id: 3,
+        role: 'assistant',
+        presentations: presentations([wirePresentation(9, 'image', true), wirePresentation(10, 'image', true)]),
+      }),
+    ]);
+    openMenu();
+    expect(thumbs()).toEqual([
+      '/api/agents/conversations/42/message-attachments/109/content/',
+      '/api/agents/conversations/42/message-attachments/110/content/',
+    ]);
+    for (const [index, artifactId] of [[1, 10], [0, 9]] as const) {
+      if (!screen.queryByRole('menu')) openMenu();
+      fireEvent.click(screen.getAllByRole('menuitem', { name: '生成的图片' })[index]);
+      const dialog = within(screen.getByRole('dialog', { name: '收藏附件' }));
+      fireEvent.click(dialog.getByRole('button', { name: '确认收藏' }));
+      await dialog.findByText('已加入收藏');
+      expect(sent.at(-1)).toEqual({ source: { type: 'assistant_artifact', artifact_id: artifactId } });
+      fireEvent.click(dialog.getByRole('button', { name: '完成' }));
+    }
+    expect(sent).toHaveLength(2);
+  });
+
+  it('R1-A: user image attachments follow the same rule', () => {
+    renderTimeline([
+      message({ id: 4, role: 'user', attachments: attachments([wireSessionAttachment(1, 'p-1'), wireSessionAttachment(2, null)]) }),
+    ]);
+    openMenu();
+    expect(thumbs()).toEqual([
+      '/api/agents/conversations/42/attachments/1/content/',
+      '/api/agents/conversations/42/attachments/2/content/',
+    ]);
+  });
+
+  it('R1-B: an invalid image URL renders no thumbnail; text, name and collecting stay', async () => {
+    const sent = capturePost(201, { id: 31, collect_outcome: 'created' });
+    const foreign = wirePresentation(9, 'image', true);
+    foreign.media.content_url = 'https://elsewhere.example/x.png';
+    renderTimeline([message({ id: 3, role: 'assistant', presentations: presentations([foreign]) })]);
+    openMenu();
+    const item = screen.getByRole('menuitem', { name: '生成的图片' });
+    expect(item.querySelector('img')).toBeNull();
+    fireEvent.click(item);
+    fireEvent.click(screen.getByRole('button', { name: '确认收藏' }));
+    await screen.findByText('已加入收藏');
+    expect(sent).toEqual([{ source: { type: 'assistant_artifact', artifact_id: 9 } }]);
+  });
+
+  it('R1-B: the thumbnail is decorative and lazy', () => {
+    renderTimeline([message({ id: 3, role: 'assistant', presentations: presentations([wirePresentation(9, 'image', true)]) })]);
+    openMenu();
+    const img = screen.getByRole('menuitem', { name: '生成的图片' }).querySelector('img')!;
+    expect([img.getAttribute('alt'), img.getAttribute('loading')]).toEqual(['', 'lazy']);
+  });
+
+  it('R1-C: a voice label carries m:ss only when the duration is known', () => {
+    const timed = wirePresentation(10, 'voice', true);
+    timed.media.duration_ms = 12000;
+    const untimed = wirePresentation(11, 'voice', true);
+    untimed.media.duration_ms = null;
+    renderTimeline([message({ id: 3, role: 'assistant', presentations: presentations([timed, untimed]) })]);
+    openMenu();
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['语音消息 · 0:12', '语音消息']);
+    expect(thumbs()).toEqual([null, null]);
   });
 });
