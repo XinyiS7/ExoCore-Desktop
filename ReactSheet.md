@@ -395,7 +395,8 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
       "display_name": "image-0.png", "mime_type": "image/png", "file_size": 2048,
       "content_url": "/api/agents/conversations/95/message-attachments/88/content/",
       "duration_ms": null, "error_code": null
-    }
+    },
+    "collectible": true
   },
   {
     "key": "user_collection_show:12",
@@ -404,12 +405,13 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
     "position": 0,
     "label": "从藏品馆带回 · 文本 #34",
     "card": { "item_id": 34, "item_kind": "text", "title": "从藏品馆带回 · 文本 #34", "detail": "收藏理由：……", "text": "完整文本快照" },
-    "media": null
+    "media": null,
+    "collectible": false
   }
 ]
 ```
 
-- **字段**（每项固定 7 键）
+- **字段**（每项固定 8 键）
   - `key`：稳定去重键，`assistant_artifact:<id>` 或 `user_collection_show:<id>`。
   - `surface`：`image | voice | collection_card`。未知 surface 前端丢弃该项，不影响同消息其它项。
   - `owner`：assistant 侧为 registry producer（`agy_generate_image`、`send_voice_msg`、`collection_bring_back`、`collection_heartbeat_bring_back`）；user 侧恒为 `user_collection_show`。
@@ -417,6 +419,7 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
   - `label`：image 为 `生成的图片`、voice 为 `语音消息`、collection_card 为卡片 `title`；用作 alt / 收藏菜单名。
   - `card`：**恒在**；仅 `collection_card` 为 `{item_id, item_kind, title, detail|null, text|null}`，其余 surface 为 `null`。`title` 恒为 `从藏品馆带回 · <文本|图片|音频|文档> #<item_id>`（按 descriptor `item_kind`）；`detail` 仅非空的 `收藏理由：…`（不截断）；`text` 仅 text 卡为完整快照。两侧同一份共享渲染（`show_descriptors.project_human_card`）。
   - `media`：owner 认领的挂载附件，形状与原 canonical 附件行相同（`ref / kind / source / status / position / display_name / mime_type / file_size / content_url / duration_ms / error_code`），只在 ready 且 kind 属于该 surface 时内联。
+  - `collectible`：Alicia 可否从收藏菜单收藏此项（#74）。取自 producer registry：`send_voice_msg`、`agy_generate_image` 为 `true`；带回卡（`collection_bring_back*`）与 user 侧 `user_collection_show` 恒为 `false`。`true` 时以 `{"type":"assistant_artifact","artifact_id":<key 中的 id>}` 收藏（§13.3）。
 - **fail closed**：`image` / `voice` 的媒体不 ready 或缺失 → 整项不出；`collection_card` 无 ready 媒体仍出卡，`media=null`（text 卡恒为 `null`）。未登记 producer 的 Artifact、无 owner 的历史挂载附件（早于 Artifact 建设的 `voice_msg` / `agy_image` 等）留在库里但**不投影**，不追溯。
 - **每个媒体恰好出现一次**：只在认领它的那一项 `media` 里；不再从 `attachments[]` 渲染。
 - **排序**：assistant 行按 `(position, producer, id)`；user 行按 `position`。非 assistant/user 行恒为 `[]`。
@@ -1747,10 +1750,17 @@ failed_retryable  -> 生成失败可重试（保留播放控件，展示重试�
 {"source":{"type":"text","text":"明确提交的文本"}}
 {"source":{"type":"message","message_id":123,"text":"消息中的明确摘录"}}
 {"source":{"type":"chronicle_highlight","highlight_id":456}}
+{"source":{"type":"assistant_artifact","artifact_id":31}}
 ```
 
 - attachment / highlight / message 来源均由服务端核验；message 的 `text` 必须真实
   出现在该 Message；promotion 不修改或删除原 Chronicle highlight。
+- **assistant_artifact**（#74）：仅 `presentations[].collectible=true` 的 Artifact 可收；按其
+  ready 呈现附件新建 `image` / `audio` 藏品，字节复制为独立 Collection 原件（同 hash 复用 Asset），
+  不产生 `provenance_id`；之后删除聊天附件不影响藏品。Artifact 不存在 → `404 source_not_found`；
+  不可收藏 → `400 source_type_mismatch`；呈现附件缺失 / 非 ready / 原件不可读 → `409 source_unavailable`。
+  未传 `description` 时新建藏品预填：语音为口播正文，图片仅在描述已就绪时为其描述，否则为空；
+  超 500 字截为 499 字 + `…`。显式传 `""` 保持空；重复收藏不重新预填。
 - **collect-or-increment**：来源身份为 `(source.type, 实体, scope)`，message 来源中
   `text` 等于整条 `Message.content` 与摘录各自算不同 scope。来源尚未收藏 → 新建
   Item 并返回 `201`；已收藏 → 返回既有 Item 与 `200`，本次的 `title` / `tags`
@@ -1825,6 +1835,8 @@ producer 投影为 `human` / `manual-v1`。不可变 source、kind、asset 与�
 两类来源同形：`{message_id, conversation_id, index_in_session, role, created_at}`；
 无法确定唯一来源 Message 时为 `null`。message 来源快照中同名的顶层键仅为兼容保留，
 新消费者只读嵌套 `message`。
+assistant_artifact 来源快照只记来源关联：`{artifact_id, producer, filename, mime_type, file_size,
+conversation_id, message}`；Artifact 删除后 `source.available=false`，快照与藏品原件保留。
 
 - `asset` 对 text 为 `null`；`original_content_url` / `read_original` 仅在 Asset ready
   时出现。
@@ -1857,8 +1869,9 @@ producer 投影为 `human` / `manual-v1`。不可变 source、kind、asset 与�
 | `invalid_request` | 400 | body/query、source 字段、mutable field 或手工 representation 非法 |
 | `malformed_cursor` | 400 | cursor 签名、版本或 filter binding 非法 |
 | `collection_item_not_found` | 404 | Item/representation 不存在；亦为内容读取统一 404 code |
-| `source_not_found` | 404 | Message 或 Chronicle source 不存在 |
+| `source_not_found` | 404 | Message、Chronicle 或 assistant_artifact source 不存在 |
 | `source_type_mismatch` | 400 | source type/kind/selection 不匹配 |
+| `source_unavailable` | 409 | assistant_artifact 的呈现附件缺失、非 ready 或原件不可读 |
 | `source_provenance_unavailable` | 409 | provenance 不存在或不是已确认新上传 occurrence |
 | `asset_missing` | 409 | 创建收藏时 managed original 已不可用 |
 | `asset_verification_failed` | 409 | Collection 原件 hash/size 校验失败（`CollectionAssetError`）；chat 附件原件确认失败（SSE） |
