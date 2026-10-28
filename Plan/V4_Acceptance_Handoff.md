@@ -1,5 +1,7 @@
 # V4 新验收窗格 Handoff（read-only 事实）
 
+> **当前决议（2026-10-28，Alicia 批准；[gpt-6-astra / Solaire] 整理）：** V4 产品主体已完成，P4/C4 按 Alicia 日常使用确认最终收口。原 P5/P6 整体移出 V4，交由 `Alicia/Igni` 新记忆结构项目重新设计（目前仅设计文件，未施工）；旧 B3/B4/C5/C6 不再阻塞 P7，也不是 Igni 的冻结规格。对话历史查询与个体记忆分开设计，不沿用旧 P5 的捆绑。ExoCore 的现有 MemoryPlasmid 管理入口保留用于 **register 管理**，register 仍属 ExoCore；本次不迁移数据、不改入口实现。下一阶段为 **P7：欢迎页 + 各板块入口及正式入口收尾**，V4 聊天已日常使用，不等于 P7 已验收。P8 退役删除未授权；#83/#89/#90/#93 为后续增强，不阻塞主体收口。
+
 > 本文件是交接事实，不是验收 verdict、不授权任何施工。
 > Desktop 仓库根：`D:\Alicia\ExoCore_Project\ExoCore-Desktop`（下文 relative 路径均相对此根）。
 > Backend 仓库根：`D:\Alicia\ExoCore_Project\ExoCore`（`../ExoCore/...` 指该仓库）。
@@ -34,7 +36,7 @@
 - R2 授权 Builder 的 closeout 范围：记录已验收修复、归档对应施工计划（tracked history）、更新有效 C2/Roadmap/Freeze Index 状态与证据链接；**不得覆盖历史 C2 verdict/复现，不得宣称 B2 排除项已修复，不得未授权启动 P3**。
 - 机械证据日志在 `/tmp/lr01-*`（易失）；耐久证据以已提交的 report/spec 为准，不要引用临时目录作为长期证据。
 
-## 3. 下一步（Exact pending action）
+## 3. 历史下一步（已被文首 2026-10-28 决议取代）
 
 LR-01 doc-only closeout保持VERIFIED；P3随后由Alicia批准mockup、Detailed Plan与分Checkpoint施工，并于2026-10-03取得C3 FINAL PASS。P3施工、视觉确认与最后live证据均已闭合，权威报告为 `Plan/V4_Phase_3_River_Memo_acceptance_report.md`。
 

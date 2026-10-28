@@ -61,3 +61,13 @@ F-02/F-03 source repair passes at `5476b28`: user media/cards align on one edge;
 - Focused tests: 23/23 PASS; full app suite: 1575/1575 PASS; build/typecheck, scoped lint, and diff check PASS.
 - Frozen spec and approved mockup evidence remain unchanged.
 - Browser geometry and final real behavior remain Alicia-owned; no acceptance probe or database data was created.
+
+## R4 — Final closeout, 2026-10-28
+
+**FINAL PASS / C4 accepted.** [gpt-6-astra / Solaire]
+
+Alicia explicitly confirmed that #61 is already in daily use with no problems, and authorized V4 scope closeout. This user acceptance resolves the earlier USER-UI-PENDING hold. It is a user acceptance decision, not a claim that an independent keyboard sweep or newly instrumented Direct/AGY probe was performed today. Existing R1–R3 evidence remains unchanged. #74 and #92 separately completed their user walkthroughs.
+
+#83/#89/#90/#93 are subsequent enhancements, not C4 blockers. #83 means retaining conversation traceability after removing an attachment mount; deleting the conversation itself correctly makes its source unavailable. No test, migration, runtime restart or production change in this doc-only closeout.
+
+P5/P6 move out to Alicia/Igni (design only); register remains ExoCore. P7 is next, not already accepted. P8 deletion remains unauthorized.

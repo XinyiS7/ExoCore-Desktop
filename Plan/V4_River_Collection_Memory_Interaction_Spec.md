@@ -1,5 +1,7 @@
 # ExoCore V4 — River、Collection 与 Memory 交互规格
 
+> **当前决议（2026-10-28，Alicia 批准；[gpt-6-astra / Solaire] 整理）：** V4 产品主体已完成，P4/C4 按 Alicia 日常使用确认最终收口。原 P5/P6 整体移出 V4，交由 `Alicia/Igni` 新记忆结构项目重新设计（目前仅设计文件，未施工）；旧 B3/B4/C5/C6 不再阻塞 P7，也不是 Igni 的冻结规格。对话历史查询与个体记忆分开设计，不沿用旧 P5 的捆绑。ExoCore 的现有 MemoryPlasmid 管理入口保留用于 **register 管理**，register 仍属 ExoCore；本次不迁移数据、不改入口实现。下一阶段为 **P7：欢迎页 + 各板块入口及正式入口收尾**，V4 聊天已日常使用，不等于 P7 已验收。P8 退役删除未授权；#83/#89/#90/#93 为后续增强，不阻塞主体收口。
+
 > 文档类型：产品与交互规格补充（Spec），不是施工计划。
 > 状态：产品语义已收口，可作为 Master Roadmap 输入；阶段性后置项见第 11 节。
 > 适用范围：V4 单 SPA 的 River、Collection、MemoryPlasmid 管理、召回反馈及聊天运行信息。
@@ -134,7 +136,7 @@ Collection 与 River 的关键差异：
 | 语音 | 原始音频 | 单一客观 `description`；确定性派生 `audio_playback` |
 | 文档 | 原始文件 | 单一客观 `description`；确定性派生 `document_extracted_text`（可人工校准） |
 
-> [rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61] 本表已按 REQ_20261005 rev 2026-10-09 / migration 0007 改写：neutral description、canonical transcript、summary 这几种 representation 已经删除；客观描述只放在一个 `description` 字段里（≤500），派生 representation 只剩上表的三种确定性派生。
+> [rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/Archived/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61] 本表已按 REQ_20261005 rev 2026-10-09 / migration 0007 改写：neutral description、canonical transcript、summary 这几种 representation 已经删除；客观描述只放在一个 `description` 字段里（≤500），派生 representation 只剩上表的三种确定性派生。
 
 核心原则：
 
@@ -142,7 +144,7 @@ Collection 与 River 的关键差异：
 
 ~~中性描述、STT、人格第一印象和 embedding 是不同性质的派生内容，不得塞进一个无语义区分的万能 `description` 字段。~~
 
-> [rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61] 上一段已被 REQ_20261005 rev 2026-10-09 取代：`description` 现在就是唯一的客观描述字段，主观印象写进收藏理由或评论，embedding 不属于 representation。
+> [rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/Archived/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61] 上一段已被 REQ_20261005 rev 2026-10-09 取代：`description` 现在就是唯一的客观描述字段，主观印象写进收藏理由或评论，embedding 不属于 representation。
 
 ### 4.3 静态浏览体验
 
@@ -156,8 +158,8 @@ Collection 主视图至少支持：
 - 语音卡片显示明确的播放入口（不显示时长和 STT；契约里没有这些数据）；
 - 文字以可阅读卡片展示；
 - 文档显示类型和标题；
-- 支持六种筛选：类型、Tag、关键词（字面匹配）、最近 30 天、自然月、含链接（只匹配文字藏品正文里的 `http(s)://`）；随机翻看属于可后置展示方式，不阻塞首期。筛选细节委托给 `Plan/V4_Phase_4_Library_Collection_Detailed_Plan.md` §4.3；
-- 条目详情显示原件、`description`、派生状态、收藏理由、来源、收藏时间、统计、评论，以及“带回聊天”（[rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61]：人侧带回是让藏品卡随 Alicia 的下一条消息发出，不再进入草稿；详见 REQ rev 2026-10-15）。
+- 支持六种筛选：类型、Tag、关键词（字面匹配）、最近 30 天、自然月、含链接（只匹配文字藏品正文里的 `http(s)://`）；随机翻看属于可后置展示方式，不阻塞首期。筛选细节委托给 `Plan/Archived/V4_Phase_4_Library_Collection_Detailed_Plan.md` §4.3；
+- 条目详情显示原件、`description`、派生状态、收藏理由、来源、收藏时间、统计、评论，以及“带回聊天”（[rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/Archived/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61]：人侧带回是让藏品卡随 Alicia 的下一条消息发出，不再进入草稿；详见 REQ rev 2026-10-15）。
 
 ### 4.4 从会话附件晋升为收藏
 
@@ -193,7 +195,7 @@ Audio Collection Item
 └── Embedding             可完全重建的索引
 ```
 
-> [rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61] 结构图中原有的 Neutral Description 和 Canonical Transcript 两个节点已经删除；客观描述统一放在 item 的 `description` 字段，不作为 representation。
+> [rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/Archived/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61] 结构图中原有的 Neutral Description 和 Canonical Transcript 两个节点已经删除；客观描述统一放在 item 的 `description` 字段，不作为 representation。
 
 当前聊天图片上传可能只保留处理版，因此既有图片不能未经核验就宣称为无损原件。
 
@@ -391,7 +393,7 @@ Agent Profile
     └── History（次级 / 精确查找）
 ```
 
-> [rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61] Library 只放 Collection；Memory（MemoryPlasmid 等）改在 Agent Profile 里管理（P5）。原因是两者服务的任务不同：Collection 是主动留下、翻看和回味的情感藏品；Memory 是为了维持会话连续性，可以查看和修正的 Agent recall substrate。数据模型和 CRUD 分离的原则不变。一级产品区域 `Chat / Groups / River / Library` 不变。
+> [rev 2026-10-15：Alicia 决定 / 起草：砚，依据 `Plan/Archived/V4_Phase_4_Library_Collection_Detailed_Plan.md`，XinyiS7/ExoCore#61] Library 只放 Collection；Memory（MemoryPlasmid 等）改在 Agent Profile 里管理（P5）。原因是两者服务的任务不同：Collection 是主动留下、翻看和回味的情感藏品；Memory 是为了维持会话连续性，可以查看和修正的 Agent recall substrate。数据模型和 CRUD 分离的原则不变。一级产品区域 `Chat / Groups / River / Library` 不变。
 
 Settings 属低频系统管理，稳定放入头像 / More；具体 route 可以继续存在。移动端底栏如何呈现这四个产品区域，留到 App Shell 低保真原型比较后冻结。
 

@@ -1,5 +1,16 @@
 # Update Log
 
+## 2026-10-28 — P4/C4 最终收口与 V4 范围调整
+
+**署名：** [gpt-6-astra / Solaire]；Alicia 日常使用确认。
+
+#61 在既有 R3 技术验收基础上，按 Alicia 用户确认最终 PASS；不声称新增逐项人工探针。P4 计划、规格、报告及旧 preparation handoff 归档。报告：`Plan/Archived/V4_Phase_4_Library_Collection_Acceptance_Report.md`。
+
+P5/P6 移交 `Alicia/Igni` 新记忆项目（仅设计未施工），不再阻塞 P7。现有 MemoryPlasmid 入口用于 ExoCore register 管理并保留；下一阶段为 P7 欢迎页、板块入口及正式入口收尾。#83/#89/#90/#93 留作独立增强；P8 删除未授权。
+
+以下 2026-10-16「待独立验收」为当时历史记录，由本条与最终报告覆盖。
+
+
 ---
 
 ## 2026-10-16 — V4 Phase 4：Library（Collection）CP1–CP6 施工完成，待独立验收

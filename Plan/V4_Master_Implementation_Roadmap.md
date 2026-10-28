@@ -1,5 +1,7 @@
 # ExoCore V4 — Master Implementation Roadmap
 
+> **当前决议（2026-10-28，Alicia 批准；[gpt-6-astra / Solaire] 整理）：** V4 产品主体已完成，P4/C4 按 Alicia 日常使用确认最终收口。原 P5/P6 整体移出 V4，交由 `Alicia/Igni` 新记忆结构项目重新设计（目前仅设计文件，未施工）；旧 B3/B4/C5/C6 不再阻塞 P7，也不是 Igni 的冻结规格。对话历史查询与个体记忆分开设计，不沿用旧 P5 的捆绑。ExoCore 的现有 MemoryPlasmid 管理入口保留用于 **register 管理**，register 仍属 ExoCore；本次不迁移数据、不改入口实现。下一阶段为 **P7：欢迎页 + 各板块入口及正式入口收尾**，V4 聊天已日常使用，不等于 P7 已验收。P8 退役删除未授权；#83/#89/#90/#93 为后续增强，不阻塞主体收口。
+
 > **文档类型：** Master Roadmap；不是源码级 Implementation Plan。  
 > **状态：** Active master roadmap — amended after P2A/P2B acceptance for TTS、assistant-message arrival notifications and deferred Groups。
 > **适用仓库：** `ExoCore-Desktop`；后端工作仅通过独立 handoff 进入 `ExoCore`。  
@@ -100,10 +102,10 @@ P0 Contract & Baseline Freeze
                           └── [B6 PASS] P2D Assistant-message Notifications [C2]
                                └── [B2 PASS] P3 River + Memo
                                     └── [B1 PASS] P4 Library (= Collection)
-                                         └── [B3 PASS] P5 Memory Library
-                                              └── [B4 PASS] P6 Recall Observability
-                                                   └── P7 Production Cutover
-                                                        └── [观察期结束 + Alicia 明确批准] P8 Legacy Retirement & Cleanup
+                                         └── P7 欢迎页 / Production Cutover
+                                              └── [观察期结束 + Alicia 明确批准] P8 Legacy Retirement & Cleanup
+
+P5/P6 → Alicia/Igni（独立记忆项目，仅设计；不再串入 V4 前置链）
 
 P2G GroupChat remains a separately released future slice and is not a C2/P3 predecessor. It may not run concurrently with another shell/navigation owner; its later insertion point requires an explicit roadmap release.
 
@@ -174,9 +176,9 @@ C0 后端并行轨：B1–B6 可分别提前施工与验收
 | **P2G — deferred** | Group list/create/room/send/broadcast，保持独立 GroupChat runtime | Alicia future release | GroupChat only；不阻塞 C2/P3，未施工期间 V3-primary |
 | **P3 — C3 PASS** | River + Memo + Tasks/Calendar + Diary/Heartbeat/legacy event | C2 + B2 | **已完成：五源时间阅读与本期来源操作转移；Chronicle highlight/bookmark 暂留 V3** |
 | **P4** | Library（= Collection）navigation + Collection managed originals 与四类浏览/收藏/人侧带回路径 | P3 + B1 | Library、Collection、新 bookmark writes |
-| **P5** | 在 Agent Profile 内交付 MemoryPlasmid、Trigger/Tags、History exact lookup（rev 2026-10-15，不再进入 Library） | P4 + B3 | V3 Memory 管理入口 |
-| **P6** | Recall Receipt + feedback + Recall Lab runtime observability | P5 + B4（并继承 P1 chat） | 自动 recall 可观察与反馈能力 |
-| **P7** | 单 SPA production cutover；V3 保持完整 rollback artifact | P2–P6 全 PASS | 整个 V4 Web/PWA production 入口 |
+| **P5（移出）** | 原记忆管理与历史查询捆绑方案停止执行；由 Alicia/Igni 分开设计，register 留 ExoCore | 非 V4 gate | Igni 仅设计，现有入口保留 |
+| **P6（移出）** | 原 Recall Observability 归新记忆结构重新设计 | 非 V4 gate | Alicia/Igni，仅设计未施工 |
+| **P7** | 欢迎页、各板块入口与 production cutover 收尾；保留 V3 rollback | C2–C4 PASS；不依赖 B3/B4/C5/C6 | V4 Web/PWA 主要入口 |
 | **P8** | 观察期结束后的 Legacy retirement 与受控清理 | P7 + Alicia 明确批准 | 删除已无 ownership 的 V3 表面 |
 
 ---
@@ -429,7 +431,7 @@ B2 必须稳定提供：
 
 首次建立 canonical Library 导航，并在其中交付不依赖 Conversation/SessionAttachment 存续的长期藏品能力。P4 owns Library = Collection。[model not supplied / R1 reviewer，Alicia approved]
 
-> [rev 2026-10-15：Alicia 决定 / 起草：砚，XinyiS7/ExoCore#61] 原文中“P5 只向同一 shell 加入平级 Memory”已作废：Library 只放 Collection，P5 的 Memory 管理改在 Agent Profile 交付。详细计划见 `Plan/V4_Phase_4_Library_Collection_Detailed_Plan.md`。
+> [rev 2026-10-15：Alicia 决定 / 起草：砚，XinyiS7/ExoCore#61] 原文中“P5 只向同一 shell 加入平级 Memory”已作废：Library 只放 Collection，P5 的 Memory 管理改在 Agent Profile 交付。详细计划见 `Plan/Archived/V4_Phase_4_Library_Collection_Detailed_Plan.md`。
 
 ### Scope boundary
 
@@ -478,7 +480,9 @@ B1 必须稳定提供：
 
 ---
 
-## 11. Phase 5 — Memory Library
+## 11. Phase 5 — Memory Library（已移出 V4；以下为历史方案）
+
+本节原 Scope / B3 / C5 全部停止作为 V4 gate；新设计归 Alicia/Igni。register 留在 ExoCore，不要求实现以下旧管理清单。
 
 ### Objective
 
@@ -524,7 +528,9 @@ B3 必须稳定提供：
 
 ---
 
-## 12. Phase 6 — Recall Observability
+## 12. Phase 6 — Recall Observability（已移出 V4；以下为历史方案）
+
+本节原 Scope / B4 / C6 不再是 V4 施工或 P7 前置；由 Alicia/Igni 新架构重新确定。
 
 ### Objective
 
@@ -572,7 +578,9 @@ B4 必须稳定提供：
 
 ---
 
-## 13. Phase 7 — Production Cutover
+## 13. Phase 7 — 欢迎页与板块入口 / Production Cutover
+
+**当前阶段（2026-10-28）：** Alicia 已日常使用 V4 Chat；接下来补欢迎页与各板块入口，并核对正式入口、PWA 与回退现状。不得把已日常使用等同于 C7 PASS。设计草案位于 `Plan/Design/`，本次不冻结视觉方案、不把未跟踪设计纳入提交。
 
 ### Objective
 
@@ -580,7 +588,8 @@ B4 必须稳定提供：
 
 ### Scope boundary
 
-- production build、nginx/PWA 入口与回退路径切换。
+- 欢迎页与各板块入口；保留现有 MemoryPlasmid/register 管理入口，不实现已移交 Igni 的旧 P5/P6。
+- 核对 production build、nginx/PWA 入口与回退现状，只执行仍需完成且获批准的切换。
 - V3 capability matrix 不再有未解释的 `V3-primary`；deferred capability 必须有明确 owner 与可达入口。
 - 保留完整 V3 package、routes、build capability 与最近 production artifact/config checkpoint。
 - 保留 legacy Chronicle archive/data 与必要 migration audit。
@@ -588,7 +597,7 @@ B4 必须稳定提供：
 
 ### Entry gate
 
-- C2–C6 全部 PASS；如某 capability 经 Alicia 明确从 V4 首发 defer，matrix 必须记录独立 owner 与可达入口，不能假装完成。
+- C2–C4 全部 PASS；P5/P6 已移交 Igni，不要求 C5/C6 或 B3/B4 PASS；如某 capability 经 Alicia 明确从 V4 首发 defer，matrix 必须记录独立 owner 与可达入口，不能假装完成。
 - 所有 V4-primary capability 通过最终组合 regression。
 - production deployment 与一键回切 V3 演练通过。
 - 真实用户数据无 destructive migration 待执行。
@@ -729,9 +738,8 @@ P2D PASS → 执行统一 Core C2 acceptance
 C2 PASS + B2 PASS → 才允许写 P3 Detailed Plan
 P2G 仅由 Alicia 以后单独释放；不作为 C2/P3 前置，且不得与其他 shell/navigation construction 并发
 C3 PASS + B1 PASS → 才允许写 P4 Detailed Plan
-C4 PASS + B3 PASS → 才允许写 P5 Detailed Plan
-C5 PASS + B4 PASS → 才允许写 P6 Detailed Plan
-C6 PASS → 才允许写 P7 Cutover Plan
+P5/P6 → 移交 Alicia/Igni，退出 V4 施工顺序
+C4 PASS → 允许准备 P7 欢迎页、板块入口与 Cutover Plan（施工仍须方案批准）
 C7 PASS + 观察期结束 + Alicia 批准 → 才允许写 P8 Retirement Plan
 ```
 
@@ -782,4 +790,6 @@ Roadmap handoff 前按 acceptance scope 做消融：
 - [x] 后续仍不在 backend contract/上游 gate 前提前写源码级计划；
 - [x] TTS/notification active scope 与 Groups/Live/电话/Capacitor deferred scope 已分离。
 
-**Current release position（2026-10-03）：** P2A/P2B/P2T/P2C/P2D保留既有验收记录；**B2 R5 FINAL PASS under Alicia-approved rebase**（原949有3旧迁移错误，仅精确三标签隔离后946/946 PASS，无skip/error，非949全绿）。Core C2历史PASS与 `Plan/V4_Chat_Foreground_Resume_acceptance_report.md` LR-01 R2 FINAL PASS 补充证据共同恢复有效 C2 PASS，锁屏造成的hold已解除；P2G继续V3-primary/independently deferred。P3现已C3 FINAL PASS并完成本期ownership收口（`Plan/V4_Phase_3_River_Memo_acceptance_report.md`）。P4仍须B1 PASS及独立release，当前未授权；product-root/P7未切换，V3兼容表面未清理。
+**历史 release position（2026-10-03；由文首当前决议覆盖）：** P2A/P2B/P2T/P2C/P2D保留既有验收记录；**B2 R5 FINAL PASS under Alicia-approved rebase**（原949有3旧迁移错误，仅精确三标签隔离后946/946 PASS，无skip/error，非949全绿）。Core C2历史PASS与 `Plan/V4_Chat_Foreground_Resume_acceptance_report.md` LR-01 R2 FINAL PASS 补充证据共同恢复有效 C2 PASS，锁屏造成的hold已解除；P2G继续V3-primary/independently deferred。P3现已C3 FINAL PASS并完成本期ownership收口（`Plan/V4_Phase_3_River_Memo_acceptance_report.md`）。P4仍须B1 PASS及独立release，当前未授权；product-root/P7未切换，V3兼容表面未清理。
+
+**当前执行链：** C4 FINAL PASS → P7 方案准备 → C7 / 观察期 → Alicia 独立批准后才可 P8。旧依赖图、phase 表、B3/B4 register、Memory capability matrix 与勾选记录中的 P5/P6 字样均为历史设计，不构成当前 gate；现有 register 能力继续归 ExoCore。
