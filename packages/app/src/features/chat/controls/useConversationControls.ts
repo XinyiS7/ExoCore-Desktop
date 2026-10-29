@@ -27,9 +27,11 @@ import {
   readCacheEnabled,
   readMemoryInjection,
   readSessionType,
+  readTarget,
   writeCacheEnabled,
   writeMemoryInjection,
   writeSessionType,
+  writeTarget,
 } from '../control/prefs';
 
 export type SessionHistoryMode = 'full' | 'lite';
@@ -182,6 +184,15 @@ export function useConversationControls(options: {
     if (!conversation || !catalog || !presetReady) return;
     setTargetOwner((current) => {
       if (current.conversationId !== conversationId || !current.initialized) {
+        const stored = readTarget(conversationId);
+        if (stored && targetIsSendable(catalog, stored)) {
+          return {
+            conversationId,
+            target: stored,
+            initialized: true,
+            userSelected: true,
+          };
+        }
         return {
           conversationId,
           target: resolveTarget(catalog, preset),
@@ -191,6 +202,10 @@ export function useConversationControls(options: {
       }
       if (current.userSelected && targetIsSendable(catalog, current.target)) return current;
       if (targetIsSendable(catalog, current.target)) return current;
+      const stored = readTarget(conversationId);
+      if (stored && targetIsSendable(catalog, stored)) {
+        return { conversationId, target: stored, initialized: true, userSelected: true };
+      }
       return { ...current, target: resolveTarget(catalog, preset), userSelected: false };
     });
   }, [catalog, conversation, conversationId, preset, presetReady]);
@@ -218,12 +233,17 @@ export function useConversationControls(options: {
   const setModel = useCallback(
     (model: string) => {
       if (commandLocked() || !selectableModels.includes(model)) return;
-      setTargetOwner((current) => ({
-        conversationId,
-        target: changeTargetModel(catalog, current.target, model),
-        initialized: true,
-        userSelected: true,
-      }));
+      setTargetOwner((current) => {
+        const nextTarget = changeTargetModel(catalog, current.target, model);
+        const outcome = writeTarget(conversationId, nextTarget);
+        if (outcome.state === 'unavailable') setStorageWarning(outcome.reason);
+        return {
+          conversationId,
+          target: nextTarget,
+          initialized: true,
+          userSelected: true,
+        };
+      });
     },
     [catalog, commandLocked, conversationId, selectableModels],
   );
@@ -231,12 +251,17 @@ export function useConversationControls(options: {
   const setEndpoint = useCallback(
     (endpoint: number) => {
       if (commandLocked() || !compatibleEndpoints.some((candidate) => candidate.id === endpoint)) return;
-      setTargetOwner((current) => ({
-        conversationId,
-        target: { ...current.target, endpoint },
-        initialized: true,
-        userSelected: true,
-      }));
+      setTargetOwner((current) => {
+        const nextTarget = { ...current.target, endpoint };
+        const outcome = writeTarget(conversationId, nextTarget);
+        if (outcome.state === 'unavailable') setStorageWarning(outcome.reason);
+        return {
+          conversationId,
+          target: nextTarget,
+          initialized: true,
+          userSelected: true,
+        };
+      });
     },
     [commandLocked, compatibleEndpoints, conversationId],
   );
@@ -393,9 +418,12 @@ export function useConversationControls(options: {
       const endpoints = getCompatibleEndpoints(catalog, next.model);
       if (!selectableModels.includes(next.model)) return;
       if (next.endpoint !== null && !endpoints.some((candidate) => candidate.id === next.endpoint)) return;
+      const nextTarget = { model: next.model, endpoint: next.endpoint };
+      const outcome = writeTarget(conversationId, nextTarget);
+      if (outcome.state === 'unavailable') setStorageWarning(outcome.reason);
       setTargetOwner({
         conversationId,
-        target: { model: next.model, endpoint: next.endpoint },
+        target: nextTarget,
         initialized: true,
         userSelected: true,
       });

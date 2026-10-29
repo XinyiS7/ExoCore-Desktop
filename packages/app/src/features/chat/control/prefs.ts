@@ -1,3 +1,5 @@
+import type { InitialSessionTarget } from 'exo-shared/models';
+
 /**
  * P1D conversation-local preference storage (Plan §4.3 / §6.3).
  *
@@ -14,6 +16,7 @@ const KEY_CACHE_ENABLED = (id: number) => `${PREFIX}cache-enabled:${id}`;
 const KEY_SESSION_TYPE = (id: number) => `${PREFIX}session-type:${id}`;
 const KEY_MEMORY_INJECT = (id: number) => `${PREFIX}memory-inject:${id}`;
 const KEY_AURA = (id: number) => `${PREFIX}aura:${id}`;
+const KEY_TARGET = (id: number) => `${PREFIX}target:${id}`;
 
 export type PrefReadOutcome<T> =
   | { state: 'absent' }
@@ -65,6 +68,15 @@ function removePref(key: string): PrefWriteOutcome {
 const isBoolean = (v: unknown): v is boolean => typeof v === 'boolean';
 const isString = (v: unknown): v is string => typeof v === 'string';
 const isSessionType = (v: unknown): v is 'full' | 'lite' => v === 'full' || v === 'lite';
+const isTarget = (v: unknown): v is InitialSessionTarget => {
+  if (typeof v !== 'object' || v === null) return false;
+  const cand = v as Record<string, unknown>;
+  const validModel = typeof cand.model === 'string' && cand.model.length > 0;
+  const validEndpoint =
+    cand.endpoint === null ||
+    (typeof cand.endpoint === 'number' && Number.isInteger(cand.endpoint) && cand.endpoint > 0);
+  return validModel && validEndpoint;
+};
 
 // ── Per-turn target preferences (Plan §4.3 defaults) ────────────────────────
 
@@ -96,6 +108,16 @@ export function readMemoryInjection(conversationId: number): boolean {
 
 export function writeMemoryInjection(conversationId: number, enabled: boolean): PrefWriteOutcome {
   return writePref(KEY_MEMORY_INJECT(conversationId), enabled);
+}
+
+/** Conversation-local chosen model & endpoint target. Returns null when not explicitly set. */
+export function readTarget(conversationId: number): InitialSessionTarget | null {
+  const out = readPref(KEY_TARGET(conversationId), isTarget);
+  return out.state === 'valid' ? out.value : null;
+}
+
+export function writeTarget(conversationId: number, target: InitialSessionTarget): PrefWriteOutcome {
+  return writePref(KEY_TARGET(conversationId), target);
 }
 
 /** Conversation-local Aura selection id; fallback resolved by the theme. */

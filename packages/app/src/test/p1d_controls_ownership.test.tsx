@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { ReactNode } from 'react';
 import type { ModelCatalog } from 'exo-shared/models';
 import { useConversationControls } from '../features/chat/controls/useConversationControls';
@@ -65,7 +65,11 @@ function makeWrapper() {
   return { client, wrapper };
 }
 
-afterEach(() => unmockFetch());
+beforeEach(() => window.localStorage.clear());
+afterEach(() => {
+  unmockFetch();
+  window.localStorage.clear();
+});
 
 describe('P1D Conversation control invocation ownership', () => {
   it('keeps a delayed rejection attached to its departed Conversation', async () => {
@@ -118,5 +122,34 @@ describe('P1D Conversation control invocation ownership', () => {
     await waitFor(() => expect(result.current.thinkingSaveState.kind).toBe('idle'));
     expect((client.getQueryData(['conversation', 42]) as ConversationSummary).thinkingLevel).toBe('high');
     expect((client.getQueryData(['conversation', 43]) as ConversationSummary).thinkingLevel).toBe('low');
+  });
+
+  it('persists selected model and endpoint in localStorage and restores them on reload', async () => {
+    const { wrapper } = makeWrapper();
+    const { result, unmount } = renderHook(
+      () => useConversationControls({ conversationId: 42, conversation: row(42), catalog, preset }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.targetReady).toBe(true));
+    // Default preset model was 'desired' / 2
+    expect(result.current.target.model).toBe('desired');
+    expect(result.current.target.endpoint).toBe(2);
+
+    // User changes target to 'first' / 1
+    act(() => result.current.setModel('first'));
+    expect(result.current.target.model).toBe('first');
+    expect(result.current.target.endpoint).toBe(1);
+
+    // Unmount hook simulating page refresh
+    unmount();
+
+    // Re-mount hook with the same conversationId (simulating reload/re-entry)
+    const { result: reloaded } = renderHook(
+      () => useConversationControls({ conversationId: 42, conversation: row(42), catalog, preset }),
+      { wrapper },
+    );
+    await waitFor(() => expect(reloaded.current.targetReady).toBe(true));
+    expect(reloaded.current.target.model).toBe('first');
+    expect(reloaded.current.target.endpoint).toBe(1);
   });
 });
