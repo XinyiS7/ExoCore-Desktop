@@ -5,13 +5,38 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema, type Options as SanitizeSchema } from 'rehype-sanitize';
 
 /**
  * Read-only persisted-message renderer (Plan §6.6 / Task 7.5).
  * - Markdown/GFM + code highlight + KaTeX math stay readable;
- * - raw HTML is NOT rendered (no rehype-raw, mirroring V3) — no script surface;
+ * - raw HTML IS rendered so agents can emit inline cards (`<div style="…">`,
+ *   `<span style="…">`, `<details>`, `<figure>`, …); every node passes
+ *   rehype-sanitize first, so `script`/`style`/`iframe`/`form`/`svg`, every
+ *   `on*` handler and `javascript:` URLs never reach React;
  * - Mermaid is lazy-loaded only when a mermaid fence actually appears.
+ *
+ * Plugin order is load-bearing: raw → sanitize → highlight → katex. The
+ * sanitizer therefore only ever inspects untrusted (agent/user) input, and the
+ * hljs/katex markup generated afterwards is never stripped. `className` must
+ * survive sanitizing because remark-math marks math with
+ * `math-inline`/`math-display` classes that rehype-katex looks for.
  */
+
+const RAW_HTML_SCHEMA: SanitizeSchema = {
+  ...defaultSchema,
+  // Allow-list extension only: presentation-oriented elements agents use in
+  // cards. Anything unnamed (script/style/iframe/form/svg/video/…) stays
+  // stripped by the default schema.
+  tagNames: [...(defaultSchema.tagNames ?? []), 'figure', 'figcaption', 'mark'],
+  attributes: {
+    ...defaultSchema.attributes,
+    // Inline `style` is the point of the feature; `className` carries both
+    // author classes and the math markers above.
+    '*': [...(defaultSchema.attributes?.['*'] ?? []), 'style', 'className'],
+  },
+};
 
 function extractText(node: ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node);
@@ -186,7 +211,7 @@ export function MessageContent({ content }: { content: string }) {
     <div className="app-md">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeHighlight, rehypeKatex]}
+        rehypePlugins={[rehypeRaw, [rehypeSanitize, RAW_HTML_SCHEMA], rehypeHighlight, rehypeKatex]}
         components={MD_COMPONENTS}
       >
         {content}
