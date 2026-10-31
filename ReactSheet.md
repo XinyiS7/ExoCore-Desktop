@@ -37,9 +37,17 @@
   "agent_preset_id": 1, "agent_type": "g045",
   "temperature": 1.0, "thinking_level": "medium",
   "frozen_project_ids": [1], "created_at": "2026-01-01T00:00:00Z",
-  "is_prime": true
+  "is_prime": true,
+  "tags": ["theater", "雨夜"], "session_prompt": ""
 }]
 ```
+
+**Session tags & session prompt（#96 小剧场 V1，additive）**
+- 列表 / 详情 additive 返回 `tags: string[]`（规范名，按名排序）与 `session_prompt: string`（默认 `""`）。
+- tag 写入规则（会话与 project 通用）：去前导 `#`；普通 tag 沿用 Memo 规则、保持大小写；特殊 tag `chat` / `code` / `story` / `theater` 大小写不敏感，统一存小写并去重；同一对象至多一个特殊 tag。
+- 错误：特殊 tag 冲突 → `400 {"tags": {"code": "special_tag_conflict", "message": "不可同时存在 #a 和 #b。请至少删除一个。", "tags": ["a", "b"]}}`；非法输入（非数组、非字符串项、空名、超长）→ `400 {"tags": {"code": "invalid_tags", "message": "..."}}`。冲突时整个请求不落库。
+- **剧场封闭档**：`tags` 含 `theater` 且 `is_prime=false` 的会话不自动注入现实背景（Evolution / 简报 / 日记 / Register / go_to / sub-agent），并限制部分 ExoCore 工具；Prime 会话带 `theater` 不受影响（主会话覆盖）。每轮按当前状态判定，前端无需额外字段。
+- `session_prompt` 非空时追加在 project prompt 之后，作为 system prompt 的 `## 会话设定` 段。
 
 **Prime Conversation（唯一 G045 主会话）**
 - ExoCore 内 G045 必定且只存在一个；该 preset 只要有 Conversation，就必须且只能有一条 `is_prime=true`。
@@ -48,7 +56,8 @@
 
 **POST /api/agents/conversations/** — name + project (必填) / agent_preset (可选)
 
-**PATCH /api/agents/conversations/<pk>/** — name / project / archive / `is_prime`
+**PATCH /api/agents/conversations/<pk>/** — name / project / archive / `is_prime` / `tags` / `session_prompt`
+- `tags` 为整体替换（`[]` 清空）；冲突 400 时原 tag 保持不变。
 - `{"is_prime": true}`：仅接受唯一 G045 所属 Conversation；旧 Prime 清除与目标设置是一个原子结果（排他转移）；重复设置当前 Prime 幂等；成功响应目标 `is_prime=true`。
 - `{"is_prime": false}`：`400`（Prime 不能清空，只能转移）；非 JSON boolean 同样 `400`。
 
@@ -249,6 +258,8 @@ Runtime regenerate 当前仅支持 text-only 目标；目标 Message 自带附�
 ### 1.4 Superior Session — Agent 自主调度
 
 **POST /api/agents/sessions/init/** — 创建 Conversation（Standard / Superior(g045) 通用）
+
+可选 additive 字段：`tags: string[]`、`session_prompt: string`（规则见 §1.2）。不从 project 自动继承 tag（预填由前端完成）；tag 冲突 / 非法 → 400 且不创建会话。
 
 201 成功响应（P1A-B0 frozen contract）：
 
@@ -703,11 +714,13 @@ key_value write-only，响应不返回。last_four 自动提取。
 
 ### 3.8 Projects — 项目管理
 
-**GET /api/core/projects/** — 裸数组，字段 `{id, name, description, prompt, work_dir, created_at}`（name 为唯一必填）；列表不返回 Archived 项目
+**GET /api/core/projects/** — 裸数组，字段 `{id, name, description, prompt, work_dir, tags, created_at}`（name 为唯一必填）；列表不返回 Archived 项目
 
-**POST /api/core/projects/** — body `{name, description?, prompt?, work_dir?}`，仅这四个受支持字段；返回 201 + 完整行
+**POST /api/core/projects/** — body `{name, description?, prompt?, work_dir?, tags?}`，仅这五个受支持字段；返回 201 + 完整行
 
-**PATCH /api/core/projects/<pk>/** — 同上四个字段（work_dir 为空字符串 = 未绑定）；返回完整行
+**PATCH /api/core/projects/<pk>/** — 同上五个字段（work_dir 为空字符串 = 未绑定；`tags` 整体替换）；返回完整行。project tag 只是新建会话时的预填来源，不影响会话判定；tag 规则与错误形状同 §1.2。
+
+**GET /api/core/tags/suggest/?q=<prefix>** — tag 联想：`{"tags": ["chat", "雨夜", ...]}`。返回被会话或 project 用过、且前缀匹配（大小写不敏感，忽略前导 `#`）的 tag，并入前缀匹配的特殊 tag 候选；按名排序，至多 20 个。
 
 **GET /api/core/projects/<pk>/delete-preview/** — 删除确认预览：
 

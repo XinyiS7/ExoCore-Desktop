@@ -63,6 +63,8 @@ export interface ProjectDetailRow {
   description: string | null;
   prompt: string | null;
   workDir: string | null;
+  /** #96 project tags: prefill source for new conversations only. */
+  tags: string[];
   createdAt: string;
 }
 

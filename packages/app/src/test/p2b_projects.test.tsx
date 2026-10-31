@@ -70,6 +70,8 @@ function lensRow(
     thinkingLevel: null,
     memoryInjectionEnabled: null,
     isPrime: false,
+    tags: [],
+    sessionPrompt: '',
   };
 }
 
@@ -251,6 +253,7 @@ describe('P2B Project create', () => {
       description: 'd',
       prompt: 'sys',
       work_dir: 'D:\\new',
+      tags: [],
     });
     // Landing on the canonical detail route (exactly the returned id).
     expect(await screen.findByRole('heading', { level: 2, name: 'NewOne' })).toBeTruthy();
@@ -774,6 +777,7 @@ describe('P2B Project edit', () => {
       description: 'updated desc',
       prompt: 'alpha prompt',
       work_dir: 'D:\\new-dir',
+      tags: [],
     });
     // success closes the dialog; server truth is re-read (detail refetch)
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());

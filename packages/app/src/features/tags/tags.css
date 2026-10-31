@@ -1,0 +1,71 @@
+/* Session / Project tag chip input (#96). */
+
+.tag-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-height: 34px;
+  padding: 4px 8px;
+  border: 1px solid var(--v4-line);
+  border-radius: 6px;
+  background: transparent;
+}
+
+.tag-input:focus-within {
+  border-color: var(--v4-accent);
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 4px 1px 6px;
+  border-radius: 4px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  color: var(--v4-accent);
+  background: var(--v4-accent-soft);
+}
+
+.tag-chip-remove {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.tag-input-field {
+  flex: 1 1 80px;
+  min-width: 80px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.tag-suggest-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag-suggest-item {
+  padding: 1px 6px;
+  border: 1px solid var(--v4-line);
+  border-radius: 4px;
+  background: none;
+  color: var(--v4-text-dim);
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  cursor: pointer;
+}
+
+.tag-suggest-item:hover {
+  color: var(--v4-accent);
+  border-color: var(--v4-accent);
+}

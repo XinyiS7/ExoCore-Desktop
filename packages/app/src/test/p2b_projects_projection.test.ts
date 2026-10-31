@@ -32,6 +32,8 @@ function row(
     thinkingLevel: null,
     memoryInjectionEnabled: null,
     isPrime: false,
+    tags: [],
+    sessionPrompt: '',
   };
 }
 

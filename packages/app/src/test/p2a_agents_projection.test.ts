@@ -35,6 +35,8 @@ function conv(id: number, over: Partial<ConversationSummary> = {}): Conversation
     thinkingLevel: 'auto',
     memoryInjectionEnabled: null,
     isPrime: false,
+    tags: [],
+    sessionPrompt: '',
     ...over,
   };
 }

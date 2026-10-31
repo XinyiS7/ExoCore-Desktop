@@ -470,15 +470,16 @@ describe('ConversationDeleteMenu — keyboard & row menu interactions', () => {
     const trigger = screen.getByRole('button', { name: /会话操作 Alpha/ });
     fireEvent.click(trigger);
     const menu = screen.getByRole('menu');
+    const settings = within(menu).getByRole('menuitem', { name: '会话设定' });
     const item = within(menu).getByRole('menuitem', { name: '删除会话' });
     item.focus();
 
     fireEvent.keyDown(menu, { key: 'ArrowDown' });
-    expect(document.activeElement).toBe(item);
+    expect(document.activeElement).toBe(settings);
     fireEvent.keyDown(menu, { key: 'ArrowUp' });
     expect(document.activeElement).toBe(item);
     fireEvent.keyDown(menu, { key: 'Tab' });
-    expect(document.activeElement).toBe(item);
+    expect(document.activeElement).toBe(settings);
   });
 });
 

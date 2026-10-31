@@ -1,6 +1,7 @@
 import { apiFetch } from 'exo-shared/api';
 import type { ProjectDetailRow } from '../chat/control/types';
 import { AppApiError, contractError } from '../chat/api';
+import { readTagNames } from '../tags/rules';
 import type {
   KnowledgePatchResult,
   KnowledgePatchValues,
@@ -24,6 +25,7 @@ export interface ProjectWriteValues {
   description: string;
   prompt: string;
   workDir: string;
+  tags: string[];
 }
 
 /**
@@ -58,17 +60,19 @@ export function validateProjectObject(raw: unknown): ProjectDetailRow {
     description: typeof row.description === 'string' ? row.description : null,
     prompt: typeof row.prompt === 'string' ? row.prompt : null,
     workDir: typeof row.work_dir === 'string' ? row.work_dir : null,
+    tags: readTagNames(row.tags),
     createdAt: typeof row.created_at === 'string' ? row.created_at : '',
   };
 }
 
 /** Wire body for create/update — only the supported serializer fields (Plan §4.1). */
-function toWire(values: ProjectWriteValues): Record<string, string> {
+function toWire(values: ProjectWriteValues): Record<string, unknown> {
   return {
     name: values.name,
     description: values.description,
     prompt: values.prompt,
     work_dir: values.workDir,
+    tags: values.tags,
   };
 }
 
