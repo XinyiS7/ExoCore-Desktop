@@ -10,6 +10,7 @@
  */
 import { apiFetch } from 'exo-shared/api';
 import { AppApiError, toAppApiError } from '../api';
+import { readTagNames } from '../../tags/rules';
 import {
   isThinkingLevel,
   type CacheStatusView,
@@ -211,6 +212,7 @@ export async function fetchProjectDetail(projectId: number): Promise<ProjectDeta
     description: typeof row.description === 'string' ? row.description : null,
     prompt: typeof row.prompt === 'string' ? row.prompt : null,
     workDir: typeof row.work_dir === 'string' ? row.work_dir : null,
+    tags: readTagNames(row.tags),
     createdAt: typeof row.created_at === 'string' ? row.created_at : '',
   };
 }

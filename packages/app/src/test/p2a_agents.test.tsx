@@ -651,6 +651,8 @@ function lensRow(
     thinkingLevel: null,
     memoryInjectionEnabled: null,
     isPrime: false,
+    tags: [],
+    sessionPrompt: '',
   };
 }
 

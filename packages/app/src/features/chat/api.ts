@@ -2,11 +2,13 @@ import { apiFetch } from 'exo-shared/api';
 import { normalizeVoiceToolErrorList } from './voice/contract';
 import { normalizeMessageAttachments } from './attachments/projection';
 import { normalizePresentations } from './presentations/projection';
+import { readTagNames } from '../tags/rules';
 import type {
   AgentPresetRow,
   AssistantRunTraceItem,
   AssistantRunTraceProjection,
   ConversationRow,
+  ConversationSettingsInput,
   ConversationSummary,
   CreateConversationInput,
   CreateConversationResult,
@@ -122,6 +124,8 @@ function normalizeConversationRow(rawRow: unknown): ConversationSummary {
     memoryInjectionEnabled:
       typeof row.memory_injection_enabled === 'boolean' ? row.memory_injection_enabled : null,
     isPrime: row.is_prime,
+    tags: readTagNames(row.tags),
+    sessionPrompt: typeof row.session_prompt === 'string' ? row.session_prompt : '',
   };
 }
 
@@ -345,6 +349,21 @@ export async function setPrimeConversation(id: number): Promise<ConversationSumm
   return normalizeConversationRow(raw);
 }
 
+/** PATCH /api/agents/conversations/<id>/ with { tags, session_prompt } (#96). */
+export async function updateConversationSettings(
+  id: number,
+  input: ConversationSettingsInput,
+): Promise<ConversationSummary> {
+  const raw = await apiFetch(`/api/agents/conversations/${id}/`, {
+    method: 'PATCH',
+    body: { tags: input.tags, session_prompt: input.sessionPrompt },
+  });
+  if (!isRecord(raw) || raw.id !== id) {
+    throw contractError('会话设定接口返回格式异常', raw);
+  }
+  return normalizeConversationRow(raw);
+}
+
 // ── Conversation create (canonical init only — never POST .../conversations/) ─
 
 /** POST /api/agents/sessions/init/ */
@@ -356,6 +375,10 @@ export async function createConversation(input: CreateConversationInput): Promis
   };
   if (input.name !== undefined && input.name.trim() !== '') body.name = input.name.trim();
   if (input.frozenProjectIds !== undefined) body.frozen_project_ids = input.frozenProjectIds;
+  if (input.tags !== undefined && input.tags.length > 0) body.tags = input.tags;
+  if (input.sessionPrompt !== undefined && input.sessionPrompt.trim() !== '') {
+    body.session_prompt = input.sessionPrompt;
+  }
   const raw: InitEnvelope = await apiFetch('/api/agents/sessions/init/', { method: 'POST', body });
   const conversationId = raw?.data?.conversation_id;
   const sessionName = raw?.data?.session_name;

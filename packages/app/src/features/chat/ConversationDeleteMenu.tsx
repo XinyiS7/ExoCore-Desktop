@@ -5,8 +5,8 @@
  * - Always-reachable three-dot menu button inside the row (mouse, keyboard focus,
  *   touch); never hover-only. Long names / narrow windows are handled by the
  *   existing row layout + this action's flex-shrink:0.
- * - Opens a dropdown menu with extensible actions; currently contains the
- *   single disabled-safe item "删除会话" (danger style).
+ * - Opens a dropdown menu with extensible actions: "会话设定" (#96 tags +
+ *   session prompt) and the disabled-safe "删除会话" (danger style).
  * - Selecting "删除会话" opens the shared ConversationDeleteConfirmDialog
  *   with an immutable capture of {id, name} at open time.
  * - Keyboard: focusable trigger, Enter/Space/ArrowDown opens, Arrow/Tab navigates
@@ -17,8 +17,9 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ComponentType, KeyboardEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { MoreVertical, Trash2 } from 'lucide-react';
+import { MoreVertical, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { ConversationDeleteConfirmDialog } from './ConversationDeleteConfirmDialog';
+import { ConversationSettingsDialog } from './ConversationSettingsDialog';
 import { reconcileConversationList } from './chatDeleteUi';
 import { queryKeys } from './queries';
 
@@ -47,6 +48,7 @@ export function ConversationDeleteMenu({
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -75,7 +77,23 @@ export function ConversationDeleteMenu({
     setDialogOpen(true);
   }, []);
 
+  const openSettingsDialog = useCallback(() => {
+    setMenuOpen(false);
+    triggerRef.current?.focus();
+    setSettingsOpen(true);
+  }, []);
+
+  const closeSettingsDialog = useCallback(() => {
+    setSettingsOpen(false);
+  }, []);
+
   const actions: ConversationActionItem[] = [
+    {
+      id: 'settings',
+      label: '会话设定',
+      icon: SlidersHorizontal,
+      onSelect: openSettingsDialog,
+    },
     {
       id: 'delete',
       label: '删除会话',
@@ -212,6 +230,10 @@ export function ConversationDeleteMenu({
           </ul>
         ) : null}
       </div>
+
+      {settingsOpen ? (
+        <ConversationSettingsDialog conversationId={conversationId} onClose={closeSettingsDialog} />
+      ) : null}
 
       <ConversationDeleteConfirmDialog
         open={dialogOpen}

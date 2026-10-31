@@ -7,6 +7,7 @@ import './styles/shell.css';
 import './styles/theme-bloodborne.css';
 import './features/agents/agents.css';
 import './features/projects/projects.css';
+import './features/tags/tags.css';
 import './features/chat/chatDelete.css';
 import './features/account/account.css';
 import './features/settings/settings.css';

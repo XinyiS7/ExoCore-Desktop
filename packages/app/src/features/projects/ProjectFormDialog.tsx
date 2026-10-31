@@ -6,6 +6,8 @@ import { toAppApiError } from '../chat/api';
 import type { ProjectDetailRow } from '../chat/control/types';
 import { useDialogA11y } from '../chat/dialogA11y';
 import type { ProjectSubmitVariables, ProjectWriteValues } from './api';
+import { TagInput } from '../tags/TagInput';
+import { specialTagConflict, tagErrorMessage } from '../tags/rules';
 
 export type ProjectFormValues = ProjectWriteValues;
 
@@ -57,6 +59,7 @@ export function ProjectFormDialog({
 }) {
   const [ambiguousWrite, setAmbiguousWrite] = useState(false);
   const [bannerError, setBannerError] = useState<string | null>(null);
+  const [tags, setTags] = useState<string[]>(initialValues?.tags ?? []);
   const mountedRef = useRef(false);
   const nextSubmitTokenRef = useRef(0);
   const activeOriginRef = useRef<{ token: number } | null>(null);
@@ -92,7 +95,7 @@ export function ProjectFormDialog({
     handleSubmit,
     setError,
     formState: { errors },
-  } = useForm<ProjectFormValues>({
+  } = useForm<Omit<ProjectFormValues, 'tags'>>({
     defaultValues: {
       name: initialValues?.name ?? '',
       description: initialValues?.description ?? '',
@@ -103,12 +106,18 @@ export function ProjectFormDialog({
 
   const onSubmit = handleSubmit(async (values) => {
     if (ambiguousWrite) return; // terminal lock — never resubmit a lost create
+    const conflict = specialTagConflict(tags);
+    if (conflict) {
+      setBannerError(conflict);
+      return;
+    }
     const origin = { token: ++nextSubmitTokenRef.current };
     activeOriginRef.current = origin;
     setBannerError(null);
     try {
+      const written: ProjectWriteValues = { ...values, tags: [...tags] };
       const payload: ProjectSubmitVariables =
-        submitProjectId == null ? values : { ...values, projectId: submitProjectId };
+        submitProjectId == null ? written : { ...written, projectId: submitProjectId };
       const project = await mutation.mutateAsync(payload);
       if (!isCurrentOrigin(origin)) return; // dialog closed / route switched
       onConfirmed?.(project);
@@ -121,7 +130,12 @@ export function ProjectFormDialog({
         return;
       }
       let hadFieldErrors = false;
-      const fieldMap: Record<string, keyof ProjectFormValues> = {
+      const tagMessage = tagErrorMessage(error.body);
+      if (tagMessage) {
+        setBannerError(tagMessage);
+        return;
+      }
+      const fieldMap: Record<string, Exclude<keyof ProjectFormValues, 'tags'>> = {
         name: 'name',
         description: 'description',
         prompt: 'prompt',
@@ -211,6 +225,9 @@ export function ProjectFormDialog({
           </label>
           <FieldError message={errors.workDir?.message} />
           <p className="app-muted">工作目录是项目在磁盘上的根目录绝对路径；此处仅保存配置字符串，不做目录探测。</p>
+
+          <TagInput id="project-tags" label="Tag（可选）" value={tags} onChange={setTags} disabled={submitLocked} />
+          <p className="app-muted">新建本项目会话时预填这些 tag，可在新建时修改。</p>
 
           <div className="app-dialog-actions">
             <button type="button" className="app-btn app-btn-ghost" onClick={closeDialog}>

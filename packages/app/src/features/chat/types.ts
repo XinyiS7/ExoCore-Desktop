@@ -24,6 +24,8 @@ export interface ProjectRow {
   description: string | null;
   prompt: string | null;
   work_dir: string | null;
+  /** Session tags (#96); prefill source for new conversations. */
+  tags?: string[];
   created_at: string;
 }
 
@@ -42,6 +44,9 @@ export interface ConversationRow {
   memory_injection_enabled: boolean | null;
   /** Gate 0 required boolean Prime Conversation flag */
   is_prime: boolean;
+  /** #96 session tags (canonical names) and hand-written session prompt. */
+  tags?: string[];
+  session_prompt?: string;
 }
 
 export type MessageRole = 'user' | 'assistant' | 'system' | 'developer';
@@ -215,6 +220,8 @@ export interface ConversationSummary {
   memoryInjectionEnabled: boolean | null;
   /** Gate 0 required boolean Prime Conversation flag */
   isPrime: boolean;
+  tags: string[];
+  sessionPrompt: string;
 }
 
 /**
@@ -314,6 +321,15 @@ export interface CreateConversationInput {
   projectId: number;
   /** g045 extension list; omitted for non-g045 presets. */
   frozenProjectIds?: number[];
+  /** #96: omitted / empty means no tags (the backend never inherits project tags). */
+  tags?: string[];
+  sessionPrompt?: string;
+}
+
+/** #96 minimal edit entry: both fields are replaced as a whole. */
+export interface ConversationSettingsInput {
+  tags: string[];
+  sessionPrompt: string;
 }
 
 export interface CreateConversationResult {

@@ -49,6 +49,8 @@ const row = (id: number): ConversationSummary => ({
   lastMessageAt: null,
   memoryInjectionEnabled: null,
   isPrime: false,
+  tags: [],
+  sessionPrompt: '',
 });
 
 function deferred<T>() {

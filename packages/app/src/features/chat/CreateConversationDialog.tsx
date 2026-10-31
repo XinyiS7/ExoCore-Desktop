@@ -5,11 +5,14 @@ import { toAppApiError } from './api';
 import type { AgentPresetRow, CreateConversationResult } from './types';
 import { isG045AgentType, useCreateConversationMutation, useProjectsQuery, useVisiblePresetsQuery } from './queries';
 import { LoadingState } from '../../shared/AsyncState';
+import { TagInput } from '../tags/TagInput';
+import { readTagNames, specialTagConflict, tagErrorMessage } from '../tags/rules';
 
 interface FormValues {
   name: string;
   presetId: string;
   projectId: string;
+  sessionPrompt: string;
 }
 
 function FieldError({ message }: { message?: string }) {
@@ -72,6 +75,8 @@ export function CreateConversationDialog({
   const projectsQuery = useProjectsQuery();
   const [ambiguousWrite, setAmbiguousWrite] = useState(false);
   const [permissionIds, setPermissionIds] = useState<number[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const prefilledProjectRef = useRef<string | null>(null);
   const [bannerError, setBannerError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
@@ -117,7 +122,7 @@ export function CreateConversationDialog({
     setError,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    defaultValues: { name: '', presetId: '', projectId: '0' },
+    defaultValues: { name: '', presetId: '', projectId: '0', sessionPrompt: '' },
   });
 
   const selectedPresetId = watch('presetId');
@@ -144,6 +149,21 @@ export function CreateConversationDialog({
     const primary = primaryProjectId ? Number(primaryProjectId) : 0;
     setPermissionIds((prev) => (primary ? prev.filter((id) => id !== primary) : prev));
   }, [primaryProjectId]);
+
+  // #96: the chosen project's tags prefill the chips once per project choice;
+  // a later projects refetch never overwrites what the user has edited.
+  useEffect(() => {
+    if (prefilledProjectRef.current === primaryProjectId) return;
+    if (!primaryProjectId || primaryProjectId === '0') {
+      prefilledProjectRef.current = primaryProjectId;
+      setTags([]);
+      return;
+    }
+    const project = projectsQuery.data?.find((row) => String(row.id) === primaryProjectId);
+    if (!project) return;
+    prefilledProjectRef.current = primaryProjectId;
+    setTags(readTagNames(project.tags));
+  }, [primaryProjectId, projectsQuery.data]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -209,6 +229,11 @@ export function CreateConversationDialog({
 
   const onSubmit = handleSubmit(async (values) => {
     if (ambiguousWrite) return; // terminal lock — never submit again.
+    const conflict = specialTagConflict(tags);
+    if (conflict) {
+      setBannerError(conflict);
+      return;
+    }
     const submittedPreset = fixedPreset ?? selectedPreset;
     const origin = {
       token: ++nextSubmitTokenRef.current,
@@ -225,6 +250,8 @@ export function CreateConversationDialog({
         projectId: fixedProject?.id ?? (values.projectId ? Number(values.projectId) : 0),
         ...(values.name.trim() ? { name: values.name.trim() } : {}),
         ...(isG045AgentType(submittedPreset?.agent_type) ? { frozenProjectIds: [...permissionIds] } : {}),
+        tags: [...tags],
+        sessionPrompt: values.sessionPrompt,
       });
       // The mutation invalidates shared Conversations before the guarded local
       // callback closes/navigates a still-live origin.
@@ -242,7 +269,7 @@ export function CreateConversationDialog({
         const message = error.fieldErrors[serverField];
         if (message) setError(formField, { type: 'server', message });
       }
-      setBannerError(error.message || '创建失败，请稍后重试。');
+      setBannerError(tagErrorMessage(error.body) ?? (error.message || '创建失败，请稍后重试。'));
     }
   });
 
@@ -378,6 +405,14 @@ export function CreateConversationDialog({
               <p className="app-muted">除所属项目外，允许该 g045 Agent 额外访问的项目（不选则仅所属项目）。</p>
             </div>
           ) : null}
+
+          <TagInput id="conv-tags" label="Tag（可选）" value={tags} onChange={setTags} disabled={submitLocked} />
+          <p className="app-muted">#theater 会话（非主会话）进入剧场：不注入现实背景，部分工具关闭。</p>
+
+          <label className="app-field" htmlFor="conv-session-prompt">
+            <span className="app-field-label">会话设定（可选）</span>
+            <textarea id="conv-session-prompt" className="app-input" rows={3} {...register('sessionPrompt')} />
+          </label>
 
           <div className="app-dialog-actions">
             <button type="button" className="app-btn app-btn-ghost" onClick={closeDialog}>

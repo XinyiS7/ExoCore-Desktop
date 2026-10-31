@@ -296,6 +296,7 @@ function ProjectDetail({ projectId }: { projectId: number }) {
                         description: project.description ?? '',
                         prompt: project.prompt ?? '',
                         workDir: project.workDir ?? '',
+                        tags: project.tags,
                       })
                     }
                   >

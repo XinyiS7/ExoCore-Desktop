@@ -17,8 +17,14 @@ import {
   listProjects,
   listVisiblePresets,
   setPrimeConversation,
+  updateConversationSettings,
 } from './api';
-import type { CreateConversationResult, MessagePage, MessageView } from './types';
+import type {
+  ConversationSettingsInput,
+  CreateConversationResult,
+  MessagePage,
+  MessageView,
+} from './types';
 
 export const queryKeys = {
   conversations: ['conversations'] as const,
@@ -170,6 +176,19 @@ export function findPersistedMessage(
     }
   }
   return null;
+}
+
+export function useUpdateConversationSettingsMutation(conversationId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ConversationSettingsInput) => updateConversationSettings(conversationId, input),
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.conversations }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.conversation(conversationId) }),
+      ]);
+    },
+  });
 }
 
 export function useCreateConversationMutation(
