@@ -3,6 +3,7 @@ import { Check, Copy, Edit2, GitBranch, RotateCw } from 'lucide-react';
 import type { AssistantRunTraceProjection, MessageRole, MessageView } from './types';
 import type { OptimisticUserRow, RuntimeAssistantRow } from './runtime/types';
 import { MessageContent } from './MessageContent';
+import { AssistantMessageEditor } from './AssistantMessageEditor';
 import { formatTimeOfDay } from './time';
 import { MessageAttachments } from './attachments/MessageAttachments';
 import { MessagePresentations } from './presentations/MessagePresentations';
@@ -72,6 +73,8 @@ export interface MessageTimelineProps {
   onEditMessage?: (id: number, content: string, isLatestUser: boolean) => void;
   onRegenerateMessage?: (id: number, isLatestUser: boolean) => void;
   onBranchMessage?: (id: number, snippet: string) => void;
+  /** Saves an edited assistant body in place; no truncate, no regenerate (#107). */
+  onSaveAssistantMessage?: (id: number, content: string) => Promise<unknown>;
   /** Replaces the built-in modal for 收藏正文 only; attachments / artifacts always use it (#74). */
   onCollectMessage?: (message: MessageView) => void;
   assistantName?: string;
@@ -87,6 +90,7 @@ function MessageRowItem({
   onEditMessage,
   onRegenerateMessage,
   onBranchMessage,
+  onSaveAssistantMessage,
   onCollect,
   assistantName,
   avatarUrl,
@@ -98,6 +102,7 @@ function MessageRowItem({
   onEditMessage?: (id: number, content: string, isLatestUser: boolean) => void;
   onRegenerateMessage?: (id: number, isLatestUser: boolean) => void;
   onBranchMessage?: (id: number, snippet: string) => void;
+  onSaveAssistantMessage?: (id: number, content: string) => Promise<unknown>;
   onCollect?: (message: MessageView, choice: CollectChoice) => void;
   assistantName?: string;
   /** Set for user / assistant rows; other roles keep a text label. */
@@ -122,6 +127,7 @@ function MessageRowItem({
   const hasPresentations = presentations.length > 0;
   const hasUserCards = isUser && presentations.some((item) => item.card !== null);
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
   const copyTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -179,7 +185,14 @@ function MessageRowItem({
             }
           />
         ) : null}
-        {hasContentText ? (
+        {editing && onSaveAssistantMessage ? (
+          <AssistantMessageEditor
+            initialContent={message.content}
+            saveDisabled={isRunActive}
+            onSave={(content) => onSaveAssistantMessage(message.id, content)}
+            onClose={() => setEditing(false)}
+          />
+        ) : hasContentText ? (
           <MessageContent content={message.content} />
         ) : hasAttachments || hasVoiceToolErrors || hasPresentations ? null : (
           <span className="app-muted">（空消息）</span>
@@ -204,7 +217,7 @@ function MessageRowItem({
       {/* Unified action bar below the message (#72 U3). Edit / regenerate /
           branch stay run-locked (§7.1, §7.4, §7.5); the P2T voice control
           deliberately is not (D7). */}
-      {isUser || isAssistant ? (
+      {(isUser || isAssistant) && !editing ? (
         <div className="app-msg-actions">
           {hasContentText ? (
             <button
@@ -245,6 +258,19 @@ function MessageRowItem({
           {hasCollectMenuItems(message) ? (
             <MessageCollectMenu message={message} onCollect={(choice) => onCollect?.(message, choice)} />
           ) : null}
+          {isAssistant && hasContentText && onSaveAssistantMessage && (
+            <button
+              type="button"
+              className="app-msg-action-btn"
+              disabled={isRunActive}
+              onClick={() => setEditing(true)}
+              title="编辑此条助手消息"
+              aria-label="编辑此条助手消息"
+            >
+              <Edit2 size={12} aria-hidden="true" />
+              编辑
+            </button>
+          )}
           {isUser && onEditMessage && (
             <button
               type="button"
@@ -290,6 +316,7 @@ export function MessageTimeline({
   onEditMessage,
   onRegenerateMessage,
   onBranchMessage,
+  onSaveAssistantMessage,
   onCollectMessage,
   assistantName,
   assistantPresetId,
@@ -354,6 +381,7 @@ export function MessageTimeline({
           onEditMessage={onEditMessage}
           onRegenerateMessage={onRegenerateMessage}
           onBranchMessage={onBranchMessage}
+          onSaveAssistantMessage={onSaveAssistantMessage}
           onCollect={handleCollect}
           assistantName={assistantName}
           avatarUrl={avatarFor(message.role)}

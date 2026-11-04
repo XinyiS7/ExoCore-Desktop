@@ -364,6 +364,22 @@ export async function updateConversationSettings(
   return normalizeConversationRow(raw);
 }
 
+/** PATCH /api/agents/conversations/<id>/messages/<messageId>/ — replaces the body only (#107). */
+export async function editAssistantMessage(
+  conversationId: number,
+  messageId: number,
+  content: string,
+): Promise<MessageView> {
+  const raw = await apiFetch(`/api/agents/conversations/${conversationId}/messages/${messageId}/`, {
+    method: 'PATCH',
+    body: { content },
+  });
+  if (!isRecord(raw) || raw.id !== messageId) {
+    throw contractError('消息编辑接口返回格式异常', raw);
+  }
+  return normalizeMessageRow(raw as unknown as MessageRow);
+}
+
 // ── Conversation create (canonical init only — never POST .../conversations/) ─
 
 /** POST /api/agents/sessions/init/ */

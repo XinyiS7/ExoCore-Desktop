@@ -3,6 +3,7 @@
  * No runtime lifecycle lives here — that is P1B territory.
  */
 import {
+  type InfiniteData,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -11,6 +12,7 @@ import {
 import {
   AppApiError,
   createConversation,
+  editAssistantMessage,
   fetchMessagePage,
   getConversation,
   listConversations,
@@ -187,6 +189,27 @@ export function useUpdateConversationSettingsMutation(conversationId: number) {
         queryClient.invalidateQueries({ queryKey: queryKeys.conversations }),
         queryClient.invalidateQueries({ queryKey: queryKeys.conversation(conversationId) }),
       ]);
+    },
+  });
+}
+
+export function useEditAssistantMessageMutation(conversationId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ messageId, content }: { messageId: number; content: string }) =>
+      editAssistantMessage(conversationId, messageId, content),
+    onSuccess: (edited) => {
+      queryClient.setQueryData<InfiniteData<MessagePage, number>>(
+        queryKeys.messages(conversationId),
+        (data) =>
+          data && {
+            ...data,
+            pages: data.pages.map((page) => ({
+              ...page,
+              messages: page.messages.map((row) => (row.id === edited.id ? edited : row)),
+            })),
+          },
+      );
     },
   });
 }

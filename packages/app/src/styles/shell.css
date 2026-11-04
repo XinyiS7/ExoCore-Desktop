@@ -837,6 +837,43 @@
   cursor: not-allowed;
 }
 
+/* Inline assistant body editor (#107) */
+.app-msg-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.app-msg-edit-input {
+  width: 100%;
+  min-height: 8em;
+  max-height: 60vh;
+  field-sizing: content;
+  padding: 8px 10px;
+  border: 1px solid var(--v4-line-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+}
+
+.app-msg-edit-input:focus {
+  outline: none;
+  border-color: var(--v4-accent);
+}
+
+.app-msg-edit-error {
+  margin: 0;
+  color: var(--v4-danger);
+  font-size: calc(12px * var(--exo-font-scale, 1));
+}
+
+.app-msg-edit-actions {
+  display: flex;
+  gap: 4px;
+}
+
 /* Collect second-level menu (#72 U4) */
 .app-msg-collect {
   position: relative;

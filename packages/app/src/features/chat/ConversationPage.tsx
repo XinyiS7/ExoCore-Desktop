@@ -13,6 +13,7 @@ import {
   findPersistedMessage,
   isValidConversationId,
   useConversationQuery,
+  useEditAssistantMessageMutation,
   useMessagePagesQuery,
   useVisiblePresetsQuery,
   fetchFreshWindow,
@@ -112,6 +113,7 @@ export function ConversationPage() {
   const presetsQuery = useVisiblePresetsQuery();
   const pagesQuery = useMessagePagesQuery(id);
   const merged = pagesQuery.data;
+  const editAssistantMessage = useEditAssistantMessageMutation(id);
 
   // P1D: one live catalog and one Conversation-local control owner. The
   // ref-backed lock closes same-tick HUD changes at runtime/audio boundaries.
@@ -544,6 +546,9 @@ export function ConversationPage() {
   // Request-side action-target guards (§5.1/§5.5, C1B-R1-05): every
   // edit/regenerate/branch dispatch re-validates the target against the
   // CURRENT canonical persisted rows of this conversation before POST.
+  const handleSaveAssistantMessage = (messageId: number, content: string) =>
+    editAssistantMessage.mutateAsync({ messageId, content });
+
   const handleEditMessage = (msgId: number, content: string, isLatestUser: boolean) => {
     if (busy || controlsPending) return;
     if (!findPersistedMessage(merged?.rows, msgId, 'user')) return;
@@ -773,6 +778,7 @@ export function ConversationPage() {
                   onEditMessage={handleEditMessage}
                   onRegenerateMessage={handleRegenerateMessage}
                   onBranchMessage={handleBranchMessage}
+                  onSaveAssistantMessage={handleSaveAssistantMessage}
                   assistantName={assistantName}
                   assistantPresetId={conversation?.agentPresetId ?? null}
                 />

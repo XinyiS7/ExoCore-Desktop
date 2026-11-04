@@ -1585,6 +1585,17 @@ shared server 冻结，不代表 Moonlight 已接入。
 
 ### 12.2 点播触发与状态轮询
 
+**PATCH /api/agents/conversations/<pk>/messages/<message_pk>/**
+
+替换一条助手消息的正文（#107）。不截断后续消息，也不重新生成；后端不检查会话运行状态。
+
+- 请求：`{"content": "<新正文>"}`，写入前经过 `filter_content`
+- 成功：`200`，返回该行的 `Message` 投影；过滤后与原文相同时不写库
+- 会话或消息不存在、消息不属于该会话：`404 {"code": "not_found", "error": "..."}`
+- 消息不是 assistant：`400 {"code": "message_not_editable", "error": "..."}`
+- `content` 缺失、不是字符串，或过滤后为空白：`400 {"code": "content_required", "error": "..."}`
+- 下游：Runtime 下一轮因历史分叉自动 rebase；Direct 编辑落在 Buffer 区时，提交后丢弃本地 snapshot 和远端 cache
+
 **POST /api/agents/conversations/<pk>/messages/<message_pk>/tts/**
 
 客户端以消息身份发起点播请求，请求体为 `{}`（禁止携带文本、情绪或配置，全由后端推导）。
