@@ -1966,6 +1966,11 @@ SSE 和 async polling 共用的稳定 error payload：
 | `protocol_error` | provider 返回违反 gateway 契约的数据 | false |
 | `model_not_found` | direct API provider 不提供该模型：HTTP 404、"model not found"，或 DeepSeek HTTP 400 "The supported API model names are…"；`message` 为 `<Endpoint 名> 不提供模型 <model>（可能已下线或改名），请切换模型。` | false |
 | `frozen_execution_unavailable` | Subscription Runtime（AGY）路径：请求模型不在 Runtime 启动预检得到的 `agy models` 列表中，在发往 AGY 之前即拒绝。payload 仅 `{code, message}`，`message` 为 `<Endpoint 名> 当前不提供模型 <model>，请切换模型。` | false |
+| `runtime_turn_in_progress` | AGY 路径：同会话仍有另一条活跃请求，本轮不触发自动恢复。payload 仅 `{code, message}`，`message` 为 `上一轮 AGY 仍在处理中，请稍后再试。系统会自动继续恢复。` | true |
+| `runtime_recovery_retryable` | AGY 路径：自动恢复暂时无法完成（Runtime 不可达、client 不可用或暂时状态冲突），已持久化的恢复进度保留。payload 仅 `{code, message}`，`message` 为 `AGY 会话暂时无法完成恢复，请稍后再试。` | true |
+| `runtime_continuity_integrity_error` | AGY 路径：会话 continuity 存在身份/完整性矛盾，为避免重复执行停止发送。payload 仅 `{code, message}`，`message` 为 `AGY 会话状态异常，已停止发送以避免重复执行。` | false |
+
+AGY continuity 恢复是后端自动行为（#118）：普通发送遇到未决/中断的旧 generation 时，后端在写本轮 user Message 前自动结算或退役旧 generation 并以下一 generation 继续，无需用户确认；上述三码仅在无法安全自动完成时出现，作为普通 SSE / async `error` 处理。不新增事件类型、字段或 UI；不再出现 `Known runtime continuity requires explicit recovery`。
 
 ### target_resolution_error 子 code
 
