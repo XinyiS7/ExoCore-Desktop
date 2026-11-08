@@ -1898,6 +1898,18 @@ a.app-att-filecard {
   color: var(--v4-warn);
 }
 
+/* #83 soft-removed attachment trace: inert, muted, no open/play entry. */
+.app-att-filecard--removed {
+  border-style: dashed;
+  background: transparent;
+  color: var(--v4-text-mute);
+}
+
+.app-att-filecard--removed .app-att-filecard-name {
+  color: var(--v4-text-mute);
+  text-decoration: line-through;
+}
+
 /* Agent Collection cards (#84 collection_card surface), below the media row. */
 .app-artifact-cards {
   display: flex;

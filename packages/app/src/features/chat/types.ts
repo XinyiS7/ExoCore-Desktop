@@ -59,6 +59,8 @@ export interface AttachmentMeta {
   file_size: number;
   file_uri: string | null;
   content_url: string | null;
+  /** #83: soft-removed by the user; file_uri / content_url are null. */
+  removed?: boolean;
 }
 
 export type AttachmentRefType = 'session_attachment' | 'message_attachment';
@@ -83,6 +85,8 @@ export interface MessageAttachmentRow {
   content_url: string | null;
   duration_ms: number | null;
   error_code: string | null;
+  /** #83: soft-removed session row; content_url is null. */
+  removed?: boolean;
 }
 
 export interface MessageAttachmentView {
@@ -99,6 +103,8 @@ export interface MessageAttachmentView {
   contentUrl: string | null;
   durationMs: number | null;
   errorCode: string | null;
+  /** #83: soft-removed by the user; renders a trace chip with no open/play entry. */
+  removed?: boolean;
   /**
    * Session rows only: confirmed upload occurrence that can be collected (#74);
    * null for older / JSON attachments, absent on other rows.

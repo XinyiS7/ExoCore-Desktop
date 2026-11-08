@@ -111,6 +111,7 @@ export function parseCanonicalAttachmentItem(
     durationMs: durationMs ?? null,
     errorCode: errorCode ?? null,
   };
+  if (candidate.removed === true) view.removed = true;
 
   // For a canonical session row, legacy meta with matching id may supply file_uri / original_filename
   // without overriding canonical status, source, kind, position, or content URL.
@@ -164,6 +165,7 @@ function parseLegacyMetaItem(item: unknown, index: number): MessageAttachmentVie
     contentUrl: typeof item.content_url === 'string' ? item.content_url : null,
     durationMs: null,
     errorCode: null,
+    ...(item.removed === true ? { removed: true } : {}),
     fileUri: typeof item.file_uri === 'string' ? item.file_uri : null,
     originalFilename: typeof item.original_filename === 'string' ? item.original_filename : null,
   };
