@@ -385,7 +385,7 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
 - `MessageSerializer.attachments_meta[].content_url`：audio 附件为上述同源 URL，其余附件为 `null`（legacy audio-only 语义不变）
 - **canonical `attachments[]` 图片 `content_url`（V4，additive）**：canonical ready 展示行（`kind="image"`）可提供同源 `content_url` 供缩略图/灯箱渲染；前端对 canonical `content_url` 仅接受同源 `http/https`（跨源、协议相对与 `file:`/`data:` 等一律拒绝），拒绝或加载失败时按顺序回退到已验证的 legacy `file_uri`（每个候选至多尝试一次），两者均不可用/失败时呈现文件名失败卡片且绝不生成 `<img src>`。legacy `file_uri` 维持既有校验（`http/https`，允许 HTTPS 远端源）；同源限制只适用于 canonical `content_url`。本项不改变上一行 `attachments_meta[].content_url` 的 audio-only 语义。**（后端已交付，2026-10-01）** session 用户图片（PNG/JPEG/GIF/WebP）现在在 canonical `attachments[]` 行输出上述同源 `content_url`，由 `GET /api/agents/conversations/<pk>/attachments/<id>/content/` 以 `inline` + `nosniff` 提供；`image/svg+xml` 与其它 MIME 仍投影 `null` 且 content 端点稳定 404。
 
-**DELETE /api/agents/conversations/<pk>/attachments/delete/** — 批量删除
+**DELETE /api/agents/conversations/<pk>/attachments/delete/** — 单个附件移除（body `{source, id}`）
 
 **软移除（#83）**：`source: "user"` 的删除是软移除——写 `removed_at`，`SessionAttachment` 行与 `Message.attachment_ids` 保留留痕，不删原件、不级联藏品 provenance。
 - 首次移除成功 → `204`；行不存在、或已移除再次 DELETE → `404 {"error": "附件不存在"}`（不做幂等成功）。
