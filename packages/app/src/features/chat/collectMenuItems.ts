@@ -67,7 +67,8 @@ export function buildCollectMenuItems(
     });
   }
   for (const attachment of message.attachments ?? []) {
-    if (attachment.status !== 'ready') continue;
+    // #83 D8: a removed attachment is never a collect candidate, not even a disabled one.
+    if (attachment.removed || attachment.status !== 'ready') continue;
     items.push({
       ...(attachment.provenanceId
         ? sourceItem(attachment.key, attachment.displayName, {

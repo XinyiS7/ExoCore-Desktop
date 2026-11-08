@@ -3,7 +3,11 @@ import { screen } from '@testing-library/react';
 import { renderV4 } from './helpers';
 import { MessageAttachments } from '../features/chat/attachments/MessageAttachments';
 import { normalizeMessageAttachments } from '../features/chat/attachments/projection';
-import type { AttachmentMeta } from '../features/chat/types';
+import {
+  buildCollectMenuItems,
+  hasCollectMenuItems,
+} from '../features/chat/collectMenuItems';
+import type { AttachmentMeta, MessageView } from '../features/chat/types';
 
 const canonicalRow = (over: Record<string, unknown>) => ({
   ref: { type: 'session_attachment', id: 5 },
@@ -114,5 +118,49 @@ describe('#83 soft-removed attachment trace', () => {
       '图片old.png已移除',
     );
     expect(container.querySelectorAll('img').length).toBe(0);
+  });
+});
+
+describe('#83 removed attachments in the collect menu', () => {
+  const messageWith = (content: string, rows: Record<string, unknown>[]): MessageView => ({
+    id: 1,
+    role: 'user',
+    content,
+    reasoningContent: null,
+    clientTurnId: null,
+    platform: null,
+    modelVersion: null,
+    tokenCount: null,
+    indexInSession: 1,
+    attachmentIds: [],
+    attachmentsMeta: [],
+    createdAt: '2026-11-08T10:00:00Z',
+    attachments: normalizeMessageAttachments(rows, null),
+  });
+  const active = canonicalRow({ provenance_id: 'prov-active' });
+  const gone = canonicalRow({
+    ref: { type: 'session_attachment', id: 6 },
+    removed: true,
+    position: 1,
+    display_name: 'chart.png',
+    content_url: null,
+  });
+
+  it('skips the removed row and keeps the active sibling', () => {
+    const items = buildCollectMenuItems(messageWith('', [active, gone]), () => undefined);
+
+    expect(items.map((item) => [item.id, item.disabled])).toEqual([
+      ['session_attachment:5', false],
+    ]);
+  });
+
+  it('offers no collect entry when every attachment is removed and there is no body', () => {
+    expect(hasCollectMenuItems(messageWith('', [gone]))).toBe(false);
+  });
+
+  it('still offers the body beside an all-removed attachment list', () => {
+    const items = buildCollectMenuItems(messageWith('看图', [gone]), () => undefined);
+
+    expect(items.map((item) => item.id)).toEqual(['body']);
   });
 });
