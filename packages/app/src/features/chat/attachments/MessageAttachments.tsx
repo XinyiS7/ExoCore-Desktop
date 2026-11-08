@@ -1,6 +1,7 @@
 import type { AttachmentMeta, MessageAttachmentView } from '../types';
 import { AttachmentImage } from './AttachmentImage';
 import { AttachmentFileCard } from './AttachmentFileCard';
+import { RemovedAttachmentChip } from './RemovedAttachmentChip';
 import { AudioPlayerBubble } from '../audio/AudioPlayerBubble';
 
 export interface MessageAttachmentsProps {
@@ -34,6 +35,9 @@ export function MessageAttachments({ attachments, meta, conversationId }: Messag
     return (
       <div className="app-msg-attachments">
         {ready.map((att) => {
+          if (att.removed) {
+            return <RemovedAttachmentChip key={att.key} kind={att.kind} name={att.displayName} />;
+          }
           if (att.kind === 'audio') {
             return (
               <AudioPlayerBubble
@@ -58,6 +62,15 @@ export function MessageAttachments({ attachments, meta, conversationId }: Messag
         {meta.map((att) => {
           const isImage = att.mime_type?.startsWith('image/') ?? false;
           const isAudio = att.mime_type?.startsWith('audio/') ?? false;
+          if (att.removed) {
+            return (
+              <RemovedAttachmentChip
+                key={att.id}
+                kind={isAudio ? 'audio' : isImage ? 'image' : 'file'}
+                name={att.display_name || att.original_filename || '附件'}
+              />
+            );
+          }
           if (isAudio) {
             return (
               <AudioPlayerBubble
