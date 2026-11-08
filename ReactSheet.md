@@ -640,6 +640,19 @@ Query: `preset_id`（必填），可选 `scope` / `source` / `is_processed`。`i
 | abilities | [string] | yes | fc / vision / grounding / image_gen / thinking / context_cache |
 | enabled | bool | yes | |
 
+**thinking 边界的稳定 4xx（#112）**
+
+`thinking_profile` 是 backend 内部的 provider 契约，不出现在任何响应字段，也不接受客户端写入：
+
+| 触发条件 | status | code |
+|---|---|---|
+| 请求体出现 `thinking_profile` | 400 | `thinking_profile_not_writable` |
+| POST 的 `abilities` 含 `thinking`；或 PATCH 新增/删除 `thinking` | 400 | `thinking_ability_managed_by_registry` |
+
+`thinking` 能力与对应 profile 只能经模型注册流程（`register_model` / `seed_models`）维护；
+该接口只允许在不改变 `thinking` 存在性的前提下修改其余 abilities 与 `enabled`。
+响应体形如 `{"code": ["<code>"], "message": ["<说明>"]}`。
+
 **PATCH** / **DELETE** — 被 role binding 引用返回 409 (code: `model_in_use`)
 
 ### 3.5 CRUD `/api/core/endpoints/` — 通道端点
