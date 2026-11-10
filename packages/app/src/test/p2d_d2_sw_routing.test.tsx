@@ -17,6 +17,65 @@ interface WorkerHarness {
   listeners: Record<string, (event: unknown) => Promise<unknown> | void>;
   showNotification: ReturnType<typeof vi.fn>;
   openWindow: ReturnType<typeof vi.fn>;
+  routes: unknown[];
+  navigationRoute: NavigationRouteDouble | null;
+  precacheShellHandler: ReturnType<typeof vi.fn>;
+  createHandlerBoundToURL: ReturnType<typeof vi.fn>;
+  networkFirstInstances: NetworkFirstDouble[];
+}
+
+/** Captures the `NavigationRoute` handed to `registerRoute` so tests can invoke
+ *  the real navigation handler of the production worker. */
+class NavigationRouteDouble {
+  readonly handler: (args: { request: Request; event?: unknown }) => Promise<Response>;
+  readonly options: { denylist?: RegExp[] };
+  constructor(
+    handler: (args: { request: Request; event?: unknown }) => Promise<Response>,
+    options: { denylist?: RegExp[] } = {},
+  ) {
+    this.handler = handler;
+    this.options = options;
+  }
+}
+
+/** Minimal but faithful NetworkFirst stand-in: network first, plugin veto on
+ *  cache write, runtime cache fallback, rethrow when neither can answer. */
+class NetworkFirstDouble {
+  static instances: NetworkFirstDouble[] = [];
+  readonly cacheName: string;
+  readonly plugins: { cacheWillUpdate?: (args: { response: Response }) => Promise<Response | null> | Response | null }[];
+  readonly cache = new Map<string, Response>();
+
+  constructor(options: { cacheName?: string; plugins?: NetworkFirstDouble['plugins'] } = {}) {
+    this.cacheName = options.cacheName ?? '';
+    this.plugins = options.plugins ?? [];
+    NetworkFirstDouble.instances.push(this);
+  }
+
+  async handle({ request }: { request: Request }): Promise<Response> {
+    const key = request.url;
+    try {
+      const response = await (globalThis.fetch as unknown as (input: Request) => Promise<Response>)(request);
+      let cacheable: Response | null = response;
+      for (const plugin of this.plugins) {
+        if (typeof plugin.cacheWillUpdate === 'function') {
+          const verdict = await plugin.cacheWillUpdate({ response });
+          if (!verdict) {
+            cacheable = null;
+            break;
+          }
+        }
+      }
+      if (cacheable) {
+        this.cache.set(key, cacheable.clone());
+      }
+      return response;
+    } catch (error) {
+      const cached = this.cache.get(key);
+      if (cached) return cached.clone();
+      throw error;
+    }
+  }
 }
 
 function loadProductionWorker(options: {
@@ -35,6 +94,7 @@ function loadProductionWorker(options: {
 
   const workerSelf = {
     __WB_MANIFEST: [],
+    origin: 'https://exocore.example.com',
     registration: {
       scope: options.scope || 'https://exocore.example.com/app/',
       showNotification,
@@ -54,6 +114,14 @@ function loadProductionWorker(options: {
     },
   };
 
+  NetworkFirstDouble.instances = [];
+  const routes: unknown[] = [];
+  const precacheShellHandler = vi.fn().mockResolvedValue(undefined);
+  const createHandlerBoundToURL = vi.fn().mockReturnValue(precacheShellHandler);
+  const registerRoute = vi.fn().mockImplementation((route: unknown) => {
+    routes.push(route);
+  });
+
   const source = readFileSync(resolve(process.cwd(), 'public', 'sw.js'), 'utf8')
     .replace(/^import .*;\r?$/gm, '');
   const evaluate = new Function(
@@ -62,26 +130,37 @@ function loadProductionWorker(options: {
     'createHandlerBoundToURL',
     'registerRoute',
     'NavigationRoute',
+    'NetworkFirst',
     'VAPID_PUBLIC_KEY',
     'urlBase64ToUint8Array',
     'parseArrivalEvent',
     source,
   );
-  class NavigationRouteDouble {
-    constructor(..._args: unknown[]) {}
-  }
   evaluate(
     workerSelf,
     vi.fn(),
-    vi.fn(),
-    vi.fn(),
+    createHandlerBoundToURL,
+    registerRoute,
     NavigationRouteDouble,
+    NetworkFirstDouble,
     VAPID_PUBLIC_KEY,
     urlBase64ToUint8Array,
     parseArrivalEvent,
   );
 
-  return { workerSelf, listeners, showNotification, openWindow };
+  const navigationRoute = routes.find((route) => route instanceof NavigationRouteDouble) ?? null;
+
+  return {
+    workerSelf,
+    listeners,
+    showNotification,
+    openWindow,
+    routes,
+    navigationRoute,
+    precacheShellHandler,
+    createHandlerBoundToURL,
+    networkFirstInstances: NetworkFirstDouble.instances,
+  };
 }
 
 describe('P2D D-2 Section B: Service Worker Push, Focus Matrix & Routing (Actual Worker)', () => {
@@ -778,5 +857,106 @@ describe('P2D D-2 Section B: Service Worker Push, Focus Matrix & Routing (Actual
     expect(swContent).not.toContain('globalThis.parseArrivalEvent');
     expect(swContent).toContain('parseArrivalEvent(rawEvent)');
     expect(swContent).toContain('parseArrivalEvent(notifData?.event)');
+  });
+});
+
+/**
+ * Issue #123 — /app/ document navigation must be network first so an expired
+ * Cloudflare Access session can reach the edge login page, while the runtime
+ * document cache only ever holds a same-origin app shell.
+ */
+describe('Issue #123: app document navigation is network-first with safe cache admission', () => {
+  const originalFetch = globalThis.fetch;
+
+  /** jsdom responses are `type: 'default'` with an empty url unless patched. */
+  function documentResponse(
+    url: string,
+    body: string,
+    options: { status?: number; type?: string } = {},
+  ): Response {
+    const response = new Response(body, { status: options.status ?? 200 });
+    Object.defineProperty(response, 'url', { value: url });
+    Object.defineProperty(response, 'type', { value: options.type ?? 'basic' });
+    return response;
+  }
+
+  const documentRequest = () => new Request('https://exocore.example.com/app/chat/1');
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  it('routes /app/ navigation through NetworkFirst and keeps /api/ + /media/ excluded', () => {
+    const harness = loadProductionWorker();
+
+    expect(harness.createHandlerBoundToURL).toHaveBeenCalledWith('/app/index.html');
+    expect(harness.navigationRoute).not.toBeNull();
+    expect(harness.networkFirstInstances).toHaveLength(1);
+
+    const [strategy] = harness.networkFirstInstances;
+    expect(strategy.cacheName).toBe('exocore-app-documents-v1');
+    expect(harness.navigationRoute?.options.denylist).toHaveLength(2);
+    const denylist = harness.navigationRoute?.options.denylist ?? [];
+    expect(denylist.some((pattern) => pattern.test('/api/agents/conversations/'))).toBe(true);
+    expect(denylist.some((pattern) => pattern.test('/media/photo.png'))).toBe(true);
+    expect(denylist.some((pattern) => pattern.test('/app/chat/1'))).toBe(false);
+  });
+
+  it('serves the network document and caches only a same-origin basic 200', async () => {
+    const harness = loadProductionWorker();
+    const shell = documentResponse('https://exocore.example.com/app/index.html', '<html>shell</html>');
+    globalThis.fetch = vi.fn().mockResolvedValue(shell);
+
+    const request = documentRequest();
+    const response = await harness.navigationRoute?.handler({ request });
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(await response?.text()).toBe('<html>shell</html>');
+    expect(harness.precacheShellHandler).not.toHaveBeenCalled();
+    expect([...(harness.networkFirstInstances[0]?.cache.keys() ?? [])]).toEqual([request.url]);
+  });
+
+  it.each([
+    ['a cross-origin Cloudflare Access login page', 'https://wandering-dream-37db.cloudflareaccess.com/cdn-cgi/access/login/x', 200, 'basic'],
+    ['a non-basic response', 'https://exocore.example.com/app/index.html', 200, 'cors'],
+    ['a non-200 response', 'https://exocore.example.com/app/index.html', 502, 'basic'],
+  ])('returns %s to the browser without caching it', async (_label, url, status, type) => {
+    const harness = loadProductionWorker();
+    const leaked = documentResponse(url, '<html>login</html>', { status, type });
+    globalThis.fetch = vi.fn().mockResolvedValue(leaked);
+
+    const response = await harness.navigationRoute?.handler({ request: documentRequest() });
+
+    expect(await response?.text()).toBe('<html>login</html>');
+    expect(harness.networkFirstInstances[0]?.cache.size).toBe(0);
+  });
+
+  it('falls back to the safe runtime cache when the network fails', async () => {
+    const harness = loadProductionWorker();
+    const request = documentRequest();
+    const shell = documentResponse('https://exocore.example.com/app/index.html', '<html>cached</html>');
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(shell).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+    await harness.navigationRoute?.handler({ request });
+    const offline = await harness.navigationRoute?.handler({ request });
+
+    expect(await offline?.text()).toBe('<html>cached</html>');
+    expect(harness.precacheShellHandler).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the precached shell when the runtime cache is still empty', async () => {
+    const harness = loadProductionWorker();
+    const request = documentRequest();
+    const precached = documentResponse('https://exocore.example.com/app/index.html', '<html>precached</html>');
+    harness.precacheShellHandler.mockResolvedValueOnce(precached);
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const response = await harness.navigationRoute?.handler({ request });
+
+    expect(harness.precacheShellHandler).toHaveBeenCalledWith(
+      expect.objectContaining({ request }),
+    );
+    expect(await response?.text()).toBe('<html>precached</html>');
   });
 });

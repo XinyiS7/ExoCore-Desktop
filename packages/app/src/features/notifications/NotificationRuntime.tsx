@@ -32,21 +32,53 @@ import { NotificationContext, NotificationContextValue } from './notificationCon
 
 const POLL_INTERVAL_MS = 15000;
 
-function formatSyncError(err: unknown): string {
+/**
+ * Re-auth entry (Issue #123). It must stay OUTSIDE the /app/ Service Worker
+ * scope — a navigation inside /app/ is answered from the precached shell, so
+ * an expired Cloudflare Access session would never surface the login page.
+ * nginx serves `location = /reauth` and returns the user to /app/.
+ */
+const REAUTH_PATH = '/reauth';
+
+/** Banner failure plus the action capability it is allowed to offer. */
+interface SyncFailure {
+  message: string;
+  /** True only for a normalized network failure while the browser claims to be online. */
+  canReauthenticate: boolean;
+}
+
+/** Failure that offers nothing beyond retry (storage, cursor, server, contract). */
+function plainSyncFailure(message: string): SyncFailure {
+  return { message, canReauthenticate: false };
+}
+
+/**
+ * Classify a sync failure for display. The network branch is the ALREADY
+ * normalized one from `toAppApiError` (status-less "网络连接失败"); the original
+ * TypeError never reaches this point by design.
+ *
+ * `navigator.onLine === false` is the only "definitely offline" signal we use.
+ * No probe request and no `redirect: 'manual'` detection: /app/index.html is a
+ * precache entry, so a probe would be answered from cache and lie.
+ */
+function formatSyncFailure(err: unknown): SyncFailure {
   const appErr = toAppApiError(err);
   if (appErr.status === 400) {
-    return '请求参数无效 (400)';
+    return plainSyncFailure('请求参数无效 (400)');
   }
   if (appErr.status && appErr.status >= 500) {
-    return '服务端同步异常';
+    return plainSyncFailure('服务端同步异常');
   }
   if (appErr.code === 'CONTRACT') {
-    return '到达数据格式异常';
+    return plainSyncFailure('到达数据格式异常');
   }
   if (appErr.message?.includes('网络连接失败')) {
-    return '网络连接不可用';
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      return plainSyncFailure('设备已离线');
+    }
+    return { message: '连接被中断（可能是登录已过期）', canReauthenticate: true };
   }
-  return appErr.message || '消息同步异常';
+  return plainSyncFailure(appErr.message || '消息同步异常');
 }
 
 export function NotificationRuntime({ children }: { children: ReactNode }) {
@@ -56,8 +88,12 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
 
   const [unreadMap, setUnreadMap] = useState<Record<string, StoredArrivalRecord>>({});
   const [activeIndication, setActiveIndication] = useState<AssistantMessageArrivedV1 | null>(null);
-  const [syncError, setSyncError] = useState<string | null>(null);
+  const [syncFailure, setSyncFailure] = useState<SyncFailure | null>(null);
   const [repairNeeded, setRepairNeeded] = useState<boolean>(false);
+
+  // Public context + demo page keep the original `string | null` contract; the
+  // action capability stays internal to the banner.
+  const syncError = syncFailure ? syncFailure.message : null;
 
   const isPollingRef = useRef(false);
   const lastActiveIndicationDedupeRef = useRef<string | null>(null);
@@ -72,11 +108,11 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
     const outcome = loadInstallationStorage();
     if (outcome.status === 'ok') {
       setUnreadMap(outcome.storage.unreadMap);
-      setSyncError(null);
+      setSyncFailure(null);
     } else if (outcome.status === 'unavailable') {
-      setSyncError('本地存储不可用');
+      setSyncFailure(plainSyncFailure('本地存储不可用'));
     } else if (outcome.status === 'corrupted') {
-      setSyncError('本地缓存已损坏并隔离');
+      setSyncFailure(plainSyncFailure('本地缓存已损坏并隔离'));
       const init = initializeStorage();
       if (init.status === 'ok') {
         setUnreadMap(init.storage.unreadMap);
@@ -89,15 +125,15 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
     const outcome = loadInstallationStorage();
     if (outcome.status === 'corrupted') {
       corruptedOnMountRef.current = true;
-      setSyncError('本地缓存已损坏并隔离');
+      setSyncFailure(plainSyncFailure('本地缓存已损坏并隔离'));
     } else if (outcome.status === 'unavailable') {
-      setSyncError('本地存储不可用');
+      setSyncFailure(plainSyncFailure('本地存储不可用'));
     } else {
       const init = initializeStorage();
       if (init.status === 'ok') {
         setUnreadMap(init.storage.unreadMap);
       } else {
-        setSyncError('本地存储不可用');
+        setSyncFailure(plainSyncFailure('本地存储不可用'));
       }
     }
 
@@ -133,7 +169,7 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
         if (ingestRes.status === 'ok') {
           setUnreadMap(ingestRes.storage.unreadMap);
         } else if (ingestRes.status === 'unavailable') {
-          setSyncError('本地存储不可用');
+          setSyncFailure(plainSyncFailure('本地存储不可用'));
         }
 
         void queryClient.invalidateQueries({ queryKey: queryKeys.conversations });
@@ -183,25 +219,25 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
     try {
       const loadOutcome = loadInstallationStorage();
       if (loadOutcome.status === 'corrupted') {
-        setSyncError('本地缓存已损坏并隔离');
+        setSyncFailure(plainSyncFailure('本地缓存已损坏并隔离'));
         initializeStorage();
         return;
       }
       if (loadOutcome.status === 'unavailable') {
-        setSyncError('本地存储不可用');
+        setSyncFailure(plainSyncFailure('本地存储不可用'));
         return;
       }
       if (loadOutcome.status === 'absent') {
         const init = initializeStorage();
         if (init.status !== 'ok') {
-          setSyncError('本地存储不可用');
+          setSyncFailure(plainSyncFailure('本地存储不可用'));
           return;
         }
       }
 
       const activeStorageOutcome = loadInstallationStorage();
       if (activeStorageOutcome.status !== 'ok') {
-        setSyncError('本地存储不可用');
+        setSyncFailure(plainSyncFailure('本地存储不可用'));
         return;
       }
 
@@ -224,7 +260,7 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
           // Bootstrap commits high-water cursor without creating historical unread records
           const commitRes = commitCursor(page.next_cursor);
           if (commitRes.status !== 'ok') {
-            setSyncError('游标保存失败');
+            setSyncFailure(plainSyncFailure('游标保存失败'));
             hasError = true;
             break;
           }
@@ -236,7 +272,7 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
           if (page.events.length > 0) {
             const ingestRes = ingestArrivals(page.events, 'poll', page.next_cursor);
             if (ingestRes.status !== 'ok') {
-              setSyncError('事件保存失败');
+              setSyncFailure(plainSyncFailure('事件保存失败'));
               hasError = true;
               break; // Stop pagination on write failure; preserve prior cursor
             }
@@ -261,7 +297,7 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
             // Empty page: advance cursor if next_cursor progressed
             const commitRes = commitCursor(page.next_cursor);
             if (commitRes.status !== 'ok') {
-              setSyncError('游标保存失败');
+              setSyncFailure(plainSyncFailure('游标保存失败'));
               hasError = true;
               break;
             }
@@ -273,11 +309,11 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
       }
 
       if (!hasError) {
-        setSyncError(null);
+        setSyncFailure(null);
       }
     } catch (err) {
       // Propagate error visibly without masking; cursor remains preserved
-      setSyncError(formatSyncError(err));
+      setSyncFailure(formatSyncFailure(err));
     } finally {
       isPollingRef.current = false;
     }
@@ -342,7 +378,7 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
     if (res.status === 'ok') {
       setUnreadMap(res.storage.unreadMap);
     } else {
-      setSyncError(`未读清理失败: ${res.error}`);
+      setSyncFailure(plainSyncFailure(`未读清理失败: ${res.error}`));
     }
   }, []);
 
@@ -371,11 +407,11 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
 
       const loadOutcome = loadInstallationStorage();
       if (loadOutcome.status === 'unavailable') {
-        setSyncError('本地存储不可用');
+        setSyncFailure(plainSyncFailure('本地存储不可用'));
         return;
       }
       if (loadOutcome.status === 'corrupted') {
-        setSyncError('本地缓存已损坏并隔离');
+        setSyncFailure(plainSyncFailure('本地缓存已损坏并隔离'));
         return;
       }
       if (loadOutcome.status === 'absent') {
@@ -402,7 +438,7 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
         settle();
         setUnreadMap(consumeRes.storage.unreadMap);
       } else {
-        setSyncError(`未读清理失败: ${consumeRes.error}`);
+        setSyncFailure(plainSyncFailure(`未读清理失败: ${consumeRes.error}`));
       }
     }
 
@@ -461,6 +497,13 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
   const dismissIndication = useCallback(() => {
     setActiveIndication(null);
     setIgnoreState(null);
+  }, []);
+
+  // Browser-level document navigation: never a SPA route, never a cache/SW
+  // teardown, and never automatic — Issue #123 keeps the recovery an explicit
+  // user action.
+  const handleReauthenticate = useCallback(() => {
+    window.location.assign(REAUTH_PATH);
   }, []);
 
   // Ignore UI state projections, rendered only when bound to the ACTIVE indication
@@ -525,14 +568,26 @@ export function NotificationRuntime({ children }: { children: ReactNode }) {
           <div className="shell-sync-banner__message">
             <span>消息同步暂不可用: {syncError}</span>
           </div>
-          <button
-            type="button"
-            className="shell-sync-banner__retry"
-            aria-label="重试同步"
-            onClick={() => void poll()}
-          >
-            重试
-          </button>
+          <div className="shell-sync-banner__actions">
+            <button
+              type="button"
+              className="shell-sync-banner__retry"
+              aria-label="重试同步"
+              onClick={() => void poll()}
+            >
+              重试
+            </button>
+            {syncFailure && syncFailure.canReauthenticate ? (
+              <button
+                type="button"
+                className="shell-sync-banner__reauth"
+                aria-label="重新认证"
+                onClick={handleReauthenticate}
+              >
+                重新认证
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
 

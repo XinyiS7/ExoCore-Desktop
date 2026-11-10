@@ -162,3 +162,29 @@
   background: var(--v4-hover-overlay, rgba(255, 255, 255, 0.08));
 }
 
+/* Action slot: retry always, re-auth only when the failure is a normalized
+   network failure while the browser is online (Issue #123). */
+.shell-sync-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.shell-sync-banner__reauth {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--v4-accent, #6c8cff);
+  background: transparent;
+  color: var(--v4-accent, #6c8cff);
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.shell-sync-banner__reauth:hover {
+  background: var(--v4-hover-overlay, rgba(255, 255, 255, 0.08));
+}
+

@@ -353,3 +353,30 @@
   - **OpenAI/DeepSeek**: thinking MUST be `reasoning_content` on the assistant message. Content goes as `content` on the assistant message. Omitting `reasoning_content` causes 400 errors from DeepSeek.
 - **Quick Fix**: Use `LLMGateway.build_gemini_tool_round()` / `build_openai_tool_round()` instead of calling `make_fc_assistant_turn` + `make_tool_result_turns` directly. The builders encapsulate all platform-specific parameter routing.
 - **Design Principle**: Think of the model's flow as `.think → .say → tool → .think → .say → final`. Thinking is CoT (not output, user can't see). Response content IS output (user sees it, DB records it). The model must see its own intermediate content as proper output to continue coherently.
+
+---
+
+# DEBUG: Cloudflare Access Expiry Masked as "网络连接不可用" (🛠 已施工，待独立验收 — XinyiS7/ExoCore#123)
+
+- **日期**: 2026-11-10
+- **现象**:
+  - PC 上打开 `/app/chat/95`，页面壳正常渲染，但右上角横幅固定显示「消息同步暂不可用: 网络连接不可用」，点「重试」无效，刷新也无效。
+  - 同一 URL 用手机访问完全正常。
+  - 用户第一反应是 Wi-Fi/网络问题，实际网络通畅。
+- **根因链**:
+  1. `exocore.g045.dev` 整站（含 `/api/*`、`/app/index.html`、`/app/sw.js`）位于 **Cloudflare Access** 之后。会话过期后所有请求 302 到 `*.cloudflareaccess.com` 登录页。
+  2. 顶层导航会跟随该 302（`<a>`/地址栏），用户能看到登录页并重新认证。
+  3. JS `fetch` 跟随跨域重定向时因缺少 CORS 头被判为网络错误 → `TypeError: Failed to fetch` → `apiFetch` 抛错 → `toAppApiError` 规范化为 `status = null` + "网络连接失败，请检查后端服务" → 通知层显示「网络连接不可用」。
+  4. `public/sw.js` 的 `NavigationRoute(createHandlerBoundToURL('/app/index.html'))` 用 precache 兜所有 `/app/` 文档导航 ⇒ 页面**永远不联网** ⇒ Access 登录页永不出现 ⇒ 无法重新认证 ⇒ 死循环（刷新也救不回来，只能清站点数据）。
+- **决定性证据**:
+  - 不带 cookie：`curl -o /dev/null -w '%{http_code} %{redirect_url}' https://exocore.g045.dev/api/push/assistant-arrivals/` → `302` → `https://wandering-dream-37db.cloudflareaccess.com/cdn-cgi/access/login/...`（`/app/index.html`、`/app/sw.js` 同样 302）。
+  - 前端只有一处会产生该文案：`NotificationRuntime.tsx` 的 `formatSyncError`。
+- **修复入口**（#123）:
+  - 在线/离线文案二分：`navigator.onLine === false` → 「设备已离线」；在线但规范化网络失败 → 「连接被中断（可能是登录已过期）」+「重新认证」按钮。
+  - 新入口 `location = /reauth`（伞仓 nginx），位于 `/app/` SW scope 外，`302 /app/`，只由用户点击触发（不自动跳转）。
+  - `/app/` 文档导航改 NetworkFirst：只缓存同源 + `type === 'basic'` + HTTP 200，网络失败先退回 runtime cache，其次退回 precache 壳。
+- **排障提醒**:
+  - 见到「消息同步暂不可用」先查 **Cloudflare Access 会话**，不要先归因 Wi-Fi；同一 URL 在另一台设备能通就是强信号。
+  - 不要把「清空 SW / 清站点数据」当常规修复手段：它掩盖了根因（离线壳屏蔽登录页），并且会反复发生。
+  - Access 会话时长（Zero Trust dashboard）与 Access token 有效期是两个值，只调其中一个仍会周期掉落。
+  - 生产 `sw.js` 由 `injectManifest` 打包，两套 harness（`src/test/p2d_d2_sw_routing.test.tsx`、`src/acceptance/p2d_d2_acceptance.test.ts`）用 `new Function` 执行真实 `public/sw.js`；**新增 Workbox 标识符必须同步加到两处 harness 的形参列表**，否则测试会在加载期直接崩。

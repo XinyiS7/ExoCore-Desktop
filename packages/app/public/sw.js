@@ -5,7 +5,11 @@
  * - Emitted beneath /app/ with V4-specific cache naming.
  * - Precaches the V4 shell only.
  * - NEVER caches /api/ or /media/ responses.
- * - Navigation fallback targets /app/index.html.
+ * - /app/ document navigation is NETWORK FIRST (Issue #123): an expired
+ *   Cloudflare Access session must be able to reach the edge login page, so the
+ *   precached shell is only a fallback. Only same-origin, `basic`, HTTP 200
+ *   documents enter the runtime cache — a cross-origin login page is shown to
+ *   the browser but never cached as the app shell.
  * - Push arrival routing:
  *   - Pure, zero-side-effect shared parser for AssistantMessageArrivedV1 events (workerContract.ts).
  *   - Foreground-focused client within /app/ scope (visibilityState === 'visible' && focused === true):
@@ -25,13 +29,52 @@
 
 import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
+import { NetworkFirst } from 'workbox-strategies';
 import { VAPID_PUBLIC_KEY, urlBase64ToUint8Array, parseArrivalEvent } from '../src/features/notifications/workerContract';
 
 precacheAndRoute(self.__WB_MANIFEST);
 
+// ── App document navigation: network first, safe cache admission ────────────
+// Serving the document straight from precache hid the Cloudflare Access login
+// page: the document never touched the network, so an expired session could
+// never be renewed. Network now wins; the shell is only the offline fallback.
+const APP_DOCUMENT_CACHE = 'exocore-app-documents-v1';
+
+function isCacheableAppDocument(response) {
+  if (!response || response.status !== 200) return null;
+  if (response.type !== 'basic') return null;
+  try {
+    if (new URL(response.url).origin !== self.origin) return null;
+  } catch {
+    return null;
+  }
+  return response;
+}
+
+const appDocumentStrategy = new NetworkFirst({
+  cacheName: APP_DOCUMENT_CACHE,
+  plugins: [
+    {
+      cacheWillUpdate: async ({ response }) => isCacheableAppDocument(response),
+    },
+  ],
+});
+
+const precachedAppShell = createHandlerBoundToURL('/app/index.html');
+
+async function handleAppDocumentNavigation({ request, event }) {
+  try {
+    return await appDocumentStrategy.handle({ request, event });
+  } catch {
+    // Network failed and this download has no runtime document entry yet
+    // (fresh install / first visit offline): fall back to the precached shell.
+    return precachedAppShell({ request, event });
+  }
+}
+
 registerRoute(
   new NavigationRoute(
-    createHandlerBoundToURL('/app/index.html'),
+    handleAppDocumentNavigation,
     { denylist: [/^\/api\//, /^\/media\//] },
   ),
 );

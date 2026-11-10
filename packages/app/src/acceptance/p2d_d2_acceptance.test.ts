@@ -40,6 +40,7 @@ function loadProductionWorker(clients: WindowClientDouble[] = [], scope = 'https
   const openWindow = vi.fn().mockResolvedValue(undefined);
   const workerSelf = {
     __WB_MANIFEST: [],
+    origin: 'https://exocore.example',
     registration: {
       scope,
       showNotification,
@@ -59,11 +60,29 @@ function loadProductionWorker(clients: WindowClientDouble[] = [], scope = 'https
     .replace(/^import .*;\r?$/gm, '');
   const evaluate = new Function(
     'self', 'precacheAndRoute', 'createHandlerBoundToURL', 'registerRoute',
-    'NavigationRoute', 'VAPID_PUBLIC_KEY', 'urlBase64ToUint8Array', 'parseArrivalEvent', source,
+    'NavigationRoute', 'NetworkFirst', 'VAPID_PUBLIC_KEY', 'urlBase64ToUint8Array',
+    'parseArrivalEvent', source,
   );
-  class NavigationRouteDouble { constructor(..._args: unknown[]) {} }
-  evaluate(workerSelf, vi.fn(), vi.fn(), vi.fn(), NavigationRouteDouble, 'test-key', vi.fn(), parseArrivalEvent);
-  return { listeners, showNotification, openWindow };
+  const routes: unknown[] = [];
+  const registeredStrategies: { cacheName: string }[] = [];
+  class NavigationRouteDouble { constructor(readonly handler: unknown, readonly options: unknown = {}) {} }
+  // Issue #123: the production worker builds a NetworkFirst document strategy.
+  class NetworkFirstDouble {
+    readonly cacheName: string;
+    constructor(options: { cacheName?: string } = {}) {
+      this.cacheName = options.cacheName ?? '';
+      registeredStrategies.push(this);
+    }
+    async handle({ request }: { request: Request }): Promise<Response> {
+      return fetch(request);
+    }
+  }
+  evaluate(
+    workerSelf, vi.fn(), vi.fn(),
+    vi.fn().mockImplementation((route: unknown) => { routes.push(route); }),
+    NavigationRouteDouble, NetworkFirstDouble, 'test-key', vi.fn(), parseArrivalEvent,
+  );
+  return { listeners, showNotification, openWindow, routes, registeredStrategies };
 }
 
 afterEach(() => {
