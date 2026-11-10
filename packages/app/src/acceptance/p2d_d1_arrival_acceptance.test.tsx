@@ -350,7 +350,7 @@ describe('P2D CP D-1 independent acceptance - arrival reconciliation', () => {
     ]);
 
     renderApp(['/chat/1']);
-    await screen.findByText('消息同步暂不可用: 网络连接不可用');
+    await screen.findByText('消息同步暂不可用: 连接被中断（可能是登录已过期）');
     expect(screen.queryByText(/Failed to fetch/), 'transport error not leaked').toBeNull();
     expect(arrivalsCalls(calls).length).toBeGreaterThanOrEqual(1);
   });
