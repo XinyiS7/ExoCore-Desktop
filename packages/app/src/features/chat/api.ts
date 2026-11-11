@@ -18,6 +18,8 @@ import type {
   MessageRow,
   MessageView,
   ProjectRow,
+  TheaterDocumentsState,
+  TheaterDocumentView,
   VoiceProjection,
 } from './types';
 
@@ -362,6 +364,75 @@ export async function updateConversationSettings(
     throw contractError('会话设定接口返回格式异常', raw);
   }
   return normalizeConversationRow(raw);
+}
+
+// ── Theater documents (#128, ReactSheet §1.2.1) ──────────────────────────
+
+const theaterDocumentsPath = (id: number) => `/api/agents/conversations/${id}/theater-documents/`;
+
+function normalizeTheaterDocument(raw: unknown): TheaterDocumentView | null {
+  if (!isRecord(raw)) return null;
+  const { id, filename, char_count, position, created_at } = raw;
+  if (
+    typeof id !== 'number' ||
+    typeof filename !== 'string' ||
+    typeof char_count !== 'number' ||
+    typeof position !== 'number' ||
+    typeof created_at !== 'string'
+  ) {
+    return null;
+  }
+  return { id, filename, charCount: char_count, position, createdAt: created_at };
+}
+
+function normalizeTheaterDocumentsState(raw: unknown): TheaterDocumentsState {
+  if (
+    !isRecord(raw) ||
+    !Array.isArray(raw.documents) ||
+    typeof raw.total_chars !== 'number' ||
+    typeof raw.limit !== 'number' ||
+    typeof raw.injected !== 'boolean'
+  ) {
+    throw contractError('剧本文档接口返回格式异常', raw);
+  }
+  const documents = raw.documents.map(normalizeTheaterDocument);
+  if (documents.some((doc) => doc === null)) {
+    throw contractError('剧本文档接口返回格式异常', raw);
+  }
+  return {
+    documents: documents as TheaterDocumentView[],
+    totalChars: raw.total_chars,
+    limit: raw.limit,
+    injected: raw.injected,
+  };
+}
+
+/** GET .../theater-documents/ */
+export async function getTheaterDocuments(id: number): Promise<TheaterDocumentsState> {
+  return normalizeTheaterDocumentsState(await apiFetch(theaterDocumentsPath(id)));
+}
+
+/** POST .../theater-documents/ — one multipart batch (`files`), all-or-nothing. */
+export async function uploadTheaterDocuments(id: number, files: File[]): Promise<TheaterDocumentsState> {
+  const form = new FormData();
+  for (const file of files) form.append('files', file);
+  return normalizeTheaterDocumentsState(
+    await apiFetch(theaterDocumentsPath(id), { method: 'POST', body: form }),
+  );
+}
+
+/** DELETE .../theater-documents/<docId>/ */
+export async function deleteTheaterDocument(id: number, docId: number): Promise<TheaterDocumentsState> {
+  return normalizeTheaterDocumentsState(
+    await apiFetch(`${theaterDocumentsPath(id)}${docId}/`, { method: 'DELETE' }),
+  );
+}
+
+/** Backend `{code, message, filename?}` → one Chinese line; null for other errors. */
+export function theaterDocumentErrorMessage(body: unknown): string | null {
+  if (!isRecord(body) || typeof body.code !== 'string' || typeof body.message !== 'string') return null;
+  if (!body.code.startsWith('theater_document_')) return null;
+  return typeof body.filename === 'string' ? `「${body.filename}」${body.message}` : body.message;
 }
 
 /** PATCH /api/agents/conversations/<id>/messages/<messageId>/ — replaces the body only (#107). */

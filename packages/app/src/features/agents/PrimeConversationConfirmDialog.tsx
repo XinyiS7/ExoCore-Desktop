@@ -51,6 +51,7 @@ export function PrimeConversationConfirmDialog({
       queryClient.setQueryData(queryKeys.conversations, rows);
       const target = rows.find((r) => r.id === conversationId);
       if (target?.isPrime) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.theaterDocumentsAll });
         setReconciliationFailed(false);
         setErrorMessage(null);
         onSuccess?.();
@@ -76,7 +77,11 @@ export function PrimeConversationConfirmDialog({
 
     try {
       await setPrimeConversation(conversationId);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.conversations });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.conversations }),
+        // Prime moves flip theater-document `injected` for old and new Prime (#128).
+        queryClient.invalidateQueries({ queryKey: queryKeys.theaterDocumentsAll }),
+      ]);
       onSuccess?.();
       onClose();
     } catch (cause) {

@@ -12,20 +12,24 @@ import {
 import {
   AppApiError,
   createConversation,
+  deleteTheaterDocument,
   editAssistantMessage,
   fetchMessagePage,
   getConversation,
+  getTheaterDocuments,
   listConversations,
   listProjects,
   listVisiblePresets,
   setPrimeConversation,
   updateConversationSettings,
+  uploadTheaterDocuments,
 } from './api';
 import type {
   ConversationSettingsInput,
   CreateConversationResult,
   MessagePage,
   MessageView,
+  TheaterDocumentsState,
 } from './types';
 
 export const queryKeys = {
@@ -34,6 +38,9 @@ export const queryKeys = {
   messages: (conversationId: number) => ['messages', conversationId] as const,
   presets: ['presets'] as const,
   projects: ['projects'] as const,
+  /** #128; PrimeConversationConfirmDialog invalidates the bare family when Prime moves. */
+  theaterDocumentsAll: ['theater-documents'] as const,
+  theaterDocuments: (conversationId: number) => ['theater-documents', conversationId] as const,
 };
 
 export const isG045AgentType = (agentType: string | null | undefined) => agentType === 'g045';
@@ -188,9 +195,36 @@ export function useUpdateConversationSettingsMutation(conversationId: number) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.conversations }),
         queryClient.invalidateQueries({ queryKey: queryKeys.conversation(conversationId) }),
+        // Tags decide `injected` (#128): refetch so the status line follows the save.
+        queryClient.invalidateQueries({ queryKey: queryKeys.theaterDocuments(conversationId) }),
       ]);
     },
   });
+}
+
+export function useTheaterDocumentsQuery(conversationId: number) {
+  return useQuery({
+    queryKey: queryKeys.theaterDocuments(conversationId),
+    queryFn: () => getTheaterDocuments(conversationId),
+    retry: false,
+  });
+}
+
+/** Upload / delete: the returned whole state replaces the cache (no optimistic rows). */
+export function useTheaterDocumentMutations(conversationId: number) {
+  const queryClient = useQueryClient();
+  const store = (state: TheaterDocumentsState) =>
+    queryClient.setQueryData(queryKeys.theaterDocuments(conversationId), state);
+  return {
+    upload: useMutation({
+      mutationFn: (files: File[]) => uploadTheaterDocuments(conversationId, files),
+      onSuccess: store,
+    }),
+    remove: useMutation({
+      mutationFn: (docId: number) => deleteTheaterDocument(conversationId, docId),
+      onSuccess: store,
+    }),
+  };
 }
 
 export function useEditAssistantMessageMutation(conversationId: number) {
