@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import hljs from 'highlight.js/lib/common';
+import dos from 'highlight.js/lib/languages/dos';
+import powershell from 'highlight.js/lib/languages/powershell';
 import { previewLocalFile, toAppApiError, type LocalFilePreview } from '../api';
 import { useDialogA11y } from '../dialogA11y';
 import { CopyPathButton } from './CopyPathButton';
@@ -10,8 +12,6 @@ import { parseLineRange } from './localFileLinks';
 /** Must match `--lfp-line` in shell.css: rows are `white-space: pre`, so the
  *  gutter, code and range band all share one fixed row height. */
 export const PREVIEW_LINE_PX = 20;
-/** Above this size highlighting is skipped (hljs is synchronous). */
-const HIGHLIGHT_LIMIT = 256 * 1024;
 
 const LANGUAGE_BY_SUFFIX: Record<string, string> = {
   py: 'python', pyi: 'python',
@@ -23,10 +23,14 @@ const LANGUAGE_BY_SUFFIX: Record<string, string> = {
   toml: 'ini', ini: 'ini', cfg: 'ini', conf: 'ini',
   html: 'xml', htm: 'xml', xml: 'xml', svg: 'xml', vue: 'xml',
   css: 'css', scss: 'scss', sql: 'sql',
-  sh: 'bash', bash: 'bash',
+  sh: 'bash', bash: 'bash', ps1: 'powershell', bat: 'dos', cmd: 'dos',
   rs: 'rust', go: 'go', java: 'java',
   c: 'c', h: 'c', cpp: 'cpp', hpp: 'cpp', cs: 'csharp',
 };
+
+// Windows script grammars are outside `lib/common`; the frozen whitelist has them.
+if (!hljs.getLanguage('powershell')) hljs.registerLanguage('powershell', powershell);
+if (!hljs.getLanguage('dos')) hljs.registerLanguage('dos', dos);
 
 const ERROR_TEXT: Record<string, string> = {
   file_not_found: '文件不存在或已移动',
@@ -43,7 +47,8 @@ type LoadState =
 function highlightHtml(content: string, name: string): string | null {
   const suffix = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1).toLowerCase() : '';
   const language = LANGUAGE_BY_SUFFIX[suffix];
-  if (!language || !hljs.getLanguage(language) || content.length > HIGHLIGHT_LIMIT) return null;
+  // Whole backend payload (≤ 1 MiB) is highlighted — no extra size cutoff (Alicia, #91).
+  if (!language || !hljs.getLanguage(language)) return null;
   // hljs escapes the source; its output contains only its own span markup.
   return hljs.highlight(content, { language, ignoreIllegals: true }).value;
 }

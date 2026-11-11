@@ -1894,6 +1894,16 @@
   padding: 2px 4px;
 }
 
+.app-localfile-copy-failed {
+  color: var(--v4-danger);
+  font-size: calc(11px * var(--exo-font-scale, 1));
+}
+
+.app-localfile-path-text {
+  font-family: var(--v4-mono);
+  user-select: all;
+}
+
 .app-localfile-hint {
   color: var(--v4-text-mute);
   font-size: calc(11px * var(--exo-font-scale, 1));

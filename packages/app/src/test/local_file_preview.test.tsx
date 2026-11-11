@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MessageContent } from '../features/chat/MessageContent';
 import { PREVIEW_LINE_PX } from '../features/chat/localFile/LocalFilePreviewDialog';
@@ -139,6 +139,49 @@ describe('MessageContent local file links (#91)', () => {
     );
     expect(container.querySelector('[data-local-file]')).toBeNull();
     expect(container.querySelector('a')?.getAttribute('href') ?? null).toBeNull();
+  });
+
+  it('copies the decoded path without the #L fragment', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    render(<MessageContent content="[n](file:///D:/my%20dir/notes.md#L3-L5)" />);
+
+    fireEvent.click(screen.getByRole('button', { name: '复制路径' }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('D:/my dir/notes.md'));
+    expect(await screen.findByRole('button', { name: '已复制路径' })).toBeTruthy();
+  });
+
+  it('shows an explicit failure with a selectable path when copy is rejected', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    render(<MessageContent content={'[a.py](D:\\x\\a.py#L2)'} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '复制路径' }));
+
+    const status = await screen.findByRole('status');
+    expect(status.textContent).toContain('复制失败，请手动选择路径');
+    expect(status.querySelector('.app-localfile-path-text')?.textContent).toBe('D:\\x\\a.py');
+  });
+
+  it.each([
+    ['deploy.ps1', 'Write-Host "hi"\n'],
+    ['run.bat', '@echo off\nset X=1\n'],
+  ])('highlights Windows script %s', async (name, content) => {
+    installFetch([
+      {
+        method: 'POST',
+        test: PREVIEW_URL,
+        handler: () => jsonResponse({ name, content, size: content.length, truncated: false }),
+      },
+    ]);
+    render(<MessageContent content={`[s](D:/x/${name})`} conversationId={7} messageId={42} />);
+    fireEvent.click(screen.getByRole('button', { name: /s/ }));
+
+    await previewCodeText();
+    const code = screen.getByRole('dialog').querySelector('pre code');
+    expect(code?.classList.contains('hljs')).toBe(true);
+    expect(code?.querySelector('[class^="hljs-"]')).not.toBeNull();
   });
 
   it('leaves http links and images unchanged', () => {
