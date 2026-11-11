@@ -1616,6 +1616,17 @@ shared server 冻结，不代表 Moonlight 已接入。
 - `content` 缺失、不是字符串，或过滤后为空白：`400 {"code": "content_required", "error": "..."}`
 - 下游：Runtime 下一轮因历史分叉自动 rebase；Direct 编辑落在 Buffer 区时，提交后丢弃本地 snapshot 和远端 cache
 
+**POST /api/agents/conversations/<pk>/messages/<message_pk>/local-file/**
+
+只读预览 assistant 消息正文中 Markdown 本机文件链接指向的文本 / 代码文件（#91）。不落盘、不建表，每次读取文件当前内容。
+
+- 请求：`{"href": "<正文里的完整原始链接目标，含 #L 片段>"}`；支持 `file:///D:/...`（URL 解码）与盘符绝对路径 `D:\...` / `D:/...`
+- 来源一致性：`href` 必须逐字出现在该 assistant 消息 `content` 中，再拆 fragment、解析路径
+- 成功：`200 {"name": "<文件名>", "content": "<UTF-8 文本，最多 1 MiB>", "size": <返回字节数>, "truncated": <bool>}`
+- 扩展名白名单（大小写不敏感）：`.py .pyi .ts .tsx .js .jsx .mjs .cjs .json .jsonl .md .markdown .txt .log .yaml .yml .toml .ini .cfg .conf .csv .tsv .html .htm .xml .svg .css .scss .sql .sh .bash .ps1 .bat .cmd .rs .go .java .c .h .cpp .hpp .cs .vue`；HTML / XML / SVG 仅作源码文本
+- 失败统一 `{"error_code": ...}`：`href_required`（400）、`message_not_found`（404，含跨会话 / 非 assistant / href 不在正文）、`file_not_found`（404，含目录）、`unsupported_path` / `unsupported_type`（422）、`read_failed`（500）
+- `#L21` / `#L21-L40` 行号由前端解析定位，后端只忽略 fragment
+
 **POST /api/agents/conversations/<pk>/messages/<message_pk>/tts/**
 
 客户端以消息身份发起点播请求，请求体为 `{}`（禁止携带文本、情绪或配置，全由后端推导）。
