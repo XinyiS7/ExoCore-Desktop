@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MessageContent } from '../features/chat/MessageContent';
-import { PREVIEW_LINE_PX } from '../features/chat/localFile/LocalFilePreviewDialog';
 import { parseLineRange } from '../features/chat/localFile/localFileLinks';
 import { installFetch, jsonResponse, unmockFetch } from './helpers';
 
@@ -28,7 +27,8 @@ const FORTY_LINES = Array.from({ length: 40 }, (_, i) => `line_${i + 1} = ${i + 
 async function previewCodeText(): Promise<string> {
   let text = '';
   await waitFor(() => {
-    text = screen.getByRole('dialog').querySelector('pre code')?.textContent ?? '';
+    const rows = screen.getByRole('dialog').querySelectorAll('.app-lfp-text');
+    text = Array.from(rows, (row) => row.textContent ?? '').join('\n');
     expect(text).not.toBe('');
   });
   return text;
@@ -47,10 +47,13 @@ describe('MessageContent local file links (#91)', () => {
     expect(await screen.findByRole('dialog')).toBeTruthy();
     expect(await previewCodeText()).toContain('line_21 = 21');
     expect(hrefPostedTo(calls)).toBe(raw);
-    const band = screen.getByTestId('local-file-band');
-    expect(band.style.top).toBe(`${20 * PREVIEW_LINE_PX}px`);
-    expect(band.style.height).toBe(`${20 * PREVIEW_LINE_PX}px`);
-    expect(screen.getByTestId('local-file-scroll').scrollTop).toBe(18 * PREVIEW_LINE_PX);
+    const hits = Array.from(document.querySelectorAll('.app-lfp-row--hit'), (row) => row.getAttribute('data-line'));
+    expect(hits).toEqual(Array.from({ length: 20 }, (_, i) => String(21 + i)));
+    // Every row carries its own number: gutter and text cannot drift apart.
+    const row21 = document.querySelector('[data-line="21"]');
+    expect(row21?.querySelector('.app-lfp-num')?.textContent).toBe('21');
+    expect(row21?.querySelector('.app-lfp-text')?.textContent).toBe('line_21 = 21');
+    expect(document.querySelectorAll('.app-lfp-row')).toHaveLength(40);
   });
 
   it('keeps Markdown backslash escapes in drive paths verbatim', async () => {
@@ -69,14 +72,14 @@ describe('MessageContent local file links (#91)', () => {
     expect(document.querySelector('[data-local-file]')?.getAttribute('data-local-file')).toBe('D:/my dir/notes.md');
   });
 
-  it('opens without a band for reversed or out-of-range #L', async () => {
+  it('opens without highlighted rows for reversed or out-of-range #L', async () => {
     installFetch([{ method: 'POST', test: PREVIEW_URL, handler: okPreview(FORTY_LINES) }]);
     render(
       <MessageContent content="[views.py](file:///D:/x/views.py#L40-L21)" conversationId={7} messageId={42} />,
     );
     fireEvent.click(screen.getByRole('button', { name: /views\.py/ }));
     expect(await previewCodeText()).toContain('line_1 = 1');
-    expect(screen.queryByTestId('local-file-band')).toBeNull();
+    expect(document.querySelector('.app-lfp-row--hit')).toBeNull();
   });
 
   it('parses only valid in-range fragments', () => {
@@ -179,9 +182,41 @@ describe('MessageContent local file links (#91)', () => {
     fireEvent.click(screen.getByRole('button', { name: /s/ }));
 
     await previewCodeText();
-    const code = screen.getByRole('dialog').querySelector('pre code');
-    expect(code?.classList.contains('hljs')).toBe(true);
-    expect(code?.querySelector('[class^="hljs-"]')).not.toBeNull();
+    const pre = screen.getByRole('dialog').querySelector('pre');
+    expect(pre?.classList.contains('hljs')).toBe(true);
+    expect(pre?.querySelector('.app-lfp-text [class^="hljs-"]')).not.toBeNull();
+  });
+
+  it('scrolls to the measured position of the start row', async () => {
+    const offsetTop = vi
+      .spyOn(HTMLElement.prototype, 'offsetTop', 'get')
+      .mockImplementation(function (this: HTMLElement) {
+        return Number(this.dataset.line ?? 0) * 31;
+      });
+    installFetch([{ method: 'POST', test: PREVIEW_URL, handler: okPreview(FORTY_LINES) }]);
+    render(<MessageContent content="[v.py](D:/x/v.py#L30)" conversationId={7} messageId={42} />);
+    fireEvent.click(screen.getByRole('button', { name: /v\.py/ }));
+    await previewCodeText();
+    expect(screen.getByTestId('local-file-scroll').scrollTop).toBe(30 * 31);
+    offsetTop.mockRestore();
+  });
+
+  it('keeps multi-line highlight spans balanced per row', async () => {
+    const content = 'x = """first\nsecond"""\ny = 1\n';
+    installFetch([
+      {
+        method: 'POST',
+        test: PREVIEW_URL,
+        handler: () => jsonResponse({ name: 'm.py', content, size: content.length, truncated: false }),
+      },
+    ]);
+    render(<MessageContent content="[m.py](D:/x/m.py#L2)" conversationId={7} messageId={42} />);
+    fireEvent.click(screen.getByRole('button', { name: /m\.py/ }));
+    expect(await previewCodeText()).toBe('x = """first\nsecond"""\ny = 1');
+    const row2 = document.querySelector('[data-line="2"] .app-lfp-text');
+    expect(row2?.querySelector('.hljs-string')?.textContent).toBe('second"""');
+    expect(document.querySelectorAll('.app-lfp-row')).toHaveLength(3);
+    expect(document.querySelector('[data-line="2"]')?.classList.contains('app-lfp-row--hit')).toBe(true);
   });
 
   it('leaves http links and images unchanged', () => {

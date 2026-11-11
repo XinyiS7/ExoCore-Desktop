@@ -9,10 +9,6 @@ import { useDialogA11y } from '../dialogA11y';
 import { CopyPathButton } from './CopyPathButton';
 import { parseLineRange } from './localFileLinks';
 
-/** Must match `--lfp-line` in shell.css: rows are `white-space: pre`, so the
- *  gutter, code and range band all share one fixed row height. */
-export const PREVIEW_LINE_PX = 20;
-
 const LANGUAGE_BY_SUFFIX: Record<string, string> = {
   py: 'python', pyi: 'python',
   ts: 'typescript', tsx: 'typescript',
@@ -53,52 +49,77 @@ function highlightHtml(content: string, name: string): string | null {
   return hljs.highlight(content, { language, ignoreIllegals: true }).value;
 }
 
-function countLines(content: string): number {
-  if (!content) return 1;
-  const lines = content.split('\n').length;
-  return content.endsWith('\n') ? lines - 1 : lines;
+/** Source lines (a trailing newline does not add an empty last line). */
+function splitLines(text: string): string[] {
+  const lines = text.split('\n');
+  if (lines.length > 1 && text.endsWith('\n')) lines.pop();
+  return lines;
+}
+
+/**
+ * Split hljs output into per-line HTML. hljs only emits `<span class=…>`,
+ * `</span>` and escaped text, so spans open across a newline (multi-line
+ * strings / comments) are closed at line end and reopened on the next line.
+ */
+function splitHighlightedLines(html: string): string[] {
+  const lines: string[] = [];
+  const open: string[] = [];
+  let current = '';
+  for (const [token] of html.matchAll(/<span[^>]*>|<\/span>|\n|[^<\n]+/g)) {
+    if (token === '\n') {
+      lines.push(current + '</span>'.repeat(open.length));
+      current = open.join('');
+    } else if (token === '</span>') {
+      open.pop();
+      current += token;
+    } else {
+      if (token.startsWith('<span')) open.push(token);
+      current += token;
+    }
+  }
+  lines.push(current + '</span>'.repeat(open.length));
+  if (lines.length > 1 && html.endsWith('\n')) lines.pop();
+  return lines;
 }
 
 function PreviewBody({ preview, rawHref }: { preview: LocalFilePreview; rawHref: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const lineCount = useMemo(() => countLines(preview.content), [preview.content]);
-  const range = useMemo(() => parseLineRange(rawHref, lineCount), [rawHref, lineCount]);
   const html = useMemo(() => highlightHtml(preview.content, preview.name), [preview.content, preview.name]);
+  const lines = useMemo(
+    () => (html !== null ? splitHighlightedLines(html) : splitLines(preview.content)),
+    [html, preview.content],
+  );
+  const range = useMemo(() => parseLineRange(rawHref, lines.length), [rawHref, lines.length]);
 
   useLayoutEffect(() => {
-    if (range && scrollRef.current) {
-      scrollRef.current.scrollTop = Math.max(0, (range.start - 3) * PREVIEW_LINE_PX);
-    }
+    const scroller = scrollRef.current;
+    if (!range || !scroller) return;
+    // Rows size themselves (CJK fallback fonts make some rows taller), so
+    // position from the real row instead of assuming a fixed line height.
+    const row = scroller.querySelector<HTMLElement>(`[data-line="${range.start}"]`);
+    if (row) scroller.scrollTop = Math.max(0, row.offsetTop - scroller.clientHeight / 4);
   }, [range]);
 
   return (
     <div ref={scrollRef} className="app-lfp-scroll" data-testid="local-file-scroll">
-      <div className="app-lfp-grid">
-        {range ? (
-          <div
-            className="app-lfp-band"
-            data-testid="local-file-band"
-            style={{
-              top: (range.start - 1) * PREVIEW_LINE_PX,
-              height: (range.end - range.start + 1) * PREVIEW_LINE_PX,
-            }}
-          />
-        ) : null}
-        <div className="app-lfp-gutter" aria-hidden="true">
-          {Array.from({ length: lineCount }, (_, index) => (
-            <span key={index}>{index + 1}</span>
-          ))}
-        </div>
-        {html !== null ? (
-          <pre className="app-lfp-code">
-            <code className="hljs" dangerouslySetInnerHTML={{ __html: html }} />
-          </pre>
-        ) : (
-          <pre className="app-lfp-code">
-            <code>{preview.content}</code>
-          </pre>
-        )}
-      </div>
+      <pre className={html !== null ? 'app-lfp-code hljs' : 'app-lfp-code'}>
+        {lines.map((line, index) => {
+          const number = index + 1;
+          const hit = range !== null && number >= range.start && number <= range.end;
+          return (
+            <div key={number} className={hit ? 'app-lfp-row app-lfp-row--hit' : 'app-lfp-row'} data-line={number}>
+              <span className="app-lfp-num" aria-hidden="true">
+                {number}
+              </span>
+              {html !== null ? (
+                <code className="app-lfp-text" dangerouslySetInnerHTML={{ __html: line }} />
+              ) : (
+                <code className="app-lfp-text">{line}</code>
+              )}
+            </div>
+          );
+        })}
+      </pre>
     </div>
   );
 }

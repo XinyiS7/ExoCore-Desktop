@@ -1940,7 +1940,6 @@
 }
 
 .app-lfp {
-  --lfp-line: 20px;
   width: min(1100px, 94vw);
   height: min(86vh, 900px);
   display: flex;
@@ -2012,29 +2011,31 @@
   overflow: auto;
 }
 
-/* Fixed row height (= PREVIEW_LINE_PX) keeps gutter, code and band aligned. */
-.app-lfp-grid {
+/* One row per source line: number, code and range tint live on the same
+ * element, so alignment never depends on a computed pixel height. */
+.app-lfp-code {
   position: relative;
-  display: flex;
-  min-width: max-content;
+  display: table;
+  min-width: 100%;
+  margin: 0;
   padding: 8px 0;
   font-family: var(--v4-mono);
   font-size: 12.5px;
-  line-height: var(--lfp-line);
+  line-height: 1.6;
+  white-space: pre;
+  background: transparent;
 }
 
-.app-lfp-band {
-  position: absolute;
-  left: 0;
-  right: 0;
-  margin-top: 8px;
+.app-lfp-row {
+  display: table-row;
+}
+
+.app-lfp-row--hit {
   background: rgba(255, 210, 90, 0.14);
-  pointer-events: none;
 }
 
-.app-lfp-gutter {
-  display: flex;
-  flex-direction: column;
+.app-lfp-num {
+  display: table-cell;
   padding: 0 10px 0 12px;
   text-align: right;
   color: var(--v4-text-mute);
@@ -2042,15 +2043,9 @@
   border-right: 1px solid var(--v4-line-strong);
 }
 
-.app-lfp-code {
-  margin: 0;
+.app-lfp-text {
+  display: table-cell;
   padding: 0 14px;
-  white-space: pre;
-  font: inherit;
-  background: transparent;
-}
-
-.app-lfp-code code {
   font: inherit;
   background: none;
 }
