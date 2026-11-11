@@ -69,6 +69,51 @@
 - `409 Conflict`: `{"code": "conversation_prime_transfer_required", "message": "当前主会话不能直接删除，请先将主会话转移到其它会话"}`（当前 Prime 必须先排他转移；其它删除生命周期不变）。
 - `500 Internal Server Error`: `{"code": "safety_check_failed", "message": "无法验证会话安全状态，已中止删除"}`（Fail-closed 安全熔断，保护在查询异常或安全状态不可确证时的会话不被误删）。
 
+### 1.2.1 Theater Documents — 会话剧本文档（#128，additive）
+
+会话级 `.md` / `.txt` 文档库。上传时提取 UTF-8 正文落库，之后只依赖库内正文。仅当会话有效 sealed（非 Prime 且带 `theater` tag）时，正文按 `position` 顺序进入 Part 3 fake-user 的 `<Theater_background>`；手写 `session_prompt` 不受影响。任何会话都可上传 / 删除，`injected` 告诉前端当前是否被读取。
+
+**GET /api/agents/conversations/<pk>/theater-documents/**
+
+```json
+{
+  "documents": [
+    {"id": 12, "filename": "世界观.md", "char_count": 5200, "position": 1, "created_at": "2026-11-11T10:00:00Z"},
+    {"id": 13, "filename": "人物设定.txt", "char_count": 3100, "position": 2, "created_at": "2026-11-11T10:00:00Z"}
+  ],
+  "total_chars": 8300,
+  "limit": 15000,
+  "injected": true
+}
+```
+
+- `documents` 按 `position` 升序；正文不回传（不提供在线查看 / 编辑）。
+- `position` = 上传时当前有效行 `max+1`；删除不重排剩余行，只表达追加顺序。
+- `injected` = 后端 `is_sealed(conversation)`；`false` 时文档仍保留，前端显示“不被读取”。
+
+**POST /api/agents/conversations/<pk>/theater-documents/** — `multipart/form-data`，字段 `files`（可多个，按接收顺序追加到末尾）
+
+- `201`：返回与 GET 相同 shape 的完整新状态。
+- `400`：整批拒绝，数据库零变化。`{"code", "message", "filename"?}`：
+
+| code | 触发 |
+|---|---|
+| `theater_document_no_files` | 未选择文件 |
+| `theater_document_unsupported_type` | 非 `.md` / `.txt`（大小写不敏感）或文件名超 255 |
+| `theater_document_decode_failed` | 不是 UTF-8（BOM 可有可无） |
+| `theater_document_empty` | 规范化后正文为空 |
+| `theater_document_duplicate_name` | 批内重名，或与现存文档同名（须先删旧文档） |
+| `theater_document_budget_exceeded` | `现有合计 + 本批合计 > 15000`；额外字段 `current_chars` / `batch_chars` / `limit` |
+
+- 规范化：去 BOM、`\r\n` / `\r` → `\n`、整体去首尾空白；`char_count` 为规范化后的字符数，文件名与分隔标记不计额度。
+
+**DELETE /api/agents/conversations/<pk>/theater-documents/<doc_id>/**
+
+- `200`：返回与 GET 相同 shape 的完整新状态（额度即时释放，之后可同名重传，排到末尾）。
+- `404`：`{"code": "theater_document_not_found", "message": "剧本文档不存在。"}`（含不属于该会话的 id）。
+
+三个端点对不存在 / Bridge 会话统一 `404 {"code": "conversation_not_found", "message": "会话不存在"}`。sealed 会话上传 / 删除成功后，后端在提交后失效本地 snapshot 与全部远端 cache slot；下一轮 Runtime 会先 rebase（`rebase_pre_context_changed`）。
+
 ### 1.3 Chat SSE — 实时对话
 
 **POST /api/agents/chat/<session_id>/** — SSE 流式响应
