@@ -1897,11 +1897,30 @@
 .app-localfile-copy-failed {
   color: var(--v4-danger);
   font-size: calc(11px * var(--exo-font-scale, 1));
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .app-localfile-path-text {
   font-family: var(--v4-mono);
   user-select: all;
+}
+
+/* Inline entry: let a long failure path wrap below the link, not overflow. */
+.app-localfile {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+/* Dialog header: the failure notice takes its own full-width row below the
+ * title/buttons, so a long path neither gets clipped nor squeezes close. */
+.app-lfp-head {
+  flex-wrap: wrap;
+}
+
+.app-lfp-head .app-localfile-copy-failed {
+  order: 10;
+  flex-basis: 100%;
 }
 
 .app-localfile-hint {
