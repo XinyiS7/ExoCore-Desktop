@@ -237,4 +237,35 @@ describe('Prime transfer refreshes theater-document status (#128)', () => {
     fireEvent.click(screen.getByRole('button', { name: '设为主会话' }));
     await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: queryKeys.theaterDocumentsAll }));
   });
+
+  it('also invalidates the family when an ambiguous PATCH reconciles to target-is-Prime', async () => {
+    let applied = false;
+    const { calls } = installFetch([
+      {
+        test: '/api/agents/conversations/102/',
+        method: 'PATCH',
+        handler: () => {
+          // Backend applied the transfer, but the response was lost.
+          applied = true;
+          throw new TypeError('Network connection lost');
+        },
+      },
+      {
+        test: '/api/agents/conversations/',
+        handler: () => jsonResponse([convRow({ id: 101, is_prime: !applied }), convRow({ id: 102, is_prime: applied })]),
+      },
+    ]);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const spy = vi.spyOn(client, 'invalidateQueries');
+    const onClose = vi.fn();
+    render(
+      <QueryClientProvider client={client}>
+        <PrimeConversationConfirmDialog open conversationId={102} conversationName="Beta" onClose={onClose} />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '设为主会话' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(callsToPath(calls, '/api/agents/conversations/').filter((c) => c.init?.method !== 'PATCH')).toHaveLength(1);
+    expect(spy).toHaveBeenCalledWith({ queryKey: queryKeys.theaterDocumentsAll });
+  });
 });
