@@ -338,6 +338,25 @@ export interface ConversationSettingsInput {
   sessionPrompt: string;
 }
 
+/** #128 one theater document row (body is never returned). */
+export interface TheaterDocumentView {
+  id: number;
+  filename: string;
+  charCount: number;
+  /** Append order (max+1 at upload); deletes do not renumber. */
+  position: number;
+  createdAt: string;
+}
+
+/** #128 full theater-document state; every write returns it whole. */
+export interface TheaterDocumentsState {
+  documents: TheaterDocumentView[];
+  totalChars: number;
+  limit: number;
+  /** Backend is_sealed(conversation): documents are read only when true. */
+  injected: boolean;
+}
+
 export interface CreateConversationResult {
   /** Canonical Conversation identity returned by init (required; no inference). */
   conversationId: number;

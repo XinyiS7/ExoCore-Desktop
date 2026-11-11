@@ -594,6 +594,31 @@
   color: var(--v4-danger);
 }
 
+/* #128 theater documents (ConversationSettingsDialog) */
+.app-theater-docs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.app-theater-doc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.app-theater-doc-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .app-field-error {
   font-size: calc(12px * var(--exo-font-scale, 1));
   color: var(--v4-danger);
