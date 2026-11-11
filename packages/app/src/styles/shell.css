@@ -1862,6 +1862,170 @@
   border-color: rgba(255, 107, 107, 0.5);
 }
 
+/* Local file links in assistant Markdown + read-only preview (#91). */
+.app-localfile {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  vertical-align: baseline;
+}
+
+.app-localfile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--v4-accent, inherit);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.app-localfile-link--static {
+  color: inherit;
+  text-decoration: none;
+  cursor: default;
+}
+
+.app-localfile-copy {
+  padding: 2px 4px;
+}
+
+.app-localfile-hint {
+  color: var(--v4-text-mute);
+  font-size: calc(11px * var(--exo-font-scale, 1));
+}
+
+.app-lfp-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.app-lfp {
+  --lfp-line: 20px;
+  width: min(1100px, 94vw);
+  height: min(86vh, 900px);
+  display: flex;
+  flex-direction: column;
+  background: var(--v4-panel);
+  color: var(--v4-text);
+  border: 1px solid var(--v4-line-strong);
+  border-radius: 8px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.app-lfp-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--v4-line-strong);
+}
+
+.app-lfp-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-lfp-path {
+  color: var(--v4-text-mute);
+  font-family: var(--v4-mono);
+  font-size: calc(11px * var(--exo-font-scale, 1));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: all;
+}
+
+.app-lfp-close {
+  border: none;
+  background: none;
+  color: var(--v4-text-mute);
+  display: inline-flex;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.app-lfp-close:hover {
+  color: var(--v4-danger);
+}
+
+.app-lfp-notice,
+.app-lfp-status {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: calc(12px * var(--exo-font-scale, 1));
+}
+
+.app-lfp-notice {
+  color: var(--v4-text-mute);
+  border-bottom: 1px solid var(--v4-line-strong);
+}
+
+.app-lfp-error {
+  color: var(--v4-danger);
+}
+
+.app-lfp-scroll {
+  flex: 1;
+  overflow: auto;
+}
+
+/* Fixed row height (= PREVIEW_LINE_PX) keeps gutter, code and band aligned. */
+.app-lfp-grid {
+  position: relative;
+  display: flex;
+  min-width: max-content;
+  padding: 8px 0;
+  font-family: var(--v4-mono);
+  font-size: 12.5px;
+  line-height: var(--lfp-line);
+}
+
+.app-lfp-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: rgba(255, 210, 90, 0.14);
+  pointer-events: none;
+}
+
+.app-lfp-gutter {
+  display: flex;
+  flex-direction: column;
+  padding: 0 10px 0 12px;
+  text-align: right;
+  color: var(--v4-text-mute);
+  user-select: none;
+  border-right: 1px solid var(--v4-line-strong);
+}
+
+.app-lfp-code {
+  margin: 0;
+  padding: 0 14px;
+  white-space: pre;
+  font: inherit;
+  background: transparent;
+}
+
+.app-lfp-code code {
+  font: inherit;
+  background: none;
+}
+
 /* Metadata-only file card (never links, never shows storage_path). */
 a.app-att-filecard {
   text-decoration: none;

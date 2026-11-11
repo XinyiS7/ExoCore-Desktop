@@ -193,7 +193,11 @@ function MessageRowItem({
             onClose={() => setEditing(false)}
           />
         ) : hasContentText ? (
-          <MessageContent content={message.content} />
+          <MessageContent
+            content={message.content}
+            conversationId={isAssistant ? conversationId : undefined}
+            messageId={isAssistant ? message.id : undefined}
+          />
         ) : hasAttachments || hasVoiceToolErrors || hasPresentations ? null : (
           <span className="app-muted">（空消息）</span>
         )}
@@ -436,7 +440,7 @@ export function MessageTimeline({
               streaming={runtimeAssistant.isStreaming}
             />
             {runtimeAssistant.content ? (
-              <MessageContent content={runtimeAssistant.content} />
+              <MessageContent content={runtimeAssistant.content} localFilePending />
             ) : runtimeAssistant.thinking ||
               (realtimeTrace?.availability === 'available' && realtimeTrace.items.length) ||
               runtimeVoiceErrors.length > 0 ? null : (

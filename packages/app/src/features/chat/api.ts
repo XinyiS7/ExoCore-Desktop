@@ -380,6 +380,48 @@ export async function editAssistantMessage(
   return normalizeMessageRow(raw as unknown as MessageRow);
 }
 
+export interface LocalFilePreview {
+  name: string;
+  content: string;
+  size: number;
+  truncated: boolean;
+}
+
+/**
+ * POST /api/agents/conversations/<id>/messages/<messageId>/local-file/ (#91).
+ * `href` is the raw Markdown link target exactly as written in the message
+ * (including any `#L` fragment). Failures keep the backend `error_code` on
+ * `AppApiError.code`.
+ */
+export async function previewLocalFile(
+  conversationId: number,
+  messageId: number,
+  href: string,
+): Promise<LocalFilePreview> {
+  let raw: unknown;
+  try {
+    raw = await apiFetch(`/api/agents/conversations/${conversationId}/messages/${messageId}/local-file/`, {
+      method: 'POST',
+      body: { href },
+    });
+  } catch (cause) {
+    const error = toAppApiError(cause);
+    const code = isRecord(error.body) && typeof error.body.error_code === 'string' ? error.body.error_code : null;
+    if (code === null) throw error;
+    throw new AppApiError(error.message, { status: error.status, body: error.body, code });
+  }
+  if (
+    !isRecord(raw) ||
+    typeof raw.name !== 'string' ||
+    typeof raw.content !== 'string' ||
+    typeof raw.size !== 'number' ||
+    typeof raw.truncated !== 'boolean'
+  ) {
+    throw contractError('文件预览接口返回格式异常', raw);
+  }
+  return { name: raw.name, content: raw.content, size: raw.size, truncated: raw.truncated };
+}
+
 // ── Conversation create (canonical init only — never POST .../conversations/) ─
 
 /** POST /api/agents/sessions/init/ */

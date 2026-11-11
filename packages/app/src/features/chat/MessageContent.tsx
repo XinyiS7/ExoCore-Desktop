@@ -1,12 +1,14 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Check, Copy } from 'lucide-react';
-import ReactMarkdown, { type Components } from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform, type Components, type UrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema, type Options as SanitizeSchema } from 'rehype-sanitize';
+import { LocalFileLink, type LocalFilePreviewTarget } from './localFile/LocalFileLink';
+import { LOCAL_FILE_PROTOCOL, fromLocalFileMarker, remarkLocalFileLinks } from './localFile/localFileLinks';
 
 /**
  * Read-only persisted-message renderer (Plan §6.6 / Task 7.5).
@@ -22,6 +24,11 @@ import rehypeSanitize, { defaultSchema, type Options as SanitizeSchema } from 'r
  * hljs/katex markup generated afterwards is never stripped. `className` must
  * survive sanitizing because remark-math marks math with
  * `math-inline`/`math-display` classes that rehype-katex looks for.
+ *
+ * Local file links (#91): `remarkLocalFileLinks` rewrites Markdown links to
+ * `file:///` / drive paths into an `exo-local:` marker; sanitize and the custom
+ * `urlTransform` let only that marker through, and the `a` component renders it
+ * as a preview entry (only when both ids are given) or a copy-only path.
  */
 
 const RAW_HTML_SCHEMA: SanitizeSchema = {
@@ -30,6 +37,10 @@ const RAW_HTML_SCHEMA: SanitizeSchema = {
   // cards. Anything unnamed (script/style/iframe/form/svg/video/…) stays
   // stripped by the default schema.
   tagNames: [...(defaultSchema.tagNames ?? []), 'figure', 'figcaption', 'mark'],
+  protocols: {
+    ...defaultSchema.protocols,
+    href: [...(defaultSchema.protocols?.href ?? []), LOCAL_FILE_PROTOCOL],
+  },
   attributes: {
     ...defaultSchema.attributes,
     // Inline `style` is the point of the feature; `className` carries both
@@ -206,13 +217,49 @@ const MD_COMPONENTS: Components = {
   },
 };
 
-export function MessageContent({ content }: { content: string }) {
+const urlTransform: UrlTransform = (url) =>
+  fromLocalFileMarker(url) !== null ? url : defaultUrlTransform(url);
+
+export interface MessageContentProps {
+  content: string;
+  /** Persisted assistant message: both ids enable local file previews. */
+  conversationId?: number;
+  messageId?: number;
+  /** Streaming assistant reply (no id yet): local links say preview comes later. */
+  localFilePending?: boolean;
+}
+
+export function MessageContent({ content, conversationId, messageId, localFilePending }: MessageContentProps) {
+  const components = useMemo<Components>(() => {
+    const target: LocalFilePreviewTarget | undefined =
+      conversationId !== undefined && messageId !== undefined ? { conversationId, messageId } : undefined;
+    return {
+      ...MD_COMPONENTS,
+      a({ node: _node, href, children, ...rest }) {
+        const rawHref = fromLocalFileMarker(href);
+        if (rawHref !== null) {
+          return (
+            <LocalFileLink rawHref={rawHref} target={target} pending={localFilePending}>
+              {children}
+            </LocalFileLink>
+          );
+        }
+        return (
+          <a href={href} {...rest}>
+            {children}
+          </a>
+        );
+      },
+    };
+  }, [conversationId, messageId, localFilePending]);
+
   return (
     <div className="app-md">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
+        remarkPlugins={[remarkGfm, remarkMath, remarkLocalFileLinks]}
         rehypePlugins={[rehypeRaw, [rehypeSanitize, RAW_HTML_SCHEMA], rehypeHighlight, rehypeKatex]}
-        components={MD_COMPONENTS}
+        urlTransform={urlTransform}
+        components={components}
       >
         {content}
       </ReactMarkdown>
