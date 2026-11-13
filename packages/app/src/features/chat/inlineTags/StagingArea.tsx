@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '../queries';
+import { queryKeys, useDiscardStagedMutation } from '../queries';
 import { formatTimeOfDay } from '../time';
 import { formatBlockRemaining } from './blockTime';
 import type { ConversationBlockView, StagedMessageView } from '../types';
@@ -44,18 +44,37 @@ function BlockCountdown({ conversationId, unblockAt }: { conversationId: number;
 }
 
 export function StagingArea({ conversationId, block, staged }: StagingAreaProps) {
+  const discard = useDiscardStagedMutation(conversationId);
   if (block === null && staged.length === 0) return null;
   return (
     <section className="app-itag-staging" aria-label="暂存区">
       {block !== null ? (
         <BlockCountdown key={block.unblockAt} conversationId={conversationId} unblockAt={block.unblockAt} />
       ) : null}
-      {staged.map((row) => (
-        <div key={row.id} className="app-itag-staged" data-itag="staged">
-          <span className="app-itag-staged-meta">暂存 · {formatTimeOfDay(row.clickedAt)}</span>
-          <p className="app-itag-staged-body">{row.content}</p>
-        </div>
-      ))}
+      {staged.map((row) =>
+        row.failed ? (
+          <div key={row.id} className="app-itag-staged app-itag-staged--failed" data-itag="staged-failed">
+            <span className="app-itag-staged-meta" role="alert">
+              发送失败 · {formatTimeOfDay(row.clickedAt)} · 不会自动重发，可复制后重新发送
+            </span>
+            <p className="app-itag-staged-body">{row.content}</p>
+            <button
+              type="button"
+              className="app-btn app-btn-ghost app-btn-xs"
+              onClick={() => discard.mutate(row.id)}
+              disabled={discard.isPending}
+              aria-label={`丢弃发送失败的暂存消息：${row.content}`}
+            >
+              丢弃
+            </button>
+          </div>
+        ) : (
+          <div key={row.id} className="app-itag-staged" data-itag="staged">
+            <span className="app-itag-staged-meta">暂存 · {formatTimeOfDay(row.clickedAt)}</span>
+            <p className="app-itag-staged-body">{row.content}</p>
+          </div>
+        ),
+      )}
     </section>
   );
 }

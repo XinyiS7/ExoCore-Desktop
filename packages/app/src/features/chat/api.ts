@@ -165,7 +165,7 @@ export function normalizeStaged(state: unknown): StagedMessageView[] {
   if (!isRecord(state) || !Array.isArray(state.staged)) return [];
   return state.staged.flatMap((row: unknown) =>
     isRecord(row) && isInt(row.id) && typeof row.content === 'string' && typeof row.clicked_at === 'string'
-      ? [{ id: row.id, content: row.content, clickedAt: row.clicked_at }]
+      ? [{ id: row.id, content: row.content, clickedAt: row.clicked_at, failed: row.failed === true }]
       : [],
   );
 }
@@ -479,6 +479,17 @@ export async function uploadTheaterDocuments(id: number, files: File[]): Promise
 /** DELETE /api/agents/conversations/<id>/pins/<pinId>/ — sticky-note × (204; 404 = already gone). */
 export async function deleteConversationPin(id: number, pinId: number): Promise<void> {
   await apiFetch(`/api/agents/conversations/${id}/pins/${pinId}/`, { method: 'DELETE' });
+}
+
+/** DELETE /api/agents/conversations/<pk>/staged/<id>/ — discard a failed staged send (#130 CP4). */
+export async function deleteStagedMessage(id: number, stagedId: number): Promise<void> {
+  await apiFetch(`/api/agents/conversations/${id}/staged/${stagedId}/`, { method: 'DELETE' });
+}
+
+/** True while the backend still owes a flush: a block holds or a staged send is pending. */
+export function stagingUnsettled(conversation: ConversationSummary | undefined): boolean {
+  if (!conversation) return false;
+  return Boolean(conversation.block) || (conversation.staged ?? []).some((row) => !row.failed);
 }
 
 /** DELETE .../theater-documents/<docId>/ */

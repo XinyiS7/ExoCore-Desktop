@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowDown, ArrowLeft, Menu } from 'lucide-react';
-import { toAppApiError } from './api';
+import { stagingUnsettled, toAppApiError } from './api';
 import {
   findPersistedMessage,
   isValidConversationId,
@@ -488,7 +488,7 @@ export function ConversationPage() {
 
   const conversation = conversationQuery.data;
   // #130 CP4 (D-E): while sends are staged only text can go out.
-  const stagingTextOnly = Boolean(conversation?.block) || (conversation?.staged?.length ?? 0) > 0;
+  const stagingTextOnly = stagingUnsettled(conversation);
   const assistantName =
     conversation?.agentPresetId != null
       ? (presetById.get(conversation.agentPresetId) ?? `Agent #${conversation.agentPresetId}`)

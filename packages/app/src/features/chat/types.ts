@@ -251,6 +251,8 @@ export interface StagedMessageView {
   id: number;
   content: string;
   clickedAt: string;
+  /** The flush failed: terminal, never resent; the user discards it. */
+  failed: boolean;
 }
 
 /** One conversation sticky note (`inline_state.pins[]`). */
