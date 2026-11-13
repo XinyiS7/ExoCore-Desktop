@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { parseInlineTags, type InlineTag } from '../features/chat/inlineTags/parse';
 import { normalizeMessageRow, normalizePins } from '../features/chat/api';
@@ -150,6 +150,7 @@ const pin = (id: number, content: string, author = 'user') => ({
 beforeEach(() => window.localStorage.clear());
 afterEach(() => {
   unmockFetch();
+  vi.restoreAllMocks();
   window.localStorage.clear();
 });
 
@@ -245,5 +246,89 @@ describe('sticky-note board', () => {
     finishTurn();
     const board = await screen.findByRole('complementary', { name: '会话便签' });
     expect(within(board).getByText('带伞')).toBeInTheDocument();
+  });
+});
+
+const arrivalFrame = (messageId: number) => ({
+  kind: 'assistant-message-arrived',
+  version: 1,
+  event_id: 11,
+  dedupe_key: `assistant-message:${messageId}`,
+  conversation_id: 60,
+  message_id: messageId,
+  agent: { id: 5, name: 'Ecki' },
+  preview: { policy: 'bounded_text', text: '好的', truncated: false },
+  target: { kind: 'conversation_message', conversation_id: 60, message_id: messageId },
+  register_ack: null,
+  ignore: { allowed: false },
+  title_hint: null,
+  committed_at: '2026-11-13T15:00:00Z',
+});
+
+describe('sticky-note board — out-of-band arrival reconciliation (CP2-F01)', () => {
+  it('the arrival fresh window also re-reads detail: mixed and pure-pin replies reach the board', async () => {
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    let arrived = false;
+    let detailReads = 0;
+    let windowReads = 0;
+    const msg = (id: number, role: string, content: string, index: number) => ({
+      ...row({ id, role: role as MessageRow['role'], content }),
+      index_in_session: index,
+    });
+    installRuntimeFetch([
+      { test: '/api/agents/presets/', handler: () => jsonResponse([PRESET]) },
+      {
+        test: '/api/agents/conversations/60/',
+        handler: () => {
+          detailReads += 1;
+          return jsonResponse(conversation(arrived ? [pin(21, '周五交稿', 'assistant'), pin(22, '带伞', 'assistant')] : []));
+        },
+      },
+      {
+        test: '/api/agents/chat/60/',
+        handler: () => {
+          windowReads += 1;
+          const base = [msg(800, 'user', '旧的问题', 0), msg(801, 'assistant', '旧的回答', 1)];
+          return jsonResponse({
+            messages: arrived
+              ? [
+                  ...base,
+                  // Pure pin: no row of its own (CP1), only the board shows it.
+                  msg(802, 'assistant', '<pin>周五交稿</pin>', 2),
+                  msg(803, 'assistant', '好的<pin>带伞</pin>', 3),
+                ]
+              : base,
+            total_count: arrived ? 4 : 2,
+            has_more: false,
+          });
+        },
+      },
+      {
+        test: '/api/push/assistant-arrivals/',
+        handler: (url) =>
+          url.searchParams.get('after') === null
+            ? jsonResponse({ events: [], next_cursor: 10, has_more: false })
+            : jsonResponse(
+                arrived ? { events: [arrivalFrame(803)], next_cursor: 11, has_more: false } : { events: [], next_cursor: 10, has_more: false },
+              ),
+      },
+    ]);
+
+    renderApp(['/chat/60']);
+    await screen.findByText('旧的回答');
+    expect(screen.queryByRole('complementary', { name: '会话便签' })).toBeNull();
+    const detailBefore = detailReads;
+    const windowBefore = windowReads;
+
+    arrived = true;
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    const board = await screen.findByRole('complementary', { name: '会话便签' });
+    expect([...board.querySelectorAll('.app-itag-note-body')].map((n) => n.textContent)).toEqual(['周五交稿', '带伞']);
+    expect(windowReads).toBeGreaterThan(windowBefore);
+    expect(detailReads).toBeGreaterThan(detailBefore);
+    await screen.findByText('好的');
+    expect(document.querySelector('[data-message-id="802"]')).toBeNull();
+    expect(document.querySelector('.app-scroll')?.textContent).not.toContain('周五交稿');
   });
 });

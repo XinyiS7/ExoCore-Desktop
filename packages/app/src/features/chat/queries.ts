@@ -171,6 +171,9 @@ export function applyFreshWindow(
     pages: [page],
     pageParams: [0],
   });
+  // #130 CP2: any canonical reconciliation (turn settle or out-of-band
+  // arrival) may have pinned / unpinned; sticky notes live on the detail read.
+  void queryClient.invalidateQueries({ queryKey: queryKeys.conversation(conversationId) });
 }
 
 /** Resolve a persisted canonical row by exact id + required role (§5.1/§5.5). */

@@ -46,7 +46,7 @@ import {
   postChatStop,
   postConversationBranch,
 } from './client';
-import { applyFreshWindow, fetchFreshWindow, findPersistedMessage, queryKeys } from '../queries';
+import { applyFreshWindow, fetchFreshWindow, findPersistedMessage } from '../queries';
 import { AppApiError } from '../api';
 import type { MessagePage } from '../types';
 import { classifyAudioAttemptPage } from './attemptPersistence';
@@ -490,8 +490,6 @@ export function useChatRuntime({
       }
       try {
         applyFreshWindow(queryClient, convId, page, identity.destructive);
-        // #130 CP2: the turn may have pinned / unpinned; sticky notes live on the detail read.
-        void queryClient.invalidateQueries({ queryKey: queryKeys.conversation(convId) });
       } catch {
         if (!isCurrent) return;
         transition({
