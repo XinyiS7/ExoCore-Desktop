@@ -9,6 +9,8 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema, type Options as SanitizeSchema } from 'rehype-sanitize';
 import { LocalFileLink, type LocalFilePreviewTarget } from './localFile/LocalFileLink';
 import { LOCAL_FILE_PROTOCOL, fromLocalFileMarker, remarkLocalFileLinks } from './localFile/localFileLinks';
+import { InlineTagView } from './inlineTags/InlineTagViews';
+import { withTagPlaceholders, type InlineTagRole } from './inlineTags/placeholders';
 
 /**
  * Read-only persisted-message renderer (Plan §6.6 / Task 7.5).
@@ -46,6 +48,9 @@ const RAW_HTML_SCHEMA: SanitizeSchema = {
     // Inline `style` is the point of the feature; `className` carries both
     // author classes and the math markers above.
     '*': [...(defaultSchema.attributes?.['*'] ?? []), 'style', 'className'],
+    // #130: inline action tag placeholders (index into this message's tags).
+    div: [...(defaultSchema.attributes?.div ?? []), 'dataItagRef'],
+    span: [...(defaultSchema.attributes?.span ?? []), 'dataItagRef'],
   },
 };
 
@@ -227,14 +232,55 @@ export interface MessageContentProps {
   messageId?: number;
   /** Streaming assistant reply (no id yet): local links say preview comes later. */
   localFilePending?: boolean;
+  /**
+   * Chat message bodies only (#130): parse inline action tags for this
+   * author role. Omitted (reasoning, tool rows, spoiler bodies) = plain Markdown.
+   */
+  inlineTags?: InlineTagRole;
+  /** The body is still streaming: hold back half tags, animate open speak. */
+  streaming?: boolean;
 }
 
-export function MessageContent({ content, conversationId, messageId, localFilePending }: MessageContentProps) {
+export function MessageContent({
+  content,
+  conversationId,
+  messageId,
+  localFilePending,
+  inlineTags,
+  streaming = false,
+}: MessageContentProps) {
+  const { markdown, tags } = useMemo(
+    () => withTagPlaceholders(content, inlineTags, streaming),
+    [content, inlineTags, streaming],
+  );
+
   const components = useMemo<Components>(() => {
     const target: LocalFilePreviewTarget | undefined =
       conversationId !== undefined && messageId !== undefined ? { conversationId, messageId } : undefined;
+    const renderBody = (body: string) => (
+      <MessageContent
+        content={body}
+        conversationId={conversationId}
+        messageId={messageId}
+        localFilePending={localFilePending}
+      />
+    );
+    const tagAt = (ref: unknown) => {
+      const tag = typeof ref === 'string' ? tags[Number(ref)] : undefined;
+      return tag ? <InlineTagView tag={tag} streaming={streaming} renderBody={renderBody} /> : null;
+    };
     return {
       ...MD_COMPONENTS,
+      div({ node: _node, children, ...rest }) {
+        const ref = (rest as Record<string, unknown>)['data-itag-ref'];
+        if (ref !== undefined) return tagAt(ref);
+        return <div {...rest}>{children}</div>;
+      },
+      span({ node: _node, children, ...rest }) {
+        const ref = (rest as Record<string, unknown>)['data-itag-ref'];
+        if (ref !== undefined) return tagAt(ref);
+        return <span {...rest}>{children}</span>;
+      },
       a({ node: _node, href, children, ...rest }) {
         const rawHref = fromLocalFileMarker(href);
         if (rawHref !== null) {
@@ -251,7 +297,7 @@ export function MessageContent({ content, conversationId, messageId, localFilePe
         );
       },
     };
-  }, [conversationId, messageId, localFilePending]);
+  }, [conversationId, messageId, localFilePending, tags, streaming]);
 
   return (
     <div className="app-md">
@@ -261,7 +307,7 @@ export function MessageContent({ content, conversationId, messageId, localFilePe
         urlTransform={urlTransform}
         components={components}
       >
-        {content}
+        {markdown}
       </ReactMarkdown>
     </div>
   );

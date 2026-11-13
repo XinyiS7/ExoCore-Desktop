@@ -1,0 +1,89 @@
+/* #130 inline action tags — only `.app-itag-*` rules live here. */
+
+.app-itag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  margin: 0 2px;
+  border-radius: 999px;
+  border: 1px solid var(--v4-border, rgba(255, 255, 255, 0.12));
+  font-size: calc(11.5px * var(--exo-font-scale, 1));
+  line-height: 1.6;
+  color: var(--v4-text-mute);
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+
+.app-itag-chip strong {
+  color: var(--v4-accent);
+}
+
+.app-itag-speak,
+.app-itag-spoiler,
+.app-itag-pin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--v4-border, rgba(255, 255, 255, 0.12));
+  background: var(--v4-panel-hover, rgba(255, 255, 255, 0.04));
+  color: var(--v4-text-mute);
+  font-size: calc(12.5px * var(--exo-font-scale, 1));
+}
+
+.app-itag-speak--live {
+  color: var(--v4-accent);
+}
+
+.app-itag-speak--live svg {
+  animation: app-itag-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes app-itag-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.app-itag-speak-emotion,
+.app-itag-spoiler-hint {
+  margin-left: auto;
+  font-size: calc(11px * var(--exo-font-scale, 1));
+  opacity: 0.75;
+}
+
+.app-itag-spoiler--masked {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.app-itag-spoiler--masked:hover {
+  color: var(--v4-accent);
+}
+
+.app-itag-spoiler--open {
+  display: block;
+  color: inherit;
+}
+
+.app-itag-spoiler-cover {
+  margin-bottom: 4px;
+  font-size: calc(11px * var(--exo-font-scale, 1));
+  color: var(--v4-text-mute);
+}
+
+.app-itag-pin-body {
+  white-space: pre-wrap;
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-itag-speak--live svg {
+    animation: none;
+  }
+}

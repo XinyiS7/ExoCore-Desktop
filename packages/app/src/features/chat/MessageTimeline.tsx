@@ -3,6 +3,8 @@ import { Check, Copy, Edit2, GitBranch, RotateCw } from 'lucide-react';
 import type { AssistantRunTraceProjection, MessageRole, MessageView } from './types';
 import type { OptimisticUserRow, RuntimeAssistantRow } from './runtime/types';
 import { MessageContent } from './MessageContent';
+import { SpoilerUnlockContext } from './inlineTags/spoilerUnlock';
+import { isTimerTriggerMessage } from './inlineTags/parse';
 import { AssistantMessageEditor } from './AssistantMessageEditor';
 import { formatTimeOfDay } from './time';
 import { MessageAttachments } from './attachments/MessageAttachments';
@@ -197,6 +199,7 @@ function MessageRowItem({
             content={message.content}
             conversationId={isAssistant ? conversationId : undefined}
             messageId={isAssistant ? message.id : undefined}
+            inlineTags={isAssistant ? 'assistant' : isUser ? 'user' : undefined}
           />
         ) : hasAttachments || hasVoiceToolErrors || hasPresentations ? null : (
           <span className="app-muted">（空消息）</span>
@@ -351,6 +354,16 @@ export function MessageTimeline({
   const realtimeTrace = runtimeAssistant ? runtimeTraceProjection(runtimeAssistant) : null;
   const runtimeVoiceErrors = runtimeAssistant?.voiceToolErrors ?? [];
 
+  // #130: backend timer triggers are hidden (REQ §3.3); a spoiler `pwd`
+  // unlocks once any LATER user message contains it, case-insensitively.
+  const unlockFor = (index: number) => (pwd: string) => {
+    const needle = pwd.toLowerCase();
+    return (
+      needle !== '' &&
+      messages.slice(index + 1).some((m) => m.role === 'user' && m.content.toLowerCase().includes(needle))
+    );
+  };
+
   // A+ closure: once the canonical row carrying this attempt's exact
   // correlation is drawn, the optimistic copy is suppressed (canonical rows
   // keep rendering as before; the runtime overlay/lifecycle is untouched).
@@ -375,22 +388,25 @@ export function MessageTimeline({
       ) : null}
 
       {/* Persisted canonical messages */}
-      {messages.map((message) => (
-        <MessageRowItem
-          key={message.id}
-          message={message}
-          conversationId={conversationId}
-          isLatestUser={message.id === latestUserMessageId}
-          isRunActive={isRunActive}
-          onEditMessage={onEditMessage}
-          onRegenerateMessage={onRegenerateMessage}
-          onBranchMessage={onBranchMessage}
-          onSaveAssistantMessage={onSaveAssistantMessage}
-          onCollect={handleCollect}
-          assistantName={assistantName}
-          avatarUrl={avatarFor(message.role)}
-        />
-      ))}
+      {messages.map((message, index) =>
+        message.role === 'user' && isTimerTriggerMessage(message.content) ? null : (
+          <SpoilerUnlockContext.Provider key={message.id} value={unlockFor(index)}>
+            <MessageRowItem
+              message={message}
+              conversationId={conversationId}
+              isLatestUser={message.id === latestUserMessageId}
+              isRunActive={isRunActive}
+              onEditMessage={onEditMessage}
+              onRegenerateMessage={onRegenerateMessage}
+              onBranchMessage={onBranchMessage}
+              onSaveAssistantMessage={onSaveAssistantMessage}
+              onCollect={handleCollect}
+              assistantName={assistantName}
+              avatarUrl={avatarFor(message.role)}
+            />
+          </SpoilerUnlockContext.Provider>
+        ),
+      )}
 
       {/* Optimistic User Message Overlay (§6.4) */}
       {shownOptimisticUser ? (
@@ -407,7 +423,7 @@ export function MessageTimeline({
             </span>
           </header>
           <div className="app-msg-body">
-            {shownOptimisticUser.content ? <MessageContent content={shownOptimisticUser.content} /> : null}
+            {shownOptimisticUser.content ? <MessageContent content={shownOptimisticUser.content} inlineTags="user" /> : null}
             {shownOptimisticUser.pendingAttachmentIds.length > 0 ? (
               <span className="app-deferred-chip">
                 待发送附件 {shownOptimisticUser.pendingAttachmentIds.length} 个
@@ -440,7 +456,12 @@ export function MessageTimeline({
               streaming={runtimeAssistant.isStreaming}
             />
             {runtimeAssistant.content ? (
-              <MessageContent content={runtimeAssistant.content} localFilePending />
+              <MessageContent
+                content={runtimeAssistant.content}
+                localFilePending
+                inlineTags="assistant"
+                streaming={runtimeAssistant.isStreaming}
+              />
             ) : runtimeAssistant.thinking ||
               (realtimeTrace?.availability === 'available' && realtimeTrace.items.length) ||
               runtimeVoiceErrors.length > 0 ? null : (
