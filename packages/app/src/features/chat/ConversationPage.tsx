@@ -22,6 +22,7 @@ import {
 } from './queries';
 import { MessageTimeline } from './MessageTimeline';
 import { PinBoard } from './inlineTags/PinBoard';
+import { StagingArea } from './inlineTags/StagingArea';
 import { readBackTarget } from './backTarget';
 import { MessageMinimap } from './minimap/MessageMinimap';
 import type { MessageView } from './types';
@@ -486,6 +487,8 @@ export function ConversationPage() {
   if (invalid) return <InvalidConversationState />;
 
   const conversation = conversationQuery.data;
+  // #130 CP4 (D-E): while sends are staged only text can go out.
+  const stagingTextOnly = Boolean(conversation?.block) || (conversation?.staged?.length ?? 0) > 0;
   const assistantName =
     conversation?.agentPresetId != null
       ? (presetById.get(conversation.agentPresetId) ?? `Agent #${conversation.agentPresetId}`)
@@ -881,6 +884,10 @@ export function ConversationPage() {
         onDismissTransient={dismissTransient}
       />
 
+      {conversation !== undefined ? (
+        <StagingArea conversationId={id} block={conversation.block ?? null} staged={conversation.staged ?? []} />
+      ) : null}
+
       {/* Composer (Always accessible at bottom of conversation view) */}
       {conversation !== undefined ? (
         <ChatComposer
@@ -904,7 +911,8 @@ export function ConversationPage() {
           audioRecovery={audioRecovery}
           onRetryAudio={handleRetryAudio}
           restoredTurn={restoredTurn}
-          collection={collectionCapable ? collection : undefined}
+          collection={collectionCapable && !stagingTextOnly ? collection : undefined}
+          textOnly={stagingTextOnly}
         />
       ) : null}
 

@@ -60,6 +60,10 @@
 - `GET /api/agents/conversations/<pk>/` additive 返回 `inline_state: { pins: InlinePin[] }`（列表端点不返回）。`InlinePin = { id: number; content: string; author: "user" | "assistant"; created_at: string /* ISO-8601 */ }`，按创建顺序；只含未取消的便签。前端把它渲染为独立于消息流、常驻可见的纸质便利贴区，每轮回复结束后重新读取 detail 以更新。
 - 便签由消息正文中的有效 `<pin>…</pin>` 创建、由 `<unpin id=N>` 取消（user 与 assistant 均可）；消息正文原样保留标签，前端不再把 pin/unpin 渲染为卡片。
 
+**行内标签状态（#130 CP4）**
+- 同一 `inline_state` additive 增加 `block: { unblock_at: string /* ISO-8601 */ } | null` 与 `staged: StagedMessage[]`。`block` 只在禁言生效中（`unblock_at` 未到）时非空；`StagedMessage = { id: number; content: string; clicked_at: string /* ISO-8601 */ }`，只含尚未送达模型的暂存消息，按发送顺序。
+- 前端在 composer 上方显示禁言倒计时与暂存气泡（不进消息流）；`block` 非空或 `staged` 非空时 composer 只能发文字（附件、录音、带藏品禁用）。倒计时归零或回合结束后重新读取 detail。
+
 **DELETE /api/agents/conversations/<pk>/pins/<pin_id>/** — 便利贴 × 关闭
 - `204 No Content`：软删除（之后不再出现在 `inline_state.pins` 与模型侧注入中）。
 - `404`：`{"code": "not_found", "error": "便签不存在或已取消"}`（不属于该会话或已取消）。
@@ -151,6 +155,19 @@ Content-Type: application/json
 ```
 
 稳定 code 包括 `runtime_attachments_unsupported`、`runtime_session_type_unsupported`、`runtime_retry_target_invalid`、`runtime_target_invalid`、`runtime_config_error`、`runtime_attachment_{invalid_request,not_found,wrong_conversation,type_unsupported,capability_unavailable,unreadable,too_large}`、目标解析器返回的稳定 code，以及 `audio_model_unsupported`、`audio_mime_unsupported`、`attachment_not_found`。同步拒绝不创建 Message、附件、运行状态、SSE/async buffer 或生成线程，并在响应前释放 generation reserve；会话 `thinking_level` 偏好可能已更新。客户端应把这些 4xx 视为安全拒绝并保留 composer 输入。
+
+**暂存（#130 CP4，REQ §3.2 / D-A / D-E）**：会话处于 `<block>` 禁言期，或后端自动回合（timer 触发 / 暂存 flush）正在运行时，ordinary send（非 edit/regenerate）不启动回合，改为写入暂存区：
+
+```http
+200 OK
+Content-Type: application/json
+
+{"status": "staged", "unblock_at": "2026-11-13T16:00:00+00:00"}
+```
+
+`unblock_at` 只在禁言时出现；后端回合期间的暂存没有该字段。SSE 与 `?mode=async` 两种 transport 都返回这个 JSON（不是事件流 / async acknowledgement），客户端应视为已受理：清空草稿、不进入运行态、重新读取会话 detail。暂存消息对模型不可见；禁言到期（或 `<block=0s>`）/ 后端回合结束后，后端把全部暂存按发送顺序拼成一条 user 消息、沿用上次请求状态自动发出。
+
+暂存期间请求带上传文件、`pending_attachments` 或 `collection_items` 时返回 `400 {"code": "blocked_no_attachments", "error": "暂存期间只能发送文字，附件、录音与藏品无法发送"}`，不写入任何内容，客户端保留输入。
 
 **GET /api/agents/chat/<session_id>/status/** — `{status: "running" | "completed" | "error"}`
 

@@ -73,6 +73,11 @@ export interface ChatComposerProps {
   } | null;
   /** #61 brought-back Collection cards; absent where the page offers none. */
   collection?: ComposeCollectionApi;
+  /**
+   * #130 CP4 (D-E): sends are being staged (block / held-back rows), and a
+   * staged send can only be text — uploads and recording are disabled.
+   */
+  textOnly?: boolean;
 }
 
 function flattenProjectFiles(entries: readonly ProjectTreeEntry[]): string[] {
@@ -109,6 +114,7 @@ export function ChatComposer({
   onRetryAudio,
   restoredTurn,
   collection,
+  textOnly = false,
 }: ChatComposerProps) {
   const [text, setText] = useState('');
   const [caret, setCaret] = useState(0);
@@ -404,7 +410,7 @@ export function ChatComposer({
   };
 
   const attachmentInputDisabled =
-    busy || runActive || audioRecovery.uploading || attachmentManager.deletePending;
+    busy || runActive || textOnly || audioRecovery.uploading || attachmentManager.deletePending;
 
   const pickFiles = (input: HTMLInputElement | null, files: FileList | null) => {
     // FileList is live in real browsers: copy it before resetting the input,
@@ -446,6 +452,7 @@ export function ChatComposer({
   const micDisabled =
     busy ||
     runActive ||
+    textOnly ||
     !audioSupported ||
     audioLoading ||
     recorder.status === 'recording';
