@@ -20,8 +20,7 @@
 }
 
 .app-itag-speak,
-.app-itag-spoiler,
-.app-itag-pin {
+.app-itag-spoiler {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -75,11 +74,6 @@
   margin-bottom: 4px;
   font-size: calc(11px * var(--exo-font-scale, 1));
   color: var(--v4-text-mute);
-}
-
-.app-itag-pin-body {
-  white-space: pre-wrap;
-  color: inherit;
 }
 
 @media (prefers-reduced-motion: reduce) {

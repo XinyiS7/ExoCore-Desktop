@@ -42,7 +42,7 @@ export interface ParseOptions {
 }
 
 const PAIRED = new Set(['speak', 'spoiler', 'pin']);
-const TAG_NAMES = ['speak', 'spoiler', 'pin', 'unpin', 'block', 'timer_fired', 'timer', 'roll_result', 'roll'];
+export const TAG_NAMES = ['speak', 'spoiler', 'pin', 'unpin', 'block', 'timer_fired', 'timer', 'roll_result', 'roll'];
 
 // Name must be followed by `=`, whitespace, `/` or `>` so `<timerx>` / `<rolling>` are not tags.
 const OPEN_RE = new RegExp(

@@ -14,7 +14,12 @@ export type InlineTagRole = 'assistant' | 'user';
 
 /** Kinds a user message may carry (REQ: spoiler/speak/block/timer are assistant-only). */
 const USER_KINDS = new Set<InlineTag['kind']>(['pin', 'unpin', 'roll', 'roll_result', 'timer_fired']);
-const BLOCK_KINDS = new Set<InlineTag['kind']>(['speak', 'spoiler', 'pin']);
+const BLOCK_KINDS = new Set<InlineTag['kind']>(['speak', 'spoiler']);
+/**
+ * D-F: pins live only in the conversation-level sticky-note area (CP2); the
+ * message body shows neither the tag nor its content. Canonical text is untouched.
+ */
+const HIDDEN_KINDS = new Set<InlineTag['kind']>(['pin', 'unpin']);
 
 export interface PlaceholderResult {
   markdown: string;
@@ -38,6 +43,7 @@ export function withTagPlaceholders(
       markdown += segment.raw;
       continue;
     }
+    if (HIDDEN_KINDS.has(segment.tag.kind)) continue;
     const ref = tags.push(segment.tag) - 1;
     markdown += BLOCK_KINDS.has(segment.tag.kind)
       ? `\n\n<div data-itag-ref="${ref}"></div>\n\n`

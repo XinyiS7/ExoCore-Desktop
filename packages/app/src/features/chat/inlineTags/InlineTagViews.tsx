@@ -1,5 +1,5 @@
 import { useContext, useState, type ReactNode } from 'react';
-import { Dices, EyeOff, Lock, Mic, Pin, PinOff, Timer, TimerOff, VolumeX } from 'lucide-react';
+import { Dices, EyeOff, Lock, Mic, Timer, TimerOff, VolumeX } from 'lucide-react';
 import type { InlineTag } from './parse';
 import { SpoilerUnlockContext } from './spoilerUnlock';
 import './inlineTags.css';
@@ -107,14 +107,10 @@ export function InlineTagView({ tag, streaming, renderBody }: InlineTagViewProps
     case 'spoiler':
       return <SpoilerBlock tag={tag} renderBody={renderBody} />;
     case 'pin':
-      return (
-        <div className="app-itag-pin" data-itag="pin">
-          <Pin size={13} aria-hidden="true" />
-          <span className="app-itag-pin-body">{tag.body.trim()}</span>
-        </div>
-      );
     case 'unpin':
-      return <Chip icon={<PinOff size={12} aria-hidden="true" />}>取消置顶 #{tag.id}</Chip>;
+      // D-F: never shown in a message body (placeholders drops them; the
+      // sticky-note area renders pins from `inline_state.pins`).
+      return null;
     case 'block':
       return (
         <Chip icon={<VolumeX size={12} aria-hidden="true" />}>

@@ -132,3 +132,62 @@ describe('MessageTimeline inline tags', () => {
     expect(unlocked.container.textContent).toContain('玫瑰花园');
   });
 });
+
+describe('CP1-F01 non-allow-listed angle brackets stay visible text', () => {
+  const roles = [['assistant'], ['user'], [undefined]] as const;
+
+  it.each(roles)('generic syntax survives real rendering (inlineTags=%s)', (role) => {
+    const content = 'Vec<String> 与 Option<Box<T>> 以及 Map<K, V>，x < y 且 y > z，</Foo> 收尾';
+    const { container } = render(<MessageContent content={content} inlineTags={role} />);
+    expect(container.querySelector('p')?.textContent).toBe(content);
+  });
+
+  it('keeps allow-listed card HTML working next to generics', () => {
+    const content = '<div style="padding: 4px">\n\n卡片里 Vec<String> 和 <mark>重点</mark>\n\n</div>';
+    const { container } = render(<MessageContent content={content} inlineTags="assistant" />);
+    expect((container.querySelector('div[style]') as HTMLElement | null)?.style.padding).toBe('4px');
+    expect(container.querySelector('mark')?.textContent).toBe('重点');
+    expect(container.textContent).toContain('卡片里 Vec<String> 和 重点');
+  });
+
+  it('does not double-escape code and keeps autolinks', () => {
+    const content = '`Vec<String>`\n\n```rust\nlet v: Vec<String> = vec![];\n```\n\n<https://example.com/a>';
+    const { container } = render(<MessageContent content={content} inlineTags="assistant" />);
+    expect(container.querySelector('.app-inline-code')?.textContent).toBe('Vec<String>');
+    expect(container.querySelector('pre')?.textContent).toContain('let v: Vec<String> = vec![];');
+    expect(container.textContent).not.toContain('&lt;');
+    expect(container.querySelector('a')?.getAttribute('href')).toBe('https://example.com/a');
+  });
+
+  it('keeps generics literal inside an opened spoiler body', () => {
+    render(<MessageContent content={'<spoiler>答案是 Vec<String></spoiler>'} inlineTags="assistant" />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByText('答案是 Vec<String>')).not.toBeNull();
+  });
+
+  it('still holds back a streaming half tag', () => {
+    const { container } = render(<MessageContent content="稍等<sp" inlineTags="assistant" streaming />);
+    expect(container.textContent).toBe('稍等');
+  });
+});
+
+describe('D-F pin / unpin never render in a message body', () => {
+  it.each(['assistant', 'user'] as const)('%s body hides the tag and its content', (role) => {
+    const { container } = render(
+      <MessageContent content={'记住了<pin>周五交稿</pin>，另外<unpin id=3>就这样'} inlineTags={role} />,
+    );
+    expect(container.textContent).toBe('记住了，另外就这样');
+    expect(container.querySelector('[data-itag]')).toBeNull();
+    expect(container.querySelector('.app-itag-chip')).toBeNull();
+  });
+
+  it('a pin still streaming is hidden as it arrives', () => {
+    const { container } = render(<MessageContent content="好<pin>周五交" inlineTags="assistant" streaming />);
+    expect(container.textContent).toBe('好');
+  });
+
+  it('a pin inside code stays literal', () => {
+    const { container } = render(<MessageContent content="`<pin>x</pin>`" inlineTags="assistant" />);
+    expect(container.querySelector('.app-inline-code')?.textContent).toBe('<pin>x</pin>');
+  });
+});

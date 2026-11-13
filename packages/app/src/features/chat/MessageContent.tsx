@@ -11,6 +11,8 @@ import { LocalFileLink, type LocalFilePreviewTarget } from './localFile/LocalFil
 import { LOCAL_FILE_PROTOCOL, fromLocalFileMarker, remarkLocalFileLinks } from './localFile/localFileLinks';
 import { InlineTagView } from './inlineTags/InlineTagViews';
 import { withTagPlaceholders, type InlineTagRole } from './inlineTags/placeholders';
+import { TAG_NAMES } from './inlineTags/parse';
+import { protectUnknownTags } from './rawHtmlText';
 
 /**
  * Read-only persisted-message renderer (Plan §6.6 / Task 7.5).
@@ -53,6 +55,9 @@ const RAW_HTML_SCHEMA: SanitizeSchema = {
     span: [...(defaultSchema.attributes?.span ?? []), 'dataItagRef'],
   },
 };
+
+/** Tag names that reach the raw-HTML stage as markup; everything else stays text (#130 CP1-F01). */
+const MARKUP_TAG_NAMES: ReadonlySet<string> = new Set([...(RAW_HTML_SCHEMA.tagNames ?? []), ...TAG_NAMES]);
 
 function extractText(node: ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node);
@@ -250,7 +255,7 @@ export function MessageContent({
   streaming = false,
 }: MessageContentProps) {
   const { markdown, tags } = useMemo(
-    () => withTagPlaceholders(content, inlineTags, streaming),
+    () => withTagPlaceholders(protectUnknownTags(content, MARKUP_TAG_NAMES), inlineTags, streaming),
     [content, inlineTags, streaming],
   );
 
