@@ -191,3 +191,49 @@ describe('D-F pin / unpin never render in a message body', () => {
     expect(container.querySelector('.app-inline-code')?.textContent).toBe('<pin>x</pin>');
   });
 });
+
+describe('CP1-F03 only parser-accepted tags act; rejected candidates render verbatim', () => {
+  const rejected = [
+    '<timer>abc',
+    '<roll>abc</roll>',
+    '<PIN>note</PIN>',
+    '<Speak>hi</Speak>',
+    '<timer=5m title="x">',
+    '<roll=1d7>',
+    '<block=abc>',
+    '<unpin id=abc>',
+    '<pin>未闭合的便签',
+    '<spoiler>未闭合',
+    '</speak> 孤立闭合',
+  ];
+
+  it.each(rejected.flatMap((text) => [['assistant', text], ['user', text]] as const))(
+    '%s: %s',
+    (role, text) => {
+      const { container } = render(<MessageContent content={text} inlineTags={role} />);
+      expect(container.textContent).toBe(text);
+      expect(container.querySelector('[data-itag], .app-itag-chip')).toBeNull();
+    },
+  );
+
+  it.each(['<speak>secret</speak>', '<spoiler>secret</spoiler>', '<block=30s>', '<timer=90s title="泡茶">'])(
+    'assistant-only tag in a user message stays verbatim: %s',
+    (text) => {
+      const { container } = render(<MessageContent content={text} inlineTags="user" />);
+      expect(container.textContent).toBe(text);
+      expect(container.querySelector('[data-itag], .app-itag-chip')).toBeNull();
+    },
+  );
+
+  it('accepted tags still act around rejected ones', () => {
+    const content = '<PIN>x</PIN> <pin>藏起来</pin> <roll=1d20> <roll>y</roll>';
+    const { container } = render(<MessageContent content={content} inlineTags="assistant" />);
+    expect(container.textContent).toBe('<PIN>x</PIN>  1d20 <roll>y</roll>');
+    expect(container.querySelectorAll('.app-itag-chip')).toHaveLength(1);
+  });
+
+  it('without a role, tag-shaped text is verbatim too', () => {
+    const { container } = render(<MessageContent content="<speak>x</speak> <timer=5s>" />);
+    expect(container.textContent).toBe('<speak>x</speak> <timer=5s>');
+  });
+});

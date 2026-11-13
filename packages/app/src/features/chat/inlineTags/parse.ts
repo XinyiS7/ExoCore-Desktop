@@ -35,14 +35,17 @@ export type InlineTag =
   | { kind: 'roll'; expr: string }
   | { kind: 'roll_result'; expr: string; by: string; dice: number[]; total: number };
 
-export type Segment = { type: 'text'; text: string } | { type: 'tag'; tag: InlineTag; raw: string };
+/** `start` is the segment's offset in the parsed input. */
+export type Segment =
+  | { type: 'text'; text: string; start: number }
+  | { type: 'tag'; tag: InlineTag; raw: string; start: number };
 
 export interface ParseOptions {
   streaming?: boolean;
 }
 
 const PAIRED = new Set(['speak', 'spoiler', 'pin']);
-export const TAG_NAMES = ['speak', 'spoiler', 'pin', 'unpin', 'block', 'timer_fired', 'timer', 'roll_result', 'roll'];
+const TAG_NAMES = ['speak', 'spoiler', 'pin', 'unpin', 'block', 'timer_fired', 'timer', 'roll_result', 'roll'];
 
 // Name must be followed by `=`, whitespace, `/` or `>` so `<timerx>` / `<rolling>` are not tags.
 const OPEN_RE = new RegExp(
@@ -52,7 +55,7 @@ const ATTR_RE = /([a-z_]+)=(?:"([^"]*)"|([^\s>"]+))/g;
 const SECONDS_RE = /^(\d+)s$/;
 const DICE_TERM_RE = /^(\d*)d(\d+)$/;
 
-type Range = [number, number];
+export type Range = [number, number];
 
 /** Character ranges covered by Markdown code (fenced blocks + inline spans). */
 export function codeRanges(text: string): Range[] {
@@ -250,9 +253,10 @@ export function parseInlineTags(input: string, options: ParseOptions = {}): Segm
 
   const segments: Segment[] = [];
   let buffer = '';
+  let bufferStart = 0;
   let pos = 0;
   const flush = () => {
-    if (buffer) segments.push({ type: 'text', text: buffer });
+    if (buffer) segments.push({ type: 'text', text: buffer, start: bufferStart });
     buffer = '';
   };
 
@@ -273,8 +277,9 @@ export function parseInlineTags(input: string, options: ParseOptions = {}): Segm
     const headEnd = lt + head.length;
     if (!PAIRED.has(head.name)) {
       flush();
-      segments.push({ type: 'tag', tag: head.tag as InlineTag, raw: text.slice(lt, headEnd) });
+      segments.push({ type: 'tag', tag: head.tag as InlineTag, raw: text.slice(lt, headEnd), start: lt });
       pos = headEnd;
+      bufferStart = pos;
       continue;
     }
 
@@ -292,8 +297,10 @@ export function parseInlineTags(input: string, options: ParseOptions = {}): Segm
       type: 'tag',
       tag: { ...head.tag, body: text.slice(headEnd, bodyEnd), closed } as InlineTag,
       raw: text.slice(lt, end),
+      start: lt,
     });
     pos = end;
+    bufferStart = pos;
   }
   flush();
   return segments;

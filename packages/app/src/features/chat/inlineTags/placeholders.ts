@@ -1,13 +1,19 @@
-import { parseInlineTags, type InlineTag } from './parse';
+import { codeRanges, parseInlineTags, type InlineTag } from './parse';
+import { protectUnknownTags } from '../rawHtmlText';
 
 /**
  * Bridges parsed inline tags into the one Markdown pipeline (#130 CP1).
  *
- * Each recognised tag is replaced by an empty placeholder element carrying
+ * Each ACCEPTED tag is replaced by an empty placeholder element carrying
  * `data-itag-ref=<index>`; MessageContent's `div` / `span` components swap the
  * placeholder for the tag view. Tags therefore keep their position inside
  * paragraphs and the surrounding Markdown is parsed as one document. Block tags
  * become a stand-alone `<div>` HTML block, inline tags an inline `<span>`.
+ *
+ * Invariant (CP1-F03): only what the parser accepted for this author role acts
+ * or is hidden. Everything else — plain text and rejected tag-shaped text
+ * (bad syntax, uppercase, unclosed, bad arguments, wrong role) — goes through
+ * `protectUnknownTags` and renders verbatim.
  */
 
 export type InlineTagRole = 'assistant' | 'user';
@@ -30,17 +36,19 @@ export function withTagPlaceholders(
   content: string,
   role: InlineTagRole | undefined,
   streaming: boolean,
+  htmlTags: ReadonlySet<string>,
 ): PlaceholderResult {
-  if (!role) return { markdown: content, tags: [] };
+  const ranges = codeRanges(content);
+  if (!role) return { markdown: protectUnknownTags(content, htmlTags, ranges), tags: [] };
   const tags: InlineTag[] = [];
   let markdown = '';
   for (const segment of parseInlineTags(content, { streaming })) {
     if (segment.type === 'text') {
-      markdown += segment.text;
+      markdown += protectUnknownTags(segment.text, htmlTags, ranges, segment.start);
       continue;
     }
     if (role === 'user' && !USER_KINDS.has(segment.tag.kind)) {
-      markdown += segment.raw;
+      markdown += protectUnknownTags(segment.raw, htmlTags, ranges, segment.start);
       continue;
     }
     if (HIDDEN_KINDS.has(segment.tag.kind)) continue;
