@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import type { MessageView } from '../types';
 import { headExcerpt, matchExcerpt, type MatchExcerpt } from './excerpt';
+import { hasVisibleContent, isHiddenTimelineRow } from '../timelineVisibility';
 
 export interface MinimapEntry {
   id: number;
@@ -31,7 +32,8 @@ export function useMessageMinimap(
   const flashed = useRef<HTMLElement | null>(null);
 
   const userRows = useMemo(
-    () => messages.filter((m) => m.role === 'user' && m.content?.trim()),
+    // Only user rows the timeline actually draws with visible text (#130 CP1-F04).
+    () => messages.filter((m) => m.role === 'user' && hasVisibleContent(m) && !isHiddenTimelineRow(m)),
     [messages],
   );
 

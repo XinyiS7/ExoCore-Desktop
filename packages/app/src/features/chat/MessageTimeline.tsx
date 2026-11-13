@@ -4,7 +4,8 @@ import type { AssistantRunTraceProjection, MessageRole, MessageView } from './ty
 import type { OptimisticUserRow, RuntimeAssistantRow } from './runtime/types';
 import { MessageContent } from './MessageContent';
 import { SpoilerUnlockContext } from './inlineTags/spoilerUnlock';
-import { isTimerTriggerMessage } from './inlineTags/parse';
+import { hasVisibleBody } from './inlineTags/placeholders';
+import { hasVisibleContent, inlineTagRole, isHiddenTimelineRow, messageArtifacts } from './timelineVisibility';
 import { AssistantMessageEditor } from './AssistantMessageEditor';
 import { formatTimeOfDay } from './time';
 import { MessageAttachments } from './attachments/MessageAttachments';
@@ -116,17 +117,18 @@ function MessageRowItem({
     ? (assistantName || ROLE_LABELS.assistant)
     : (ROLE_LABELS[message.role] ?? message.role);
   const voice = message.voice;
-  const attachments = message.attachments;
-  const attachmentsMeta = message.attachmentsMeta ?? [];
-  const readyAttachments = attachments ? attachments.filter((att) => att.status === 'ready') : [];
-  const hasAttachments =
-    attachments !== undefined ? readyAttachments.length > 0 : attachmentsMeta.length > 0;
+  const {
+    attachments,
+    attachmentsMeta,
+    hasAttachments,
+    voiceToolErrors,
+    hasVoiceToolErrors,
+    presentations,
+    hasPresentations,
+  } = messageArtifacts(message);
   const hasReasoning = Boolean(message.reasoningContent);
-  const hasContentText = Boolean(message.content?.trim());
-  const voiceToolErrors = isAssistant ? message.voiceToolErrors ?? [] : [];
-  const hasVoiceToolErrors = voiceToolErrors.length > 0;
-  const presentations = isUser || isAssistant ? message.presentations ?? [] : [];
-  const hasPresentations = presentations.length > 0;
+  // Body as shown after inline-tag projection (a pure <pin> shows nothing, #130 D-F).
+  const hasContentText = hasVisibleContent(message);
   const hasUserCards = isUser && presentations.some((item) => item.card !== null);
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -199,9 +201,9 @@ function MessageRowItem({
             content={message.content}
             conversationId={isAssistant ? conversationId : undefined}
             messageId={isAssistant ? message.id : undefined}
-            inlineTags={isAssistant ? 'assistant' : isUser ? 'user' : undefined}
+            inlineTags={inlineTagRole(message.role)}
           />
-        ) : hasAttachments || hasVoiceToolErrors || hasPresentations ? null : (
+        ) : hasAttachments || hasVoiceToolErrors || hasPresentations || message.content?.trim() ? null : (
           <span className="app-muted">（空消息）</span>
         )}
         {hasAttachments ? (
@@ -354,8 +356,9 @@ export function MessageTimeline({
   const realtimeTrace = runtimeAssistant ? runtimeTraceProjection(runtimeAssistant) : null;
   const runtimeVoiceErrors = runtimeAssistant?.voiceToolErrors ?? [];
 
-  // #130: backend timer triggers are hidden (REQ §3.3); a spoiler `pwd`
-  // unlocks once any LATER user message contains it, case-insensitively.
+  // #130: rows are hidden per `isHiddenTimelineRow` (timer triggers, pure
+  // pins); a spoiler `pwd` unlocks once any LATER user message contains it,
+  // case-insensitively.
   const unlockFor = (index: number) => (pwd: string) => {
     const needle = pwd.toLowerCase();
     return (
@@ -389,7 +392,7 @@ export function MessageTimeline({
 
       {/* Persisted canonical messages */}
       {messages.map((message, index) =>
-        message.role === 'user' && isTimerTriggerMessage(message.content) ? null : (
+        isHiddenTimelineRow(message) ? null : (
           <SpoilerUnlockContext.Provider key={message.id} value={unlockFor(index)}>
             <MessageRowItem
               message={message}
@@ -423,7 +426,9 @@ export function MessageTimeline({
             </span>
           </header>
           <div className="app-msg-body">
-            {shownOptimisticUser.content ? <MessageContent content={shownOptimisticUser.content} inlineTags="user" /> : null}
+            {hasVisibleBody(shownOptimisticUser.content, 'user') ? (
+              <MessageContent content={shownOptimisticUser.content} inlineTags="user" />
+            ) : null}
             {shownOptimisticUser.pendingAttachmentIds.length > 0 ? (
               <span className="app-deferred-chip">
                 待发送附件 {shownOptimisticUser.pendingAttachmentIds.length} 个
@@ -455,7 +460,7 @@ export function MessageTimeline({
               telemetry={runtimeAssistant.telemetry}
               streaming={runtimeAssistant.isStreaming}
             />
-            {runtimeAssistant.content ? (
+            {hasVisibleBody(runtimeAssistant.content, 'assistant', runtimeAssistant.isStreaming) ? (
               <MessageContent
                 content={runtimeAssistant.content}
                 localFilePending
