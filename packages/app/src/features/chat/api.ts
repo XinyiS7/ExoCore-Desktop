@@ -5,6 +5,8 @@ import { normalizePresentations } from './presentations/projection';
 import { readTagNames } from '../tags/rules';
 import type {
   AgentPresetRow,
+  ConversationPinView,
+  InlineRollView,
   AssistantRunTraceItem,
   AssistantRunTraceProjection,
   ConversationRow,
@@ -128,7 +130,39 @@ function normalizeConversationRow(rawRow: unknown): ConversationSummary {
     isPrime: row.is_prime,
     tags: readTagNames(row.tags),
     sessionPrompt: typeof row.session_prompt === 'string' ? row.session_prompt : '',
+    pins: normalizePins(rawRow.inline_state),
   };
+}
+
+const isInt = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value);
+
+/** `inline_state.pins` (#130 CP2); malformed items are dropped, absent state = no pins. */
+export function normalizePins(state: unknown): ConversationPinView[] {
+  if (!isRecord(state) || !Array.isArray(state.pins)) return [];
+  return state.pins.flatMap((pin: unknown) =>
+    isRecord(pin) &&
+    isInt(pin.id) &&
+    typeof pin.content === 'string' &&
+    (pin.author === 'user' || pin.author === 'assistant') &&
+    typeof pin.created_at === 'string'
+      ? [{ id: pin.id, content: pin.content, author: pin.author, createdAt: pin.created_at }]
+      : [],
+  );
+}
+
+/** `inline_rolls[]` (#130 CP2); malformed items are dropped. */
+export function normalizeInlineRolls(value: unknown): InlineRollView[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((roll: unknown) =>
+    isRecord(roll) &&
+    isInt(roll.tag_index) &&
+    typeof roll.expression === 'string' &&
+    Array.isArray(roll.dice) &&
+    roll.dice.every(isInt) &&
+    isInt(roll.total)
+      ? [{ tagIndex: roll.tag_index, expression: roll.expression, dice: [...roll.dice], total: roll.total }]
+      : [],
+  );
 }
 
 const TRACE_ID_MAX = 128;
@@ -285,6 +319,7 @@ export function normalizeMessageRow(row: MessageRow): MessageView {
     attachmentsMeta: row.attachments_meta,
     attachments: normalizeMessageAttachments(row.attachments, row.attachments_meta),
     presentations: normalizePresentations(row.presentations),
+    inlineRolls: row.role === 'assistant' ? normalizeInlineRolls(row.inline_rolls) : [],
     createdAt: row.created_at,
   };
 }
@@ -419,6 +454,11 @@ export async function uploadTheaterDocuments(id: number, files: File[]): Promise
   return normalizeTheaterDocumentsState(
     await apiFetch(theaterDocumentsPath(id), { method: 'POST', body: form }),
   );
+}
+
+/** DELETE /api/agents/conversations/<id>/pins/<pinId>/ — sticky-note × (204; 404 = already gone). */
+export async function deleteConversationPin(id: number, pinId: number): Promise<void> {
+  await apiFetch(`/api/agents/conversations/${id}/pins/${pinId}/`, { method: 'DELETE' });
 }
 
 /** DELETE .../theater-documents/<docId>/ */

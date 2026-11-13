@@ -81,3 +81,133 @@
     animation: none;
   }
 }
+
+/* ── Conversation sticky notes (#130 CP2, D-F) ───────────────────────────────
+   Paper notes over the timeline viewport, outside the message flow. Kept
+   under the minimap (z 30) and the latest affordance (z 35). */
+.app-itag-pinboard {
+  --itag-paper: #f3e3a1;
+  --itag-paper-edge: #e2cd7c;
+  --itag-ink: #3b3320;
+  --itag-ink-mute: rgba(59, 51, 32, 0.62);
+  position: absolute;
+  z-index: 28;
+  top: 10px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  width: min(200px, calc(100% - 28px));
+  max-height: calc(100% - 70px);
+  overflow-y: auto;
+  overflow-x: visible;
+  padding: 6px 4px 10px;
+  pointer-events: none;
+  scrollbar-width: none;
+}
+
+.app-itag-note {
+  position: relative;
+  width: 100%;
+  margin-top: -4px;
+  padding: 14px 12px 8px;
+  border-radius: 2px 2px 3px 14px / 2px 2px 3px 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 38%),
+    var(--itag-paper);
+  color: var(--itag-ink);
+  /* Two sheets of offset paper under the top sheet, then the cast shadow. */
+  box-shadow:
+    2px 3px 0 -1px var(--itag-paper-edge),
+    4px 6px 0 -2px rgba(226, 205, 124, 0.7),
+    0 8px 18px rgba(0, 0, 0, 0.38);
+  transform: rotate(var(--itag-note-tilt, 0deg));
+  transition: transform 140ms ease, opacity 140ms ease;
+  pointer-events: auto;
+}
+
+.app-itag-note:first-child {
+  margin-top: 0;
+}
+
+/* Tape strip. */
+.app-itag-note::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 46px;
+  height: 14px;
+  transform: translateX(-50%) rotate(-3deg);
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.app-itag-note:hover,
+.app-itag-note:focus-within {
+  z-index: 50 !important;
+  transform: rotate(0deg) translateY(-1px);
+}
+
+.app-itag-note--closing {
+  opacity: 0.45;
+}
+
+.app-itag-note-body {
+  margin: 0;
+  font-size: calc(13px * var(--exo-font-scale, 1));
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.app-itag-note-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: calc(10.5px * var(--exo-font-scale, 1));
+  color: var(--itag-ink-mute);
+}
+
+.app-itag-note-foot [role='alert'] {
+  color: #a3361f;
+}
+
+.app-itag-note-close {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--itag-ink-mute);
+  cursor: pointer;
+}
+
+.app-itag-note-close:hover,
+.app-itag-note-close:focus-visible {
+  background: rgba(59, 51, 32, 0.12);
+  color: var(--itag-ink);
+}
+
+@media (max-width: 640px) {
+  .app-itag-pinboard {
+    width: min(150px, calc(100% - 28px));
+    right: 10px;
+  }
+
+  .app-itag-note-body {
+    -webkit-line-clamp: 4;
+  }
+}

@@ -56,6 +56,14 @@
 
 **POST /api/agents/conversations/** — name + project (必填) / agent_preset (可选)
 
+**行内标签状态（#130 CP2）**
+- `GET /api/agents/conversations/<pk>/` additive 返回 `inline_state: { pins: InlinePin[] }`（列表端点不返回）。`InlinePin = { id: number; content: string; author: "user" | "assistant"; created_at: string /* ISO-8601 */ }`，按创建顺序；只含未取消的便签。前端把它渲染为独立于消息流、常驻可见的纸质便利贴区，每轮回复结束后重新读取 detail 以更新。
+- 便签由消息正文中的有效 `<pin>…</pin>` 创建、由 `<unpin id=N>` 取消（user 与 assistant 均可）；消息正文原样保留标签，前端不再把 pin/unpin 渲染为卡片。
+
+**DELETE /api/agents/conversations/<pk>/pins/<pin_id>/** — 便利贴 × 关闭
+- `204 No Content`：软删除（之后不再出现在 `inline_state.pins` 与模型侧注入中）。
+- `404`：`{"code": "not_found", "error": "便签不存在或已取消"}`（不属于该会话或已取消）。
+
 **PATCH /api/agents/conversations/<pk>/** — name / project / archive / `is_prime` / `tags` / `session_prompt`
 - `tags` 为整体替换（`[]` 清空）；冲突 400 时原 tag 保持不变。
 - `{"is_prime": true}`：仅接受唯一 G045 所属 Conversation；旧 Prime 清除与目标设置是一个原子结果（排他转移）；重复设置当前 Prime 幂等；成功响应目标 `is_prime=true`。
@@ -438,6 +446,17 @@ JSON mount（`POST` 携带 `{"storage_path": ..., "display_name": ...}`）的**�
 - 移除后：输入附件列表 GET 不再返回该行；内容端点 404；任何端点 / 引擎不再读取其字节；不可恢复。
 - 消息读模型：canonical `attachments[]` 与 legacy `attachments_meta[]` 中该附件仍按原位置出现，带 `removed: true`，`content_url` 为 `null`（`attachments_meta` 的 `file_uri` 亦为 `null`，canonical `provenance_id` 为 `null`）；未移除行 `removed: false`。前端渲染「类型 + 文件名 + 已移除」提示，无打开 / 播放 / 下载入口。
 - 模型侧：后续请求在原消息正文后看到 `<type> <name> removed` 文本标记，不再收到附件内容。
+
+### 1.5.0 inline_rolls[] — assistant 骰点结果（#130 CP2）
+
+`GET /api/agents/conversations/<cid>/messages/` 与单条消息读模型每条消息 additive 返回 `inline_rolls`：
+
+```ts
+type InlineRoll = { tag_index: number; expression: string; dice: number[]; total: number };
+```
+
+- 只有 assistant 消息有值（user 消息恒为 `[]`），按 `tag_index` 升序。`tag_index` 是该条正文中被接受的顶层行内标签的序号（与共享解析器用例表 `inline_tags/tests/parser_cases.json` 的 `index` 同义），前端按它把结果对到第 N 个 `<roll=…>` 骰子 chip；找不到对应结果时 chip 显示未出结果态。
+- user 发出的 `<roll=…>` 在发送时由后端就地写成 `<roll=…><roll_result expr by="user" dice total>` 存入正文；上一条 assistant 未固化的骰点在下一次普通发送时以 `<roll_result by="assistant" …>` 追加到 user 正文末尾（重生成 / 编辑不触发）。
 
 ### 1.5.1 presentations[] — 消息呈现管理门（#84，替换旧 assistant_artifacts[] / collection_shows[]）
 
@@ -1090,6 +1109,7 @@ type AssistantMessageArrivedV1 = {
 
 - `dedupe_key` 恒为 `assistant-message:<message_id>`，与 DB OneToOne 一致。前端以 `event_id` 推进 cursor、以 `dedupe_key` 去重（例如同一 arrival 已由 Push 处理）。
 - **`preview` 只从 canonical `Message.content` 派生**：内容过滤后折叠空白，最多 **160** 个 Unicode code point；`truncated` 表示过滤后文本超限。不读取 reasoning、`tool_calls`、私有语音指令或附件正文。锁屏沿用该 bounded preview。
+- **行内标签（#130）**：`preview.text` 先用后端行内标签解析器剥掉有效的 `<pin>…</pin>` / `<unpin id=N>` 段（代码区与无效写法保持原文），再把 spoiler 改写为 `[剧透]` / `[剧透：cover]`；剥离后无可见文本且无可见 presentation 的 assistant 消息（纯 pin/unpin 回复）不产生 arrival。
 - **presentation-only arrival（#54 / #84）**：正文为空、但管理门有可见 `presentations[]` 项的 assistant 消息（心跳藏品带回、只带回卡片或只生成图片的 Direct/AGY 回复）同样 eligible；无 voice 时 `preview.text` 为第一项的 surface 预览：`image` → `生成了图片`，`collection_card` → 卡片 `title`（如 `从藏品馆带回 · 图片 #12`），policy 仍为 `bounded_text`。未登记 producer、无 owner 的历史附件或媒体未 ready 的 image/voice 不使消息 eligible。心跳带回走 `send_message` 同一 Prime 投递路径（`source=send_message`，`ignore.allowed=true`）。
 - **voice-only arrival（CP-C / #84）**：正文为空且管理门有任一 `voice` 项（`send_voice_msg` owner 认领的 ready audio，与 image 等并存时亦然）时，`preview.policy` 仍为 `bounded_text`，`preview.text` 由服务端固定生成 `<agent display name> 给你发来了一条语音消息`；不新增 preview policy、不读取 transcript、不从 content 构造 preview。text + voice 仍走正文 preview。点击沿既有 conversation/message target 清除提醒，不记录也不推断用户是否播放。
 - `title_hint`：`send_message` 的 title 过滤后 <=200 字符；为 `null` 时前端以 `agent.name` 作标题。

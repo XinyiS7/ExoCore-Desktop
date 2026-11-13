@@ -21,6 +21,7 @@ import {
   isG045AgentType,
 } from './queries';
 import { MessageTimeline } from './MessageTimeline';
+import { PinBoard } from './inlineTags/PinBoard';
 import { readBackTarget } from './backTarget';
 import { MessageMinimap } from './minimap/MessageMinimap';
 import type { MessageView } from './types';
@@ -738,6 +739,7 @@ export function ConversationPage() {
               wrapper so the floating affordance anchors to the timeline
               viewport bottom, above the actual composer, with no secondary
               scroll owner and no hard-coded composer height. */}
+          <PinBoard conversationId={id} pins={conversation.pins ?? []} assistantName={agentLabel} />
           <div className="app-scroll" ref={scrollRef} onScroll={handleScroll}>
             {pagesQuery.isPending && merged === undefined ? (
               <LoadingState label="正在加载消息…" />

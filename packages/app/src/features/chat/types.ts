@@ -188,6 +188,8 @@ export interface MessageRow {
   attachments_meta: AttachmentMeta[] | null;
   /** #84 presentation gate items; normalized fail-closed at the API boundary. */
   presentations?: unknown;
+  /** #130 CP2 assistant roll results; normalized fail-closed at the API boundary. */
+  inline_rolls?: unknown;
   created_at: string;
 }
 
@@ -228,6 +230,27 @@ export interface ConversationSummary {
   isPrime: boolean;
   tags: string[];
   sessionPrompt: string;
+  /**
+   * #130 CP2 active sticky notes (detail endpoint only; `[]` from the list).
+   * Optional for older fixtures; the API adapter always emits an array.
+   */
+  pins?: ConversationPinView[];
+}
+
+/** One conversation sticky note (`inline_state.pins[]`). */
+export interface ConversationPinView {
+  id: number;
+  content: string;
+  author: 'user' | 'assistant';
+  createdAt: string;
+}
+
+/** One persisted assistant `<roll>` result (`inline_rolls[]`), keyed by tag index. */
+export interface InlineRollView {
+  tagIndex: number;
+  expression: string;
+  dice: number[];
+  total: number;
 }
 
 /**
@@ -277,6 +300,8 @@ export interface MessageView {
    * only here. Optional for older fixtures; the API adapter always emits an array.
    */
   presentations?: PresentationView[];
+  /** #130 CP2; optional for older fixtures, the API adapter always emits an array. */
+  inlineRolls?: InlineRollView[];
   createdAt: string;
 }
 

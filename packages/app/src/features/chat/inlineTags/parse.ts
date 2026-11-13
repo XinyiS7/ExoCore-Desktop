@@ -35,10 +35,14 @@ export type InlineTag =
   | { kind: 'roll'; expr: string }
   | { kind: 'roll_result'; expr: string; by: string; dice: number[]; total: number };
 
-/** `start` is the segment's offset in the parsed input. */
+/**
+ * `start` is the segment's offset in the parsed input. `index` is the tag's
+ * position among accepted top-level tags — the backend's `tag_index`, which
+ * keys persisted effects such as `inline_rolls` (#130 CP2).
+ */
 export type Segment =
   | { type: 'text'; text: string; start: number }
-  | { type: 'tag'; tag: InlineTag; raw: string; start: number };
+  | { type: 'tag'; tag: InlineTag; raw: string; start: number; index: number };
 
 export interface ParseOptions {
   streaming?: boolean;
@@ -53,6 +57,9 @@ const OPEN_RE = new RegExp(
 );
 const ATTR_RE = /([a-z_]+)=(?:"([^"]*)"|([^\s>"]+))/g;
 const SECONDS_RE = /^(\d+)s$/;
+// Digits only, as in the backend parser: `1e2`, `3.0`, ` 7` are not numbers here.
+const UINT_RE = /^\d+$/;
+const INT_RE = /^-?\d+$/;
 const DICE_TERM_RE = /^(\d*)d(\d+)$/;
 
 export type Range = [number, number];
@@ -172,11 +179,11 @@ function parseHead(text: string, pos: number): HeadResult | null {
     case 'pin':
       if (value === undefined) tag = { kind: 'pin' };
       break;
-    case 'unpin': {
-      const id = Number(attrs.id);
-      if (value === undefined && has('id') && Number.isInteger(id) && id > 0) tag = { kind: 'unpin', id };
+    case 'unpin':
+      if (value === undefined && UINT_RE.test(attrs.id ?? '') && Number(attrs.id) > 0) {
+        tag = { kind: 'unpin', id: Number(attrs.id) };
+      }
       break;
-    }
     case 'block': {
       const seconds = parseSeconds(value);
       if (seconds !== null) tag = { kind: 'block', seconds };
@@ -200,17 +207,15 @@ function parseHead(text: string, pos: number): HeadResult | null {
       if (value !== undefined && isValidDiceExpr(value)) tag = { kind: 'roll', expr: value };
       break;
     case 'roll_result': {
-      const dice = (attrs.dice ?? '').split(',').map(Number);
-      const total = Number(attrs.total);
+      const dice = (attrs.dice ?? '').split(',');
       if (
         value === undefined &&
         has('expr') &&
         has('by') &&
-        dice.length > 0 &&
-        dice.every((d) => Number.isInteger(d)) &&
-        Number.isInteger(total)
+        dice.every((d) => INT_RE.test(d)) &&
+        INT_RE.test(attrs.total ?? '')
       ) {
-        tag = { kind: 'roll_result', expr: attrs.expr, by: attrs.by, dice, total };
+        tag = { kind: 'roll_result', expr: attrs.expr, by: attrs.by, dice: dice.map(Number), total: Number(attrs.total) };
       }
       break;
     }
@@ -252,6 +257,7 @@ export function parseInlineTags(input: string, options: ParseOptions = {}): Segm
   }
 
   const segments: Segment[] = [];
+  let tagCount = 0;
   let buffer = '';
   let bufferStart = 0;
   let pos = 0;
@@ -277,7 +283,7 @@ export function parseInlineTags(input: string, options: ParseOptions = {}): Segm
     const headEnd = lt + head.length;
     if (!PAIRED.has(head.name)) {
       flush();
-      segments.push({ type: 'tag', tag: head.tag as InlineTag, raw: text.slice(lt, headEnd), start: lt });
+      segments.push({ type: 'tag', tag: head.tag as InlineTag, raw: text.slice(lt, headEnd), start: lt, index: tagCount++ });
       pos = headEnd;
       bufferStart = pos;
       continue;
@@ -298,6 +304,7 @@ export function parseInlineTags(input: string, options: ParseOptions = {}): Segm
       tag: { ...head.tag, body: text.slice(headEnd, bodyEnd), closed } as InlineTag,
       raw: text.slice(lt, end),
       start: lt,
+      index: tagCount++,
     });
     pos = end;
     bufferStart = pos;

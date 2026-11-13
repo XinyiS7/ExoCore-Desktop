@@ -1,6 +1,7 @@
 import { useContext, useState, type ReactNode } from 'react';
 import { Dices, EyeOff, Lock, Mic, Timer, TimerOff, VolumeX } from 'lucide-react';
 import type { InlineTag } from './parse';
+import type { InlineRollView } from '../types';
 import { SpoilerUnlockContext } from './spoilerUnlock';
 import './inlineTags.css';
 
@@ -14,6 +15,8 @@ export interface InlineTagViewProps {
   tag: InlineTag;
   streaming: boolean;
   renderBody: (body: string) => ReactNode;
+  /** #130 CP2: this `<roll>`'s persisted result, when the backend has rolled it. */
+  roll?: InlineRollView;
 }
 
 function Chip({ icon, children, title }: { icon: ReactNode; children: ReactNode; title?: string }) {
@@ -100,7 +103,7 @@ function SpoilerBlock({
   );
 }
 
-export function InlineTagView({ tag, streaming, renderBody }: InlineTagViewProps) {
+export function InlineTagView({ tag, streaming, renderBody, roll }: InlineTagViewProps) {
   switch (tag.kind) {
     case 'speak':
       return <SpeakCard tag={tag} streaming={streaming} />;
@@ -133,8 +136,18 @@ export function InlineTagView({ tag, streaming, renderBody }: InlineTagViewProps
         </Chip>
       );
     case 'roll':
-      return <Chip icon={<Dices size={12} aria-hidden="true" />}>{tag.expr}</Chip>;
+      // The result exists only once the reply is persisted; until then the chip shows the expression.
+      return roll ? (
+        <Chip icon={<Dices size={12} aria-hidden="true" />} title="助手掷骰">
+          {tag.expr} → {roll.dice.join(', ')} = <strong>{roll.total}</strong>
+        </Chip>
+      ) : (
+        <Chip icon={<Dices size={12} aria-hidden="true" />} title={streaming ? undefined : '未出结果'}>
+          {tag.expr}
+        </Chip>
+      );
     case 'roll_result':
+      // A user `<roll>` is immediately followed by its own result; the result chip alone carries it.
       return (
         <Chip icon={<Dices size={12} aria-hidden="true" />} title={tag.by === 'assistant' ? '助手掷骰' : '掷骰'}>
           {tag.expr} → {tag.dice.join(', ')} = <strong>{tag.total}</strong>

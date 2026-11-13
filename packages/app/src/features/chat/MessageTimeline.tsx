@@ -202,6 +202,7 @@ function MessageRowItem({
             conversationId={isAssistant ? conversationId : undefined}
             messageId={isAssistant ? message.id : undefined}
             inlineTags={inlineTagRole(message.role)}
+            inlineRolls={message.inlineRolls}
           />
         ) : hasAttachments || hasVoiceToolErrors || hasPresentations || message.content?.trim() ? null : (
           <span className="app-muted">（空消息）</span>

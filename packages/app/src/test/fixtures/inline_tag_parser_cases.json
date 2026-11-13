@@ -1,0 +1,357 @@
+[
+  {
+    "name": "plain comparisons and generics",
+    "input": "x < y and Vec<String> or a<b>",
+    "tags": []
+  },
+  {
+    "name": "closed pin",
+    "input": "<pin>周五交稿</pin>",
+    "tags": [
+      {
+        "kind": "pin",
+        "index": 0,
+        "start": 0,
+        "raw": "<pin>周五交稿</pin>",
+        "body": "周五交稿",
+        "closed": true
+      }
+    ]
+  },
+  {
+    "name": "mixed text with pin and unpin",
+    "input": "before <pin>a</pin> after <unpin id=3>",
+    "tags": [
+      {
+        "kind": "pin",
+        "index": 0,
+        "start": 7,
+        "raw": "<pin>a</pin>",
+        "body": "a",
+        "closed": true
+      },
+      {
+        "kind": "unpin",
+        "index": 1,
+        "start": 26,
+        "raw": "<unpin id=3>",
+        "id": 3
+      }
+    ]
+  },
+  {
+    "name": "unclosed pin is text once persisted",
+    "input": "<pin>未闭合",
+    "tags": []
+  },
+  {
+    "name": "uppercase is not a tag",
+    "input": "<PIN>note</PIN>",
+    "tags": []
+  },
+  {
+    "name": "unpin id must be a positive integer",
+    "input": "<unpin id=abc> <unpin id=0> <unpin id=1e2> <unpin id=3.0>",
+    "tags": []
+  },
+  {
+    "name": "inline code is exempt",
+    "input": "`<pin>x</pin>` and ``<roll=1d20>``",
+    "tags": []
+  },
+  {
+    "name": "fenced code is exempt",
+    "input": "```\n<roll=1d20>\n```\n<roll=1d20>",
+    "tags": [
+      {
+        "kind": "roll",
+        "index": 0,
+        "start": 20,
+        "raw": "<roll=1d20>",
+        "expr": "1d20"
+      }
+    ]
+  },
+  {
+    "name": "tilde fence is exempt",
+    "input": "~~~\n<pin>x</pin>\n~~~",
+    "tags": []
+  },
+  {
+    "name": "dice expression with modifier",
+    "input": "<roll=2d6+1d20+3>",
+    "tags": [
+      {
+        "kind": "roll",
+        "index": 0,
+        "start": 0,
+        "raw": "<roll=2d6+1d20+3>",
+        "expr": "2d6+1d20+3"
+      }
+    ]
+  },
+  {
+    "name": "leading plus sign",
+    "input": "<roll=+1d6>",
+    "tags": [
+      {
+        "kind": "roll",
+        "index": 0,
+        "start": 0,
+        "raw": "<roll=+1d6>",
+        "expr": "+1d6"
+      }
+    ]
+  },
+  {
+    "name": "dice limits",
+    "input": "<roll=9d6> <roll=1d7> <roll=1d6-1d4> <roll=5> <roll=0d6> <roll=8d6>",
+    "tags": [
+      {
+        "kind": "roll",
+        "index": 0,
+        "start": 57,
+        "raw": "<roll=8d6>",
+        "expr": "8d6"
+      }
+    ]
+  },
+  {
+    "name": "roll result by user",
+    "input": "<roll_result expr=\"1d20\" by=\"user\" dice=\"7\" total=\"7\">",
+    "tags": [
+      {
+        "kind": "roll_result",
+        "index": 0,
+        "start": 0,
+        "raw": "<roll_result expr=\"1d20\" by=\"user\" dice=\"7\" total=\"7\">",
+        "expr": "1d20",
+        "by": "user",
+        "dice": [
+          7
+        ],
+        "total": 7
+      }
+    ]
+  },
+  {
+    "name": "roll result with negative total",
+    "input": "<roll_result expr=\"1d4-5\" by=\"assistant\" dice=\"2\" total=\"-3\">",
+    "tags": [
+      {
+        "kind": "roll_result",
+        "index": 0,
+        "start": 0,
+        "raw": "<roll_result expr=\"1d4-5\" by=\"assistant\" dice=\"2\" total=\"-3\">",
+        "expr": "1d4-5",
+        "by": "assistant",
+        "dice": [
+          2
+        ],
+        "total": -3
+      }
+    ]
+  },
+  {
+    "name": "roll result needs dice and total",
+    "input": "<roll_result expr=\"1d4\" by=\"user\" dice=\"\" total=\"1\"> <roll_result expr=\"1d4\" by=\"user\" dice=\"1\">",
+    "tags": []
+  },
+  {
+    "name": "timer with title",
+    "input": "<timer=150s title=\"泡茶\">",
+    "tags": [
+      {
+        "kind": "timer",
+        "index": 0,
+        "start": 0,
+        "raw": "<timer=150s title=\"泡茶\">",
+        "seconds": 150,
+        "title": "泡茶"
+      }
+    ]
+  },
+  {
+    "name": "timer limits",
+    "input": "<timer=0s> <timer=86401s> <timer=86400s>",
+    "tags": [
+      {
+        "kind": "timer",
+        "index": 0,
+        "start": 26,
+        "raw": "<timer=86400s>",
+        "seconds": 86400,
+        "title": null
+      }
+    ]
+  },
+  {
+    "name": "timer cancel",
+    "input": "<timer cancel=\"泡茶\"> <timer cancel=\"\">",
+    "tags": [
+      {
+        "kind": "timer_cancel",
+        "index": 0,
+        "start": 0,
+        "raw": "<timer cancel=\"泡茶\">",
+        "title": "泡茶"
+      }
+    ]
+  },
+  {
+    "name": "block",
+    "input": "<block=0s> <block=180s> <block=180> <block=86401s>",
+    "tags": [
+      {
+        "kind": "block",
+        "index": 0,
+        "start": 0,
+        "raw": "<block=0s>",
+        "seconds": 0
+      },
+      {
+        "kind": "block",
+        "index": 1,
+        "start": 11,
+        "raw": "<block=180s>",
+        "seconds": 180
+      }
+    ]
+  },
+  {
+    "name": "timer fired trigger",
+    "input": "<timer_fired title=\"泡茶\" fire_at=\"2026-11-13 16:21:44 UTC+1\">",
+    "tags": [
+      {
+        "kind": "timer_fired",
+        "index": 0,
+        "start": 0,
+        "raw": "<timer_fired title=\"泡茶\" fire_at=\"2026-11-13 16:21:44 UTC+1\">",
+        "title": "泡茶",
+        "fire_at": "2026-11-13 16:21:44 UTC+1"
+      }
+    ]
+  },
+  {
+    "name": "speak with emotion",
+    "input": "<speak emotion=\"low, calm\">晚安</speak>",
+    "tags": [
+      {
+        "kind": "speak",
+        "index": 0,
+        "start": 0,
+        "raw": "<speak emotion=\"low, calm\">晚安</speak>",
+        "emotion": "low, calm",
+        "body": "晚安",
+        "closed": true
+      }
+    ]
+  },
+  {
+    "name": "unclosed speak stays a tag",
+    "input": "前文<speak>未闭合的语音",
+    "tags": [
+      {
+        "kind": "speak",
+        "index": 0,
+        "start": 2,
+        "raw": "<speak>未闭合的语音",
+        "emotion": null,
+        "body": "未闭合的语音",
+        "closed": false
+      }
+    ]
+  },
+  {
+    "name": "spoiler with cover and pwd",
+    "input": "<spoiler cover=\"谜面\" pwd=\"Open\">答案</spoiler>",
+    "tags": [
+      {
+        "kind": "spoiler",
+        "index": 0,
+        "start": 0,
+        "raw": "<spoiler cover=\"谜面\" pwd=\"Open\">答案</spoiler>",
+        "cover": "谜面",
+        "pwd": "Open",
+        "body": "答案",
+        "closed": true
+      }
+    ]
+  },
+  {
+    "name": "unclosed spoiler is text once persisted",
+    "input": "<spoiler>未闭合",
+    "tags": []
+  },
+  {
+    "name": "name must end at a delimiter",
+    "input": "<timerx> <rolling> <pinned>x</pinned>",
+    "tags": []
+  },
+  {
+    "name": "tags inside a paired body are body text",
+    "input": "<spoiler>里面 <pin>不算</pin></spoiler><pin>算</pin>",
+    "tags": [
+      {
+        "kind": "spoiler",
+        "index": 0,
+        "start": 0,
+        "raw": "<spoiler>里面 <pin>不算</pin></spoiler>",
+        "cover": null,
+        "pwd": null,
+        "body": "里面 <pin>不算</pin>",
+        "closed": true
+      },
+      {
+        "kind": "pin",
+        "index": 1,
+        "start": 35,
+        "raw": "<pin>算</pin>",
+        "body": "算",
+        "closed": true
+      }
+    ]
+  },
+  {
+    "name": "index counts every accepted tag in order",
+    "input": "<pin>a</pin>text<roll=1d20><unpin id=2>",
+    "tags": [
+      {
+        "kind": "pin",
+        "index": 0,
+        "start": 0,
+        "raw": "<pin>a</pin>",
+        "body": "a",
+        "closed": true
+      },
+      {
+        "kind": "roll",
+        "index": 1,
+        "start": 16,
+        "raw": "<roll=1d20>",
+        "expr": "1d20"
+      },
+      {
+        "kind": "unpin",
+        "index": 2,
+        "start": 27,
+        "raw": "<unpin id=2>",
+        "id": 2
+      }
+    ]
+  },
+  {
+    "name": "close tag inside code does not close",
+    "input": "<pin>a `</pin>` b</pin>",
+    "tags": [
+      {
+        "kind": "pin",
+        "index": 0,
+        "start": 0,
+        "raw": "<pin>a `</pin>` b</pin>",
+        "body": "a `</pin>` b",
+        "closed": true
+      }
+    ]
+  }
+]

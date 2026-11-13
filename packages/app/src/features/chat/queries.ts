@@ -12,6 +12,7 @@ import {
 import {
   AppApiError,
   createConversation,
+  deleteConversationPin,
   deleteTheaterDocument,
   editAssistantMessage,
   fetchMessagePage,
@@ -185,6 +186,15 @@ export function findPersistedMessage(
     }
   }
   return null;
+}
+
+/** Sticky-note × (#130 CP2): the board re-reads detail whether it worked or was already gone. */
+export function useDeletePinMutation(conversationId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (pinId: number) => deleteConversationPin(conversationId, pinId),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.conversation(conversationId) }),
+  });
 }
 
 export function useUpdateConversationSettingsMutation(conversationId: number) {

@@ -1,4 +1,4 @@
-import { codeRanges, parseInlineTags, type InlineTag } from './parse';
+import { codeRanges, parseInlineTags, type InlineTag, type Segment } from './parse';
 import { protectUnknownTags } from '../rawHtmlText';
 
 /**
@@ -34,17 +34,40 @@ const HIDDEN_KINDS = new Set<InlineTag['kind']>(['pin', 'unpin']);
  */
 type Projected =
   | { kind: 'text'; text: string; start: number }
-  | { kind: 'tag'; tag: InlineTag };
+  | ({ kind: 'tag' } & PlacedTag);
+
+/** An accepted tag with its backend `tag_index` (keys `inline_rolls`). */
+export interface PlacedTag {
+  tag: InlineTag;
+  index: number;
+}
+
+/**
+ * A user `<roll>` the backend already rolled is stored as
+ * `<roll=X><roll_result expr="X" …>` (#130 CP2); the result chip alone shows it.
+ */
+function isRolledInPlace(segment: Segment, next: Segment | undefined): boolean {
+  return (
+    segment.type === 'tag' &&
+    segment.tag.kind === 'roll' &&
+    next?.type === 'tag' &&
+    next.tag.kind === 'roll_result' &&
+    next.start === segment.start + segment.raw.length &&
+    next.tag.expr === segment.tag.expr
+  );
+}
 
 function projectInlineTags(content: string, role: InlineTagRole, streaming: boolean): Projected[] {
   const parts: Projected[] = [];
-  for (const segment of parseInlineTags(content, { streaming })) {
+  const segments = parseInlineTags(content, { streaming });
+  for (const [i, segment] of segments.entries()) {
+    if (isRolledInPlace(segment, segments[i + 1])) continue;
     if (segment.type === 'text') {
       parts.push({ kind: 'text', text: segment.text, start: segment.start });
     } else if (role === 'user' && !USER_KINDS.has(segment.tag.kind)) {
       parts.push({ kind: 'text', text: segment.raw, start: segment.start });
     } else if (!HIDDEN_KINDS.has(segment.tag.kind)) {
-      parts.push({ kind: 'tag', tag: segment.tag });
+      parts.push({ kind: 'tag', tag: segment.tag, index: segment.index });
     }
   }
   return parts;
@@ -58,7 +81,7 @@ export function hasVisibleBody(content: string, role: InlineTagRole | undefined,
 
 export interface PlaceholderResult {
   markdown: string;
-  tags: InlineTag[];
+  tags: PlacedTag[];
 }
 
 export function withTagPlaceholders(
@@ -69,14 +92,14 @@ export function withTagPlaceholders(
 ): PlaceholderResult {
   const ranges = codeRanges(content);
   if (!role) return { markdown: protectUnknownTags(content, htmlTags, ranges), tags: [] };
-  const tags: InlineTag[] = [];
+  const tags: PlacedTag[] = [];
   let markdown = '';
   for (const part of projectInlineTags(content, role, streaming)) {
     if (part.kind === 'text') {
       markdown += protectUnknownTags(part.text, htmlTags, ranges, part.start);
       continue;
     }
-    const ref = tags.push(part.tag) - 1;
+    const ref = tags.push({ tag: part.tag, index: part.index }) - 1;
     markdown += BLOCK_KINDS.has(part.tag.kind)
       ? `\n\n<div data-itag-ref="${ref}"></div>\n\n`
       : `<span data-itag-ref="${ref}"></span>`;

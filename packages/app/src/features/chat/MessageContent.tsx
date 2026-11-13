@@ -11,6 +11,7 @@ import { LocalFileLink, type LocalFilePreviewTarget } from './localFile/LocalFil
 import { LOCAL_FILE_PROTOCOL, fromLocalFileMarker, remarkLocalFileLinks } from './localFile/localFileLinks';
 import { InlineTagView } from './inlineTags/InlineTagViews';
 import { withTagPlaceholders, type InlineTagRole } from './inlineTags/placeholders';
+import type { InlineRollView } from './types';
 
 /**
  * Read-only persisted-message renderer (Plan §6.6 / Task 7.5).
@@ -242,6 +243,8 @@ export interface MessageContentProps {
   inlineTags?: InlineTagRole;
   /** The body is still streaming: hold back half tags, animate open speak. */
   streaming?: boolean;
+  /** #130 CP2: persisted assistant roll results, matched to `<roll>` chips by tag index. */
+  inlineRolls?: readonly InlineRollView[];
 }
 
 export function MessageContent({
@@ -251,6 +254,7 @@ export function MessageContent({
   localFilePending,
   inlineTags,
   streaming = false,
+  inlineRolls,
 }: MessageContentProps) {
   const { markdown, tags } = useMemo(
     () => withTagPlaceholders(content, inlineTags, streaming, HTML_TAG_NAMES),
@@ -269,8 +273,10 @@ export function MessageContent({
       />
     );
     const tagAt = (ref: unknown) => {
-      const tag = typeof ref === 'string' ? tags[Number(ref)] : undefined;
-      return tag ? <InlineTagView tag={tag} streaming={streaming} renderBody={renderBody} /> : null;
+      const placed = typeof ref === 'string' ? tags[Number(ref)] : undefined;
+      if (!placed) return null;
+      const roll = inlineRolls?.find((r) => r.tagIndex === placed.index);
+      return <InlineTagView tag={placed.tag} streaming={streaming} renderBody={renderBody} roll={roll} />;
     };
     return {
       ...MD_COMPONENTS,
@@ -300,7 +306,7 @@ export function MessageContent({
         );
       },
     };
-  }, [conversationId, messageId, localFilePending, tags, streaming]);
+  }, [conversationId, messageId, localFilePending, tags, streaming, inlineRolls]);
 
   return (
     <div className="app-md">
