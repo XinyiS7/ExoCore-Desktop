@@ -14,6 +14,13 @@ import type { ModelCatalog } from 'exo-shared/models';
 import { getErrorMessage } from '../features/settings/api';
 import type { RoleConfigPayload } from '../features/settings/types';
 
+const supportRoles: RoleConfigPayload['support'] = {
+  general_sub_agent: { model: 'deepseek-v4-pro', default_endpoint: 1 },
+  vision_helper: { model: 'gemini-2.5-flash', default_endpoint: 2 },
+  grounding: { model: 'gemini-2.5-flash', default_endpoint: 2 },
+  image_gen: { model: 'flux-1-schnell', default_endpoint: 3 },
+};
+
 const baseCatalog: ModelCatalog = {
   models: [
     {
@@ -78,18 +85,13 @@ const baseCatalog: ModelCatalog = {
       { model: 'deepseek-v4-pro', default_endpoint: 1, style_shadow: null, position: 0 },
       { model: 'gemini-2.5-flash', default_endpoint: 2, style_shadow: null, position: 1 },
     ],
-    support: {
-      general_sub_agent: { model: 'deepseek-v4-pro', default_endpoint: 1 },
-      vision_helper: { model: 'gemini-2.5-flash', default_endpoint: 2 },
-      grounding: { model: 'gemini-2.5-flash', default_endpoint: 2 },
-      image_gen: { model: 'flux-1-schnell', default_endpoint: 3 },
-    },
+    support: supportRoles,
   },
   providers: [
     { id: 'deepseek', display_name: 'DeepSeek', execution_type: 'direct_api' },
     { id: 'gemini', display_name: 'Gemini', execution_type: 'direct_api' },
   ],
-} as ModelCatalog;
+};
 
 function mainSelect(index: number): HTMLSelectElement {
   return screen.getByLabelText('基础模型', {
@@ -189,7 +191,7 @@ describe('#126 model roles panel dedup and post-save draft', () => {
       main: [
         { model: 'deepseek-v4-pro', default_endpoint: 1, style_shadow: null, position: 0 },
       ],
-      support: baseCatalog.roles.support,
+      support: supportRoles,
     };
 
     activeRoutes.push({
