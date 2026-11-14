@@ -495,13 +495,21 @@ export async function putRoleConfig(
 
 /**
  * Extracts the most human-readable message from DRF or transport errors.
+ *
+ * #126: DRF 把 `ValidationError({"code":..,"message":..})` 渲染成
+ * `{code: [..], message: [..]}`。旧实现取第一个字段，于是界面显示的是英文
+ * 错误码（`duplicate_main_model`）而不是人话。这里优先取 message，并跳过 code。
  */
 export function getErrorMessage(err: unknown): string {
   const appErr = toAppApiError(err);
-  if (appErr.fieldErrors.detail) return appErr.fieldErrors.detail;
-  if (appErr.fieldErrors.non_field_errors) return appErr.fieldErrors.non_field_errors;
-  const firstField = Object.values(appErr.fieldErrors)[0];
-  if (firstField) return firstField;
+  const fields = appErr.fieldErrors;
+  if (fields.detail) return fields.detail;
+  if (fields.non_field_errors) return fields.non_field_errors;
+  if (fields.message) return fields.message;
+  const firstField = Object.entries(fields).find(
+    ([key, value]) => key !== 'code' && typeof value === 'string' && value.length > 0,
+  );
+  if (firstField) return firstField[1];
   const body = appErr.body as Record<string, unknown> | null;
   if (body && typeof body === 'object' && body.error && typeof body.error === 'object') {
     const subError = body.error as Record<string, unknown>;

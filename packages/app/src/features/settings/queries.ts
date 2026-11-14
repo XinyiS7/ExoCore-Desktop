@@ -185,7 +185,16 @@ export function useUpdateRoleConfigMutation() {
 
   return useMutation({
     mutationFn: (payload: RoleConfigPayload) => putRoleConfig(payload),
-    onSuccess: () => {
+    // #126：必须先用响应体**同步**写入 catalog 缓存再 invalidate。
+    // ModelRolesPanel 的 useEffect 只要看到 !isDirty 就拿 catalogQuery.data.roles
+    // 覆盖 draft；invalidate 只是异步 refetch，refetch 未返回前缓存还是旧配置，
+    // 会把刚保存的 draft 刷回旧值（“删掉的行又回来了”）。
+    onSuccess: (saved) => {
+      queryClient.setQueryData(MODEL_CATALOG_QUERY_KEY, (old) =>
+        old && typeof old === 'object'
+          ? { ...(old as Record<string, unknown>), roles: saved }
+          : old,
+      );
       queryClient.invalidateQueries({ queryKey: MODEL_CATALOG_QUERY_KEY });
     },
   });

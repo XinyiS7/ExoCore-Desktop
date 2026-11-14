@@ -94,6 +94,22 @@ function getEligibleShadowModels(
   );
 }
 
+/**
+ * #126: 主模型池不允许重复（服务端 `duplicate_main_model` 会整包 400）。
+ * 下拉直接**过滤掉**其它行已选的模型（不置灰占位），本行当前值始终保留。
+ */
+function getSelectableMainModels(
+  models: ModelCatalogModel[],
+  main: MainRoleDraft[],
+  index: number,
+): ModelCatalogModel[] {
+  const current = main[index]?.model;
+  const taken = new Set(
+    main.filter((_, i) => i !== index).map((role) => role.model),
+  );
+  return models.filter((m) => m.name === current || !taken.has(m.name));
+}
+
 function cloneRoleConfig(source: RoleConfigPayload): RoleConfigPayload {
   return {
     main: source.main.map((m, idx) => ({
@@ -165,7 +181,15 @@ export function ModelRolesPanel() {
   // Main role operations
   const handleAddMainRole = () => {
     if (!draft) return;
-    const defaultModel = models[0]?.name ?? '';
+    // #126: 新行必须避开被占用的模型，否则一保存就是 duplicate_main_model 整包 400
+    const used = new Set(draft.main.map((role) => role.model));
+    const candidate = models.find((m) => !used.has(m.name));
+    if (!candidate) {
+      setSaveError('所有已登记模型都已被主模型池占用，无法再添加主角色');
+      setSaveSuccess(false);
+      return;
+    }
+    const defaultModel = candidate.name;
     const eligible = getEligibleEndpoints(defaultModel, models, endpoints);
     const defaultEp = eligible[0]?.id ?? 0;
 
@@ -376,7 +400,9 @@ export function ModelRolesPanel() {
 
     setSaveError(null);
     try {
-      await updateRoleConfigMutation.mutateAsync(draft);
+      const saved = await updateRoleConfigMutation.mutateAsync(draft);
+      // #126: 用服务端响应体重建 draft，旧 draft 不再有二次提交的机会
+      setDraft(cloneRoleConfig(saved));
       setIsDirty(false);
       setSaveSuccess(true);
     } catch (err) {
@@ -490,6 +516,10 @@ export function ModelRolesPanel() {
                 const eligibleShadows = getEligibleShadowModels(role.default_endpoint, models);
                 const isShadowEligible =
                   !role.style_shadow || eligibleShadows.some((m) => m.name === role.style_shadow);
+                const selectableModels = getSelectableMainModels(models, draft.main, idx);
+                // 当前值不在目录里（catalog 刷新与旧 draft 错位）时补一个兜底 option，
+                // 否则原生 <select> 会静默跳到第一项。
+                const isCurrentModelMissing = !models.some((m) => m.name === role.model);
 
                 return (
                   <div key={idx} className="settings-role-card">
@@ -541,7 +571,10 @@ export function ModelRolesPanel() {
                           value={role.model}
                           onChange={(e) => handleMainRoleChange(idx, 'model', e.target.value)}
                         >
-                          {models.map((m) => (
+                          {isCurrentModelMissing && (
+                            <option value={role.model}>{role.model}（未在模型目录中）</option>
+                          )}
+                          {selectableModels.map((m) => (
                             <option key={m.name} value={m.name}>
                               {m.name}
                             </option>
