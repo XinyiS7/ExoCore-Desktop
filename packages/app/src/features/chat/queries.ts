@@ -13,6 +13,7 @@ import {
   AppApiError,
   createConversation,
   deleteConversationPin,
+  deleteStagedMessage,
   deleteTheaterDocument,
   editAssistantMessage,
   fetchMessagePage,
@@ -22,6 +23,7 @@ import {
   listProjects,
   listVisiblePresets,
   setPrimeConversation,
+  stagingUnsettled,
   updateConversationSettings,
   uploadTheaterDocuments,
 } from './api';
@@ -90,12 +92,18 @@ export function useConversationsQuery() {
   });
 }
 
+/** #130 CP4: detail re-read cadence while a block or staged send is unsettled. */
+export const STAGING_REFRESH_MS = 2000;
+
 export function useConversationQuery(id: number) {
   return useQuery({
     queryKey: queryKeys.conversation(id),
     queryFn: () => getConversation(id),
     enabled: isValidConversationId(String(id)),
     retry: false,
+    // Until the flush settles (block over, staged rows sent or failed) the
+    // detail is re-read on a fixed cadence; it stops once nothing is owed.
+    refetchInterval: (query) => (stagingUnsettled(query.state.data) ? STAGING_REFRESH_MS : false),
   });
 }
 
@@ -189,6 +197,15 @@ export function findPersistedMessage(
     }
   }
   return null;
+}
+
+/** Discard a failed staged send (#130 CP4); re-reads detail either way. */
+export function useDiscardStagedMutation(conversationId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (stagedId: number) => deleteStagedMessage(conversationId, stagedId),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.conversation(conversationId) }),
+  });
 }
 
 /** Sticky-note × (#130 CP2): the board re-reads detail whether it worked or was already gone. */

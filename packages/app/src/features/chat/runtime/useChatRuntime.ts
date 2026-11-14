@@ -41,12 +41,13 @@ import {
 import {
   classifyRuntimeError,
   fetchChatSSEStream,
+  isStagedAck,
   pollChatStatus,
   postChatAsync,
   postChatStop,
   postConversationBranch,
 } from './client';
-import { applyFreshWindow, fetchFreshWindow, findPersistedMessage } from '../queries';
+import { applyFreshWindow, fetchFreshWindow, findPersistedMessage, queryKeys } from '../queries';
 import { AppApiError } from '../api';
 import type { MessagePage } from '../types';
 import { classifyAudioAttemptPage } from './attemptPersistence';
@@ -1050,6 +1051,25 @@ export function useChatRuntime({
     [releaseUi, transition, emitAttemptOutcome, persistenceAfterNoWrite],
   );
 
+  /**
+   * #130 CP4: the backend staged the send (block / backend turn). Nothing ran
+   * and no user Message exists: the draft is consumed, the route goes idle and
+   * the staged bubble comes from the re-read `inline_state.staged`.
+   */
+  const acceptStaged = useCallback(
+    (identity: CallbackIdentity): TurnAcceptance => {
+      const convId = identity.stableOwner.conversationId;
+      clearConversationDraft(convId);
+      inFlightTurnRef.current = null;
+      inFlightTurnsRef.current.delete(convId);
+      clearRuntimeMarker(convId, identity.stableOwner.startedAt);
+      releaseUi(identity);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.conversation(convId) });
+      return 'accepted';
+    },
+    [releaseUi, queryClient],
+  );
+
   // ── Core dispatch (send / edit / regenerate) ─────────────────────────────
   const executeTurn = useCallback(
     async (
@@ -1296,6 +1316,7 @@ export function useChatRuntime({
           });
           if (!isCurrentIdentity(epoch, convId)) return 'rejected';
           if (phaseNow() !== 'predispatch') return 'rejected';
+          if (isStagedAck(res)) return acceptStaged(identity);
           // Request ACCEPTED: the draft is consumed; edit mode ends.
           clearConversationDraft(convId);
           if (operation === 'edit') setEditingTarget(null);
@@ -1334,6 +1355,7 @@ export function useChatRuntime({
         });
         if (!isCurrentIdentity(epoch, convId)) return 'rejected';
         if (phaseNow() !== 'predispatch') return 'rejected';
+        if (isStagedAck(ack)) return acceptStaged(identity);
         clearConversationDraft(convId);
         if (operation === 'edit') setEditingTarget(null);
         // The token lets a reload resume polling this run.
@@ -1362,6 +1384,7 @@ export function useChatRuntime({
       persistedRows,
       cancelLocalReaders,
       handleDispatchFailure,
+      acceptStaged,
       consumeSSE,
       startPollingLoop,
       phaseNow,

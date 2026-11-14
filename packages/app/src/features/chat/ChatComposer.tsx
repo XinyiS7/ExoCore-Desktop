@@ -73,6 +73,13 @@ export interface ChatComposerProps {
   } | null;
   /** #61 brought-back Collection cards; absent where the page offers none. */
   collection?: ComposeCollectionApi;
+  /**
+   * #130 CP4 (D-E): sends are being staged (block / held-back rows), and a
+   * staged send can only be text — uploads, recording, sending or retrying a
+   * recording and edits are disabled; an existing clip or attachment is kept
+   * for after the staging ends.
+   */
+  textOnly?: boolean;
 }
 
 function flattenProjectFiles(entries: readonly ProjectTreeEntry[]): string[] {
@@ -109,6 +116,7 @@ export function ChatComposer({
   onRetryAudio,
   restoredTurn,
   collection,
+  textOnly = false,
 }: ChatComposerProps) {
   const [text, setText] = useState('');
   const [caret, setCaret] = useState(0);
@@ -164,6 +172,13 @@ export function ChatComposer({
   // handleSubmit read exactly the same values.
   const hasRecordedAudio = recorder.status === 'recorded' && recorder.blob !== null;
   const hasSendableAttachments = compose.getSuccessfulIds().length > 0 || hasRecordedAudio;
+  // #130 CP4: while staging only plain text can go out (D-E).
+  const stagingBlocksSend = textOnly && (Boolean(editingTarget) || hasSendableAttachments);
+  const stagingBlockedReason = !textOnly
+    ? null
+    : editingTarget
+      ? '禁言或暂存期间无法编辑或重新生成消息'
+      : '暂存期间只能发送文字：录音与附件会保留，等暂存发出后再发送';
 
   // Audio target availability for the mic button.
   const audioSupported = audioGate.state === 'supported';
@@ -263,6 +278,7 @@ export function ChatComposer({
 
   const handleSubmit = async (forceRequested = false) => {
     if (busy || runActive || audioRecovery.isUploading() || dispatchSettings === null) return;
+    if (stagingBlocksSend) return;
     // The ref-backed delete guard closes the same-tick Delete → Send race;
     // state-backed disabling remains the presentation projection.
     if (compose.anyUploading || attachmentManager.isDeletePending()) return;
@@ -404,7 +420,7 @@ export function ChatComposer({
   };
 
   const attachmentInputDisabled =
-    busy || runActive || audioRecovery.uploading || attachmentManager.deletePending;
+    busy || runActive || textOnly || audioRecovery.uploading || attachmentManager.deletePending;
 
   const pickFiles = (input: HTMLInputElement | null, files: FileList | null) => {
     // FileList is live in real browsers: copy it before resetting the input,
@@ -446,6 +462,7 @@ export function ChatComposer({
   const micDisabled =
     busy ||
     runActive ||
+    textOnly ||
     !audioSupported ||
     audioLoading ||
     recorder.status === 'recording';
@@ -509,15 +526,18 @@ export function ChatComposer({
           }
           onSend={recorder.status === 'recorded' ? () => void handleSubmit() : undefined}
           sendBlockedReason={
-            collectionBlockedByAudio
-              ? '录音不能和藏品卡一起发送：移除藏品卡后可发语音，取消录音后可发藏品卡。'
-              : null
+            textOnly
+              ? stagingBlockedReason
+              : collectionBlockedByAudio
+                ? '录音不能和藏品卡一起发送：移除藏品卡后可发语音，取消录音后可发藏品卡。'
+                : null
           }
         />
         <AudioRecoveryBar
           recovery={audioRecovery}
           runtimeBusy={busy}
           deletePending={attachmentManager.deletePending}
+          retryBlockedReason={textOnly ? '暂存期间只能发送文字：语音会保留，等暂存发出后再重试' : null}
           onRetry={onRetryAudio}
         />
 
@@ -679,6 +699,7 @@ export function ChatComposer({
                 onClick={() => void handleSubmit(true)}
                 disabled={
                   busy ||
+                  textOnly ||
                   dispatchSettings === null ||
                   compose.anyUploading ||
                   attachmentManager.deletePending ||
@@ -709,6 +730,7 @@ export function ChatComposer({
                 onClick={() => void handleSubmit()}
                 disabled={
                   busy ||
+                  stagingBlocksSend ||
                   dispatchSettings === null ||
                   compose.anyUploading ||
                   attachmentManager.deletePending ||
@@ -723,7 +745,9 @@ export function ChatComposer({
                         recorder.status !== 'recorded'))
                 }
                 title={
-                  dispatchSettings === null
+                  stagingBlocksSend
+                    ? (stagingBlockedReason ?? undefined)
+                    : dispatchSettings === null
                     ? (targetNotice ?? '请先选择可用的模型与端点')
                     : compose.anyUploading || audioRecovery.uploading
                       ? '附件上传中，请稍候'

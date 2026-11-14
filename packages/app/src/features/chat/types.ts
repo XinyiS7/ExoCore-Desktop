@@ -235,6 +235,24 @@ export interface ConversationSummary {
    * Optional for older fixtures; the API adapter always emits an array.
    */
   pins?: ConversationPinView[];
+  /** #130 CP4 current block (`inline_state.block`); null when not blocked. */
+  block?: ConversationBlockView | null;
+  /** #130 CP4 sends held back and not yet flushed (`inline_state.staged`). */
+  staged?: StagedMessageView[];
+}
+
+/** `inline_state.block`: the conversation is blocked until `unblockAt`. */
+export interface ConversationBlockView {
+  unblockAt: string;
+}
+
+/** One held-back user send (`inline_state.staged[]`), invisible to the model until flushed. */
+export interface StagedMessageView {
+  id: number;
+  content: string;
+  clickedAt: string;
+  /** The flush failed: terminal, never resent; the user discards it. */
+  failed: boolean;
 }
 
 /** One conversation sticky note (`inline_state.pins[]`). */

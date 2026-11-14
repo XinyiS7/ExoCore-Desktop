@@ -211,3 +211,49 @@
     -webkit-line-clamp: 4;
   }
 }
+
+/* #130 CP4 staging area: block countdown + held-back sends, above the composer. */
+.app-itag-staging {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 6px 16px 2px;
+}
+
+.app-itag-block {
+  align-self: stretch;
+  margin: 0;
+  padding: 5px 10px;
+  border: 1px dashed var(--v4-border, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+  color: var(--v4-text-mute);
+  font-size: calc(12px * var(--exo-font-scale, 1));
+  text-align: center;
+}
+
+.app-itag-block-time {
+  color: var(--v4-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.app-itag-staged {
+  max-width: min(70%, 520px);
+  padding: 6px 10px;
+  border: 1px dashed var(--v4-border, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  background: var(--v4-panel-hover, rgba(255, 255, 255, 0.04));
+  opacity: 0.78;
+}
+
+.app-itag-staged-meta {
+  display: block;
+  color: var(--v4-text-mute);
+  font-size: calc(11px * var(--exo-font-scale, 1));
+}
+
+.app-itag-staged-body {
+  margin: 2px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

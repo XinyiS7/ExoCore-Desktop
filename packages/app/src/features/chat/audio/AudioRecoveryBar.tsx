@@ -3,6 +3,8 @@ import type { AudioRecoveryApi } from './audioRecoveryMachine';
 export interface AudioRecoveryBarProps {
   recovery: AudioRecoveryApi;
   runtimeBusy: boolean;
+  /** #130 CP4: staging accepts text only; retry waits, the snapshot is kept. */
+  retryBlockedReason?: string | null;
   deletePending: boolean;
   onRetry: () => void;
 }
@@ -10,6 +12,7 @@ export interface AudioRecoveryBarProps {
 export function AudioRecoveryBar({
   recovery,
   runtimeBusy,
+  retryBlockedReason = null,
   deletePending,
   onRetry,
 }: AudioRecoveryBarProps) {
@@ -51,6 +54,8 @@ export function AudioRecoveryBar({
     ? deletePending
       ? '附件删除尚未完成，请稍候。'
       : '当前发送或对齐尚未完成，请稍候。'
+    : retryBlockedReason !== null
+      ? retryBlockedReason
     : recovery.retryDecision.enabled
       ? null
       : recovery.retryDecision.reason;
@@ -69,7 +74,7 @@ export function AudioRecoveryBar({
           type="button"
           className="app-btn app-btn-primary app-btn-xs"
           onClick={onRetry}
-          disabled={locked || !recovery.retryDecision.enabled}
+          disabled={locked || retryBlockedReason !== null || !recovery.retryDecision.enabled}
           aria-label="重试语音发送"
         >
           重试

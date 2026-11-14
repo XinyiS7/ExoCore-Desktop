@@ -2,12 +2,14 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   classifyRuntimeError,
   fetchChatSSEStream,
+  isStagedAck,
   pollChatStatus,
   postChatAsync,
   postChatStop,
   postConversationBranch,
 } from '../features/chat/runtime/client';
 import { AppApiError } from '../features/chat/api';
+import type { AsyncAckResponse } from '../features/chat/runtime/types';
 import { installFetch, jsonResponse, unmockFetch } from './helpers';
 
 afterEach(() => unmockFetch());
@@ -96,7 +98,7 @@ describe('P1B Runtime Client & Error Classification (§5, §6.6)', () => {
         },
       ]);
 
-      const res = await fetchChatSSEStream({ conversationId: 10, content: 'test stream' });
+      const res = (await fetchChatSSEStream({ conversationId: 10, content: 'test stream' })) as Response;
       expect(res.ok).toBe(true);
       expect(res.body).toBeTruthy();
     });
@@ -150,7 +152,7 @@ describe('P1B Runtime Client & Error Classification (§5, §6.6)', () => {
         },
       ]);
 
-      const res = await postChatAsync({ conversationId: 10, content: 'test turn' });
+      const res = (await postChatAsync({ conversationId: 10, content: 'test turn' })) as AsyncAckResponse;
       expect(res.message_id).toBe('a1b2c3d4');
       expect(res.status).toBe('processing');
     });
@@ -395,6 +397,52 @@ describe('P1B Runtime Client & Error Classification (§5, §6.6)', () => {
       await expect(
         postConversationBranch({ conversationId: 10, branchFromMessageId: 101 }),
       ).rejects.toThrow('缺少有效的会话编号');
+    });
+  });
+});
+
+describe('#130 CP4 staged chat POST', () => {
+  afterEach(() => unmockFetch());
+
+  it('SSE and async transports both read a JSON staged answer as StagedAck', async () => {
+    installFetch([
+      {
+        test: /^\/api\/agents\/chat\/10\/(\?mode=async)?$/,
+        handler: () => jsonResponse({ status: 'staged', unblock_at: '2026-11-13T16:30:00+00:00' }),
+      },
+    ]);
+    const sse = await fetchChatSSEStream({ conversationId: 10, content: '在吗' });
+    expect(isStagedAck(sse)).toBe(true);
+    expect(sse).toEqual({ kind: 'staged', unblockAt: '2026-11-13T16:30:00+00:00' });
+    const ack = await postChatAsync({ conversationId: 10, content: '在吗' });
+    expect(ack).toEqual({ kind: 'staged', unblockAt: '2026-11-13T16:30:00+00:00' });
+  });
+
+  it('a backend-turn staging has no unblock time', async () => {
+    installFetch([{ test: /^\/api\/agents\/chat\/10\/$/, handler: () => jsonResponse({ status: 'staged' }) }]);
+    expect(await fetchChatSSEStream({ conversationId: 10, content: '插一句' })).toEqual({
+      kind: 'staged',
+      unblockAt: null,
+    });
+  });
+
+  it('a non-staged JSON 200 on the SSE route is still a protocol error', async () => {
+    installFetch([{ test: /^\/api\/agents\/chat\/10\/$/, handler: () => jsonResponse({ status: 'ok' }) }]);
+    await expect(fetchChatSSEStream({ conversationId: 10, content: 'x' })).rejects.toMatchObject({
+      code: 'PROTOCOL_ERROR',
+    });
+  });
+
+  it('blocked_no_attachments surfaces as its machine code', async () => {
+    installFetch([
+      {
+        test: /^\/api\/agents\/chat\/10\/$/,
+        handler: () => jsonResponse({ code: 'blocked_no_attachments', error: '暂存期间只能发送文字' }, 400),
+      },
+    ]);
+    await expect(fetchChatSSEStream({ conversationId: 10, content: 'x', pendingAttachments: [3] })).rejects.toMatchObject({
+      code: 'blocked_no_attachments',
+      status: 400,
     });
   });
 });

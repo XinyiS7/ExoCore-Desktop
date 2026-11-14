@@ -274,10 +274,32 @@ export function classifyRuntimeError(
 }
 
 /**
+ * #130 CP4: the chat POST held the send back (block / backend turn in
+ * progress) instead of starting a turn. No user Message exists; the send now
+ * lives in `inline_state.staged`.
+ */
+export interface StagedAck {
+  kind: 'staged';
+  /** Block end; null when held for a backend turn. */
+  unblockAt: string | null;
+}
+
+export function isStagedAck(value: unknown): value is StagedAck {
+  return typeof value === 'object' && value !== null && (value as { kind?: unknown }).kind === 'staged';
+}
+
+function stagedAckOf(body: unknown): StagedAck | null {
+  if (typeof body !== 'object' || body === null || (body as { status?: unknown }).status !== 'staged') return null;
+  const unblockAt = (body as { unblock_at?: unknown }).unblock_at;
+  return { kind: 'staged', unblockAt: typeof unblockAt === 'string' ? unblockAt : null };
+}
+
+/**
  * Raw streaming fetch for SSE chat turn.
  * Does NOT use JSON apiFetch to avoid buffering whole response in memory.
+ * A staged send answers with JSON instead of a stream (#130 CP4).
  */
-export async function fetchChatSSEStream(options: PostChatOptions): Promise<Response> {
+export async function fetchChatSSEStream(options: PostChatOptions): Promise<Response | StagedAck> {
   const url = `/api/agents/chat/${options.conversationId}/`;
   const body = JSON.stringify(buildChatBody(options));
 
@@ -313,6 +335,10 @@ export async function fetchChatSSEStream(options: PostChatOptions): Promise<Resp
   }
 
   const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    const staged = stagedAckOf(await res.json().catch(() => null));
+    if (staged) return staged;
+  }
   if (!contentType.includes('text/event-stream')) {
     throw new AppApiError(`服务器返回了非流式响应类型: ${contentType}`, {
       status: res.status,
@@ -336,7 +362,7 @@ export async function fetchChatSSEStream(options: PostChatOptions): Promise<Resp
  * POST /api/agents/chat/<conversationId>/?mode=async
  * Acknowledges async generation token.
  */
-export async function postChatAsync(options: PostChatOptions): Promise<AsyncAckResponse> {
+export async function postChatAsync(options: PostChatOptions): Promise<AsyncAckResponse | StagedAck> {
   const url = `/api/agents/chat/${options.conversationId}/?mode=async`;
   const body = JSON.stringify(buildChatBody(options));
 
@@ -380,6 +406,9 @@ export async function postChatAsync(options: PostChatOptions): Promise<AsyncAckR
       ambiguousWrite: true,
     });
   }
+
+  const staged = stagedAckOf(data);
+  if (staged) return staged;
 
   if (typeof data?.message_id !== 'string' || data.message_id.trim() === '') {
     throw new AppApiError('异步任务启动成功但未返回有效的恢复凭据', {
