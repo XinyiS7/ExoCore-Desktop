@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { useState } from 'react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { renderV4 } from './helpers';
 import { MessageTimeline } from '../features/chat/MessageTimeline';
 import { normalizeMessageRow } from '../features/chat/api';
@@ -131,5 +133,58 @@ describe('speak card ← persisted voice', () => {
       '/api/agents/conversations/42/message-attachments/12/content/',
     ]);
     expect(container.querySelectorAll('audio')).toHaveLength(1);
+  });
+});
+
+describe('ordinary rerenders keep the inline tag subtree (CP5-F02)', () => {
+  const speakAndSpoiler = () =>
+    message('<speak>你好</speak><spoiler cover="结局">他活下来了</spoiler>', [rawVoice(1, 11), rawVoice(2, 12, 0)]);
+
+  /** Re-renders the timeline with a fresh array of the same rows, as a streaming sibling row does. */
+  function Harness({ rows }: { rows: MessageView[] }) {
+    const [tick, setTick] = useState(0);
+    return (
+      <>
+        <button type="button" onClick={() => setTick(tick + 1)}>tick</button>
+        <MessageTimeline messages={[...rows]} conversationId={42} hasOlder={false} loadingMore={false} onLoadMore={() => undefined} />
+      </>
+    );
+  }
+
+  const openedState = (container: HTMLElement) => ({
+    player: container.querySelector('[data-itag="speak"] audio'),
+    spoilerOpen: screen.queryByText('他活下来了') !== null,
+  });
+
+  it('a list rerender keeps the playing speak player and the opened spoiler', () => {
+    const { container } = renderV4(<Harness rows={[speakAndSpoiler()]} />);
+    fireEvent.click(screen.getByRole('button', { name: /结局/ }));
+    const before = openedState(container);
+    expect(before.player).not.toBeNull();
+    expect(before.spoilerOpen).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'tick' }));
+    fireEvent.click(screen.getByRole('button', { name: 'tick' }));
+
+    const after = openedState(container);
+    expect(after.player).toBe(before.player);
+    expect(after.spoilerOpen).toBe(true);
+  });
+
+  it('the copy button rerender keeps the player and the opened spoiler', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const { container } = renderTimeline([speakAndSpoiler()]);
+    fireEvent.click(screen.getByRole('button', { name: /结局/ }));
+    const before = openedState(container);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '复制消息内容' }));
+    });
+    await waitFor(() => expect(screen.getByRole('button', { name: '已复制消息内容' })).toBeTruthy());
+
+    const after = openedState(container);
+    expect(after.player).toBe(before.player);
+    expect(after.spoilerOpen).toBe(true);
   });
 });

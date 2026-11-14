@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Copy, Edit2, GitBranch, RotateCw } from 'lucide-react';
 import type { AssistantRunTraceProjection, MessageRole, MessageView } from './types';
 import type { OptimisticUserRow, RuntimeAssistantRow } from './runtime/types';
@@ -126,7 +126,9 @@ function MessageRowItem({
     presentations,
     hasPresentations,
     inlineVoices,
-  } = messageArtifacts(message);
+    // One split per message object: `inlineVoices` feeds MessageContent's
+    // markdown components, so a fresh array would remount every tag (CP5-F02).
+  } = useMemo(() => messageArtifacts(message), [message]);
   const hasReasoning = Boolean(message.reasoningContent);
   // Body as shown after inline-tag projection (a pure <pin> shows nothing, #130 D-F).
   const hasContentText = hasVisibleContent(message);

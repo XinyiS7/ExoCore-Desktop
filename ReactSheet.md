@@ -500,7 +500,8 @@ type InlineRoll = { tag_index: number; expression: string; dice: number[]; total
       "content_url": "/api/agents/conversations/95/message-attachments/88/content/",
       "duration_ms": null, "error_code": null
     },
-    "collectible": true
+    "collectible": true,
+    "inline_tag_index": null
   },
   {
     "key": "user_collection_show:12",
@@ -510,7 +511,8 @@ type InlineRoll = { tag_index: number; expression: string; dice: number[]; total
     "label": "从藏品馆带回 · 文本 #34",
     "card": { "item_id": 34, "item_kind": "text", "title": "从藏品馆带回 · 文本 #34", "detail": "收藏理由：……", "text": "完整文本快照" },
     "media": null,
-    "collectible": false
+    "collectible": false,
+    "inline_tag_index": null
   }
 ]
 ```
@@ -523,8 +525,8 @@ type InlineRoll = { tag_index: number; expression: string; dice: number[]; total
   - `label`：image 为 `生成的图片`、voice 为 `语音消息`、collection_card 为卡片 `title`；用作 alt / 收藏菜单名。
   - `card`：**恒在**；仅 `collection_card` 为 `{item_id, item_kind, title, detail|null, text|null}`，其余 surface 为 `null`。`title` 恒为 `从藏品馆带回 · <文本|图片|音频|文档> #<item_id>`（按 descriptor `item_kind`）；`detail` 仅非空的 `收藏理由：…`（不截断）；`text` 仅 text 卡为完整快照。两侧同一份共享渲染（`show_descriptors.project_human_card`）。
   - `media`：owner 认领的挂载附件，形状与原 canonical 附件行相同（`ref / kind / source / status / position / display_name / mime_type / file_size / content_url / duration_ms / error_code`），只在 ready 且 kind 属于该 surface 时内联。
-  - `inline_tag_index`（#130 CP5，additive）：`voice` 项若由该 assistant 正文中的 inline `<speak>` 产出，为该标签的 `tag_index`（非负整数，与 `inline_rolls[].tag_index` 同一计数）；`send_voice_msg` 语音与其它 surface 恒为 `null`。前端：正文里同 index 的闭合 `<speak>` 卡用这条语音的播放器替换占位，并从底部媒体排移除；正文中没有该 index 的闭合 speak（例如正文被编辑过）则仍留在底部媒体排。非法值按 `null` 处理。
   - `collectible`：Alicia 可否从收藏菜单收藏此项（#74）。取自 producer registry：`send_voice_msg`、`agy_generate_image` 为 `true`；带回卡（`collection_bring_back*`）与 user 侧 `user_collection_show` 恒为 `false`。`true` 时以 `{"type":"assistant_artifact","artifact_id":<key 中的 id>}` 收藏（§13.3）。
+  - `inline_tag_index`（#130 CP5，additive）：`voice` 项若由该 assistant 正文中的 inline `<speak>` 产出，为该标签的 `tag_index`（非负整数，与 `inline_rolls[].tag_index` 同一计数）；`send_voice_msg` 语音与其它 surface 恒为 `null`。前端：正文里同 index 的闭合 `<speak>` 卡用这条语音的播放器替换占位，并从底部媒体排移除；正文中没有该 index 的闭合 speak（例如正文被编辑过）则仍留在底部媒体排。非法值按 `null` 处理。
 - **fail closed**：`image` / `voice` 的媒体不 ready 或缺失 → 整项不出；`collection_card` 无 ready 媒体仍出卡，`media=null`（text 卡恒为 `null`）。未登记 producer 的 Artifact、无 owner 的历史挂载附件（早于 Artifact 建设的 `voice_msg` / `agy_image` 等）留在库里但**不投影**，不追溯。
 - **每个媒体恰好出现一次**：只在认领它的那一项 `media` 里；不再从 `attachments[]` 渲染。
 - **排序**：assistant 行按 `(position, producer, id)`；user 行按 `position`。非 assistant/user 行恒为 `[]`。
@@ -532,7 +534,7 @@ type InlineRoll = { tag_index: number; expression: string; dice: number[]; total
 - **批量**：列表投影至多两次查询（assistant / user 各一），与历史长度无关。
 - **各 surface 的前端呈现**
   - `image`：只显示图片（复用附件缩略图/灯箱与同源 `content_url` 规则）。
-  - `voice`：复用语音播放器；自然播放结束后按需拉 transcript（见 §12「voice attachment transcript」），资格由 voice surface 显式给出。
+  - `voice`：复用语音播放器 `AudioPlayerBubble`（底部媒体排由 `MessagePresentations` 渲染；带 `inline_tag_index` 且正文显示该 speak 卡时，同一播放器改由 speak 卡 `InlineTagView` 内联渲染，替换占位）；自然播放结束后按需拉 transcript（见 §12「voice attachment transcript」），资格由 voice surface 显式给出。
   - `collection_card`：沿用藏品卡渲染；有 `media` 时原件（图片/音频播放器/文件卡）只渲染一次，与同条消息其它媒体同排于卡片之上（沿旧布局）。藏品音频不是语音：不拉 transcript，也不进 `voice_tool_errors[]`。超出媒体白名单的图片/音频（如 HEIC、M4A）为 `kind="file"`，经 content 端点以 `attachment` 下载；document 恒为 `file`。
   - 只有 `presentations[]` 而正文为空的消息（如心跳带回的 Prime assistant 消息，`platform="PushService"`）不得显示“空消息”。
 - **端点**：媒体字节仍由 `GET /api/agents/conversations/<cid>/message-attachments/<id>/content/` 与 `.../transcript/` 服务；旧 `GET /api/agents/conversations/<cid>/messages/<message_pk>/attachments/`（D3）已删除，404。
