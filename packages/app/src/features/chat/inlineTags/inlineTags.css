@@ -41,6 +41,14 @@
   animation: app-itag-pulse 1.2s ease-in-out infinite;
 }
 
+/* CP5: the persisted voice took the placeholder's place; the player has its own chrome. */
+.app-itag-speak--voice {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
 @keyframes app-itag-pulse {
   50% {
     opacity: 0.35;

@@ -125,6 +125,7 @@ function MessageRowItem({
     hasVoiceToolErrors,
     presentations,
     hasPresentations,
+    inlineVoices,
   } = messageArtifacts(message);
   const hasReasoning = Boolean(message.reasoningContent);
   // Body as shown after inline-tag projection (a pure <pin> shows nothing, #130 D-F).
@@ -203,6 +204,7 @@ function MessageRowItem({
             messageId={isAssistant ? message.id : undefined}
             inlineTags={inlineTagRole(message.role)}
             inlineRolls={message.inlineRolls}
+            inlineVoices={inlineVoices}
           />
         ) : hasAttachments || hasVoiceToolErrors || hasPresentations || message.content?.trim() ? null : (
           <span className="app-muted">（空消息）</span>

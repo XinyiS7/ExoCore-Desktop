@@ -354,6 +354,12 @@ export interface PresentationView {
   media: MessageAttachmentView | null;
   /** Alicia may collect this item (#74); absent (older fixtures) means false. */
   collectible?: boolean;
+  /**
+   * #130: a `voice` produced by the reply's inline `<speak>` names that tag's
+   * index (the backend `tag_index`); null / absent for `send_voice_msg` and
+   * every other surface.
+   */
+  inlineTagIndex?: number | null;
 }
 
 export interface MessagePage {

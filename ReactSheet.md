@@ -515,7 +515,7 @@ type InlineRoll = { tag_index: number; expression: string; dice: number[]; total
 ]
 ```
 
-- **字段**（每项固定 8 键）
+- **字段**（每项固定 9 键）
   - `key`：稳定去重键，`assistant_artifact:<id>` 或 `user_collection_show:<id>`。
   - `surface`：`image | voice | collection_card`。未知 surface 前端丢弃该项，不影响同消息其它项。
   - `owner`：assistant 侧为 registry producer（`agy_generate_image`、`send_voice_msg`、`collection_bring_back`、`collection_heartbeat_bring_back`）；user 侧恒为 `user_collection_show`。
@@ -523,6 +523,7 @@ type InlineRoll = { tag_index: number; expression: string; dice: number[]; total
   - `label`：image 为 `生成的图片`、voice 为 `语音消息`、collection_card 为卡片 `title`；用作 alt / 收藏菜单名。
   - `card`：**恒在**；仅 `collection_card` 为 `{item_id, item_kind, title, detail|null, text|null}`，其余 surface 为 `null`。`title` 恒为 `从藏品馆带回 · <文本|图片|音频|文档> #<item_id>`（按 descriptor `item_kind`）；`detail` 仅非空的 `收藏理由：…`（不截断）；`text` 仅 text 卡为完整快照。两侧同一份共享渲染（`show_descriptors.project_human_card`）。
   - `media`：owner 认领的挂载附件，形状与原 canonical 附件行相同（`ref / kind / source / status / position / display_name / mime_type / file_size / content_url / duration_ms / error_code`），只在 ready 且 kind 属于该 surface 时内联。
+  - `inline_tag_index`（#130 CP5，additive）：`voice` 项若由该 assistant 正文中的 inline `<speak>` 产出，为该标签的 `tag_index`（非负整数，与 `inline_rolls[].tag_index` 同一计数）；`send_voice_msg` 语音与其它 surface 恒为 `null`。前端：正文里同 index 的闭合 `<speak>` 卡用这条语音的播放器替换占位，并从底部媒体排移除；正文中没有该 index 的闭合 speak（例如正文被编辑过）则仍留在底部媒体排。非法值按 `null` 处理。
   - `collectible`：Alicia 可否从收藏菜单收藏此项（#74）。取自 producer registry：`send_voice_msg`、`agy_generate_image` 为 `true`；带回卡（`collection_bring_back*`）与 user 侧 `user_collection_show` 恒为 `false`。`true` 时以 `{"type":"assistant_artifact","artifact_id":<key 中的 id>}` 收藏（§13.3）。
 - **fail closed**：`image` / `voice` 的媒体不 ready 或缺失 → 整项不出；`collection_card` 无 ready 媒体仍出卡，`media=null`（text 卡恒为 `null`）。未登记 producer 的 Artifact、无 owner 的历史挂载附件（早于 Artifact 建设的 `voice_msg` / `agy_image` 等）留在库里但**不投影**，不追溯。
 - **每个媒体恰好出现一次**：只在认领它的那一项 `media` 里；不再从 `attachments[]` 渲染。
@@ -536,8 +537,8 @@ type InlineRoll = { tag_index: number; expression: string; dice: number[]; total
   - 只有 `presentations[]` 而正文为空的消息（如心跳带回的 Prime assistant 消息，`platform="PushService"`）不得显示“空消息”。
 - **端点**：媒体字节仍由 `GET /api/agents/conversations/<cid>/message-attachments/<id>/content/` 与 `.../transcript/` 服务；旧 `GET /api/agents/conversations/<cid>/messages/<message_pk>/attachments/`（D3）已删除，404。
 - **AGY 生成图**（`agy_generate_image`）：图片与 `pending` Artifact 在 assistant finalize 同一事务内落地；提交后后台单 worker 调 `vision_helper` 一次（60 秒，不重试）写 descriptor 描述，仅供模型 continuity；进程中断留下的 `pending` 永久保持。
-- **语音**（`send_voice_msg`）：failed 合成不建 Artifact，继续由 `voice_tool_errors[]` 投影失败。
-- **藏品带回**：`collection_bring_back`（live Direct / AGY，随该轮 completed assistant 回复落地，failed/STOP 不落卡）；`collection_heartbeat_bring_back`（心跳当场投递正文为空的 Prime assistant 消息）；人侧带回（§1.3.5）为 user 行的 `UserCollectionShow` 快照：藏品之后被编辑或删除，已发送的卡与原件副本不变。人侧带回只增加 `show_count`，从不增加 `view_count`；每张卡在发送当轮模型输入中恰好一次，之后每条历史投影（raw/hot、cache buffer、Runtime bootstrap/rebase、continuity delta）恰好一次；重新生成原样重放，不再计数。
+- **语音**（`send_voice_msg`）：failed 合成不建 Artifact，继续由 `voice_tool_errors[]` 投影失败。回合 stopped / failed 时已生成的语音随 assistant 行保留（Direct 与 AGY 一致，#130 D-D）。inline `<speak>` 的语音同为 `send_voice_msg` owner，`position` 排在同轮 `send_voice_msg` 之后，带 `inline_tag_index`；位于未闭合 `<spoiler>` / `<pin>` 之后或嵌在 spoiler 内、以及未闭合的 `<speak>` 不产语音。
+- **藏品带回**：`collection_bring_back`（live Direct / AGY，随该轮 assistant 回复落地；stopped / failed 时已生效的卡同样保留，只有零产出的回合不建行，#130 D-D）；`collection_heartbeat_bring_back`（心跳当场投递正文为空的 Prime assistant 消息）；人侧带回（§1.3.5）为 user 行的 `UserCollectionShow` 快照：藏品之后被编辑或删除，已发送的卡与原件副本不变。人侧带回只增加 `show_count`，从不增加 `view_count`；每张卡在发送当轮模型输入中恰好一次，之后每条历史投影（raw/hot、cache buffer、Runtime bootstrap/rebase、continuity delta）恰好一次；重新生成原样重放，不再计数。
 - **模型历史契约**（后端内部，不改 API shape）
   - API 自管历史（Direct Gemini/DeepSeek 等，含消费 AGY 历史的会话）：在产物之前最近的 user 消息下附加 `<assistant_artifact>` 第二名单。voice 携带原始 spoken content；image 携带描述或“画面描述暂不可用”，按装配时的当前状态读取。有 Artifact 的 voice 不再重复输出 legacy `<voice_message>`。
   - Runtime（AGY）bootstrap/rebase/continuity delta：不输出 Artifact 第二名单；`<voice_message>` 新旧语音照常投影。Runtime wire、manifest、`RuntimePresentation` schema 与 prefix digest 都不变。

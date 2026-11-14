@@ -1,6 +1,6 @@
-import type { MessageRole, MessageView } from './types';
+import type { MessageRole, MessageView, PresentationView } from './types';
 import { isTimerTriggerMessage } from './inlineTags/parse';
-import { hasVisibleBody, type InlineTagRole } from './inlineTags/placeholders';
+import { hasVisibleBody, shownSpeakIndexes, type InlineTagRole } from './inlineTags/placeholders';
 
 /**
  * Which timeline rows exist (#130 CP1-F04). The timeline and its consumers
@@ -20,7 +20,14 @@ export function messageArtifacts(message: MessageView) {
   const attachmentsMeta = message.attachmentsMeta ?? [];
   const readyAttachments = attachments ? attachments.filter((att) => att.status === 'ready') : [];
   const voiceToolErrors = isAssistant ? message.voiceToolErrors ?? [] : [];
-  const presentations = isUser || isAssistant ? message.presentations ?? [] : [];
+  const allPresentations = isUser || isAssistant ? message.presentations ?? [] : [];
+  // #130 CP5: a voice whose <speak> card the body shows plays in that card;
+  // any other voice (send_voice_msg, or a tag edited away) stays in the row.
+  const speakIndexes = isAssistant ? shownSpeakIndexes(message.content ?? '', 'assistant') : new Set<number>();
+  const fillsSpeak = (item: PresentationView) =>
+    item.surface === 'voice' && item.inlineTagIndex != null && speakIndexes.has(item.inlineTagIndex);
+  const inlineVoices = allPresentations.filter(fillsSpeak);
+  const presentations = allPresentations.filter((item) => !fillsSpeak(item));
   const hasAttachments =
     attachments !== undefined ? readyAttachments.length > 0 : attachmentsMeta.length > 0;
   const hasVoiceToolErrors = voiceToolErrors.length > 0;
@@ -34,6 +41,7 @@ export function messageArtifacts(message: MessageView) {
     hasVoiceToolErrors,
     presentations,
     hasPresentations,
+    inlineVoices,
     hasTrace,
     any: hasAttachments || hasVoiceToolErrors || hasPresentations || hasTrace,
   };

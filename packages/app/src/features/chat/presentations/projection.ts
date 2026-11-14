@@ -66,6 +66,12 @@ function parseMedia(raw: unknown, surface: PresentationSurface): MessageAttachme
   return media;
 }
 
+/** #130: only a voice may name its `<speak>`; anything but a non-negative integer is "none". */
+function parseInlineTagIndex(raw: unknown, surface: PresentationSurface): number | null {
+  if (surface !== 'voice') return null;
+  return typeof raw === 'number' && Number.isInteger(raw) && raw >= 0 ? raw : null;
+}
+
 function parsePresentation(candidate: unknown): PresentationView | null {
   if (!isRecord(candidate)) return null;
   const { key, surface, owner, position, label, card, media } = candidate;
@@ -83,13 +89,19 @@ function parsePresentation(candidate: unknown): PresentationView | null {
     if (parsedCard === null) return null;
     const parsedMedia = media === null ? null : parseMedia(media, typed);
     if (media !== null && parsedMedia === null) return null;
-    return { key, surface: typed, owner, position, label, card: parsedCard, media: parsedMedia, collectible };
+    return {
+      key, surface: typed, owner, position, label, card: parsedCard, media: parsedMedia, collectible,
+      inlineTagIndex: null,
+    };
   }
 
   if (card !== null) return null;
   const parsedMedia = parseMedia(media, typed);
   if (parsedMedia === null) return null;
-  return { key, surface: typed, owner, position, label, card: null, media: parsedMedia, collectible };
+  return {
+    key, surface: typed, owner, position, label, card: null, media: parsedMedia, collectible,
+    inlineTagIndex: parseInlineTagIndex(candidate.inline_tag_index, typed),
+  };
 }
 
 /**

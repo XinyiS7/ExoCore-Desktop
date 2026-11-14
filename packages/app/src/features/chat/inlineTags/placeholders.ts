@@ -79,6 +79,19 @@ export function hasVisibleBody(content: string, role: InlineTagRole | undefined,
   return projectInlineTags(content, role, streaming).some((p) => p.kind === 'tag' || p.text.trim() !== '');
 }
 
+/**
+ * `tag_index`es of the closed `<speak>` cards this persisted body shows (#130
+ * CP5): the voices that fill them leave the message's bottom media row.
+ */
+export function shownSpeakIndexes(content: string, role: InlineTagRole | undefined): ReadonlySet<number> {
+  if (role !== 'assistant') return new Set();
+  const indexes = new Set<number>();
+  for (const part of projectInlineTags(content, role, false)) {
+    if (part.kind === 'tag' && part.tag.kind === 'speak' && part.tag.closed) indexes.add(part.index);
+  }
+  return indexes;
+}
+
 export interface PlaceholderResult {
   markdown: string;
   tags: PlacedTag[];

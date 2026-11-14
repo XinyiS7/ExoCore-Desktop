@@ -17,6 +17,8 @@ export interface InlineTagViewProps {
   renderBody: (body: string) => ReactNode;
   /** #130 CP2: this `<roll>`'s persisted result, when the backend has rolled it. */
   roll?: InlineRollView;
+  /** #130 CP5: the player of this `<speak>`'s persisted voice; replaces the placeholder. */
+  voice?: ReactNode;
 }
 
 function Chip({ icon, children, title }: { icon: ReactNode; children: ReactNode; title?: string }) {
@@ -40,7 +42,22 @@ function formatSeconds(seconds: number): string {
   return parts.join('');
 }
 
-function SpeakCard({ tag, streaming }: { tag: Extract<InlineTag, { kind: 'speak' }>; streaming: boolean }) {
+function SpeakCard({
+  tag,
+  streaming,
+  voice,
+}: {
+  tag: Extract<InlineTag, { kind: 'speak' }>;
+  streaming: boolean;
+  voice?: ReactNode;
+}) {
+  if (voice) {
+    return (
+      <div className="app-itag-speak app-itag-speak--voice" data-itag="speak">
+        {voice}
+      </div>
+    );
+  }
   const speaking = streaming && !tag.closed;
   const label = speaking ? '正在说话…' : tag.closed ? '语音' : '语音未完成';
   return (
@@ -103,10 +120,10 @@ function SpoilerBlock({
   );
 }
 
-export function InlineTagView({ tag, streaming, renderBody, roll }: InlineTagViewProps) {
+export function InlineTagView({ tag, streaming, renderBody, roll, voice }: InlineTagViewProps) {
   switch (tag.kind) {
     case 'speak':
-      return <SpeakCard tag={tag} streaming={streaming} />;
+      return <SpeakCard tag={tag} streaming={streaming} voice={voice} />;
     case 'spoiler':
       return <SpoilerBlock tag={tag} renderBody={renderBody} />;
     case 'pin':
