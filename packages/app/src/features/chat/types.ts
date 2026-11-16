@@ -5,6 +5,7 @@
  */
 
 import type { CollectionKind } from '../collection/types';
+import type { PinColor } from './inlineTags/pinColors';
 
 // ── Transport rows (server contract) ──────────────────────────────────────
 
@@ -239,6 +240,16 @@ export interface ConversationSummary {
   block?: ConversationBlockView | null;
   /** #130 CP4 sends held back and not yet flushed (`inline_state.staged`). */
   staged?: StagedMessageView[];
+  /** Pending timers (`inline_state.timers`); optional for older fixtures. */
+  timers?: ConversationTimerView[];
+}
+
+/** One pending conversation timer (`inline_state.timers[]`). */
+export interface ConversationTimerView {
+  id: number;
+  title: string;
+  fireAt: string;
+  createdAt: string;
 }
 
 /** `inline_state.block`: the conversation is blocked until `unblockAt`. */
@@ -260,6 +271,7 @@ export interface ConversationPinView {
   id: number;
   content: string;
   author: 'user' | 'assistant';
+  color: PinColor;
   createdAt: string;
 }
 

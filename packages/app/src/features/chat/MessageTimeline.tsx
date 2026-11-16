@@ -4,6 +4,7 @@ import type { AssistantRunTraceProjection, MessageRole, MessageView } from './ty
 import type { OptimisticUserRow, RuntimeAssistantRow } from './runtime/types';
 import { MessageContent } from './MessageContent';
 import { SpoilerUnlockContext } from './inlineTags/spoilerUnlock';
+import { TimerTimelineContext, findLaterTimerResolution } from './inlineTags/timerContext';
 import { hasVisibleBody } from './inlineTags/placeholders';
 import { hasVisibleContent, inlineTagRole, isHiddenTimelineRow, messageArtifacts } from './timelineVisibility';
 import { AssistantMessageEditor } from './AssistantMessageEditor';
@@ -35,7 +36,7 @@ function runtimeTraceProjection(row: RuntimeAssistantRow): AssistantRunTraceProj
 
 const ROLE_LABELS: Record<MessageRole, string> = {
   user: '你',
-  assistant: 'Agent',
+  assistant: 'Taxon',
   system: 'System',
   developer: 'Developer',
 };
@@ -196,6 +197,7 @@ function MessageRowItem({
           <AssistantMessageEditor
             initialContent={message.content}
             saveDisabled={isRunActive}
+            assistantName={assistantName}
             onSave={(content) => onSaveAssistantMessage(message.id, content)}
             onClose={() => setEditing(false)}
           />
@@ -207,6 +209,7 @@ function MessageRowItem({
             inlineTags={inlineTagRole(message.role)}
             inlineRolls={message.inlineRolls}
             inlineVoices={inlineVoices}
+            assistantName={assistantName}
           />
         ) : hasAttachments || hasVoiceToolErrors || hasPresentations || message.content?.trim() ? null : (
           <span className="app-muted">（空消息）</span>
@@ -278,8 +281,8 @@ function MessageRowItem({
               className="app-msg-action-btn"
               disabled={isRunActive}
               onClick={() => setEditing(true)}
-              title="编辑此条助手消息"
-              aria-label="编辑此条助手消息"
+              title={assistantName?.trim() ? `编辑此条 ${assistantName.trim()} 消息` : '编辑此条回复'}
+              aria-label={assistantName?.trim() ? `编辑此条 ${assistantName.trim()} 消息` : '编辑此条回复'}
             >
               <Edit2 size={12} aria-hidden="true" />
               编辑
@@ -399,19 +402,26 @@ export function MessageTimeline({
       {messages.map((message, index) =>
         isHiddenTimelineRow(message) ? null : (
           <SpoilerUnlockContext.Provider key={message.id} value={unlockFor(index)}>
-            <MessageRowItem
-              message={message}
-              conversationId={conversationId}
-              isLatestUser={message.id === latestUserMessageId}
-              isRunActive={isRunActive}
-              onEditMessage={onEditMessage}
-              onRegenerateMessage={onRegenerateMessage}
-              onBranchMessage={onBranchMessage}
-              onSaveAssistantMessage={onSaveAssistantMessage}
-              onCollect={handleCollect}
-              assistantName={assistantName}
-              avatarUrl={avatarFor(message.role)}
-            />
+            <TimerTimelineContext.Provider
+              value={{
+                createdAt: message.createdAt,
+                resolveLaterOutcome: (title) => findLaterTimerResolution(messages.slice(index + 1), title),
+              }}
+            >
+              <MessageRowItem
+                message={message}
+                conversationId={conversationId}
+                isLatestUser={message.id === latestUserMessageId}
+                isRunActive={isRunActive}
+                onEditMessage={onEditMessage}
+                onRegenerateMessage={onRegenerateMessage}
+                onBranchMessage={onBranchMessage}
+                onSaveAssistantMessage={onSaveAssistantMessage}
+                onCollect={handleCollect}
+                assistantName={assistantName}
+                avatarUrl={avatarFor(message.role)}
+              />
+            </TimerTimelineContext.Provider>
           </SpoilerUnlockContext.Provider>
         ),
       )}
@@ -471,6 +481,7 @@ export function MessageTimeline({
                 localFilePending
                 inlineTags="assistant"
                 streaming={runtimeAssistant.isStreaming}
+                assistantName={assistantName}
               />
             ) : runtimeAssistant.thinking ||
               (realtimeTrace?.availability === 'available' && realtimeTrace.items.length) ||

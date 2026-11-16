@@ -1,4 +1,5 @@
 import { apiFetch } from 'exo-shared/api';
+import { normalizePinColor } from './inlineTags/pinColors';
 import { normalizeVoiceToolErrorList } from './voice/contract';
 import { normalizeMessageAttachments } from './attachments/projection';
 import { normalizePresentations } from './presentations/projection';
@@ -14,6 +15,7 @@ import type {
   ConversationRow,
   ConversationSettingsInput,
   ConversationSummary,
+  ConversationTimerView,
   CreateConversationInput,
   CreateConversationResult,
   InitEnvelope,
@@ -135,6 +137,7 @@ function normalizeConversationRow(rawRow: unknown): ConversationSummary {
     pins: normalizePins(rawRow.inline_state),
     block: normalizeBlock(rawRow.inline_state),
     staged: normalizeStaged(rawRow.inline_state),
+    timers: normalizeTimers(rawRow.inline_state),
   };
 }
 
@@ -149,7 +152,15 @@ export function normalizePins(state: unknown): ConversationPinView[] {
     typeof pin.content === 'string' &&
     (pin.author === 'user' || pin.author === 'assistant') &&
     typeof pin.created_at === 'string'
-      ? [{ id: pin.id, content: pin.content, author: pin.author, createdAt: pin.created_at }]
+      ? [
+          {
+            id: pin.id,
+            content: pin.content,
+            author: pin.author,
+            color: normalizePinColor(pin.color),
+            createdAt: pin.created_at,
+          },
+        ]
       : [],
   );
 }
@@ -166,6 +177,27 @@ export function normalizeStaged(state: unknown): StagedMessageView[] {
   return state.staged.flatMap((row: unknown) =>
     isRecord(row) && isInt(row.id) && typeof row.content === 'string' && typeof row.clicked_at === 'string'
       ? [{ id: row.id, content: row.content, clickedAt: row.clicked_at, failed: row.failed === true }]
+      : [],
+  );
+}
+
+/** `inline_state.timers`; malformed items are dropped, absent state = no timers. */
+export function normalizeTimers(state: unknown): ConversationTimerView[] {
+  if (!isRecord(state) || !Array.isArray(state.timers)) return [];
+  return state.timers.flatMap((timer: unknown) =>
+    isRecord(timer) &&
+    isInt(timer.id) &&
+    typeof timer.title === 'string' &&
+    typeof timer.fire_at === 'string' &&
+    typeof timer.created_at === 'string'
+      ? [
+          {
+            id: timer.id,
+            title: timer.title,
+            fireAt: timer.fire_at,
+            createdAt: timer.created_at,
+          },
+        ]
       : [],
   );
 }

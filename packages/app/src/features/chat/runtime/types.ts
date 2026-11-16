@@ -403,3 +403,11 @@ export interface RuntimeOverlayState {
   optimisticUser?: OptimisticUserRow;
   runtimeAssistant?: RuntimeAssistantRow;
 }
+
+/** Read-only ordinary-send correlation snapshot exposed by `useChatRuntime`. */
+export interface ActiveTurnCorrelation {
+  conversationId: number;
+  clientTurnId: string;
+  phase: OperationState['phase'];
+  firstWireEventSeen: boolean;
+}

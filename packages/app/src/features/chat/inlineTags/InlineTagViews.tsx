@@ -1,8 +1,10 @@
 import { useContext, useState, type ReactNode } from 'react';
-import { Dices, EyeOff, Lock, Mic, Timer, TimerOff, VolumeX } from 'lucide-react';
+import { Dices, EyeOff, Lock, Mic, VolumeX } from 'lucide-react';
 import type { InlineTag } from './parse';
 import type { InlineRollView } from '../types';
+import { RollReplayContext } from './rollReplay';
 import { SpoilerUnlockContext } from './spoilerUnlock';
+import { TimerHourglass } from './TimerHourglass';
 import './inlineTags.css';
 
 /**
@@ -19,9 +21,37 @@ export interface InlineTagViewProps {
   roll?: InlineRollView;
   /** #130 CP5: the player of this `<speak>`'s persisted voice; replaces the placeholder. */
   voice?: ReactNode;
+  /** Conversation agent instance name for roll chip titles. */
+  assistantName?: string;
 }
 
-function Chip({ icon, children, title }: { icon: ReactNode; children: ReactNode; title?: string }) {
+function Chip({
+  icon,
+  children,
+  title,
+  onClick,
+  ariaLabel,
+}: {
+  icon: ReactNode;
+  children: ReactNode;
+  title?: string;
+  onClick?: () => void;
+  ariaLabel?: string;
+}) {
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className="app-itag-chip app-itag-chip--interactive"
+        title={title}
+        aria-label={ariaLabel}
+        onClick={onClick}
+      >
+        {icon}
+        <span>{children}</span>
+      </button>
+    );
+  }
   return (
     <span className="app-itag-chip" title={title}>
       {icon}
@@ -120,7 +150,10 @@ function SpoilerBlock({
   );
 }
 
-export function InlineTagView({ tag, streaming, renderBody, roll, voice }: InlineTagViewProps) {
+export function InlineTagView({ tag, streaming, renderBody, roll, voice, assistantName }: InlineTagViewProps) {
+  const onReplayRoll = useContext(RollReplayContext);
+  const trimmedAssistantName = assistantName?.trim();
+  const assistantRollLabel = trimmedAssistantName ? `${trimmedAssistantName} 掷骰` : '掷骰';
   switch (tag.kind) {
     case 'speak':
       return <SpeakCard tag={tag} streaming={streaming} voice={voice} />;
@@ -138,24 +171,34 @@ export function InlineTagView({ tag, streaming, renderBody, roll, voice }: Inlin
         </Chip>
       );
     case 'timer':
-      return (
-        <Chip icon={<Timer size={12} aria-hidden="true" />}>
-          {formatSeconds(tag.seconds)}
-          {tag.title ? ` · ${tag.title}` : ''}
-        </Chip>
-      );
     case 'timer_cancel':
-      return <Chip icon={<TimerOff size={12} aria-hidden="true" />}>取消计时 · {tag.title}</Chip>;
     case 'timer_fired':
-      return (
-        <Chip icon={<Timer size={12} aria-hidden="true" />} title={tag.fireAt}>
-          计时到点{tag.title ? ` · ${tag.title}` : ''}
-        </Chip>
-      );
+      return <TimerHourglass tag={tag} />;
     case 'roll':
       // The result exists only once the reply is persisted; until then the chip shows the expression.
       return roll ? (
-        <Chip icon={<Dices size={12} aria-hidden="true" />} title="助手掷骰">
+        <Chip
+          icon={<Dices size={12} aria-hidden="true" />}
+          title={onReplayRoll ? `${assistantRollLabel} · 点击重播特效` : assistantRollLabel}
+          ariaLabel={
+            onReplayRoll
+              ? trimmedAssistantName
+                ? `重播 ${trimmedAssistantName} 掷骰 ${tag.expr} 结果 ${roll.total}`
+                : `重播掷骰 ${tag.expr} 结果 ${roll.total}`
+              : undefined
+          }
+          onClick={
+            onReplayRoll
+              ? () =>
+                  onReplayRoll({
+                    expr: tag.expr,
+                    dice: roll.dice,
+                    total: roll.total,
+                    by: 'assistant',
+                  })
+              : undefined
+          }
+        >
           {tag.expr} → {roll.dice.join(', ')} = <strong>{roll.total}</strong>
         </Chip>
       ) : (
@@ -163,12 +206,35 @@ export function InlineTagView({ tag, streaming, renderBody, roll, voice }: Inlin
           {tag.expr}
         </Chip>
       );
-    case 'roll_result':
+    case 'roll_result': {
       // A user `<roll>` is immediately followed by its own result; the result chip alone carries it.
+      const rollOwnerLabel = tag.by === 'assistant' ? assistantRollLabel : '掷骰';
       return (
-        <Chip icon={<Dices size={12} aria-hidden="true" />} title={tag.by === 'assistant' ? '助手掷骰' : '掷骰'}>
+        <Chip
+          icon={<Dices size={12} aria-hidden="true" />}
+          title={onReplayRoll ? `${rollOwnerLabel} · 点击重播特效` : rollOwnerLabel}
+          ariaLabel={
+            onReplayRoll
+              ? tag.by === 'assistant' && trimmedAssistantName
+                ? `重播 ${trimmedAssistantName} 掷骰 ${tag.expr} 结果 ${tag.total}`
+                : `重播掷骰 ${tag.expr} 结果 ${tag.total}`
+              : undefined
+          }
+          onClick={
+            onReplayRoll
+              ? () =>
+                  onReplayRoll({
+                    expr: tag.expr,
+                    dice: tag.dice,
+                    total: tag.total,
+                    by: tag.by === 'assistant' ? 'assistant' : 'user',
+                  })
+              : undefined
+          }
+        >
           {tag.expr} → {tag.dice.join(', ')} = <strong>{tag.total}</strong>
         </Chip>
       );
+    }
   }
 }

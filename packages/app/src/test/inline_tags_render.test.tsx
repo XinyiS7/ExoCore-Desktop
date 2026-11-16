@@ -14,7 +14,7 @@ describe('MessageContent inline tags', () => {
     );
     const paragraph = container.querySelector('p');
     expect(paragraph?.querySelector('strong')?.textContent).toBe('好');
-    expect(paragraph?.querySelector('.app-itag-chip')?.textContent).toBe('1m30s · 泡茶');
+    expect(paragraph?.querySelector('.app-itag-chip')?.textContent).toBe('倒计时 01:30 · 泡茶');
     expect(paragraph?.textContent).toContain('之后见');
     expect(container.textContent).not.toContain('<timer');
   });

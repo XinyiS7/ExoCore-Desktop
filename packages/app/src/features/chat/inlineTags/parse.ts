@@ -19,6 +19,8 @@
  * both share the case table in the tests.
  */
 
+import { normalizePinColor, type PinColor } from './pinColors';
+
 export const DICE_FACES = [4, 6, 8, 10, 12, 20, 100] as const;
 export const MAX_DICE = 8;
 export const MAX_TAG_SECONDS = 86400;
@@ -26,7 +28,7 @@ export const MAX_TAG_SECONDS = 86400;
 export type InlineTag =
   | { kind: 'speak'; emotion: string | null; body: string; closed: boolean }
   | { kind: 'spoiler'; cover: string | null; pwd: string | null; body: string; closed: boolean }
-  | { kind: 'pin'; body: string; closed: boolean }
+  | { kind: 'pin'; body: string; closed: boolean; color?: PinColor }
   | { kind: 'unpin'; id: number }
   | { kind: 'block'; seconds: number }
   | { kind: 'timer'; seconds: number; title: string | null }
@@ -177,7 +179,9 @@ function parseHead(text: string, pos: number): HeadResult | null {
       }
       break;
     case 'pin':
-      if (value === undefined) tag = { kind: 'pin' };
+      if (value === undefined) {
+        tag = has('color') ? { kind: 'pin', color: normalizePinColor(attrs.color) } : { kind: 'pin' };
+      }
       break;
     case 'unpin':
       if (value === undefined && UINT_RE.test(attrs.id ?? '') && Number(attrs.id) > 0) {

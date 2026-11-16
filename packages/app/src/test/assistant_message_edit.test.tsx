@@ -54,8 +54,8 @@ function renderTimeline(
   );
 }
 
-const editButton = () => screen.queryByRole('button', { name: '编辑此条助手消息' });
-const editor = () => screen.getByRole('textbox', { name: '编辑助手消息' }) as HTMLTextAreaElement;
+const editButton = () => screen.queryByRole('button', { name: '编辑此条回复' });
+const editor = () => screen.getByRole('textbox', { name: '编辑回复' }) as HTMLTextAreaElement;
 
 describe('assistant message edit control', () => {
   it('appears only on assistant rows with body text', () => {
@@ -87,7 +87,7 @@ describe('assistant message edit control', () => {
     fireEvent.click(screen.getByRole('button', { name: '取消' }));
 
     expect(onSave).not.toHaveBeenCalled();
-    expect(screen.queryByRole('textbox', { name: '编辑助手消息' })).toBeNull();
+    expect(screen.queryByRole('textbox', { name: '编辑回复' })).toBeNull();
     expect(editButton()).not.toBeNull();
   });
 
@@ -99,7 +99,7 @@ describe('assistant message edit control', () => {
     fireEvent.change(editor(), { target: { value: '**body**' } });
     fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
-    await waitFor(() => expect(screen.queryByRole('textbox', { name: '编辑助手消息' })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('textbox', { name: '编辑回复' })).toBeNull());
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(onSave).toHaveBeenCalledWith(71, '**body**');
   });

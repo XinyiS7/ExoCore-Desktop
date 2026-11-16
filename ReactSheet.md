@@ -65,6 +65,10 @@
 - `failed: true`：该批 flush 以非 busy 原因失败（模型/预检错误或崩溃）。这是终态：后端不再自动重发（包括重启），只展示给用户，由用户丢弃或手动重新发送。
 - 前端在 composer 上方显示禁言倒计时与暂存气泡（不进消息流）。`block` 非空或存在 `failed: false` 的暂存时 composer 只能发文字：附件、录音、发送/重试已有录音、带藏品与编辑/重新生成均禁用，已有的录音与附件保留到解锁后再发。期间 detail 每 2s 重新读取一次，直到 `block` 为空且没有未失败的暂存为止。
 
+**行内标签状态（#130 timers）**
+- 同一 `inline_state` additive 增加 `timers: InlineTimer[]`。`InlineTimer = { id: number; title: string; fire_at: string /* ISO-8601 */; created_at: string /* ISO-8601 */ }`，仅含 `status="pending"` 的会话计时器，按 `(fire_at, id)` 升序。
+- 前端在输入框上方浮出小沙漏与短倒计时，点击浮出 `title`（消息流中原 `<timer>` 提示继续保留）；倒计时归零后重读 detail 收起。
+
 **DELETE /api/agents/conversations/<pk>/staged/<staged_id>/** — 丢弃发送失败的暂存消息（#130 CP4）
 - `204 No Content`：删除该行（之后不再出现在 `inline_state.staged`）。
 - `404`：`{"code": "not_found", "error": "暂存消息不存在或不是发送失败状态"}`（不属于该会话、不存在，或不是 `failed` 状态）。

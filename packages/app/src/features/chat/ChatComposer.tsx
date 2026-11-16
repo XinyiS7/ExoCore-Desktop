@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react';
-import { FilePlus2, ImagePlus, Mic, MicOff, Send, Snowflake, Square, X } from 'lucide-react';
+import { Dices, FilePlus2, ImagePlus, Mic, MicOff, PackageOpen, Send, Snowflake, Square, X } from 'lucide-react';
 import type {
   ChatTurnInput,
   ConversationDispatchSettings,
@@ -29,6 +29,10 @@ import {
   insertProjectRefToken,
   isInsertablePath,
 } from './project/paths';
+import { ToyDrawer } from './inlineTags/ToyDrawer';
+import type { ComposerToysApi } from './inlineTags/useComposerToys';
+import type { PendingDiceState } from './inlineTags/diceTypes';
+import type { DraftPin } from './inlineTags/pinColors';
 
 export interface ChatComposerProps {
   conversationId: number;
@@ -80,6 +84,8 @@ export interface ChatComposerProps {
    * for after the staging ends.
    */
   textOnly?: boolean;
+  /** Plan 2026-11-14: interactive dice tray & draft sticky notes owner. */
+  toys?: ComposerToysApi;
 }
 
 function flattenProjectFiles(entries: readonly ProjectTreeEntry[]): string[] {
@@ -117,6 +123,7 @@ export function ChatComposer({
   restoredTurn,
   collection,
   textOnly = false,
+  toys,
 }: ChatComposerProps) {
   const [text, setText] = useState('');
   const [caret, setCaret] = useState(0);
@@ -125,17 +132,22 @@ export function ChatComposer({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const toyToggleRef = useRef<HTMLButtonElement>(null);
   const isComposingRef = useRef(false);
   const stashedSubmissionRef = useRef<{
     conversationId: number;
     text: string;
     entries: ComposeAttachmentEntry[];
+    pendingDice: PendingDiceState | null;
+    draftPins: DraftPin[];
   } | null>(null);
   const appliedRestoredTokenRef = useRef<number | null>(null);
   const composeRef = useRef(compose);
   composeRef.current = compose;
   const collectionRef = useRef(collection);
   collectionRef.current = collection;
+  const toysRef = useRef(toys);
+  toysRef.current = toys;
   const collectionCards = collection?.cards ?? [];
   const hasRejectedCollectionCard = collectionCards.some((card) => card.status === 'rejected');
   // An uploaded-audio turn has its own recovery owner and carries no cards.
@@ -172,13 +184,35 @@ export function ChatComposer({
   // handleSubmit read exactly the same values.
   const hasRecordedAudio = recorder.status === 'recorded' && recorder.blob !== null;
   const hasSendableAttachments = compose.getSuccessfulIds().length > 0 || hasRecordedAudio;
+  const hasPendingDice = Boolean(toys?.pendingDice);
+  const draftPinsCount = toys?.draftPins.length ?? 0;
+  const hasUncommittedPinText = Boolean(toys && toys.drawerOpen && toys.activeTab === 'pin' && toys.pinEditor.body.trim().length > 0);
+  const hasSendableToys = hasPendingDice || draftPinsCount > 0 || hasUncommittedPinText;
+  const toyDisabled =
+    busy ||
+    runActive ||
+    textOnly ||
+    audioRecovery.uploading ||
+    attachmentManager.deletePending ||
+    Boolean(editingTarget);
   // #130 CP4: while staging only plain text can go out (D-E).
-  const stagingBlocksSend = textOnly && (Boolean(editingTarget) || hasSendableAttachments);
+  const stagingBlocksSend = textOnly && (Boolean(editingTarget) || hasSendableAttachments || hasSendableToys);
   const stagingBlockedReason = !textOnly
     ? null
     : editingTarget
       ? '禁言或暂存期间无法编辑或重新生成消息'
-      : '暂存期间只能发送文字：录音与附件会保留，等暂存发出后再发送';
+      : hasSendableToys && !hasSendableAttachments
+        ? '暂存期间只能发送文字：待发骰子与便利贴会保留，等禁言结束后再发送'
+        : hasSendableToys
+          ? '暂存期间只能发送文字：待发玩具与附件会保留，等禁言结束后再发送'
+          : '暂存期间只能发送文字：录音与附件会保留，等暂存发出后再发送';
+
+  // Auto-collapse drawer when editing or staging禁言 activates, preserving armed drafts
+  useEffect(() => {
+    if (toyDisabled && toysRef.current?.drawerOpen) {
+      toysRef.current.setDrawerOpen(false);
+    }
+  }, [toyDisabled]);
 
   // Audio target availability for the mic button.
   const audioSupported = audioGate.state === 'supported';
@@ -215,14 +249,23 @@ export function ChatComposer({
     if (appliedRestoredTokenRef.current === restoredTurn.token) return;
     if (restoredTurn.conversationId === conversationId) {
       appliedRestoredTokenRef.current = restoredTurn.token;
-      const textToRestore = restoredTurn.text;
+      const stashed =
+        stashedSubmissionRef.current && stashedSubmissionRef.current.conversationId === conversationId
+          ? stashedSubmissionRef.current
+          : null;
+      const textToRestore = stashed ? stashed.text : restoredTurn.text;
       setText((prev) => {
-        const nextText = prev.trim() ? `${textToRestore}\n\n${prev}` : textToRestore;
+        const nextText = prev.trim()
+          ? textToRestore
+            ? `${textToRestore}\n\n${prev}`
+            : prev
+          : textToRestore;
         saveConversationDraft(conversationId, nextText);
         return nextText;
       });
-      if (stashedSubmissionRef.current && stashedSubmissionRef.current.conversationId === conversationId) {
-        composeRef.current.restoreEntries(stashedSubmissionRef.current.entries);
+      if (stashed) {
+        composeRef.current.restoreEntries(stashed.entries);
+        toysRef.current?.restoreToys(stashed.pendingDice, stashed.draftPins);
       }
       if (restoredTurn.collectionItemIds && restoredTurn.collectionItemIds.length > 0) {
         collectionRef.current?.addCards(restoredTurn.collectionItemIds, { restore: true });
@@ -297,16 +340,35 @@ export function ChatComposer({
 
     const currentAttachmentIds = compose.getSuccessfulIds();
     const collectionItemIds = collection?.getItemIds() ?? [];
-    if (!trimmed && currentAttachmentIds.length === 0 && !hasRecordedAudio && collectionItemIds.length === 0) {
+    if (
+      !trimmed &&
+      currentAttachmentIds.length === 0 &&
+      !hasRecordedAudio &&
+      collectionItemIds.length === 0 &&
+      !hasSendableToys
+    ) {
       return;
     }
     // A rejected card stays until the user removes it; audio turns carry no cards.
     if (hasRejectedCollectionCard || (hasRecordedAudio && collectionItemIds.length > 0)) return;
 
+    const preparedToys = toys ? toys.prepareSubmission(submittedText) : null;
+    if (preparedToys && !preparedToys.ok) {
+      // Blocked by unsafe literal `</pin>` inside uncommitted draft pin; let user fix it in drawer.
+      toys?.commitPinEditor();
+      return;
+    }
+    const toySnapshot = preparedToys?.ok ? preparedToys.snapshot : null;
+    const finalContent = toySnapshot ? toySnapshot.assembledText : submittedText;
+    if (!finalContent && currentAttachmentIds.length === 0 && !hasRecordedAudio && collectionItemIds.length === 0) {
+      return;
+    }
+
     // Explicit Force Cache without sendable attachments degrades to an
     // ordinary send — a forced empty request is never manufactured. Edit
     // mode above already exits without force.
     const forceCacheRebuild = forceRequested && hasSendableAttachments;
+    const stagedBeforeCount = toys?.getStagedCounter() ?? 0;
 
     let outcome: TurnAcceptance;
     if (hasRecordedAudio) {
@@ -320,14 +382,14 @@ export function ChatComposer({
         mimeType: recorder.mimeType,
         target: audioGate.target,
         dispatchSettings,
-        content: submittedText,
+        content: finalContent,
         attachmentIds: currentAttachmentIds,
         forceCacheRebuild: forceCacheRebuild || undefined,
         dispatch: onSend,
       });
     } else {
       outcome = await onSend({
-        content: submittedText,
+        content: finalContent,
         pendingAttachments: currentAttachmentIds.length > 0 ? currentAttachmentIds : undefined,
         collectionItems: collectionItemIds.length > 0 ? collectionItemIds : undefined,
         forceCacheRebuild: forceCacheRebuild || undefined,
@@ -343,9 +405,14 @@ export function ChatComposer({
       if (!transferredToRecovery && !hasRecordedAudio) {
         stashedSubmissionRef.current = {
           conversationId,
-          text: submittedText,
+          text: trimmed,
           entries: [...compose.entries.filter((e) => (e.status === 'ok' || e.status === 'ok_degraded') && e.attachmentId != null)],
+          pendingDice: toySnapshot?.pendingDice ?? null,
+          draftPins: toySnapshot?.draftPins ?? [],
         };
+      }
+      if (outcome === 'accepted' && toySnapshot) {
+        toys?.completeAcceptedSubmission(toySnapshot, stagedBeforeCount);
       }
       setText('');
       saveConversationDraft(conversationId, '');
@@ -498,6 +565,30 @@ export function ChatComposer({
         hideWhenEmpty
       />
 
+      {toys ? (
+        <ToyDrawer
+          open={toys.drawerOpen}
+          disabled={toyDisabled}
+          activeTab={toys.activeTab}
+          onSelectTab={toys.setActiveTab}
+          onClose={() => toys.setDrawerOpen(false)}
+          physicsDice={toys.physicsDice}
+          onSetPhysicsDice={toys.setPhysicsDice}
+          onAddDie={toys.addDie}
+          onRemoveDie={toys.removeDie}
+          onClearDice={toys.clearDice}
+          modifier={toys.modifier}
+          onChangeModifier={toys.setModifier}
+          pinEditor={toys.pinEditor}
+          onChangePinEditor={toys.setPinEditor}
+          onCommitPinEditor={toys.commitPinEditor}
+          onDiscardPinEditor={toys.discardPinEditor}
+          draftPins={toys.draftPins}
+          toggleButtonRef={toyToggleRef}
+          onTrayBoundsChange={toys.setTrayBounds}
+        />
+      ) : null}
+
       <div className="app-composer">
         <ComposeCollectionCards
           cards={collectionCards}
@@ -563,6 +654,35 @@ export function ChatComposer({
                 </button>
               </span>
             ))}
+          </div>
+        ) : null}
+
+        {toys && !toys.drawerOpen && toys.pendingDice ? (
+          <div className={`app-toy-pending-bar${toyDisabled ? ' app-toy-pending-bar--muted' : ''}`}>
+            <button
+              type="button"
+              className="app-toy-pending-badge"
+              disabled={toyDisabled}
+              onClick={() => {
+                toys.setActiveTab('dice');
+                toys.setDrawerOpen(true);
+              }}
+              title={toyDisabled ? '当前模式不会随本条发出' : '点击打开骰盘调整待发骰子'}
+            >
+              <Dices size={13} aria-hidden="true" />
+              <span>已备 {toys.pendingDice.expr}</span>
+              {toyDisabled ? <em className="app-toy-pending-note">（当前模式不随本条发送）</em> : null}
+            </button>
+            <button
+              type="button"
+              className="app-toy-pending-clear"
+              aria-label="清空待发骰子"
+              title="清空待发骰子"
+              disabled={busy || runActive}
+              onClick={() => toys.clearDice()}
+            >
+              <X size={12} aria-hidden="true" />
+            </button>
           </div>
         ) : null}
 
@@ -683,6 +803,31 @@ export function ChatComposer({
             >
               {recorder.status === 'recording' ? <Square size={13} aria-hidden="true" /> : <Mic size={14} aria-hidden="true" />}
             </button>
+            {toys ? (
+              <button
+                ref={toyToggleRef}
+                type="button"
+                className={`app-btn app-btn-ghost app-btn-sm app-composer-tool-btn app-toy-drawer-toggle${
+                  toys.drawerOpen ? ' is-active' : ''
+                }`}
+                onClick={() => toys.setDrawerOpen((v) => !v)}
+                disabled={toyDisabled}
+                aria-expanded={toys.drawerOpen}
+                aria-label="游乐小抽屉"
+                title={
+                  editingTarget
+                    ? '编辑历史消息期间不可使用游乐小抽屉'
+                    : textOnly
+                      ? '禁言或暂存期间仅可发送纯文字'
+                      : '游乐小抽屉（骰盘 / 便利贴）'
+                }
+              >
+                <PackageOpen size={14} aria-hidden="true" />
+                {toys.totalPendingToyCount > 0 ? (
+                  <span className="app-toy-toggle-badge">{toys.totalPendingToyCount}</span>
+                ) : null}
+              </button>
+            ) : null}
           </div>
 
           {dispatchSettings === null ? (
@@ -742,7 +887,8 @@ export function ChatComposer({
                       (text.trim().length === 0 &&
                         compose.successfulIds.length === 0 &&
                         collectionCards.length === 0 &&
-                        recorder.status !== 'recorded'))
+                        recorder.status !== 'recorded' &&
+                        !hasSendableToys))
                 }
                 title={
                   stagingBlocksSend

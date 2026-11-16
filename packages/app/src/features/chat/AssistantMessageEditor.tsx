@@ -5,11 +5,13 @@ import { toAppApiError } from './api';
 export function AssistantMessageEditor({
   initialContent,
   saveDisabled,
+  assistantName,
   onSave,
   onClose,
 }: {
   initialContent: string;
   saveDisabled?: boolean;
+  assistantName?: string;
   onSave: (content: string) => Promise<unknown>;
   onClose: () => void;
 }) {
@@ -40,7 +42,7 @@ export function AssistantMessageEditor({
         className="app-msg-edit-input"
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
-        aria-label="编辑助手消息"
+        aria-label={assistantName?.trim() ? `编辑 ${assistantName.trim()} 消息` : '编辑回复'}
         autoFocus
       />
       {error ? (

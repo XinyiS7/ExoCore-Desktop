@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  type ActiveTurnCorrelation,
   type AssistantTraceEvent,
   type AttemptPersistence,
   type BlockedReason,
@@ -16,6 +17,7 @@ import {
   type OptimisticUserRow,
   type PollingStatusResponse,
   type ReconcileContext,
+  type ReconcileOutcome,
   type RuntimeAssistantRow,
   type RuntimeAssistantTrace,
   type RuntimeAttemptOutcome,
@@ -49,7 +51,7 @@ import {
 } from './client';
 import { applyFreshWindow, fetchFreshWindow, findPersistedMessage, queryKeys } from '../queries';
 import { AppApiError } from '../api';
-import type { MessagePage } from '../types';
+import type { MessagePage, MessageView } from '../types';
 import { classifyAudioAttemptPage } from './attemptPersistence';
 
 export interface UseChatRuntimeOptions {
@@ -66,6 +68,18 @@ export interface UseChatRuntimeOptions {
   /** Narrow, attempt-keyed P1C bridge. It reports no parser internals and
    * never owns or relaxes the C1B operation lock. */
   onAttemptOutcome?: (outcome: RuntimeAttemptOutcome) => void;
+  /** Read-only hook invoked once canonical window messages are applied on turn reconciliation. */
+  onTurnReconciled?: (
+    messages: readonly MessageView[],
+    info: {
+      conversationId: number;
+      clientTurnId: string | null;
+      outcome: ReconcileOutcome;
+      shouldRestoreFailedTurn: boolean;
+    },
+  ) => void;
+  /** Read-only hook invoked when an ordinary send is staged by backend gating. */
+  onTurnStaged?: (info: { conversationId: number; clientTurnId: string | null }) => void;
 }
 
 // ── Presentation projections (NEVER safety truths, §3.1/§3.2) ─────────────
@@ -152,6 +166,8 @@ export function useChatRuntime({
   isExternalOperationPending,
   persistedRowsRef,
   onAttemptOutcome,
+  onTurnReconciled,
+  onTurnStaged,
 }: UseChatRuntimeOptions) {
   const queryClient = useQueryClient();
 
@@ -213,6 +229,11 @@ export function useChatRuntime({
   const foregroundEventRef = useRef(0);
   const onAttemptOutcomeRef = useRef(onAttemptOutcome);
   onAttemptOutcomeRef.current = onAttemptOutcome;
+  const onTurnReconciledRef = useRef(onTurnReconciled);
+  onTurnReconciledRef.current = onTurnReconciled;
+  const onTurnStagedRef = useRef(onTurnStaged);
+  onTurnStagedRef.current = onTurnStaged;
+  const [activeTurnCorrelation, setActiveTurnCorrelation] = useState<ActiveTurnCorrelation | null>(null);
   const activeAttemptRef = useRef<{
     epoch: number;
     attemptKey: string;
@@ -268,10 +289,23 @@ export function useChatRuntime({
       }
       opStateRef.current = next;
       setOpState(next);
+      setActiveTurnCorrelation((prev) => {
+        if (next.phase === 'idle') return null;
+        if (!prev || prev.conversationId !== next.identity.stableOwner.conversationId) return prev;
+        return prev.phase === next.phase ? prev : { ...prev, phase: next.phase };
+      });
       return next;
     },
     [isCurrentIdentity],
   );
+
+  const markFirstWireEvent = useCallback((convId: number) => {
+    setActiveTurnCorrelation((prev) =>
+      prev && prev.conversationId === convId && !prev.firstWireEventSeen
+        ? { ...prev, firstWireEventSeen: true }
+        : prev,
+    );
+  }, []);
 
   // ── Derived projections from the single union ────────────────────────────
   const status = useMemo(() => deriveStatus(opState), [opState]);
@@ -380,6 +414,7 @@ export function useChatRuntime({
       setProtocolWarning(null);
       setTransientError(null);
       setStopError(null);
+      setActiveTurnCorrelation(null);
       opStateRef.current = { phase: 'idle' };
       setOpState({ phase: 'idle' });
       return true;
@@ -561,6 +596,14 @@ export function useChatRuntime({
           inFlightTurnRef.current = null;
         }
       }
+      if (isCurrent) {
+        onTurnReconciledRef.current?.(page.messages, {
+          conversationId: convId,
+          clientTurnId: inFlight?.clientTurnId ?? null,
+          outcome: ctx.outcome,
+          shouldRestoreFailedTurn,
+        });
+      }
 
       // 3) RELEASE — the outcome is settled; drop this operation's marker.
       clearRuntimeMarker(convId, identity.stableOwner.startedAt);
@@ -671,6 +714,9 @@ export function useChatRuntime({
       }
       const cur = opStateRef.current;
       if (cur.phase !== 'live' && cur.phase !== 'stopping') return;
+      if (res.events.length > 0) {
+        markFirstWireEvent(identity.stableOwner.conversationId);
+      }
 
       for (const item of res.events) {
         const normalized = normalizePollingEvent(item);
@@ -725,7 +771,7 @@ export function useChatRuntime({
       if (epochRef.current !== identity.epoch) return;
       pollingTimeoutRef.current = window.setTimeout(() => startPollingLoopRef.current(identity), 500);
     },
-    [isCurrentIdentity, handleTerminalRef, handleNotFoundRef, observeRuntimeTelemetry],
+    [isCurrentIdentity, handleTerminalRef, handleNotFoundRef, observeRuntimeTelemetry, markFirstWireEvent],
   );
 
   /** Start/continue the poll loop for one identity (fresh or resumed). */
@@ -824,6 +870,7 @@ export function useChatRuntime({
       const consumeFrame = (normalized: NormalizedSSEEvent): boolean => {
         if (terminalEncountered) return false;
         if (!liveContext()) return true; // stale — stop consuming
+        markFirstWireEvent(convId);
         if (normalized.event === 'done') {
           terminalEncountered = true;
           handleTerminalRef.current('done');
@@ -901,7 +948,7 @@ export function useChatRuntime({
         handleTerminalRef.current('error', classified);
       }
     },
-    [isCurrentIdentity, observeRuntimeTelemetry],
+    [isCurrentIdentity, observeRuntimeTelemetry, markFirstWireEvent],
   );
 
   // ── Stop (§5.4) — stop-before-abort; accepted stop is not terminal ──────
@@ -1059,10 +1106,15 @@ export function useChatRuntime({
   const acceptStaged = useCallback(
     (identity: CallbackIdentity): TurnAcceptance => {
       const convId = identity.stableOwner.conversationId;
+      const stagedClientTurnId =
+        inFlightTurnsRef.current.get(convId)?.clientTurnId ??
+        (inFlightTurnRef.current?.conversationId === convId ? inFlightTurnRef.current.clientTurnId : undefined) ??
+        null;
       clearConversationDraft(convId);
       inFlightTurnRef.current = null;
       inFlightTurnsRef.current.delete(convId);
       clearRuntimeMarker(convId, identity.stableOwner.startedAt);
+      onTurnStagedRef.current?.({ conversationId: convId, clientTurnId: stagedClientTurnId });
       releaseUi(identity);
       void queryClient.invalidateQueries({ queryKey: queryKeys.conversation(convId) });
       return 'accepted';
@@ -1252,10 +1304,17 @@ export function useChatRuntime({
           pendingAttachmentIds: [...pendingAttachments],
           clientTurnId: clientTurnIdForPost,
         });
+        setActiveTurnCorrelation({
+          conversationId: convId,
+          clientTurnId: clientTurnIdForPost,
+          phase: 'predispatch',
+          firstWireEventSeen: false,
+        });
       } else {
         inFlightTurnRef.current = null;
         inFlightTurnsRef.current.delete(convId);
         setOptimisticUser(null);
+        setActiveTurnCorrelation(null);
       }
       activeTraceRef.current = null;
       setRuntimeAssistant({
@@ -1516,7 +1575,7 @@ export function useChatRuntime({
       }
       const target = findPersistedMessage(persistedRows?.current, messageId, 'assistant');
       if (!target) {
-        throw new Error('只能从已持久化的助手消息创建分支。');
+        throw new Error('只能从已持久化的消息创建分支。');
       }
 
       cancelLocalReaders();
@@ -1593,6 +1652,7 @@ export function useChatRuntime({
     setOpState({ phase: 'idle' });
     setOptimisticUser(null);
     setRuntimeAssistant(null);
+    setActiveTurnCorrelation(null);
     activeTraceRef.current = null;
     lastCountedTelemetryRef.current = null;
     setTelemetryProjection(emptyTelemetryProjection());
@@ -1667,6 +1727,7 @@ export function useChatRuntime({
     isOperationPending,
     optimisticUser,
     runtimeAssistant,
+    activeTurnCorrelation,
     telemetryProjection,
     runtimeNotice,
     runtimeError,

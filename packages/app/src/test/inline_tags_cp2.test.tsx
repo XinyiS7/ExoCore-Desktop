@@ -106,10 +106,16 @@ describe('normalizePins', () => {
       normalizePins({
         pins: [
           { id: 3, content: '带伞', author: 'user', created_at: '2026-11-13T15:00:00Z' },
+          { id: 5, content: '带钥匙', author: 'assistant', color: 'crimson', created_at: '2026-11-13T15:01:00Z' },
+          { id: 6, content: '未知色降级', author: 'user', color: 'neon', created_at: '2026-11-13T15:02:00Z' },
           { id: 4, content: '坏的', author: 'system', created_at: '2026-11-13T15:00:00Z' },
         ],
       }),
-    ).toEqual([{ id: 3, content: '带伞', author: 'user', createdAt: '2026-11-13T15:00:00Z' }]);
+    ).toEqual([
+      { id: 3, content: '带伞', author: 'user', color: 'butter', createdAt: '2026-11-13T15:00:00Z' },
+      { id: 5, content: '带钥匙', author: 'assistant', color: 'crimson', createdAt: '2026-11-13T15:01:00Z' },
+      { id: 6, content: '未知色降级', author: 'user', color: 'butter', createdAt: '2026-11-13T15:02:00Z' },
+    ]);
     expect(normalizePins(undefined)).toEqual([]);
   });
 });

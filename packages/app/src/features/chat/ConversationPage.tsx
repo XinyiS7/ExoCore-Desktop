@@ -22,7 +22,12 @@ import {
 } from './queries';
 import { MessageTimeline } from './MessageTimeline';
 import { PinBoard } from './inlineTags/PinBoard';
+import { FloatingTimerBoard } from './inlineTags/FloatingTimerBoard';
 import { StagingArea } from './inlineTags/StagingArea';
+import { DiceRollOverlay } from './inlineTags/DiceRollOverlay';
+import { RollReplayContext } from './inlineTags/rollReplay';
+import { useComposerToys } from './inlineTags/useComposerToys';
+import type { ReconcileOutcome } from './runtime/types';
 import { readBackTarget } from './backTarget';
 import { MessageMinimap } from './minimap/MessageMinimap';
 import type { MessageView } from './types';
@@ -253,6 +258,20 @@ export function ConversationPage() {
     setIsAwayFromBottom(false);
   }, [id]);
 
+  const onTurnReconciledBridgeRef = useRef<
+    | ((
+        messages: readonly MessageView[],
+        info: {
+          conversationId: number;
+          clientTurnId: string | null;
+          outcome: ReconcileOutcome;
+          shouldRestoreFailedTurn: boolean;
+        },
+      ) => void)
+    | null
+  >(null);
+  const onTurnStagedBridgeRef = useRef<(() => void) | null>(null);
+
   // Runtime lifecycle hook (single authoritative owner for send/edit/regenerate/
   // branch + transport + reconciliation; C1B intervention §3).
   const {
@@ -262,6 +281,7 @@ export function ConversationPage() {
     busy,
     optimisticUser,
     runtimeAssistant,
+    activeTurnCorrelation,
     telemetryProjection,
     runtimeNotice,
     runtimeError,
@@ -290,11 +310,32 @@ export function ConversationPage() {
     dispatchSettings: controls.dispatchSettings,
     persistedRowsRef,
     onAttemptOutcome: audioRecovery.onRuntimeOutcome,
+    onTurnReconciled: (messages, info) => onTurnReconciledBridgeRef.current?.(messages, info),
+    onTurnStaged: () => onTurnStagedBridgeRef.current?.(),
     isExternalOperationPending: () =>
       cacheOperationPendingRef.current ||
       thinkingOperationPendingRef.current ||
       audioRecovery.isUploading(),
   });
+
+  const latestPersistedAssistantId = useMemo(() => {
+    const rows = merged?.rows;
+    if (!rows) return null;
+    for (let i = rows.length - 1; i >= 0; i -= 1) {
+      if (rows[i].role === 'assistant') return rows[i].id;
+    }
+    return null;
+  }, [merged?.rows]);
+
+  const toys = useComposerToys({
+    conversationId: id,
+    activeTurnCorrelation,
+    persistedPins: conv?.pins ?? [],
+    runtimeAssistant,
+    latestPersistedAssistantId,
+  });
+  onTurnReconciledBridgeRef.current = toys.handleTurnReconciled;
+  onTurnStagedBridgeRef.current = toys.noteStagedTurn;
 
   // #61: a per-item rejection (422 before acceptance, or an SSE error of an
   // accepted turn) marks exactly the card it names; whole-request errors none.
@@ -491,9 +532,9 @@ export function ConversationPage() {
   const stagingTextOnly = stagingUnsettled(conversation);
   const assistantName =
     conversation?.agentPresetId != null
-      ? (presetById.get(conversation.agentPresetId) ?? `Agent #${conversation.agentPresetId}`)
+      ? (presetById.get(conversation.agentPresetId) ?? `Taxon #${conversation.agentPresetId}`)
       : undefined;
-  const agentLabel = assistantName ?? '未知 Agent';
+  const agentLabel = assistantName ?? '未知 Taxon';
   const endpointLabel =
     controls.compatibleEndpoints.find((endpoint) => endpoint.id === controls.target.endpoint)?.name ?? '';
   const cacheRemaining =
@@ -614,7 +655,7 @@ export function ConversationPage() {
     const callerEpoch = pageEpochRef.current;
     const callerConv = pageConversationIdRef.current;
     if (!findPersistedMessage(merged?.rows, msgId, 'assistant')) {
-      throw new Error('该助手消息已不在当前会话中，无法创建分支。');
+      throw new Error('该消息已不在当前会话中，无法创建分支。');
     }
     const res = await branchFrom(msgId);
     if (
@@ -694,7 +735,7 @@ export function ConversationPage() {
               className="app-link-btn"
               onClick={() => void presetsQuery.refetch()}
             >
-              Agent 名称加载失败，重试
+              Taxon 名称加载失败，重试
             </button>
           ) : null}
           <HudStateStrip
@@ -742,40 +783,86 @@ export function ConversationPage() {
               wrapper so the floating affordance anchors to the timeline
               viewport bottom, above the actual composer, with no secondary
               scroll owner and no hard-coded composer height. */}
-          <PinBoard conversationId={id} pins={conversation.pins ?? []} assistantName={agentLabel} />
-          <div className="app-scroll" ref={scrollRef} onScroll={handleScroll}>
-            {pagesQuery.isPending && merged === undefined ? (
-              <LoadingState label="正在加载消息…" />
-            ) : null}
+          <PinBoard
+            conversationId={id}
+            pins={conversation.pins ?? []}
+            assistantName={agentLabel}
+            draftPins={toys.draftPins}
+            committingPins={toys.committingPins}
+            onEditDraftPin={toys.editDraftPin}
+            onRemoveDraftPin={toys.removeDraftPin}
+          />
+          <FloatingTimerBoard
+            conversationId={id}
+            timers={conversation.timers ?? []}
+          />
+          <DiceRollOverlay
+            overlay={toys.rollOverlay}
+            onDismiss={toys.dismissRollOverlay}
+            assistantName={assistantName}
+          />
+          <RollReplayContext.Provider value={toys.replayRoll}>
+            <div className="app-scroll" ref={scrollRef} onScroll={handleScroll}>
+              {pagesQuery.isPending && merged === undefined ? (
+                <LoadingState label="正在加载消息…" />
+              ) : null}
 
-            {pagesQuery.isError ? (
-              toAppApiError(pagesQuery.error).status === 404 ? (
-                <ErrorState
-                  title="消息历史不可用"
-                  detail="该会话的消息历史不存在（404）。"
-                  onRetry={() => void pagesQuery.refetch()}
-                />
-              ) : (
-                <ErrorState
-                  title="消息加载失败"
-                  detail={toAppApiError(pagesQuery.error).message}
-                  onRetry={() => void pagesQuery.refetch()}
-                />
-              )
-            ) : null}
+              {pagesQuery.isError ? (
+                toAppApiError(pagesQuery.error).status === 404 ? (
+                  <ErrorState
+                    title="消息历史不可用"
+                    detail="该会话的消息历史不存在（404）。"
+                    onRetry={() => void pagesQuery.refetch()}
+                  />
+                ) : (
+                  <ErrorState
+                    title="消息加载失败"
+                    detail={toAppApiError(pagesQuery.error).message}
+                    onRetry={() => void pagesQuery.refetch()}
+                  />
+                )
+              ) : null}
 
-            {merged !== undefined && !pagesQuery.isError ? (
-              merged.rows.length === 0 && !merged.hasOlder && !optimisticUser && !runtimeAssistant ? (
-                <EmptyState
-                  title="还没有消息"
-                  hint="这个会话还没有内容。在下方输入消息开始对话。"
-                />
-              ) : (
+              {merged !== undefined && !pagesQuery.isError ? (
+                merged.rows.length === 0 && !merged.hasOlder && !optimisticUser && !runtimeAssistant ? (
+                  <EmptyState
+                    title="还没有消息"
+                    hint="这个会话还没有内容。在下方输入消息开始对话。"
+                  />
+                ) : (
+                  <MessageTimeline
+                    conversationId={id}
+                    messages={merged.rows}
+                    hasOlder={merged.hasOlder}
+                    loadingMore={pagesQuery.isFetchingNextPage}
+                    onLoadMore={handleLoadMore}
+                    optimisticUser={optimisticUser}
+                    runtimeAssistant={runtimeAssistant}
+                    isRunActive={busy || controlsPending}
+                    onEditMessage={handleEditMessage}
+                    onRegenerateMessage={handleRegenerateMessage}
+                    onBranchMessage={handleBranchMessage}
+                    onSaveAssistantMessage={handleSaveAssistantMessage}
+                    assistantName={assistantName}
+                    assistantPresetId={conversation?.agentPresetId ?? null}
+                  />
+                )
+              ) : null}
+
+              {/* A+ closure: an accepted ordinary send (or the streaming
+                  assistant overlay) must stay visible while the history is
+                  still pending or has failed. The overlay-only list mounts
+                  with an empty canonical set — stale cached rows are never
+                  exposed by the error path — and is mutually exclusive with
+                  the canonical timeline above (merged undefined vs defined,
+                  isError vs not). */}
+              {(pagesQuery.isPending || pagesQuery.isError) &&
+              (optimisticUser || runtimeAssistant) ? (
                 <MessageTimeline
                   conversationId={id}
-                  messages={merged.rows}
-                  hasOlder={merged.hasOlder}
-                  loadingMore={pagesQuery.isFetchingNextPage}
+                  messages={[]}
+                  hasOlder={false}
+                  loadingMore={false}
                   onLoadMore={handleLoadMore}
                   optimisticUser={optimisticUser}
                   runtimeAssistant={runtimeAssistant}
@@ -783,39 +870,12 @@ export function ConversationPage() {
                   onEditMessage={handleEditMessage}
                   onRegenerateMessage={handleRegenerateMessage}
                   onBranchMessage={handleBranchMessage}
-                  onSaveAssistantMessage={handleSaveAssistantMessage}
                   assistantName={assistantName}
                   assistantPresetId={conversation?.agentPresetId ?? null}
                 />
-              )
-            ) : null}
-
-            {/* A+ closure: an accepted ordinary send (or the streaming
-                assistant overlay) must stay visible while the history is
-                still pending or has failed. The overlay-only list mounts
-                with an empty canonical set — stale cached rows are never
-                exposed by the error path — and is mutually exclusive with
-                the canonical timeline above (merged undefined vs defined,
-                isError vs not). */}
-            {(pagesQuery.isPending || pagesQuery.isError) &&
-            (optimisticUser || runtimeAssistant) ? (
-              <MessageTimeline
-                conversationId={id}
-                messages={[]}
-                hasOlder={false}
-                loadingMore={false}
-                onLoadMore={handleLoadMore}
-                optimisticUser={optimisticUser}
-                runtimeAssistant={runtimeAssistant}
-                isRunActive={busy || controlsPending}
-                onEditMessage={handleEditMessage}
-                onRegenerateMessage={handleRegenerateMessage}
-                onBranchMessage={handleBranchMessage}
-                assistantName={assistantName}
-                assistantPresetId={conversation?.agentPresetId ?? null}
-              />
-            ) : null}
-          </div>
+              ) : null}
+            </div>
+          </RollReplayContext.Provider>
 
           {merged !== undefined ? (
             <MessageMinimap
@@ -913,6 +973,7 @@ export function ConversationPage() {
           restoredTurn={restoredTurn}
           collection={collectionCapable && !stagingTextOnly ? collection : undefined}
           textOnly={stagingTextOnly}
+          toys={toys}
         />
       ) : null}
 
