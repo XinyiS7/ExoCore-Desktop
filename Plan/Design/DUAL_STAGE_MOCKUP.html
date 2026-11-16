@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExoCore · Dual-Stage Homepage Mockup</title>
+  <style>
+    :root[data-theme="dark"] {
+      --bg-void: #07080b;
+      --text-main: #e6e8ee;
+      --text-sub: #9aa3b5;
+      --accent: #a8c5e6;
+      --accent-glow: rgba(168, 197, 230, 0.42);
+      --pill-bg: rgba(12, 15, 22, 0.78);
+      --pill-border: rgba(200, 215, 235, 0.28);
+    }
+
+    :root[data-theme="light"] {
+      --bg-void: #e8dccb;
+      --text-main: #2a1f18;
+      --text-sub: #6b5341;
+      --accent: #c87a19;
+      --accent-glow: rgba(212, 136, 38, 0.45);
+      --pill-bg: rgba(248, 241, 229, 0.86);
+      --pill-border: rgba(110, 75, 40, 0.32);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background: var(--bg-void);
+      color: var(--text-main);
+      font-family: "Georgia", "Songti SC", "Noto Serif SC", serif;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 1. 横向滚动视口：PC端居中铺满，手机端支持原生左右丝滑滑动 */
+    .stage-viewport {
+      width: 100vw;
+      height: 100vh;
+      overflow-x: auto;
+      overflow-y: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      scroll-behavior: smooth;
+    }
+
+    /* 2. 严格锁定 16:9 的舞台画布容器：所有热区用百分比(%)锚定在这张画布上，永远不会错位 */
+    .stage-canvas {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      height: 100vh;
+      min-width: calc(100vh * 16 / 9);
+      overflow: hidden;
+      box-shadow: 0 0 80px rgba(0, 0, 0, 0.8);
+    }
+
+    @media (min-aspect-ratio: 16/9) {
+      .stage-canvas {
+        width: 100vw;
+        height: calc(100vw * 9 / 16);
+        min-width: 100vw;
+      }
+    }
+
+    .stage-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+      pointer-events: none;
+    }
+
+    .stage-bg.dark-img {
+      opacity: 1;
+    }
+    .stage-bg.light-img {
+      opacity: 0;
+    }
+
+    :root[data-theme="light"] .stage-bg.dark-img {
+      opacity: 0;
+    }
+    :root[data-theme="light"] .stage-bg.light-img {
+      opacity: 1;
+    }
+
+    /* 3. 顶部 HUD 控制器（点击左上角血月/烈日也可直接切换昼夜） */
+    .top-hud {
+      position: fixed;
+      top: 20px;
+      right: 28px;
+      z-index: 50;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .hud-btn {
+      background: var(--pill-bg);
+      color: var(--text-main);
+      border: 1px solid var(--pill-border);
+      backdrop-filter: blur(10px);
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .hud-btn:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    /* 4. 百分比坐标锚定热区（Hotspot Anchors） */
+    .hotspot {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 10;
+    }
+
+    .hotspot:hover {
+      transform: translate(-50%, -54%) scale(1.05);
+      z-index: 20;
+    }
+
+    /* 热区调试框（默认隐藏，开启 Debug Wireframe 时高亮显示） */
+    .hotspot-box {
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      border: 1.5px solid transparent;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .hotspot:hover .hotspot-box {
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 72%);
+      border-color: var(--pill-border);
+    }
+
+    body.show-wireframe .hotspot-box {
+      border: 1.5px dashed var(--accent);
+      background: rgba(120, 170, 255, 0.14);
+    }
+
+    /* 悬浮铭牌 */
+    .plaque {
+      background: var(--pill-bg);
+      border: 1px solid var(--pill-border);
+      backdrop-filter: blur(8px);
+      padding: 6px 14px;
+      border-radius: 6px;
+      text-align: center;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.38);
+      transition: all 0.25s ease;
+      white-space: nowrap;
+      margin-top: 6px;
+    }
+
+    .hotspot:hover .plaque {
+      border-color: var(--accent);
+      box-shadow: 0 0 18px var(--accent-glow);
+    }
+
+    .plaque-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+    }
+
+    .plaque-sub {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+
+    /* 天体切换器热区（左上角血月 / 烈日） */
+    .celestial-trigger {
+      border-radius: 50%;
+    }
+    .celestial-trigger .hotspot-box {
+      border-radius: 50%;
+    }
+
+    /* 底部状态提示条 */
+    .toast-bar {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--pill-bg);
+      border: 1px solid var(--pill-border);
+      backdrop-filter: blur(10px);
+      padding: 8px 22px;
+      border-radius: 999px;
+      font-size: 13px;
+      color: var(--text-sub);
+      z-index: 50;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-hud">
+    <button class="hud-btn" id="themeToggleBtn">切换昼夜 · Dark / Light</button>
+    <button class="hud-btn" id="wireframeBtn">显示碰撞热区 (Hitbox)</button>
+  </div>
+
+  <div class="stage-viewport">
+    <div class="stage-canvas" id="stageCanvas">
+      <img class="stage-bg dark-img" src="./assets/stage_dark_bloodborne.jpg" alt="Hunter's Dream" />
+      <img class="stage-bg light-img" src="./assets/stage_light_enotria.jpg" alt="Enotria Sunlit Theater" />
+
+      <!-- 左上角：天体热区（点击直接切换永夜/烈日） -->
+      <div class="hotspot celestial-trigger" style="left: 21%; top: 22%; width: 16%; height: 28%;" onclick="toggleTheme()">
+        <div class="hotspot-box"></div>
+        <div class="plaque">
+          <div class="plaque-title" data-dark="苍白血月 · Paleblood Moon" data-light="正午烈日 · Noon Sol">苍白血月 · Paleblood Moon</div>
+          <div class="plaque-sub" data-dark="点击切换至 Enotria 日光剧院" data-light="点击切换至 雅南永夜工坊">点击切换至 Enotria 日光剧院</div>
+        </div>
+      </div>
+
+      <!-- 左侧小径：5个最近会话祭坛 (Recent Sessions 1..5) -->
+      <div class="hotspot" style="left: 9.5%; top: 69%; width: 8.5%; height: 26%;" onclick="selectNode('Session #1 · 主房间 (Active)')">
+        <div class="hotspot-box"></div>
+        <div class="plaque">
+          <div class="plaque-title" data-dark="圣杯 I · 主控台" data-light="假面台 I · 主舞台">圣杯 I · 主控台</div>
+          <div class="plaque-sub">Alessandro · 活跃中</div>
+        </div>
+      </div>
+
+      <div class="hotspot" style="left: 18.2%; top: 65%; width: 7%; height: 21%;" onclick="selectNode('Session #2 · 架构设计')">
+        <div class="hotspot-box"></div>
+        <div class="plaque">
+          <div class="plaque-title" data-dark="圣杯 II" data-light="假面台 II">圣杯 II</div>
+          <div class="plaque-sub">UI & 双生舞台</div>
+        </div>
+      </div>
+
+      <div class="hotspot" style="left: 25.0%; top: 63%; width: 5.8%; height: 17%;" onclick="selectNode('Session #3 · 施工验收')">
+        <div class="hotspot-box"></div>
+        <div class="plaque">
+          <div class="plaque-title" data-dark="圣杯 III" data-light="假面台 III">圣杯 III</div>
+          <div class="plaque-sub">Issue #79 归并</div>
+        </div>
+      </div>
+
+      <div class="hotspot" style="left: 30.5%; top: 62%; width: 4.8%; height: 14%;" onclick="selectNode('Session #4 · 毕设笔记')">
+        <div class="hotspot-box"></div>
+        <div class="plaque">
+          <div class="plaque-title" data-dark="圣杯 IV" data-light="假面台 IV">圣杯 IV</div>
+          <div class="plaque-sub">KD-Tree Method</div>
+        </div>
+      </div>
+
+      <!-- 右侧小路：3大主板块石碑 (Agent Hub / Project Hub / River Timeline) -->
+      <div class="hotspot" style="left: 69.5%; top: 73%; width: 11%; height: 25%;" onclick="selectNode('Route -> hub.agents')">
+        <div class="hotspot-box"></div>
+        <div class="plaque">
+          <div class="plaque-title" data-dark="共鸣 · Resonance" data-light="假面 · Maschere">共鸣 · Resonance</div>
+          <div class="plaque-sub" data-dark="Agent Hub · 召灵之钟" data-light="Agent Hub · 剧团班底">Agent Hub · 召灵之钟</div>
+        </div>
+      </div>
+
+      <div class="hotspot" style="left: 80.5%; top: 73%; width: 10.5%; height: 26%;" onclick="selectNode('Route -> hub.projects')">
+        <div class="hotspot-box"></div>
+        <div class="plaque">
+          <div class="plaque-title" data-dark="学院 · Byrgenwerth" data-light="剧本 · Canovaccio">学院 · Byrgenwerth</div>
+          <div class="plaque-sub" data-dark="Project Hub · 古籍与眼睛" data-light="Project Hub · 幕戏总谱">Project Hub · 古籍与眼睛</div>
+        </div>
+      </div>
+
+      <div class="hotspot" style="left: 91.5%; top: 71%; width: 11%; height: 32%;" onclick="selectNode('Route -> hub.timeline')">
+        <div class="hotspot-box"></div>
+        <div class="plaque">
+          <div class="plaque-title" data-dark="星辰钟楼 · Clocktower" data-light="日晷 · Meridiana">星辰钟楼 · Clocktower</div>
+          <div class="plaque-sub" data-dark="River · 时间与记忆长河" data-light="River · 日照与幕间流动">River · 时间与记忆长河</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-bar" id="toastBar">
+    当前视角：永夜猎人工坊 (Dark) · 点击左上角月亮或右上角按钮可原位切换至 Enotria 日光剧院
+  </div>
+
+  <script>
+    const root = document.documentElement;
+    const toast = document.getElementById('toastBar');
+
+    function toggleTheme() {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      document.querySelectorAll('[data-dark]').forEach(el => {
+        el.textContent = next === 'dark' ? el.getAttribute('data-dark') : el.getAttribute('data-light');
+      });
+      toast.textContent = next === 'dark'
+        ? '当前视角：永夜猎人工坊 (Bloodborne Dark) · 16:9 百分比坐标锚定已激活'
+        : '当前视角：地中海日光剧院 (Enotria Light) · 16:9 百分比坐标锚定已激活';
+    }
+
+    function selectNode(label) {
+      toast.textContent = '已触发舞台节点：' + label;
+    }
+
+    document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+    document.getElementById('wireframeBtn').addEventListener('click', () => {
+      document.body.classList.toggle('show-wireframe');
+    });
+  </script>
+</body>
+</html>
