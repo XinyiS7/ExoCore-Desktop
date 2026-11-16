@@ -32,12 +32,10 @@ import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { NetworkFirst } from 'workbox-strategies';
 import { VAPID_PUBLIC_KEY, urlBase64ToUint8Array, parseArrivalEvent } from '../src/features/notifications/workerContract';
 
-precacheAndRoute(self.__WB_MANIFEST);
-
 // ── App document navigation: network first, safe cache admission ────────────
-// Serving the document straight from precache hid the Cloudflare Access login
-// page: the document never touched the network, so an expired session could
-// never be renewed. Network now wins; the shell is only the offline fallback.
+// Register NavigationRoute BEFORE precacheAndRoute so Workbox matches
+// /app/* navigations via NetworkFirst first instead of serving the precached
+// /app/index.html straight from PrecacheRoute (Issue #123 + stale PWA shell).
 const APP_DOCUMENT_CACHE = 'exocore-app-documents-v1';
 
 function isCacheableAppDocument(response) {
@@ -60,7 +58,7 @@ const appDocumentStrategy = new NetworkFirst({
   ],
 });
 
-const precachedAppShell = createHandlerBoundToURL('/app/index.html');
+let precachedAppShell = null;
 
 async function handleAppDocumentNavigation({ request, event }) {
   try {
@@ -78,6 +76,9 @@ registerRoute(
     { denylist: [/^\/api\//, /^\/media\//] },
   ),
 );
+
+precacheAndRoute(self.__WB_MANIFEST);
+precachedAppShell = createHandlerBoundToURL('/app/index.html');
 
 // Auto-update: activate immediately and claim all clients.
 self.skipWaiting();
