@@ -225,6 +225,13 @@ const MD_COMPONENTS: Components = {
     }
     return <code className={className}>{children}</code>;
   },
+  table({ node: _node, children, ...rest }) {
+    return (
+      <div className="app-md-table-wrap">
+        <table {...rest}>{children}</table>
+      </div>
+    );
+  },
 };
 
 const urlTransform: UrlTransform = (url) =>
@@ -248,6 +255,8 @@ export interface MessageContentProps {
   inlineRolls?: readonly InlineRollView[];
   /** #130 CP5: persisted `<speak>` voices, matched to speak cards by tag index. */
   inlineVoices?: readonly PresentationView[];
+  /** Conversation agent instance name for roll chip titles. */
+  assistantName?: string;
 }
 
 export function MessageContent({
@@ -259,6 +268,7 @@ export function MessageContent({
   streaming = false,
   inlineRolls,
   inlineVoices,
+  assistantName,
 }: MessageContentProps) {
   const { markdown, tags } = useMemo(
     () => withTagPlaceholders(content, inlineTags, streaming, HTML_TAG_NAMES),
@@ -274,6 +284,7 @@ export function MessageContent({
         conversationId={conversationId}
         messageId={messageId}
         localFilePending={localFilePending}
+        assistantName={assistantName}
       />
     );
     const tagAt = (ref: unknown) => {
@@ -285,7 +296,14 @@ export function MessageContent({
         <AudioPlayerBubble attachment={media} conversationId={conversationId} transcriptEligible />
       ) : undefined;
       return (
-        <InlineTagView tag={placed.tag} streaming={streaming} renderBody={renderBody} roll={roll} voice={voice} />
+        <InlineTagView
+          tag={placed.tag}
+          streaming={streaming}
+          renderBody={renderBody}
+          roll={roll}
+          voice={voice}
+          assistantName={assistantName}
+        />
       );
     };
     return {
@@ -316,7 +334,7 @@ export function MessageContent({
         );
       },
     };
-  }, [conversationId, messageId, localFilePending, tags, streaming, inlineRolls, inlineVoices]);
+  }, [conversationId, messageId, localFilePending, tags, streaming, inlineRolls, inlineVoices, assistantName]);
 
   return (
     <div className="app-md">

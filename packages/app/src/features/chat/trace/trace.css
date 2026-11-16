@@ -2,6 +2,8 @@
 
 .v4-trace {
   margin: 4px 0 8px;
+  min-width: 0;
+  max-width: 100%;
   border-left: 2px solid var(--v4-line);
   padding-left: 10px;
 }
@@ -59,6 +61,7 @@
 
 .v4-trace-tool-field {
   grid-column: 1 / -1;
+  min-width: 0;
   font-size: calc(12px * var(--exo-font-scale, 1));
   color: var(--v4-text-dim);
 }

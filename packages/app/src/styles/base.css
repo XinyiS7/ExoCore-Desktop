@@ -67,6 +67,10 @@ body,
   height: 100%;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   background: var(--v4-bg);
@@ -302,6 +306,9 @@ a {
 
 /* Markdown message typography */
 .app-md {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
   overflow-wrap: anywhere;
   font-family: var(--font-message, var(--v4-font));
 }
@@ -349,9 +356,19 @@ a {
   color: var(--v4-text-dim);
 }
 
+.app-md-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+
 .app-md table {
   border-collapse: collapse;
   margin: 0.5em 0;
+}
+
+.app-md-table-wrap > table {
+  margin: 0;
 }
 
 .app-md th,
@@ -457,6 +474,8 @@ a {
 /* Code blocks */
 .app-code-wrap {
   margin: 0.6em 0;
+  max-width: 100%;
+  min-width: 0;
   border: 1px solid var(--v4-line);
   border-radius: var(--v4-radius);
   overflow: hidden;
@@ -502,8 +521,11 @@ a {
 
 .app-code-block {
   margin: 0;
+  max-width: 100%;
   padding: 12px 14px;
   overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   font-family: var(--v4-mono);
   font-size: calc(12.5px * var(--exo-font-scale, 1));
   line-height: 1.55;
@@ -513,6 +535,8 @@ a {
 .app-code-block code {
   font-family: var(--v4-mono);
   background: none;
+  white-space: inherit;
+  overflow-wrap: inherit;
 }
 
 /* ── Scoped Highlight.js light overrides (Plan §3 D8) ── */

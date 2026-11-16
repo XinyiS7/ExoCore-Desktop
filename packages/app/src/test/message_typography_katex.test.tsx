@@ -51,4 +51,13 @@ describe('MessageContent KaTeX & Typography Rendering', () => {
     expect(quoteEl).not.toBeNull();
     expect(quoteEl?.textContent).toContain('今夜，格曼加入狩猎。');
   });
+
+  it('wraps Markdown tables in .app-md-table-wrap so wide tables scroll locally', () => {
+    const content = '| 列A | 列B | 列C |\n| --- | --- | --- |\n| 1 | 2 | 3 |';
+    const { container } = render(<MessageContent content={content} />);
+
+    const wrap = container.querySelector('.app-md-table-wrap');
+    expect(wrap).not.toBeNull();
+    expect(wrap?.querySelector('table')).not.toBeNull();
+  });
 });
