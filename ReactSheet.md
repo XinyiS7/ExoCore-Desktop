@@ -749,7 +749,7 @@ Query: `preset_id`（必填），可选 `scope` / `source` / `is_processed`。`i
 | 请求体出现 `thinking_profile` | 400 | `thinking_profile_not_writable` |
 | POST 的 `abilities` 含 `thinking`；或 PATCH 新增/删除 `thinking` | 400 | `thinking_ability_managed_by_registry` |
 
-`thinking` 能力与对应 profile 只能经模型注册流程（`register_model` / `seed_models`）维护；
+`thinking` 能力与对应 profile 只能经模型注册流程（`register_model`）维护；
 该接口只允许在不改变 `thinking` 存在性的前提下修改其余 abilities 与 `enabled`。
 响应体形如 `{"code": ["<code>"], "message": ["<说明>"]}`。
 
