@@ -124,7 +124,7 @@ describe('Agent Hub (P2A Stage A)', () => {
     ]);
     renderApp(['/agents']);
 
-    const list = await screen.findByRole('list', { name: 'Agent 预设列表' });
+    const list = await screen.findByRole('list', { name: 'Taxon 预设列表' });
     const cards = within(list).getAllByRole('link');
     expect(cards.map((card) => card.textContent)).toEqual([
       expect.stringContaining('G045 Prime'),
@@ -174,7 +174,7 @@ describe('Agent Hub (P2A Stage A)', () => {
   it('shows loading, then the list', async () => {
     installFetch([{ test: '/api/agents/presets/', handler: () => jsonResponse([PRESET_ECKI_5]) }]);
     renderApp(['/agents']);
-    expect(screen.getByRole('status')).toHaveTextContent('正在加载 Agent');
+    expect(screen.getByRole('status')).toHaveTextContent('正在加载 Taxon');
     await screen.findByText('Ecki');
   });
 
@@ -189,7 +189,7 @@ describe('Agent Hub (P2A Stage A)', () => {
     renderApp(['/agents']);
 
     const retry = await screen.findByRole('button', { name: '重试' });
-    expect(screen.getByText('Agent 列表加载失败')).toBeTruthy();
+    expect(screen.getByText('Taxon 列表加载失败')).toBeTruthy();
     expect(screen.queryByText('Ecki')).toBeNull();
 
     fail = false;
@@ -201,14 +201,14 @@ describe('Agent Hub (P2A Stage A)', () => {
   it('treats a malformed top-level list payload as an error, not emptiness', async () => {
     installFetch([{ test: '/api/agents/presets/', handler: () => jsonResponse({ rows: [] }) }]);
     renderApp(['/agents']);
-    await screen.findByText('Agent 列表加载失败');
-    expect(screen.queryByText('暂无可见 Agent')).toBeNull();
+    await screen.findByText('Taxon 列表加载失败');
+    expect(screen.queryByText('暂无可见 Taxon')).toBeNull();
   });
 
   it('shows a true empty state only for an empty array', async () => {
     installFetch([{ test: '/api/agents/presets/', handler: () => jsonResponse([]) }]);
     renderApp(['/agents']);
-    await screen.findByText('暂无可见 Agent');
+    await screen.findByText('暂无可见 Taxon');
   });
 
   it('keeps mobile bottom navigation visible and Chat active on the Hub', async () => {
@@ -230,7 +230,7 @@ describe('Agent Hub (P2A Stage A)', () => {
     ]);
     renderApp(['/agents']);
     fireEvent.click(await screen.findByRole('link', { name: /Ecki/ }));
-    await screen.findByRole('heading', { name: 'Agent Profile' });
+    await screen.findByRole('heading', { name: 'Taxon Profile' });
     expect(await screen.findByText('Be brief.')).toBeTruthy();
   });
 
@@ -240,8 +240,8 @@ describe('Agent Hub (P2A Stage A)', () => {
       { test: '/api/agents/conversations/', handler: () => jsonResponse([]) },
     ]);
     renderApp(['/']);
-    fireEvent.click(await screen.findByRole('link', { name: 'Agent Hub' }));
-    await screen.findByText(/可见 Agent 预设/);
+    fireEvent.click(await screen.findByRole('link', { name: 'Taxon Hub' }));
+    await screen.findByText(/可见 Taxon 预设/);
   });
 });
 
@@ -253,8 +253,8 @@ describe('Agent Profile route states (P2A Stage A)', () => {
   it('issues no requests at all for a syntactically invalid id', async () => {
     const { calls } = installFetch([]);
     renderApp(['/agents/abc']);
-    await screen.findByText('无效的 Agent 地址');
-    expect(screen.getByRole('link', { name: 'Agent Hub' }).getAttribute('href')).toBe('/agents');
+    await screen.findByText('无效的 Taxon 地址');
+    expect(screen.getByRole('link', { name: 'Taxon Hub' }).getAttribute('href')).toBe('/agents');
     expect(calls.filter((c) => !c.url.pathname.includes('/assistant-arrivals/'))).toHaveLength(0);
   });
 
@@ -265,18 +265,18 @@ describe('Agent Profile route states (P2A Stage A)', () => {
       { test: '/api/agents/presets/7/', handler: () => { throw new TypeError('network down'); } },
     ]);
     const missing = renderApp(['/agents/5']);
-    await screen.findByText('Agent 不存在或未公开');
+    await screen.findByText('Taxon 不存在或未公开');
     missing.unmount();
 
     // malformed top-level (array) — contract error, retryable, NOT the 404 copy
     const malformed = renderApp(['/agents/6']);
-    await screen.findByText('Agent 详情加载失败');
+    await screen.findByText('Taxon 详情加载失败');
     expect(screen.getByRole('button', { name: '重试' })).toBeTruthy();
     malformed.unmount();
 
     // network failure — retryable error
     renderApp(['/agents/7']);
-    await screen.findByText('Agent 详情加载失败');
+    await screen.findByText('Taxon 详情加载失败');
   });
 
   it('renders read-only identity/model/prompt and honest fallbacks', async () => {
@@ -330,7 +330,7 @@ describe('Agent Profile route states (P2A Stage A)', () => {
     // Chat stays active in the desktop sidebar on the focused Profile.
     expect(screen.getByRole('link', { name: 'Chat' }).getAttribute('aria-current')).toBe('page');
     // explicit return link to the Hub
-    expect(screen.getByRole('link', { name: /Agent Hub/ }).getAttribute('href')).toBe('/agents');
+    expect(screen.getByRole('link', { name: /Taxon Hub/ }).getAttribute('href')).toBe('/agents');
   });
 
   it('does not start the Memory request until the preset detail is confirmed', async () => {
@@ -351,7 +351,7 @@ describe('Agent Profile route states (P2A Stage A)', () => {
       { test: '/api/agents/presets/8/', handler: () => jsonResponse({ detail: 'nope' }, 404) },
     ]);
     renderApp(['/agents/8']);
-    await screen.findByText('Agent 不存在或未公开');
+    await screen.findByText('Taxon 不存在或未公开');
     expect(callsToPath(second.calls, '/api/memory/plasmids')).toHaveLength(0);
   });
 });
@@ -366,7 +366,7 @@ describe('Agent Profile Conversation lens (P2A Stage A)', () => {
     renderApp(['/agents/5']);
 
     await screen.findByText('Be brief.');
-    const list = await screen.findByRole('list', { name: '该 Agent 的会话' });
+    const list = await screen.findByRole('list', { name: '该 Taxon 的会话' });
     const rows = within(list).getAllByRole('link');
     // conv 11, 12, 13 belong to preset 5; 14 (preset 3) and 15 (preset 6) excluded.
     expect(rows.map((row) => row.getAttribute('href'))).toEqual([
@@ -454,7 +454,7 @@ describe('Agent Profile Conversation lens (P2A Stage A)', () => {
     ]);
     renderApp(['/agents/5']);
     await screen.findByText('会话加载失败');
-    expect(screen.queryByText('该 Agent 还没有会话')).toBeNull();
+    expect(screen.queryByText('该 Taxon 还没有会话')).toBeNull();
     expect(screen.getByRole('button', { name: '重试' })).toBeTruthy();
   });
 
@@ -462,7 +462,7 @@ describe('Agent Profile Conversation lens (P2A Stage A)', () => {
     installFetch(profileRoutes({ convs: [wireConv(31, { agent_preset_id: 3 })] }));
     renderApp(['/agents/5']);
     await screen.findByText('Be brief.');
-    await screen.findByText('该 Agent 还没有会话');
+    await screen.findByText('该 Taxon 还没有会话');
     expect(screen.queryByRole('radiogroup', { name: '会话筛选' })).toBeNull();
   });
 });
@@ -712,7 +712,7 @@ describe('CP1 R1 repair — filter fallback is real component state', () => {
       client.setQueryData(queryKeys.conversations, [lensRow(312, 6, 7)]);
     });
     // lens is genuinely empty: honest zero-Agent copy, no filter controls
-    await screen.findByText('该 Agent 还没有会话');
+    await screen.findByText('该 Taxon 还没有会话');
     expect(screen.queryByRole('radiogroup', { name: '会话筛选' })).toBeNull();
 
     act(() => {
@@ -804,8 +804,8 @@ describe('CP1 R1 repair — truthful Project identity on rows', () => {
     fireEvent.click(within(filters).getByRole('radio', { name: 'Drift' }));
     expect(screen.queryByRole('link', { name: /row-261/ })).toBeNull();
     expect(screen.getByText('没有符合条件的会话。')).toBeTruthy();
-    expect(screen.getByRole('list', { name: '该 Agent 的会话' }).children).toHaveLength(0);
-    expect(screen.queryByText('该 Agent 还没有会话')).toBeNull();
+    expect(screen.getByRole('list', { name: '该 Taxon 的会话' }).children).toHaveLength(0);
+    expect(screen.queryByText('该 Taxon 还没有会话')).toBeNull();
     expect(within(filters).getByRole('radio', { name: 'Drift' })).toBeChecked();
   });
 });

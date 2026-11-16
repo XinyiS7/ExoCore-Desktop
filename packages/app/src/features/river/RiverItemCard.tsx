@@ -15,8 +15,8 @@ const SOURCE_GLYPHS: Record<RiverSource, string> = {
 };
 
 function formatAgentName(id: number | null | undefined, presetById?: Map<number, string>): string {
-  if (id === null || id === undefined) return '未知 Agent';
-  return presetById?.get(id) ?? `Agent #${id}`;
+  if (id === null || id === undefined) return '未知 Taxon';
+  return presetById?.get(id) ?? `Taxon #${id}`;
 }
 
 export function RiverItemCard({ item, onRead, onOpenTask, onOpenLegacy, memoWrites, replyDrafts, presetById }: { item: RiverItem; onRead: (item: ReadingItem) => void; onOpenTask: (entryId: number) => void; onOpenLegacy: (item: Extract<RiverItem, { source_type: 'chronicle' }>) => void; memoWrites: MemoWrites; replyDrafts: MemoReplyDrafts; presetById?: Map<number, string> }) {

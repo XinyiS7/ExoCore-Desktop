@@ -113,7 +113,7 @@ export function RiverPage({ presetId }: { presetId?: number }) {
           </div>
           <button type="button" className="river-refresh" disabled={refreshing} onClick={() => { void refresh(); }}>{refreshing ? '刷新中…' : '刷新时间流'}</button>
         </div>
-        <p className="river-precision-note">按服务端顺序展示；已翻过区间的新记录需刷新，不保证历史快照。{presetId !== undefined && ` 当前 ${presetById.get(presetId) ?? `Agent #${presetId}`} 筛选仅影响 Diary、Heartbeat 与历史纪事；Memo 和 Task 仍为全局。`}</p>
+        <p className="river-precision-note">按服务端顺序展示；已翻过区间的新记录需刷新，不保证历史快照。{presetId !== undefined && ` 当前 ${presetById.get(presetId) ?? `Taxon #${presetId}`} 筛选仅影响 Diary、Heartbeat 与历史纪事；Memo 和 Task 仍为全局。`}</p>
         {query.isPending && <p role="status" className="river-status-note">正在加载 River…</p>}
         {query.isError && !query.data && <div role="alert" className="river-alert river-alert--danger"><p>{message}</p><button type="button" onClick={() => { void refresh(); }}>重新刷新时间流</button></div>}
         {query.isSuccess && items.length === 0 && <p className="river-empty-note">这段时间流暂无记录。</p>}

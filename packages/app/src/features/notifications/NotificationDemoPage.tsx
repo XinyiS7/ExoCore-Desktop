@@ -306,7 +306,7 @@ export function NotificationDemoPage(): React.ReactElement {
               <span>消息通知交互演练室 (Demo & Lab)</span>
             </h2>
             <p className="settings-panel-desc" style={{ marginTop: '4px' }}>
-              在此页面可交互式体验 ExoCore V4 Assistant 消息到达、桌面通知、气泡弹窗与未读红点全链路。
+              在此页面可交互式体验 ExoCore V4 Taxon 消息到达、桌面通知、气泡弹窗与未读红点全链路。
             </p>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>

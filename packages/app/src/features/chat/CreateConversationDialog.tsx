@@ -303,19 +303,19 @@ export function CreateConversationDialog({
 
           <div className="app-field">
             <span className="app-field-label" id="preset-label">
-              Agent <span className="app-required">*</span>
+              Taxon <span className="app-required">*</span>
             </span>
             {fixedPreset ? (
               <div className="app-radio-card" aria-labelledby="preset-label fixed-preset-name">
                 <span className="app-radio-card-body">
                   <span id="fixed-preset-name" className="app-radio-card-name">
-                    {fixedPreset.name || `Agent #${fixedPreset.id}`}
+                    {fixedPreset.name || `Taxon #${fixedPreset.id}`}
                     {isG045AgentType(fixedPreset.agent_type) ? (
                       <span className="app-phase-chip app-phase-chip--g045">g045</span>
                     ) : null}
                   </span>
                   {fixedPreset.description ? <span className="app-radio-card-desc">{fixedPreset.description}</span> : null}
-                  <span className="app-muted">已固定为当前 Agent</span>
+                  <span className="app-muted">已固定为当前 Taxon</span>
                 </span>
               </div>
             ) : (
@@ -327,7 +327,7 @@ export function CreateConversationDialog({
                 <div className="app-radio-group" role="radiogroup" aria-labelledby="preset-label">
                   {eligiblePresets.map((preset) => (
                     <label key={preset.id} className="app-radio-card">
-                      <input type="radio" value={String(preset.id)} {...register('presetId', { required: '请选择一个 Agent' })} />
+                      <input type="radio" value={String(preset.id)} {...register('presetId', { required: '请选择一个 Taxon' })} />
                       <span className="app-radio-card-body">
                         <span className="app-radio-card-name">
                           {preset.name}
@@ -339,7 +339,7 @@ export function CreateConversationDialog({
                       </span>
                     </label>
                   ))}
-                  {eligiblePresets.length === 0 ? <p className="app-muted">暂无可用的 Agent。</p> : null}
+                  {eligiblePresets.length === 0 ? <p className="app-muted">暂无可用的 Taxon。</p> : null}
                 </div>
               </SectionLoad>
             )}
@@ -402,7 +402,7 @@ export function CreateConversationDialog({
                   {projects.length === 0 ? <p className="app-muted">没有可附加的项目。</p> : null}
                 </div>
               </SectionLoad>
-              <p className="app-muted">除所属项目外，允许该 g045 Agent 额外访问的项目（不选则仅所属项目）。</p>
+              <p className="app-muted">除所属项目外，允许该 g045 Taxon 额外访问的项目（不选则仅所属项目）。</p>
             </div>
           ) : null}
 

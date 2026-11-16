@@ -529,10 +529,10 @@ describe('Phase 2C CP C-3 — Endpoints, API Keys & Model Roles', () => {
       expect(await screen.findByText('辅助与专职角色 (Support Roles)')).toBeInTheDocument();
 
       // Check support roles titles
-      expect(screen.getByText(/通用子代理 \(General Sub-Agent\)/)).toBeInTheDocument();
-      expect(screen.getByText(/视觉解析助手 \(Vision Helper\)/)).toBeInTheDocument();
-      expect(screen.getByText(/联网搜索助手 \(Grounding\)/)).toBeInTheDocument();
-      expect(screen.getByText(/图像生成助手 \(Image Gen\)/)).toBeInTheDocument();
+      expect(screen.getByText(/通用子代理 \(General Sub-Task\)/)).toBeInTheDocument();
+      expect(screen.getByText(/视觉解析 \(Vision Helper\)/)).toBeInTheDocument();
+      expect(screen.getByText(/联网搜索 \(Grounding\)/)).toBeInTheDocument();
+      expect(screen.getByText(/图像生成 \(Image Gen\)/)).toBeInTheDocument();
 
       await waitFor(() => expect(document.title).toBe('模型角色 · ExoCore V4'));
     });

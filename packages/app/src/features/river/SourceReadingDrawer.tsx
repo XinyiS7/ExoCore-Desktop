@@ -36,8 +36,8 @@ export function SourceReadingDrawer({ item, onClose, presetById }: { item: Readi
   const query = item.source_type === 'diary' ? diary : heartbeat;
   const content = query.data?.content;
   const status = query.error instanceof AppApiError ? query.error.status : null;
-  const diaryAgent = item.source_type === 'diary' ? (presetById?.get(item.target.preset_id) ?? `Agent ${item.target.preset_id}`) : '';
-  const heartbeatAgent = item.source_type === 'heartbeat' ? (presetById?.get(item.preset_id ?? 0) ?? `Agent ${item.preset_id}`) : '';
+  const diaryAgent = item.source_type === 'diary' ? (presetById?.get(item.target.preset_id) ?? `Taxon ${item.target.preset_id}`) : '';
+  const heartbeatAgent = item.source_type === 'heartbeat' ? (presetById?.get(item.preset_id ?? 0) ?? `Taxon ${item.preset_id}`) : '';
   const title = item.source_type === 'diary'
     ? `${diaryAgent} 的日记 · ${item.target.day}`
     : `${heartbeatAgent} 的心跳总结`;

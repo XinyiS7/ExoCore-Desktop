@@ -169,7 +169,7 @@ describe('Heartbeat Page & Profile Entry (CP-A, Plan §2.1 / §2.2)', () => {
       const { calls } = installFetch([]);
       renderApp(['/agents/invalid-id/heartbeat']);
 
-      await screen.findByText('无效的 Agent 地址');
+      await screen.findByText('无效的 Taxon 地址');
       expect(callsToPath(calls, '/api/agents/')).toHaveLength(0);
       expect(callsToPath(calls, '/api/heartbeat/')).toHaveLength(0);
     });
@@ -184,7 +184,7 @@ describe('Heartbeat Page & Profile Entry (CP-A, Plan §2.1 / §2.2)', () => {
 
       renderApp(['/agents/5/heartbeat']);
 
-      await screen.findByText('该 Agent 不支持心跳');
+      await screen.findByText('该 Taxon 不支持心跳');
       expect(callsToPath(calls, '/api/heartbeat/')).toHaveLength(0);
     });
 
@@ -198,7 +198,7 @@ describe('Heartbeat Page & Profile Entry (CP-A, Plan §2.1 / §2.2)', () => {
 
       renderApp(['/agents/999/heartbeat']);
 
-      await screen.findByText('Agent 不存在或未公开');
+      await screen.findByText('Taxon 不存在或未公开');
     });
   });
 
@@ -1890,7 +1890,7 @@ describe('Heartbeat Page & Profile Entry (CP-A, Plan §2.1 / §2.2)', () => {
       renderApp(['/']);
 
       await screen.findByText('最近会话 · V4 P1A');
-      const agentHubLink = screen.getByRole('link', { name: /Agent Hub/ });
+      const agentHubLink = screen.getByRole('link', { name: /Taxon Hub/ });
       expect(agentHubLink.getAttribute('href')).toBe('/agents');
       expect(agentHubLink).toHaveClass('app-btn');
       expect(agentHubLink).not.toHaveClass('app-btn-ghost');

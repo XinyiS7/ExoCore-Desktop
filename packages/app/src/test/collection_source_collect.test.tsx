@@ -275,7 +275,7 @@ describe('#74 Library (D3)', () => {
     renderApp(['/library']);
     fireEvent.click(await screen.findByRole('link', { name: '藏品 5' }));
     const view = within(await screen.findByRole('dialog', { name: /^藏品 / }));
-    expect(await view.findByText(/聊天附件 · 助手 · /)).toBeTruthy();
+    expect(await view.findByText(/聊天附件 · Taxon · /)).toBeTruthy();
     expect(view.getByRole('link', { name: '打开来源会话' }).getAttribute('href')).toBe('/chat/12');
     expect(document.querySelector('audio')?.getAttribute('src')).toBe('/api/collection/items/5/original/');
   });

@@ -69,10 +69,10 @@ describe('V4 Agent Identity Display (#5)', () => {
     );
 
     expect(screen.getByRole('img', { name: 'Alaric' })).toBeInTheDocument();
-    expect(screen.queryByRole('img', { name: 'Agent' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Taxon' })).not.toBeInTheDocument();
   });
 
-  it('falls back to "Agent" in MessageTimeline when assistantName is omitted', () => {
+  it('falls back to "Taxon" in MessageTimeline when assistantName is omitted', () => {
     const msg = makeMsg({
       id: 102,
       content: 'Default name check.',
@@ -91,7 +91,7 @@ describe('V4 Agent Identity Display (#5)', () => {
       />
     );
 
-    expect(screen.getByRole('img', { name: 'Agent' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Taxon' })).toBeInTheDocument();
   });
 
   it('formatAuthor resolves agent:ID to preset name if found, else original author', () => {

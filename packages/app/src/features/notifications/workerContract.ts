@@ -176,7 +176,7 @@ export function parseArrivalEvent(raw: unknown): ParseArrivalResult {
   }
 
   // Presentation-only safe degradation
-  let normalizedAgentName = 'Agent';
+  let normalizedAgentName = 'Taxon';
   if (typeof agent.name === 'string') {
     const trimmed = agent.name.trim();
     if (trimmed.length > 0 && Array.from(trimmed).length <= AGENT_NAME_CODE_POINTS_MAX) {

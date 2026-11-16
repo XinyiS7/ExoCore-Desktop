@@ -132,8 +132,8 @@ export function normalizeLegacyEvent(value: unknown): LegacyEvent {
   const row = record(value, '纪事详情格式异常');
   return {
     id: integer(row.id, 1, '纪事编号异常'),
-    preset: integer(row.preset, 1, '纪事 Agent 异常'),
-    preset_name: text(row.preset_name, '纪事 Agent 名称异常'),
+    preset: integer(row.preset, 1, '纪事 Taxon 异常'),
+    preset_name: text(row.preset_name, '纪事 Taxon 名称异常'),
     event_time: dateOnly(row.event_time, '纪事日期异常'),
     content: text(row.content, '纪事内容异常'),
     scope: nullableText(row.scope, '纪事范围异常'),

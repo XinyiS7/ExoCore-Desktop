@@ -132,7 +132,7 @@ export function RoutinePanel() {
       <div className="settings-panel-header">
         <h1 className="settings-panel-title">后台例行</h1>
         <p className="settings-panel-desc">
-          配置自检与深度整理共用的 G045 助手，并查看当前的系统调度时间窗口。
+          配置自检与深度整理共用的 G045 Taxon，并查看当前的系统调度时间窗口。
         </p>
       </div>
 
@@ -164,10 +164,10 @@ export function RoutinePanel() {
             </div>
             <div>
               <h2 id="g045-heading" className="settings-card-title">
-                Self Check & Deep Organize 参与助手
+                Self Check & Deep Organize 参与 Taxon
               </h2>
               <p className="settings-card-desc">
-                自检任务与深度整理共用同一选定的 G045 智能助手；仅系统唯一 G045 预设支持参与后台例行。
+                自检任务与深度整理共用同一选定的 G045 Taxon；仅系统唯一 G045 预设支持参与后台例行。
               </p>
             </div>
           </div>
@@ -176,18 +176,18 @@ export function RoutinePanel() {
             <div className="app-banner app-banner--error" role="alert" style={{ marginTop: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <AlertCircle size={16} color="var(--v4-danger)" />
-                <span>系统契约异常：系统仅支持唯一的 G045 助手，当前预设数据异常（存在多个 G045 或非法 ID），已阻止例行配置更改。</span>
+                <span>系统契约异常：系统仅支持唯一的 G045 Taxon，当前预设数据异常（存在多个 G045 或非法 ID），已阻止例行配置更改。</span>
               </div>
             </div>
           ) : !canonicalG045 ? (
-            <div className="routine-agent-checklist" role="group" aria-label="G045 助手状态">
+            <div className="routine-agent-checklist" role="group" aria-label="G045 Taxon 状态">
               <p className="app-muted" style={{ padding: '16px 0', textAlign: 'center' }}>
-                当前系统无可用 G045 助手预设
+                当前系统无可用 G045 Taxon 预设
               </p>
             </div>
           ) : (
             <>
-              <div className="routine-agent-checklist" role="group" aria-label="G045 助手启用设置">
+              <div className="routine-agent-checklist" role="group" aria-label="G045 Taxon 启用设置">
                 <label className={`routine-agent-row${isEnabled ? ' routine-agent-row--checked' : ''}`}>
                   <input
                     type="checkbox"

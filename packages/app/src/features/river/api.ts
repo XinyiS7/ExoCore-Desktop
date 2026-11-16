@@ -68,7 +68,7 @@ export function normalizeRiverItem(value: unknown): RiverItem {
       author: text(specific.author), tags: strings(specific.tags), reply_count: integer(specific.reply_count, 0),
     } };
     case 'heartbeat':
-      if (base.preset_id === null) throw contractError('Heartbeat 缺少 Agent 身份', value);
+      if (base.preset_id === null) throw contractError('Heartbeat 缺少 Taxon 身份', value);
       return { ...base, source_type: source, target: { type: source, session_uuid: text(target.session_uuid) }, source_specific: {
         launch_source: text(specific.launch_source), domain: text(specific.domain), status: text(specific.status),
       } };

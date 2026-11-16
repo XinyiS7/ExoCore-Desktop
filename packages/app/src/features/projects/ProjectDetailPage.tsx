@@ -151,7 +151,7 @@ function ProjectConversationLens({ projectId, projectName }: { projectId: number
       </div>
       {presetsQuery.isError ? (
         <div className="app-banner" role="alert">
-          Agent 名称加载失败，将显示 Agent 编号。
+          Taxon 名称加载失败，将显示 Taxon 编号。
           <button type="button" className="app-link-btn" onClick={() => void presetsQuery.refetch()}>
             重试
           </button>

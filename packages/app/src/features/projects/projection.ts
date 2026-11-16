@@ -36,8 +36,8 @@ export function agentLabel(
   presetNames: ReadonlyMap<number, string>,
 ): string {
   const id = row.agentPresetId;
-  if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) return '未知 Agent';
-  return presetNames.get(id) ?? `Agent #${id}`;
+  if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) return '未知 Taxon';
+  return presetNames.get(id) ?? `Taxon #${id}`;
 }
 
 /**
@@ -56,7 +56,7 @@ export function deriveAgentOptions(
     if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) continue;
     if (seen.has(id)) continue;
     seen.add(id);
-    options.push({ id, label: presetNames.get(id) ?? `Agent #${id}` });
+    options.push({ id, label: presetNames.get(id) ?? `Taxon #${id}` });
   }
   return options;
 }

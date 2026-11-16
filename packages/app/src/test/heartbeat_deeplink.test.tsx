@@ -287,7 +287,7 @@ describe('Heartbeat Ledger ?session deep link (CP4)', () => {
     renderLedger([`/agents/6/heartbeat?session=${UUID_A}`]);
 
     const region = await screen.findByRole('region', { name: '心跳记录详情' });
-    expect(await within(region).findByText(/不属于当前 Agent #6/)).toBeInTheDocument();
+    expect(await within(region).findByText(/不属于当前 Taxon #6/)).toBeInTheDocument();
     expect(within(region).queryByText('详情正文A')).not.toBeInTheDocument();
     expect(within(region).queryByText(/触发消息|工具调用记录|错误摘要/)).not.toBeInTheDocument();
   });

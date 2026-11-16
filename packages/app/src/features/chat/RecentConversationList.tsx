@@ -10,8 +10,8 @@ import { conversationEntryState } from './backTarget';
 import { useNotifications } from '../notifications/notificationContext';
 
 function identityLabel(presetId: number | null, presetName: string | undefined): string {
-  if (presetId === null || presetId === undefined) return '未知 Agent';
-  return presetName ?? `Agent #${presetId}`;
+  if (presetId === null || presetId === undefined) return '未知 Taxon';
+  return presetName ?? `Taxon #${presetId}`;
 }
 
 /**
@@ -60,7 +60,7 @@ export function RecentConversationList({ onRequestCreate, onDeletedConversation 
       <div className="app-scroll">
         <EmptyState
           title="还没有会话"
-          hint="创建第一个会话，与 Agent 开始对话。"
+          hint="创建第一个会话，与 Taxon 开始对话。"
           action={
             <button type="button" className="app-btn" onClick={onRequestCreate}>
               <Plus size={16} aria-hidden="true" />
@@ -76,7 +76,7 @@ export function RecentConversationList({ onRequestCreate, onDeletedConversation 
     <div className="app-scroll">
       {presetsQuery.isError ? (
         <div className="app-banner" role="alert">
-          Agent 名称加载失败，将显示 Agent 编号。
+          Taxon 名称加载失败，将显示 Taxon 编号。
           <button type="button" className="app-link-btn" onClick={() => void presetsQuery.refetch()}>
             重试
           </button>

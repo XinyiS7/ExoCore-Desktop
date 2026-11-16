@@ -482,7 +482,7 @@ describe('Phase 2C CP C-2 — Settings Shell, Appearance, Routine & Notification
       renderApp(['/settings/routine']);
 
       expect(await screen.findByRole('heading', { name: '后台例行' })).toBeInTheDocument();
-      expect(screen.getByText('当前系统无可用 G045 助手预设')).toBeInTheDocument();
+      expect(screen.getByText('当前系统无可用 G045 Taxon 预设')).toBeInTheDocument();
       expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
       expect(screen.queryByRole('button', { name: '保存例行配置' })).toBeNull();
     });

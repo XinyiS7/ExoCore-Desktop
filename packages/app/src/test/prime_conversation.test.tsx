@@ -198,7 +198,7 @@ describe('Prime Conversation Affordance (Gate 0 / CP-C, Plan §2.1 / §5.C)', ()
       expect(activeStars).toHaveLength(1);
     });
 
-    const rows = screen.getByRole('list', { name: '该 Agent 的会话' });
+    const rows = screen.getByRole('list', { name: '该 Taxon 的会话' });
     const row102 = within(rows).getByRole('link', { name: /会话 102/ }).closest('li')!;
     expect(within(row102).getByRole('button', { name: '当前主会话' })).toBeInTheDocument();
   });
@@ -407,7 +407,7 @@ describe('Prime Conversation Affordance (Gate 0 / CP-C, Plan §2.1 / §5.C)', ()
     renderApp(['/agents/1']);
 
     await screen.findByText('Alessandro');
-    const rows = screen.getByRole('list', { name: '该 Agent 的会话' });
+    const rows = screen.getByRole('list', { name: '该 Taxon 的会话' });
     const row101 = within(rows).getByRole('link', { name: /主会话 101/ }).closest('li')!;
 
     // Open row menu on conv 101 and click 删除会话
@@ -579,7 +579,7 @@ describe('Prime Conversation Affordance (Gate 0 / CP-C, Plan §2.1 / §5.C)', ()
 
       // Conv 102 is now prime in UI
       await waitFor(() => {
-        const rows = screen.getByRole('list', { name: '该 Agent 的会话' });
+        const rows = screen.getByRole('list', { name: '该 Taxon 的会话' });
         const row102 = within(rows).getByRole('link', { name: /会话 102/ }).closest('li')!;
         expect(within(row102).getByRole('button', { name: '当前主会话' })).toBeInTheDocument();
       });
@@ -728,7 +728,7 @@ describe('Prime Conversation Affordance (Gate 0 / CP-C, Plan §2.1 / §5.C)', ()
       // Contract error on PATCH response treated as ambiguous write -> reconciles successfully
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
       await waitFor(() => {
-        const rows = screen.getByRole('list', { name: '该 Agent 的会话' });
+        const rows = screen.getByRole('list', { name: '该 Taxon 的会话' });
         const row102 = within(rows).getByRole('link', { name: /会话 102/ }).closest('li')!;
         expect(within(row102).getByRole('button', { name: '当前主会话' })).toBeInTheDocument();
       });
@@ -833,7 +833,7 @@ describe('Prime Conversation Affordance (Gate 0 / CP-C, Plan §2.1 / §5.C)', ()
       expect(patchCount).toBe(1);
 
       await waitFor(() => {
-        const rows = screen.getByRole('list', { name: '该 Agent 的会话' });
+        const rows = screen.getByRole('list', { name: '该 Taxon 的会话' });
         const row102 = within(rows).getByRole('link', { name: /会话 102/ }).closest('li')!;
         expect(within(row102).getByRole('button', { name: '当前主会话' })).toBeInTheDocument();
       });

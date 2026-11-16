@@ -14,7 +14,7 @@ export const SOURCE_LABELS: Record<CollectionSourceType, string> = {
 /** Only the two speaker roles are named; anything else is left out rather than guessed. */
 export function roleLabel(role: string): string | null {
   if (role === 'user') return '用户';
-  if (role === 'assistant') return '助手';
+  if (role === 'assistant') return 'Taxon';
   return null;
 }
 

@@ -68,7 +68,7 @@ export function AgentEditDialog({
     e.preventDefault();
     const trimmedName = nameDraft.trim();
     if (!trimmedName) {
-      setError('Agent 名称不能为空');
+      setError('Taxon 名称不能为空');
       return;
     }
 
@@ -115,7 +115,7 @@ export function AgentEditDialog({
       >
         <header className="app-dialog-header">
           <h2 id="agent-edit-title" className="app-h2">
-            编辑 Agent 资料
+            编辑 Taxon 资料
           </h2>
           <button
             type="button"
@@ -138,7 +138,7 @@ export function AgentEditDialog({
 
             <div className="account-field">
               <label htmlFor="agent-name-input" className="account-label">
-                Agent 名称 <span className="account-required">*</span>
+                Taxon 名称 <span className="account-required">*</span>
               </label>
               <input
                 id="agent-name-input"
@@ -147,7 +147,7 @@ export function AgentEditDialog({
                 value={nameDraft}
                 onChange={(e) => setNameDraft(e.target.value)}
                 disabled={saving}
-                placeholder="输入 Agent 名称"
+                placeholder="输入 Taxon 名称"
                 required
               />
             </div>

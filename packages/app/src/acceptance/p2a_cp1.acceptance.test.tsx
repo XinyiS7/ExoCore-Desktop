@@ -53,10 +53,10 @@ it('CP1 independent: selecting Drift with only Project conversations produces th
   const filters = await screen.findByRole('radiogroup', { name: '会话筛选' });
   fireEvent.click(within(filters).getByRole('radio', { name: 'Drift' }));
   expect(screen.queryByRole('link', { name: /row-201/ })).toBeNull();
-  expect(screen.queryByText('该 Agent 还没有会话')).toBeNull();
+  expect(screen.queryByText('该 Taxon 还没有会话')).toBeNull();
   expect(within(filters).getByRole('radio', { name: 'Drift' })).toBeChecked();
   // Frozen §8.5 requires the correct subset; extra empty-state copy remains advisory.
-  expect(screen.getByRole('list', { name: '该 Agent 的会话' }).children).toHaveLength(0);
+  expect(screen.getByRole('list', { name: '该 Taxon 的会话' }).children).toHaveLength(0);
 });
 
 it('CP1 independent: an identified but unnamed Project is not presented as Drift on its Conversation row', async () => {
@@ -98,7 +98,7 @@ it('CP1 independent R2 sibling: an empty Agent lens cannot preserve a removed Pr
   const { client } = mount([row(601), row(602, 6)]);
   fireEvent.click(await screen.findByRole('radio', { name: 'Project 7' }));
   await act(async () => { client.setQueryData(queryKeys.conversations, [row(602, 6)]); });
-  await screen.findByText('该 Agent 还没有会话');
+  await screen.findByText('该 Taxon 还没有会话');
   await act(async () => { client.setQueryData(queryKeys.conversations, [row(601), row(602, 6)]); });
   await screen.findByRole('radio', { name: 'Project 7' });
   expect(screen.getByRole('radio', { name: '全部' })).toBeChecked();
@@ -133,7 +133,7 @@ it('CP1 independent R2 sibling: pending and failed refetch do not erase a valid 
   expect(screen.getByRole('radio', { name: 'Project 7' })).toBeChecked();
   await act(async () => { finish(response({ detail: 'unavailable' }, 503)); await refetch; });
   await screen.findByText('会话加载失败');
-  expect(screen.queryByText('该 Agent 还没有会话')).toBeNull();
+  expect(screen.queryByText('该 Taxon 还没有会话')).toBeNull();
   expect(screen.getByRole('heading', { name: 'Identity 5' })).toBeInTheDocument();
   expect(screen.getByText('0 条记忆（含共享/全局）')).toBeInTheDocument();
   await act(async () => { client.setQueryData(queryKeys.conversations, [row(801), row(802, 5, null)]); });

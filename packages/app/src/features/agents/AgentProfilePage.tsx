@@ -32,14 +32,14 @@ import {
 
 /** Distinct invalid-URL state — no request is issued for bad route params. */
 function InvalidAgentState() {
-  useDocumentTitle('Agent 不存在');
+  useDocumentTitle('Taxon 不存在');
   return (
     <div className="app-page app-page--center">
       <div className="app-error-page" role="alert">
-        <p className="app-error-title">无效的 Agent 地址</p>
-        <p className="app-error-hint">Agent 编号必须是正整数。</p>
+        <p className="app-error-title">无效的 Taxon 地址</p>
+        <p className="app-error-hint">Taxon 编号必须是正整数。</p>
         <Link className="app-btn" to="/agents">
-          Agent Hub
+          Taxon Hub
         </Link>
       </div>
     </div>
@@ -48,13 +48,13 @@ function InvalidAgentState() {
 
 /** 404: the preset is hidden/absent from the visible-only queryset. */
 function AgentMissingState() {
-  useDocumentTitle('Agent 不存在');
+  useDocumentTitle('Taxon 不存在');
   return (
     <div className="app-error-page" role="alert">
-      <p className="app-error-title">Agent 不存在或未公开</p>
-      <p className="app-error-hint">返回 Agent Hub 查看可见的 Agent。</p>
+      <p className="app-error-title">Taxon 不存在或未公开</p>
+      <p className="app-error-hint">返回 Taxon Hub 查看可见的 Taxon。</p>
       <Link className="app-btn" to="/agents">
-        Agent Hub
+        Taxon Hub
       </Link>
     </div>
   );
@@ -110,7 +110,7 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
 
   const preset = presetQuery.data;
   const avatarUrl = useAgentAvatar(presetId, preset?.name);
-  const entryState = conversationEntryState(`/agents/${presetId}`, preset?.name || `Agent #${presetId}`);
+  const entryState = conversationEntryState(`/agents/${presetId}`, preset?.name || `Taxon #${presetId}`);
 
   const handlePromptSave = async (prompt: string) => {
     if (!preset) return;
@@ -155,11 +155,11 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
 
   const title = presetQuery.isError
     ? toAppApiError(presetQuery.error).status === 404
-      ? 'Agent 不存在'
-      : 'Agent 详情加载失败'
+      ? 'Taxon 不存在'
+      : 'Taxon 详情加载失败'
     : preset && preset.id === presetId
-      ? preset.name?.trim() || 'Agent Profile'
-      : 'Agent Profile';
+      ? preset.name?.trim() || 'Taxon Profile'
+      : 'Taxon Profile';
   useDocumentTitle(title);
 
   const agentRows = useMemo(
@@ -194,10 +194,10 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
       <header className="app-topbar app-topbar--detail">
         <Link to="/agents" className="app-back-link">
           <ArrowLeft size={16} aria-hidden="true" />
-          Agent Hub
+          Taxon Hub
         </Link>
         <div className="app-topbar-title app-topbar-title--detail">
-          <h1 className="app-h1">Agent Profile</h1>
+          <h1 className="app-h1">Taxon Profile</h1>
           {preset ? (
             <span className="app-topbar-sub">
               <span className="app-chip agent-chip-clamp">{preset.agent_type}</span>
@@ -210,13 +210,13 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
 
       <div className="app-scroll">
         {presetQuery.isPending ? (
-          <LoadingState label="正在加载 Agent…" />
+          <LoadingState label="正在加载 Taxon…" />
         ) : presetQuery.isError ? (
           toAppApiError(presetQuery.error).status === 404 ? (
             <AgentMissingState />
           ) : (
             <ErrorState
-              title="Agent 详情加载失败"
+              title="Taxon 详情加载失败"
               detail={toAppApiError(presetQuery.error).message}
               onRetry={() => void presetQuery.refetch()}
             />
@@ -229,7 +229,7 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
                   {avatarUrl ? (
                     <img
                       src={avatarUrl}
-                      alt={preset.name || `Agent #${preset.id}`}
+                      alt={preset.name || `Taxon #${preset.id}`}
                       className="agent-avatar-img"
                     />
                   ) : (
@@ -263,7 +263,7 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
               <div className="agent-section-heading">
                 <div>
                   <h2 id="agent-identity-title" className="app-h2 agent-identity-name">
-                    {preset.name || `Agent #${preset.id}`}
+                    {preset.name || `Taxon #${preset.id}`}
                     {isG045AgentType(preset.agent_type) ? (
                       <span className="app-phase-chip app-phase-chip--g045">g045</span>
                     ) : null}
@@ -293,7 +293,7 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
 
               <p className="agent-identity-desc">{preset.description ?? '暂无描述'}</p>
               <dl className="agent-facts">
-                <FactRow label="Agent 类型" value={preset.agent_type || '未标注'} />
+                <FactRow label="Taxon 类型" value={preset.agent_type || '未标注'} />
                 <FactRow label="默认模型" value={preset.default_model || '未配置默认模型'} />
               </dl>
             </section>
@@ -304,7 +304,7 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
                   <h2 id="agent-prompt-heading" className="app-h2">
                     System Prompt
                   </h2>
-                  <span className="app-topbar-sub">定义该 Agent 的人格设定与系统提示词</span>
+                  <span className="app-topbar-sub">定义该 Taxon 的人格设定与系统提示词</span>
                 </div>
                 <button
                   type="button"
@@ -338,7 +338,7 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
                 </h2>
                 <button type="button" className="app-btn" onClick={() => setDialogOpen(true)}>
                   <Plus size={16} aria-hidden="true" />
-                  使用此 Agent 新建会话
+                  使用此 Taxon 新建会话
                 </button>
               </div>
               {conversationsQuery.isPending ? (
@@ -350,7 +350,7 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
                   onRetry={() => void conversationsQuery.refetch()}
                 />
               ) : agentRows.length === 0 ? (
-                <EmptyState title="该 Agent 还没有会话" hint="从 Chat Home 新建会话后，它会出现在这里。" />
+                <EmptyState title="该 Taxon 还没有会话" hint="从 Chat Home 新建会话后，它会出现在这里。" />
               ) : (
                 <>
                   <div
@@ -386,7 +386,7 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
                   {visibleRows.length === 0 ? (
                     <p className="app-muted">没有符合条件的会话。</p>
                   ) : null}
-                  <ul className="app-recent-list" aria-label="该 Agent 的会话">
+                  <ul className="app-recent-list" aria-label="该 Taxon 的会话">
                     {visibleRows.map((row) => (
                       <li key={row.id} className="app-recent-item">
                         {isG045AgentType(preset.agent_type) ? (
@@ -490,7 +490,7 @@ function AgentProfileDetail({ presetId }: { presetId: number }) {
       ) : null}
       {promptDialogOpen && preset ? (
         <AgentPromptDialog
-          agentName={preset.name || `Agent #${preset.id}`}
+          agentName={preset.name || `Taxon #${preset.id}`}
           initialPrompt={preset.system_prompt ?? ''}
           isOpen={promptDialogOpen}
           onSave={handlePromptSave}

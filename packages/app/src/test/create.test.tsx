@@ -206,7 +206,7 @@ describe('Conversation creation dialog', () => {
     const dialog = await openDialog();
     fireEvent.click(within(dialog).getByRole('button', { name: '创建会话' }));
 
-    expect(await screen.findByText('请选择一个 Agent')).toBeTruthy();
+    expect(await screen.findByText('请选择一个 Taxon')).toBeTruthy();
     expect(callsToPath(calls, '/sessions/init/')).toHaveLength(0);
   });
 

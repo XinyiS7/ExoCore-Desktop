@@ -27,22 +27,22 @@ interface SupportRoleMeta {
 const SUPPORT_ROLE_DEFS: SupportRoleMeta[] = [
   {
     key: 'general_sub_agent',
-    title: '通用子代理 (General Sub-Agent)',
+    title: '通用子代理 (General Sub-Task)',
     description: '负责执行多步拆解、常规子任务与背景资料探索。',
   },
   {
     key: 'vision_helper',
-    title: '视觉解析助手 (Vision Helper)',
+    title: '视觉解析 (Vision Helper)',
     description: '负责图像识别、截屏分析与多模态输入解析。',
   },
   {
     key: 'grounding',
-    title: '联网搜索助手 (Grounding)',
+    title: '联网搜索 (Grounding)',
     description: '负责外部事实查证与网络检索。',
   },
   {
     key: 'image_gen',
-    title: '图像生成助手 (Image Gen)',
+    title: '图像生成 (Image Gen)',
     description: '负责根据提示词生成图像与视觉产物。',
   },
 ];

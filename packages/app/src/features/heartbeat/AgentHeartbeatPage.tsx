@@ -15,14 +15,14 @@ import type { HeartbeatQueueSummary } from './types';
 
 /** Distinct invalid-URL state — no request is issued for bad route params. */
 function InvalidAgentState() {
-  useDocumentTitle('Agent 不存在');
+  useDocumentTitle('Taxon 不存在');
   return (
     <div className="app-page app-page--center">
       <div className="app-error-page" role="alert">
-        <p className="app-error-title">无效的 Agent 地址</p>
-        <p className="app-error-hint">Agent 编号必须是正整数。</p>
+        <p className="app-error-title">无效的 Taxon 地址</p>
+        <p className="app-error-hint">Taxon 编号必须是正整数。</p>
         <Link className="app-btn" to="/agents">
-          Agent Hub
+          Taxon Hub
         </Link>
       </div>
     </div>
@@ -31,13 +31,13 @@ function InvalidAgentState() {
 
 /** 404: the preset is hidden/absent from the visible-only queryset. */
 function AgentMissingState() {
-  useDocumentTitle('Agent 不存在');
+  useDocumentTitle('Taxon 不存在');
   return (
     <div className="app-error-page" role="alert">
-      <p className="app-error-title">Agent 不存在或未公开</p>
-      <p className="app-error-hint">返回 Agent Hub 查看可见的 Agent。</p>
+      <p className="app-error-title">Taxon 不存在或未公开</p>
+      <p className="app-error-hint">返回 Taxon Hub 查看可见的 Taxon。</p>
       <Link className="app-btn" to="/agents">
-        Agent Hub
+        Taxon Hub
       </Link>
     </div>
   );
@@ -49,10 +49,10 @@ function AgentNotEligibleState({ presetId }: { presetId: number }) {
   return (
     <div className="app-page app-page--center">
       <div className="app-error-page" role="alert">
-        <p className="app-error-title">该 Agent 不支持心跳</p>
+        <p className="app-error-title">该 Taxon 不支持心跳</p>
         <p className="app-error-hint">心跳功能仅适用于阿莱（G045）。</p>
         <Link className="app-btn" to={`/agents/${presetId}`}>
-          返回 Agent Profile
+          返回 Taxon Profile
         </Link>
       </div>
     </div>
@@ -145,14 +145,14 @@ function AgentHeartbeatDetail({ presetId }: { presetId: number }) {
         <header className="app-topbar app-topbar--detail">
           <Link to={`/agents/${presetId}`} className="app-back-link">
             <ArrowLeft size={16} aria-hidden="true" />
-            Agent Profile
+            Taxon Profile
           </Link>
           <div className="app-topbar-title app-topbar-title--detail">
             <h1 className="app-h1">Heartbeat Ledger</h1>
           </div>
         </header>
         <div className="app-scroll">
-          <LoadingState label="正在加载 Agent 详情…" />
+          <LoadingState label="正在加载 Taxon 详情…" />
         </div>
       </div>
     );
@@ -165,7 +165,7 @@ function AgentHeartbeatDetail({ presetId }: { presetId: number }) {
         <header className="app-topbar app-topbar--detail">
           <Link to="/agents" className="app-back-link">
             <ArrowLeft size={16} aria-hidden="true" />
-            Agent Hub
+            Taxon Hub
           </Link>
         </header>
         <div className="app-scroll">
@@ -173,7 +173,7 @@ function AgentHeartbeatDetail({ presetId }: { presetId: number }) {
             <AgentMissingState />
           ) : (
             <ErrorState
-              title="Agent 详情加载失败"
+              title="Taxon 详情加载失败"
               detail={toAppApiError(presetQuery.error).message}
               onRetry={() => void presetQuery.refetch()}
             />
@@ -192,12 +192,12 @@ function AgentHeartbeatDetail({ presetId }: { presetId: number }) {
       <header className="app-topbar app-topbar--detail">
         <Link to={`/agents/${presetId}`} className="app-back-link">
           <ArrowLeft size={16} aria-hidden="true" />
-          Agent Profile
+          Taxon Profile
         </Link>
         <div className="app-topbar-title app-topbar-title--detail">
           <h1 className="app-h1">Heartbeat Ledger</h1>
           <span className="app-topbar-sub">
-            <span className="app-chip agent-chip-clamp">{preset?.name || `Agent #${presetId}`}</span>
+            <span className="app-chip agent-chip-clamp">{preset?.name || `Taxon #${presetId}`}</span>
             <span className="app-phase-chip app-phase-chip--g045">g045</span>
           </span>
         </div>

@@ -216,7 +216,7 @@ describe('Phase 2C CP C-1 — Shell, Routes, Title & Account', () => {
       // Agent Hub
       renderApp(['/agents']);
       await waitFor(() => {
-        expect(document.title).toBe('Agent Hub · ExoCore V4');
+        expect(document.title).toBe('Taxon Hub · ExoCore V4');
       });
 
       // Project Hub

@@ -57,7 +57,7 @@ function mount(entry = '/agents/5') {
   return { client, requests, posts, visits, setRows: (next: typeof rows) => { rows = next; } };
 }
 async function openProfileDialog() {
-  fireEvent.click(await screen.findByRole('button', { name: '使用此 Agent 新建会话' }));
+  fireEvent.click(await screen.findByRole('button', { name: '使用此 Taxon 新建会话' }));
   const dialog = await screen.findByRole('dialog', { name: '新建会话' });
   await within(dialog).findByRole('combobox', { name: /所属项目/ });
   return dialog;

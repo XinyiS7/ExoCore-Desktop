@@ -460,10 +460,10 @@ describe('Phase 2C CP C-4 — Tool Drawers & MCP Credentials', () => {
       renderApp(['/settings/mcp']);
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/选择配置目标 Agent 预设/)).toBeInTheDocument();
+        expect(screen.getByLabelText(/选择配置目标 Taxon 预设/)).toBeInTheDocument();
       });
 
-      const select = screen.getByLabelText(/选择配置目标 Agent 预设/) as HTMLSelectElement;
+      const select = screen.getByLabelText(/选择配置目标 Taxon 预设/) as HTMLSelectElement;
       const optionTexts = Array.from(select.options).map((o) => o.text);
 
       expect(optionTexts).toContain('Alaric (#1)');
@@ -706,7 +706,7 @@ describe('Phase 2C CP C-4 — Tool Drawers & MCP Credentials', () => {
       fireEvent.change(select, { target: { value: 'galatea-alias-2' } });
       expect(select.value).toBe('galatea-alias-2');
 
-      const presetSelect = screen.getByLabelText(/选择配置目标 Agent 预设/);
+      const presetSelect = screen.getByLabelText(/选择配置目标 Taxon 预设/);
       fireEvent.change(presetSelect, { target: { value: '2' } });
 
       await waitFor(() => {

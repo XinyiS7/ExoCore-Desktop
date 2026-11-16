@@ -229,12 +229,12 @@ export function McpPanel() {
           {/* Preset Selector */}
           <div className="settings-field" style={{ marginBottom: 20 }}>
             <label htmlFor="mcp-preset-select" className="settings-field-label">
-              选择配置目标 Agent 预设:
+              选择配置目标 Taxon 预设:
             </label>
             {presetsQuery.isLoading ? (
-              <p className="settings-field-hint">正在加载 Agent 预设列表...</p>
+              <p className="settings-field-hint">正在加载 Taxon 预设列表...</p>
             ) : selectablePresets.length === 0 ? (
-              <p className="settings-field-hint">暂无可配置的 Agent 预设。</p>
+              <p className="settings-field-hint">暂无可配置的 Taxon 预设。</p>
             ) : (
               <select
                 id="mcp-preset-select"
@@ -258,7 +258,7 @@ export function McpPanel() {
               </select>
             )}
             <p className="settings-field-hint">
-              抽屉授权与专属 MCP 凭证绑定按 Agent 预设维度独立生效。
+              抽屉授权与专属 MCP 凭证绑定按 Taxon 预设维度独立生效。
             </p>
           </div>
 
@@ -797,7 +797,7 @@ function McpCredentialCreateDialog({
                 id="cred-create-alias"
                 type="text"
                 className="settings-field-input"
-                placeholder="例如: galatea-agent-6"
+                placeholder="例如: galatea-taxon-6"
                 value={alias}
                 onChange={(e) => setAlias(e.target.value)}
                 disabled={saving}
@@ -1136,7 +1136,7 @@ function McpCredentialDeleteDialog({
             确定要删除凭证 <strong>{credential.alias}</strong> 吗？此操作不可撤销。
           </p>
           <p style={{ margin: 0, fontSize: '0.85em', color: 'var(--v4-text-mute)' }}>
-            注意：若该凭证已被 Agent 预设或服务器引用，删除请求将被拒绝 (409 Conflict)，请先解绑后再删除。
+            注意：若该凭证已被 Taxon 预设或服务器引用，删除请求将被拒绝 (409 Conflict)，请先解绑后再删除。
           </p>
         </div>
 

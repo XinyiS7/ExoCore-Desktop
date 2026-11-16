@@ -58,11 +58,11 @@ describe('P2B Project lens projections (Plan §5.5 / D4 / §8.4)', () => {
     expect(rowsForProject(rows, 7).map((r) => r.id)).toEqual([1, 4]);
   });
 
-  it('agentLabel resolves preset names, Agent #<id> fallback and unavailable identity', () => {
+  it('agentLabel resolves preset names, Taxon #<id> fallback and unavailable identity', () => {
     expect(agentLabel(row(1, { agentPresetId: 5 }), names)).toBe('Ecki');
-    expect(agentLabel(row(2, { agentPresetId: 42 }), names)).toBe('Agent #42');
-    expect(agentLabel(row(3, { agentPresetId: 0 }), names)).toBe('未知 Agent');
-    expect(agentLabel(row(4, { agentPresetId: null }), names)).toBe('未知 Agent');
+    expect(agentLabel(row(2, { agentPresetId: 42 }), names)).toBe('Taxon #42');
+    expect(agentLabel(row(3, { agentPresetId: 0 }), names)).toBe('未知 Taxon');
+    expect(agentLabel(row(4, { agentPresetId: null }), names)).toBe('未知 Taxon');
   });
 
   it('deriveAgentOptions dedupes by positive preset id in backend order with truthful fallbacks', () => {
@@ -75,7 +75,7 @@ describe('P2B Project lens projections (Plan §5.5 / D4 / §8.4)', () => {
     ];
     expect(deriveAgentOptions(rows, names)).toEqual([
       { id: 5, label: 'Ecki' },
-      { id: 42, label: 'Agent #42' },
+      { id: 42, label: 'Taxon #42' },
     ]);
     // empty dataset → no options; unknown preset names fall back truthfully
     expect(deriveAgentOptions([], names)).toEqual([]);

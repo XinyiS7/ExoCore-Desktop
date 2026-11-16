@@ -17,7 +17,7 @@ function formatLaunchSource(source: string): string {
     case 'auto':
       return '自动心跳';
     case 'agent':
-      return 'Agent 发起';
+      return 'Taxon 发起';
     case 'notification':
       return '通知唤醒';
     default:
@@ -213,10 +213,10 @@ export function HeartbeatEventDetail({
             <div className="heartbeat-detail-section">
               <h4 className="heartbeat-detail-section-title">记录归属不匹配</h4>
               <p className="heartbeat-detail-text">
-                该心跳会话属于 Agent #{detailQuery.data.presetId}，不属于当前 Agent #{presetId}；已阻止展示其余内容。
+                该心跳会话属于 Taxon #{detailQuery.data.presetId}，不属于当前 Taxon #{presetId}；已阻止展示其余内容。
               </p>
               <p className="app-muted">
-                请从 Agent #{detailQuery.data.presetId} 的心跳账本打开该记录。
+                请从 Taxon #{detailQuery.data.presetId} 的心跳账本打开该记录。
               </p>
             </div>
           </div>

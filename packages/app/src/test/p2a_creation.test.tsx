@@ -89,7 +89,7 @@ function postBodies(calls: { url: URL; init?: RequestInit }[]): Record<string, u
 }
 
 async function openFixedDialog() {
-  fireEvent.click(await screen.findByRole('button', { name: '使用此 Agent 新建会话' }));
+  fireEvent.click(await screen.findByRole('button', { name: '使用此 Taxon 新建会话' }));
   return screen.findByRole('dialog', { name: '新建会话' });
 }
 
@@ -110,7 +110,7 @@ describe('P2A Stage B fixed-Agent creation integration', () => {
 
     const dialog = await openFixedDialog();
     expect(within(dialog).getByText('Ecki')).toBeTruthy();
-    expect(within(dialog).getByText('已固定为当前 Agent')).toBeTruthy();
+    expect(within(dialog).getByText('已固定为当前 Taxon')).toBeTruthy();
     expect(within(dialog).queryAllByRole('radio')).toHaveLength(0);
     expect(calls.filter((call) => call.url.pathname === '/api/agents/presets/')).toHaveLength(0);
 
@@ -202,7 +202,7 @@ describe('P2A Stage B fixed-Agent creation integration', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: '创建会话' }));
     await waitFor(() => expect(callsToPath(calls, '/sessions/init/')).toHaveLength(1));
 
-    fireEvent.click(screen.getByRole('link', { name: 'Agent Hub' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Taxon Hub' }));
     fireEvent.click(await screen.findByRole('link', { name: /Solaire/ }));
     expect(await screen.findByRole('heading', { name: /Solaire/ })).toBeTruthy();
 

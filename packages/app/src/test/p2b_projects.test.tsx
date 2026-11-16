@@ -493,15 +493,15 @@ describe('P2B Project Conversation lens (single shared cache)', () => {
     // Agent options: Ecki(5), Solaire(6), Agent #42 — deduped, truthful fallback; null is not an option
     expect(within(filters).getByRole('radio', { name: 'Ecki' })).toBeTruthy();
     expect(within(filters).getByRole('radio', { name: 'Solaire' })).toBeTruthy();
-    expect(within(filters).getByRole('radio', { name: 'Agent #42' })).toBeTruthy();
-    expect(within(filters).queryByRole('radio', { name: '未知 Agent' })).toBeNull();
+    expect(within(filters).getByRole('radio', { name: 'Taxon #42' })).toBeTruthy();
+    expect(within(filters).queryByRole('radio', { name: '未知 Taxon' })).toBeNull();
 
     // narrow by Ecki: only his rows, backend order preserved
     fireEvent.click(within(filters).getByRole('radio', { name: 'Ecki' }));
     expect(within(list).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/chat/1']);
     // row 5 has no identity → truthful unavailable label under All
     fireEvent.click(within(filters).getByRole('radio', { name: '全部' }));
-    expect(screen.getByRole('link', { name: /conv 5/ })).toHaveTextContent('未知 Agent');
+    expect(screen.getByRole('link', { name: /conv 5/ })).toHaveTextContent('未知 Taxon');
   });
 
   it('conversation failure is an independent surface that never erases identity or counts-to-zero', async () => {
@@ -638,8 +638,8 @@ describe('P2B lens — selection persistence and origin isolation', () => {
   it('preset-name failure degrades to Agent #<id> labels with a visible banner, not a blocker', async () => {
     const client = mountDetail(7, { presetFail: true });
     act(() => client.setQueryData(queryKeys.conversations, [lensRow(311, { projectId: 7, agentPresetId: 5 })]));
-    expect(await screen.findByText('Agent 名称加载失败，将显示 Agent 编号。')).toBeTruthy();
-    expect(await screen.findByRole('radio', { name: 'Agent #5' })).toBeTruthy();
+    expect(await screen.findByText('Taxon 名称加载失败，将显示 Taxon 编号。')).toBeTruthy();
+    expect(await screen.findByRole('radio', { name: 'Taxon #5' })).toBeTruthy();
   });
 
   it('a failed refetch round trip never erases the current selection', async () => {

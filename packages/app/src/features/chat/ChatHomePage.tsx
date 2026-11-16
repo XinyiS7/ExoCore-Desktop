@@ -44,7 +44,7 @@ export function ChatHomePage() {
           {/* P2A: secondary Chat-area entry into the Agent Hub (D4). */}
           <Link to="/agents" className="app-btn">
             <Bot size={16} aria-hidden="true" />
-            Agent Hub
+            Taxon Hub
           </Link>
           {/* P2B: secondary Chat-area entry into the Project Hub (D8). */}
           <Link to="/projects" className="app-btn">

@@ -177,13 +177,13 @@ describe('P2C CP C-4 independent acceptance', () => {
     fireEvent.change(binding, { target: { value: 'cred-b' } });
     expect(binding.value).toBe('cred-b');
 
-      fireEvent.change(screen.getByLabelText(/选择配置目标 Agent 预设/), { target: { value: '2' } });
+      fireEvent.change(screen.getByLabelText(/选择配置目标 Taxon 预设/), { target: { value: '2' } });
 
       await waitFor(() => {
         expect((screen.getByLabelText('为服务 galatea_garden 选择专属凭证') as HTMLSelectElement).value).toBe('cred-a');
       });
 
-      fireEvent.change(screen.getByLabelText(/选择配置目标 Agent 预设/), { target: { value: '1' } });
+      fireEvent.change(screen.getByLabelText(/选择配置目标 Taxon 预设/), { target: { value: '1' } });
 
       await waitFor(() => {
         expect((screen.getByLabelText('为服务 galatea_garden 选择专属凭证') as HTMLSelectElement).value).toBe('cred-a');

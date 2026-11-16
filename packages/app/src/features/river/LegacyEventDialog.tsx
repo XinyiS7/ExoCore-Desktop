@@ -281,7 +281,7 @@ export function LegacyEventDialog({
           {readError === null && event !== undefined && (
             <dl className="legacy-identity">
               <div><dt>编号 id</dt><dd>{event.id}</dd></div>
-              <div><dt>Agent</dt><dd>{event.preset_name}（preset {event.preset}）</dd></div>
+              <div><dt>Taxon</dt><dd>{event.preset_name}（preset {event.preset}）</dd></div>
               <div><dt>类型 kind</dt><dd>{KIND_LABELS[event.kind]}</dd></div>
               <div><dt>来源消息</dt><dd>{event.message === null ? '无' : `Message #${event.message}`}</dd></div>
               <div><dt>更新时间</dt><dd>{new Date(event.modified_at).toLocaleString()}</dd></div>

@@ -162,7 +162,7 @@ describe('canonical read path — timeline & paging', () => {
     const articles = screen.getAllByRole('article');
     const texts = articles.map((a) => a.textContent ?? '');
     // Oldest → newest: m8, m9, m10, m11 with no duplicates.
-    expect(texts.map((t) => t.replace('Agent', '').trim()).join('|')).toContain('m8');
+    expect(texts.map((t) => t.replace('Taxon', '').trim()).join('|')).toContain('m8');
     const idx8 = texts.findIndex((t) => t.includes('m8'));
     const idx10 = texts.findIndex((t) => t.includes('m10'));
     expect(idx8).toBeLessThan(idx10);

@@ -123,7 +123,7 @@ describe('P2D D-1: Contract Validation (D1-R1-05)', () => {
       committed_at: 'invalid-date-string',
     });
     const event = validateArrivalEvent(raw);
-    expect(event.agent.name).toBe('Agent');
+    expect(event.agent.name).toBe('Taxon');
     expect(event.title_hint).toBeNull();
     expect(event.committed_at).toBe('');
   });

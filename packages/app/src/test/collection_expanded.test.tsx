@@ -37,7 +37,7 @@ describe('Library expanded detail (UI-C1)', () => {
     expect(view.getByText('暂无描述')).toBeTruthy();
     expect(view.getByText('#Night')).toBeTruthy();
     expect(view.getByText('一段文字')).toBeTruthy();
-    expect(view.getByText(/聊天消息 · 助手 · /)).toBeTruthy();
+    expect(view.getByText(/聊天消息 · Taxon · /)).toBeTruthy();
     expect(view.getByRole('link', { name: '打开来源会话' }).getAttribute('href')).toBe('/chat/12');
     // The wall stays mounted underneath.
     expect(screen.getByLabelText('藏品墙')).toBeTruthy();

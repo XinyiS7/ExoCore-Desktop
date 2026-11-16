@@ -44,13 +44,13 @@ describe('V4 Agent Profile Editing (Name, Bio, Model, Avatar)', () => {
 
     fireEvent.click(editBtn);
 
-    expect(await screen.findByRole('heading', { name: '编辑 Agent 资料' })).toBeInTheDocument();
-    expect(screen.getByLabelText(/Agent 名称/)).toHaveValue('Alaric');
+    expect(await screen.findByRole('heading', { name: '编辑 Taxon 资料' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Taxon 名称/)).toHaveValue('Alaric');
     expect(screen.getByLabelText(/签名 \/ 简介/)).toHaveValue('Order and rational vigilance');
     expect(screen.getByLabelText(/默认模型/)).toHaveValue('gemini-3.6-flash');
 
     fireEvent.click(screen.getByRole('button', { name: '取消' }));
-    expect(screen.queryByRole('heading', { name: '编辑 Agent 资料' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: '编辑 Taxon 资料' })).toBeNull();
   });
 
   it('validates required name field in AgentEditDialog', async () => {
@@ -65,13 +65,13 @@ describe('V4 Agent Profile Editing (Name, Bio, Model, Avatar)', () => {
     await screen.findByRole('heading', { name: /Alaric/ });
     fireEvent.click(screen.getByRole('button', { name: /编辑资料/ }));
 
-    const nameInput = await screen.findByLabelText(/Agent 名称/);
+    const nameInput = await screen.findByLabelText(/Taxon 名称/);
     fireEvent.change(nameInput, { target: { value: '   ' } });
 
     fireEvent.click(screen.getByRole('button', { name: '保存修改' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Agent 名称不能为空');
-    expect(screen.getByRole('heading', { name: '编辑 Agent 资料' })).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Taxon 名称不能为空');
+    expect(screen.getByRole('heading', { name: '编辑 Taxon 资料' })).toBeInTheDocument();
   });
 
   it('successfully updates name, description, and default_model via PATCH', async () => {
@@ -112,7 +112,7 @@ describe('V4 Agent Profile Editing (Name, Bio, Model, Avatar)', () => {
     await screen.findByRole('heading', { name: /Alaric/ });
     fireEvent.click(screen.getByRole('button', { name: /编辑资料/ }));
 
-    const nameInput = await screen.findByLabelText(/Agent 名称/);
+    const nameInput = await screen.findByLabelText(/Taxon 名称/);
     const descInput = screen.getByLabelText(/签名 \/ 简介/);
     const modelSelect = screen.getByLabelText(/默认模型/);
 
@@ -123,7 +123,7 @@ describe('V4 Agent Profile Editing (Name, Bio, Model, Avatar)', () => {
     fireEvent.click(screen.getByRole('button', { name: '保存修改' }));
 
     await waitFor(() => {
-      expect(screen.queryByRole('heading', { name: '编辑 Agent 资料' })).toBeNull();
+      expect(screen.queryByRole('heading', { name: '编辑 Taxon 资料' })).toBeNull();
     });
 
     expect(patchPayload).toEqual({
@@ -155,14 +155,14 @@ describe('V4 Agent Profile Editing (Name, Bio, Model, Avatar)', () => {
     await screen.findByRole('heading', { name: /Alaric/ });
     fireEvent.click(screen.getByRole('button', { name: /编辑资料/ }));
 
-    const nameInput = await screen.findByLabelText(/Agent 名称/);
+    const nameInput = await screen.findByLabelText(/Taxon 名称/);
     fireEvent.change(nameInput, { target: { value: 'Duplicate Alaric' } });
 
     fireEvent.click(screen.getByRole('button', { name: '保存修改' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('预设名称已存在');
-    expect(screen.getByRole('heading', { name: '编辑 Agent 资料' })).toBeInTheDocument();
-    expect(screen.getByLabelText(/Agent 名称/)).toHaveValue('Duplicate Alaric');
+    expect(screen.getByRole('heading', { name: '编辑 Taxon 资料' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Taxon 名称/)).toHaveValue('Duplicate Alaric');
   });
 
   it('allows selecting an image file and triggers avatar cropping', async () => {

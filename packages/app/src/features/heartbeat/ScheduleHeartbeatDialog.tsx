@@ -190,7 +190,7 @@ export function ScheduleHeartbeatDialog({
 
         <form onSubmit={handleSubmit} className="app-dialog-body">
           <p className="app-dialog-hint">
-            指定唤醒将在约定时间准时触发 Agent 心跳，并投递本次附带的留言。
+            指定唤醒将在约定时间准时触发 Taxon 心跳，并投递本次附带的留言。
           </p>
 
           {errorMessage ? (

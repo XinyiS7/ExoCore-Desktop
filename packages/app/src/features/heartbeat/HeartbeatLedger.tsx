@@ -21,7 +21,7 @@ function formatLaunchSource(source: string): string {
     case 'auto':
       return '自动心跳';
     case 'agent':
-      return 'Agent 发起';
+      return 'Taxon 发起';
     case 'notification':
       return '通知唤醒';
     default:

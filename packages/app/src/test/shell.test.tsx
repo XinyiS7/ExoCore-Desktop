@@ -154,7 +154,7 @@ describe('Chat Home / Recent', () => {
       },
     ]);
     renderApp(['/']);
-    expect(await screen.findByText('Agent #42')).toBeTruthy();
+    expect(await screen.findByText('Taxon #42')).toBeTruthy();
   });
 
   it('navigates from Recent into the canonical detail implementation', async () => {
