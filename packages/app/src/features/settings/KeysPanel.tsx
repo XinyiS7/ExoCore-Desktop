@@ -20,6 +20,13 @@ import { getErrorMessage } from './api';
 
 type TabKey = 'endpoints' | 'keys';
 
+type ProviderAuthProfile = { execution_type: string; requires_endpoint_api_key?: boolean };
+
+/** Direct-API provider without an Endpoint key: authenticates with local ADC (vertex, #134). */
+function isLocalAdcEndpoint(executionType: string | undefined, profile: ProviderAuthProfile | undefined) {
+  return executionType === 'direct_api' && profile?.requires_endpoint_api_key === false;
+}
+
 export function KeysPanel() {
   useDocumentTitle('密钥与端点');
 
@@ -61,6 +68,12 @@ export function KeysPanel() {
       ...(apiKeysQuery.data ?? []).map((k) => k.platform),
     ]),
   );
+
+  // Key 新建只列需要 Endpoint Key 的 provider；vertex（本机 ADC）与 managed runtime 不接受 Key。
+  // 筛选标签仍取并集，旧 key 可见可删。
+  const keyPlatforms = providers
+    .filter((p) => p.requires_endpoint_api_key !== false)
+    .map((p) => String(p.id));
 
   const filteredKeys = (apiKeysQuery.data ?? []).filter(
     (k) => selectedPlatformFilter === 'all' || k.platform === selectedPlatformFilter,
@@ -181,7 +194,15 @@ export function KeysPanel() {
                         <td>
                           <span className="settings-provider-tag">{ep.provider}</span>
                         </td>
-                        <td>{ep.api_key_alias || <span className="settings-dim-text">免配置 / Managed</span>}</td>
+                        <td>
+                          {ep.api_key_alias || (
+                            <span className="settings-dim-text">
+                              {isLocalAdcEndpoint(ep.execution_type, providers.find((p) => String(p.id) === ep.provider))
+                                ? '本机 ADC'
+                                : '免配置 / Managed'}
+                            </span>
+                          )}
+                        </td>
                         <td className="settings-dim-text">
                           {ep.execution_type} / {ep.execution_adapter}
                         </td>
@@ -440,7 +461,7 @@ export function KeysPanel() {
       {/* ── Key Create Dialog ── */}
       {isCreatingKey && (
         <ApiKeyCreateDialog
-          availablePlatforms={platforms}
+          availablePlatforms={keyPlatforms}
           onClose={() => setIsCreatingKey(false)}
           onSave={async (payload) => {
             await createKeyMutation.mutateAsync(payload);
@@ -638,7 +659,9 @@ function EndpointEditDialog({
               <label htmlFor="ep-key-alias" className="settings-form-label">绑定 API Key 别名</label>
               {isManaged ? (
                 <div className="settings-info-box">
-                  该 Provider 为托管运行时 (Managed Runtime)，免配置且不接受 API Key。
+                  {isLocalAdcEndpoint(selectedProviderProfile?.execution_type, selectedProviderProfile)
+                    ? '使用本机 Google Cloud ADC 认证（gcloud auth application-default login），不需要也不接受 API Key。'
+                    : '该 Provider 为托管运行时 (Managed Runtime)，免配置且不接受 API Key。'}
                 </div>
               ) : (
                 <select

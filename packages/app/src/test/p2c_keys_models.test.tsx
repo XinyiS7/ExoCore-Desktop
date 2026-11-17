@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import {
   ensureTestLocalStorage,
   jsonResponse,
@@ -378,6 +378,120 @@ describe('Phase 2C CP C-3 — Endpoints, API Keys & Model Roles', () => {
         api_key_alias: null,
         enabled: true,
       });
+    });
+  });
+
+  // ── #134 Vertex: keyless direct provider (local ADC) ─────────────────────────
+  describe('#134 Vertex keyless endpoint (local ADC)', () => {
+    const vertexCatalog: ModelCatalog = {
+      ...mockCatalog,
+      providers: [
+        { id: 'gemini', display_name: 'Google Gemini', execution_type: 'direct_api', requires_endpoint_api_key: true },
+        { id: 'vertex', display_name: 'Vertex AI', execution_type: 'direct_api', requires_endpoint_api_key: false },
+        {
+          id: 'antigravity',
+          display_name: 'Antigravity Managed',
+          execution_type: 'managed_runtime',
+          requires_endpoint_api_key: false,
+        },
+      ],
+    };
+    const vertexEndpoints: EndpointRow[] = [
+      {
+        id: 6,
+        name: 'Vertex ADC',
+        provider: 'vertex',
+        api_key_alias: null,
+        enabled: true,
+        configured: true,
+        execution_type: 'direct_api',
+        execution_adapter: 'internal_http',
+      },
+      {
+        id: 5,
+        name: 'Managed Antigravity',
+        provider: 'antigravity',
+        api_key_alias: null,
+        enabled: true,
+        configured: true,
+        execution_type: 'managed_runtime',
+        execution_adapter: 'internal_runtime',
+      },
+    ];
+    const legacyVertexKey: ApiKeyRow = {
+      alias: 'old-vertex-key',
+      platform: 'vertex',
+      last_four: '7777',
+      created_at: '2026-11-16T08:00:00Z',
+      updated_at: '2026-11-16T08:00:00Z',
+    };
+
+    beforeEach(() => {
+      activeRoutes.push(
+        { test: '/api/core/model-catalog/', handler: () => jsonResponse(vertexCatalog) },
+        { test: '/api/core/endpoints/', method: 'GET', handler: () => jsonResponse(vertexEndpoints) },
+        { test: '/api/core/apikeys/', method: 'GET', handler: () => jsonResponse([...mockApiKeys, legacyVertexKey]) },
+      );
+    });
+
+    it('F1: new-key platform options exclude keyless providers while filter chips keep the legacy vertex key', async () => {
+      renderApp(['/settings/keys']);
+      fireEvent.click(await screen.findByRole('tab', { name: /密钥池/ }));
+
+      expect(await screen.findByText('old-vertex-key')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /vertex \(1\)/ })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: '新建密钥' }));
+      const platformSelect = (await screen.findByLabelText('适用平台 (Platform) *')) as HTMLSelectElement;
+      const optionValues = Array.from(platformSelect.options).map((o) => o.value);
+      expect(optionValues).toContain('gemini');
+      expect(optionValues).not.toContain('vertex');
+      expect(optionValues).not.toContain('antigravity');
+    });
+
+    it('F2: vertex endpoint form shows ADC notice, no key selector, and submits api_key_alias null', async () => {
+      let createBody: unknown = null;
+      activeRoutes.push({
+        test: '/api/core/endpoints/',
+        method: 'POST',
+        handler: async (_url, init) => {
+          createBody = JSON.parse(String(init?.body));
+          return jsonResponse({ ...vertexEndpoints[0], id: 12, name: 'New Vertex' });
+        },
+      });
+
+      renderApp(['/settings/keys']);
+      fireEvent.click(await screen.findByRole('button', { name: '新建端点' }));
+      fireEvent.change(screen.getByLabelText('端点名称 *'), { target: { value: 'New Vertex' } });
+      fireEvent.change(screen.getByLabelText('供应商 Provider *'), { target: { value: 'vertex' } });
+
+      expect(screen.getByText(/使用本机 Google Cloud ADC 认证/)).toBeInTheDocument();
+      expect(screen.queryByText(/该 Provider 为托管运行时/)).toBeNull();
+      expect(screen.queryByLabelText('绑定 API Key 别名')).toBeNull();
+
+      fireEvent.change(screen.getByLabelText('供应商 Provider *'), { target: { value: 'antigravity' } });
+      expect(screen.getByText(/该 Provider 为托管运行时/)).toBeInTheDocument();
+      expect(screen.queryByText(/使用本机 Google Cloud ADC 认证/)).toBeNull();
+
+      fireEvent.change(screen.getByLabelText('供应商 Provider *'), { target: { value: 'vertex' } });
+      fireEvent.click(screen.getByRole('button', { name: '创建端点' }));
+
+      await waitFor(() => expect(createBody).not.toBeNull());
+      expect(createBody).toEqual({
+        name: 'New Vertex',
+        provider: 'vertex',
+        api_key_alias: null,
+        enabled: true,
+      });
+    });
+
+    it('F3: endpoint list labels keyless vertex as local ADC and AGY as managed', async () => {
+      renderApp(['/settings/keys']);
+
+      const vertexRow = (await screen.findByText('Vertex ADC')).closest('tr') as HTMLElement;
+      const agyRow = screen.getByText('Managed Antigravity').closest('tr') as HTMLElement;
+      expect(within(vertexRow).getByText('本机 ADC')).toBeInTheDocument();
+      expect(within(agyRow).getByText('免配置 / Managed')).toBeInTheDocument();
     });
   });
 

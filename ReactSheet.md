@@ -763,7 +763,7 @@ Query: `preset_id`（必填），可选 `scope` / `source` / `is_processed`。`i
 |---|---|---|
 | name | string | yes |
 | provider | string | yes | gemini / vertex / deepseek / openrouter / glm / antigravity |
-| api_key_alias | string/null | no | direct profile 使用匹配的 ApiKey alias；managed profile 必须为 null |
+| api_key_alias | string/null | no | 需要 Key 的 direct profile 使用匹配的 ApiKey alias；`requires_endpoint_api_key=false` 的 profile（managed runtime；vertex 用本机 ADC，#134）必须为 null，否则 400 |
 | enabled | bool | no | default true |
 
 以下字段由 ProviderProfile 派生，**只读**：
@@ -2064,9 +2064,11 @@ SSE 和 async polling 共用的稳定 error payload：
 
 | code | 触发条件 | retryable |
 |---|---|---|
-| `auth_error` | HTTP 401/403 | false |
+| `auth_error` | HTTP 401/403。vertex（#134）：`message` 为固定中文——本机 ADC 凭据失效时提示重新 `gcloud auth application-default login`；Vertex 返回 401/403 时提示检查 ADC 账号的 Vertex AI 权限与 API 启用状态。不透出 provider 原文 | false |
+| `config_error` | 本地配置缺失，请求未发出。vertex（#134）：未设置 `EXOCORE_VERTEX_PROJECT_ID`，或本机没有 ADC（未运行 `gcloud auth application-default login`）；`message` 为固定中文操作提示 | false |
 | `rate_limited` | HTTP 429 | true |
 | `service_unavailable` | HTTP 5xx | true |
+| `transient_error` | 可重试的临时故障（如流式超时）。vertex（#134）：刷新 ADC token 时连不上 Google 认证服务，`message` 为固定中文 | true |
 | `target_resolution_error` | resolver 失败 | false |
 | `request_too_large` | 发送前校验：请求超过 Endpoint provider 声明的体积上限（目前仅 vertex：单个 inline 附件原始字节 > 256 MB，或整个请求 > 500 MiB）。请求未发出；`message` 说明是单个附件还是整个请求、实际大小与上限 | false |
 | `protocol_error` | provider 返回违反 gateway 契约的数据 | false |
@@ -2091,7 +2093,7 @@ AGY continuity 恢复是后端自动行为（#118）：普通发送遇到未决/
 | id | display_name | base_url | payload | cache | attachments | execution_type | execution_adapter | requires_endpoint_api_key | supported_models / mapping |
 |---|---|---|---|---|---|---|---|---|---|
 | gemini | Gemini 官方 | "" | gemini | remote_reference | file_uri, inline_text, inline_image, inline_audio, inline_document | direct_api | internal_http | true | preserve |
-| vertex | Vertex AI Express | "" | gemini | inline_chunk | inline_text, inline_image, inline_audio, inline_document | direct_api | internal_http | true | gemini-3-flash-preview / gemini-3-pro-image / gemini-3.1-flash-image / gemini-3.1-pro-preview / gemini-3.8-flash / gemini-4-argon / gemini-4-carbon / gemini-4-hydrogen（exact）。静态 Key 直连 `aiplatform.googleapis.com`；无 Files API / provider cache / inline batch；发送前按 profile 上限校验体积（`request_too_large`），#134 |
+| vertex | Vertex AI | "" | gemini | inline_chunk | inline_text, inline_image, inline_audio, inline_document | direct_api | internal_http | false | gemini-3-flash-preview / gemini-3-pro-image / gemini-3.1-flash-image / gemini-3.1-pro-preview / gemini-3.8-flash / gemini-4-argon / gemini-4-carbon / gemini-4-hydrogen（exact）。标准 Vertex，本机 ADC 认证（不绑 Endpoint Key，Key 页不提供 vertex 平台），后端 `.env` 的 `EXOCORE_VERTEX_PROJECT_ID`（必填）/ `EXOCORE_VERTEX_LOCATION`（默认 global），API v1，`aiplatform.googleapis.com`；无 Files API / provider cache / inline batch；发送前按 profile 上限校验体积（`request_too_large`），#134 |
 | deepseek | DeepSeek 官方 | https://api.deepseek.com/v1 | openai | inline_chunk | inline_text, inline_image | direct_api | internal_http | true | preserve |
 | openrouter | OpenRouter | https://openrouter.ai/api/v1 | openai | inline_chunk | inline_text, inline_image | direct_api | internal_http | true | preserve |
 | glm | GLM 官方 | https://open.bigmodel.cn/api/paas/v4 | openai | inline_chunk | inline_text | direct_api | internal_http | true | preserve |
