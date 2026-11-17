@@ -13,7 +13,7 @@ const catalog: ModelCatalog = {
   ],
   endpoints: [
     { id: 1, name: 'deepseek-api', provider: 'deepseek', execution_type: 'cloud', execution_adapter: 'http', payload_format: 'chat', cache_transport: '', attachment_transports: [], configured: true, enabled: true },
-    { id: 2, name: 'gemini-antigravity', provider: 'gemini', execution_type: 'cloud', execution_adapter: 'http', payload_format: 'chat', cache_transport: 'context_cache', attachment_transports: ['file_uri'], configured: true, enabled: true },
+    { id: 2, name: 'gemini-antigravity', provider: 'gemini', execution_type: 'cloud', execution_adapter: 'http', payload_format: 'chat', cache_transport: 'context_cache', attachment_transports: ['file_uri', 'inline_text', 'inline_image', 'inline_audio', 'inline_document'], configured: true, enabled: true },
   ],
   roles: {
     main: [
@@ -28,7 +28,7 @@ const catalog: ModelCatalog = {
 const presetOf = (default_model: string | null) => ({ default_model });
 
 describe('P1C audio target gate (Task 3.2, Gate E)', () => {
-  it('resolves a supported target for an audio-capable model + file_uri endpoint', () => {
+  it('resolves a supported target for an audio-capable model + Gemini endpoint (file_uri + inline_audio)', () => {
     const { gate, target } = resolveAudioTarget(catalog, presetOf('gemini-2.5-flash'));
     expect(gate.state).toBe('supported');
     if (gate.state === 'supported') {
@@ -43,7 +43,7 @@ describe('P1C audio target gate (Task 3.2, Gate E)', () => {
     expect(reason).toBe('model_without_audio');
   });
 
-  it('blocks endpoints lacking the file_uri attachment transport', () => {
+  it('blocks endpoints lacking the inline_audio attachment transport', () => {
     const catalogWithoutTransport: ModelCatalog = {
       ...catalog,
       endpoints: [
@@ -56,7 +56,54 @@ describe('P1C audio target gate (Task 3.2, Gate E)', () => {
     };
     const { gate, reason } = resolveAudioTarget(catalogWithoutTransport, presetOf('gemini-2.5-flash'));
     expect(gate.state).toBe('unsupported');
-    expect(reason).toBe('endpoint_without_file_uri');
+    expect(reason).toBe('endpoint_without_inline_audio');
+    expect(audioTargetUnsupportedText(reason!)).toBe('当前端点不支持语音附件');
+  });
+
+  describe('Vertex AI Express inline-only audio (#134)', () => {
+    const vertexCatalog: ModelCatalog = {
+      models: [
+        { name: 'gemini-3.8-flash', family: 'gemini', abilities: ['audio', 'vision'], compatible_endpoint_ids: [11] },
+      ],
+      endpoints: [
+        {
+          id: 11,
+          name: 'vertex-express',
+          provider: 'vertex',
+          execution_type: 'direct_api',
+          execution_adapter: 'internal_http',
+          payload_format: 'gemini',
+          cache_transport: 'inline_chunk',
+          attachment_transports: ['inline_text', 'inline_image', 'inline_audio', 'inline_document'],
+          configured: true,
+          enabled: true,
+        },
+      ],
+      roles: { main: [{ model: 'gemini-3.8-flash', default_endpoint: 11 }], support: {} },
+      providers: [],
+    };
+
+    it('supports recording on a direct vertex endpoint with inline_audio and no file_uri', () => {
+      const { gate, target } = resolveAudioTarget(vertexCatalog, presetOf('gemini-3.8-flash'));
+      expect(gate.state).toBe('supported');
+      expect(target).toEqual({ model: 'gemini-3.8-flash', endpoint: 11 });
+
+      const selectedGate = resolveSelectedAudioTarget(vertexCatalog, { model: 'gemini-3.8-flash', endpoint: 11 });
+      expect(selectedGate).toEqual({ state: 'supported', target: { model: 'gemini-3.8-flash', endpoint: 11 } });
+    });
+
+    it('rejects a direct endpoint that only has file_uri (no inline_audio)', () => {
+      const fileUriOnly: ModelCatalog = {
+        ...vertexCatalog,
+        endpoints: [{ ...vertexCatalog.endpoints[0], attachment_transports: ['file_uri', 'inline_text'] }],
+      };
+      const { gate, reason } = resolveAudioTarget(fileUriOnly, presetOf('gemini-3.8-flash'));
+      expect(gate.state).toBe('unsupported');
+      expect(reason).toBe('endpoint_without_inline_audio');
+
+      const selectedGate = resolveSelectedAudioTarget(fileUriOnly, { model: 'gemini-3.8-flash', endpoint: 11 });
+      expect(selectedGate).toEqual({ state: 'unsupported', reason: 'endpoint_without_inline_audio' });
+    });
   });
 
   it('reports catalog unavailability explicitly (retryable)', () => {
@@ -134,7 +181,7 @@ describe('P1C audio target gate (Task 3.2, Gate E)', () => {
       }
     });
 
-    it('retains file_uri requirement for cloud / direct_api endpoints', () => {
+    it('retains the inline_audio requirement for cloud / direct_api endpoints', () => {
       const cloudCatalog: ModelCatalog = {
         ...managedCatalog,
         endpoints: [
@@ -146,12 +193,12 @@ describe('P1C audio target gate (Task 3.2, Gate E)', () => {
       };
       const { gate, reason } = resolveAudioTarget(cloudCatalog, presetOf('gemini-3.8-flash'));
       expect(gate.state).toBe('unsupported');
-      expect(reason).toBe('endpoint_without_file_uri');
+      expect(reason).toBe('endpoint_without_inline_audio');
 
       const selectedGate = resolveSelectedAudioTarget(cloudCatalog, { model: 'gemini-3.8-flash', endpoint: 7 });
       expect(selectedGate.state).toBe('unsupported');
       if (selectedGate.state === 'unsupported') {
-        expect(selectedGate.reason).toBe('endpoint_without_file_uri');
+        expect(selectedGate.reason).toBe('endpoint_without_inline_audio');
       }
     });
   });

@@ -433,7 +433,7 @@ Runtime regenerate 当前仅支持 text-only 目标；目标 Message 自带附�
 **音频上传（PWA 录音）**：multipart 含 `audio/*` 时，请求必须携带 `model`（当前 main model name）与 `endpoint`（Endpoint ID），后端经 `resolve_chat_execution_target()` 解析 main target。direct target 保持 provider audio ability/transport 预检；managed subscription Runtime target 按 Runtime 当前轮附件表预检，Phase 1 接受 WAV（`audio/wav` / `audio/x-wav` / `audio/wave`）与 WebM audio（含 `audio/webm;codecs=opus` 参数形式），单文件上限 20 MiB。audio preflight 稳定 diagnostics：
 
 - `audio_target_required` — 缺 model/endpoint 或 target 解析失败
-- `audio_model_unsupported` — target 缺 `audio` ability 或可用 audio transport（普通发送需 `inline_audio`；cache_reuse 需 cache-compatible `file_uri`；compose upload 阶段校验具备任意可用 audio transport）
+- `audio_model_unsupported` — target 缺 `audio` ability 或可用 audio transport（普通发送与 compose upload 均只要求 `inline_audio`，`file_uri` 不计入一般音频能力；cache_reuse / 显式 Cache Send 需 cache-compatible `file_uri` + `remote_reference`；不会因文件大自动改走 `file_uri`，超 provider inline 上限显式拒绝。前端录音 gate 同口径：direct Endpoint 需 `inline_audio`，managed_runtime 走自有握手，#134）
 - `audio_mime_unsupported` — direct target 的 MIME 不在 provider audio allowlist（支持 WebM/Opus、MP3、WAV、AAC、FLAC、OGG、M4A 等主流音频格式）
 - `runtime_attachment_type_unsupported` — managed Runtime target 的 MIME 不在 Phase 1 表
 - `runtime_attachment_too_large` — managed Runtime target 的单个音频超过 20 MiB
@@ -2090,7 +2090,7 @@ AGY continuity 恢复是后端自动行为（#118）：普通发送遇到未决/
 
 | id | display_name | base_url | payload | cache | attachments | execution_type | execution_adapter | requires_endpoint_api_key | supported_models / mapping |
 |---|---|---|---|---|---|---|---|---|---|
-| gemini | Gemini 官方 | "" | gemini | remote_reference | file_uri, inline_text, inline_image | direct_api | internal_http | true | preserve |
+| gemini | Gemini 官方 | "" | gemini | remote_reference | file_uri, inline_text, inline_image, inline_audio, inline_document | direct_api | internal_http | true | preserve |
 | vertex | Vertex AI Express | "" | gemini | inline_chunk | inline_text, inline_image, inline_audio, inline_document | direct_api | internal_http | true | gemini-3-flash-preview / gemini-3-pro-image / gemini-3.1-flash-image / gemini-3.1-pro-preview / gemini-3.8-flash / gemini-4-argon / gemini-4-carbon / gemini-4-hydrogen（exact）。静态 Key 直连 `aiplatform.googleapis.com`；无 Files API / provider cache / inline batch；发送前按 profile 上限校验体积（`request_too_large`），#134 |
 | deepseek | DeepSeek 官方 | https://api.deepseek.com/v1 | openai | inline_chunk | inline_text, inline_image | direct_api | internal_http | true | preserve |
 | openrouter | OpenRouter | https://openrouter.ai/api/v1 | openai | inline_chunk | inline_text, inline_image | direct_api | internal_http | true | preserve |

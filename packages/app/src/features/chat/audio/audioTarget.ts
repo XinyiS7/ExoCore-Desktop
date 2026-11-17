@@ -19,9 +19,21 @@ export type AudioTargetUnsupportedReason =
   | 'preset_unavailable'
   | 'target_unresolved'
   | 'model_without_audio'
-  | 'endpoint_without_file_uri';
+  | 'endpoint_without_inline_audio';
 
 export type AudioTargetUnavailableReason = 'not_ready' | 'catalog_fetch_failed';
+
+/**
+ * Recorded audio is sent as an ordinary attachment, which the backend delivers
+ * strictly inline (`inline_audio`); `file_uri` is only the cache-reuse path.
+ * Managed runtime endpoints declare no transports and keep their own handshake.
+ */
+function endpointAcceptsRecordedAudio(
+  endpoint: { execution_type?: string; attachment_transports?: string[] },
+): boolean {
+  if (endpoint.execution_type === 'managed_runtime') return true;
+  return (endpoint.attachment_transports ?? []).includes('inline_audio');
+}
 
 /**
  * Pure target resolution + validation. `preset` is the Conversation's
@@ -52,9 +64,8 @@ export function resolveAudioTarget(
   if (!(model.abilities ?? []).includes('audio')) {
     return { gate: { state: 'unsupported', reason: 'model_without_audio' }, target: null, reason: 'model_without_audio' };
   }
-  const isManagedRuntime = endpoint?.execution_type === 'managed_runtime';
-  if (!endpoint || (!isManagedRuntime && !(endpoint.attachment_transports ?? []).includes('file_uri'))) {
-    return { gate: { state: 'unsupported', reason: 'endpoint_without_file_uri' }, target: null, reason: 'endpoint_without_file_uri' };
+  if (!endpoint || !endpointAcceptsRecordedAudio(endpoint)) {
+    return { gate: { state: 'unsupported', reason: 'endpoint_without_inline_audio' }, target: null, reason: 'endpoint_without_inline_audio' };
   }
 
   const target: AudioTarget = { model: resolved.model, endpoint: resolved.endpoint };
@@ -72,8 +83,8 @@ export function audioTargetUnsupportedText(reason: AudioTargetUnsupportedReason)
       return '无法解析当前模型/端点';
     case 'model_without_audio':
       return '当前模型不支持语音附件';
-    case 'endpoint_without_file_uri':
-      return '当前端点不支持语音上传';
+    case 'endpoint_without_inline_audio':
+      return '当前端点不支持语音附件';
     default:
       return '当前目标不支持录音';
   }
@@ -103,9 +114,8 @@ export function resolveSelectedAudioTarget(
   if (!(model.abilities ?? []).includes('audio')) {
     return { state: 'unsupported', reason: 'model_without_audio' };
   }
-  const isManagedRuntime = endpoint.execution_type === 'managed_runtime';
-  if (!isManagedRuntime && !(endpoint.attachment_transports ?? []).includes('file_uri')) {
-    return { state: 'unsupported', reason: 'endpoint_without_file_uri' };
+  if (!endpointAcceptsRecordedAudio(endpoint)) {
+    return { state: 'unsupported', reason: 'endpoint_without_inline_audio' };
   }
   return { state: 'supported', target: { model: target.model, endpoint: endpoint.id } };
 }
