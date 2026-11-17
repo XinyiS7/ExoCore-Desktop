@@ -762,7 +762,7 @@ Query: `preset_id`（必填），可选 `scope` / `source` / `is_processed`。`i
 | 字段 | 类型 | 必填 |
 |---|---|---|
 | name | string | yes |
-| provider | string | yes | gemini / deepseek / openrouter / glm / antigravity |
+| provider | string | yes | gemini / vertex / deepseek / openrouter / glm / antigravity |
 | api_key_alias | string/null | no | direct profile 使用匹配的 ApiKey alias；managed profile 必须为 null |
 | enabled | bool | no | default true |
 
@@ -2068,6 +2068,7 @@ SSE 和 async polling 共用的稳定 error payload：
 | `rate_limited` | HTTP 429 | true |
 | `service_unavailable` | HTTP 5xx | true |
 | `target_resolution_error` | resolver 失败 | false |
+| `request_too_large` | 发送前校验：请求超过 Endpoint provider 声明的体积上限（目前仅 vertex：单个 inline 附件原始字节 > 256 MB，或整个请求 > 500 MiB）。请求未发出；`message` 说明是单个附件还是整个请求、实际大小与上限 | false |
 | `protocol_error` | provider 返回违反 gateway 契约的数据 | false |
 | `model_not_found` | direct API provider 不提供该模型：HTTP 404、"model not found"，或 DeepSeek HTTP 400 "The supported API model names are…"；`message` 为 `<Endpoint 名> 不提供模型 <model>（可能已下线或改名），请切换模型。` | false |
 | `frozen_execution_unavailable` | Subscription Runtime（AGY）路径：请求模型不在 Runtime 启动预检得到的 `agy models` 列表中，在发往 AGY 之前即拒绝。payload 仅 `{code, message}`，`message` 为 `<Endpoint 名> 当前不提供模型 <model>，请切换模型。` | false |
@@ -2090,6 +2091,7 @@ AGY continuity 恢复是后端自动行为（#118）：普通发送遇到未决/
 | id | display_name | base_url | payload | cache | attachments | execution_type | execution_adapter | requires_endpoint_api_key | supported_models / mapping |
 |---|---|---|---|---|---|---|---|---|---|
 | gemini | Gemini 官方 | "" | gemini | remote_reference | file_uri, inline_text, inline_image | direct_api | internal_http | true | preserve |
+| vertex | Vertex AI Express | "" | gemini | inline_chunk | inline_text, inline_image, inline_audio, inline_document | direct_api | internal_http | true | gemini-3-flash-preview / gemini-3-pro-image / gemini-3.1-flash-image / gemini-3.1-pro-preview / gemini-3.8-flash / gemini-4-argon / gemini-4-carbon / gemini-4-hydrogen（exact）。静态 Key 直连 `aiplatform.googleapis.com`；无 Files API / provider cache / inline batch；发送前按 profile 上限校验体积（`request_too_large`），#134 |
 | deepseek | DeepSeek 官方 | https://api.deepseek.com/v1 | openai | inline_chunk | inline_text, inline_image | direct_api | internal_http | true | preserve |
 | openrouter | OpenRouter | https://openrouter.ai/api/v1 | openai | inline_chunk | inline_text, inline_image | direct_api | internal_http | true | preserve |
 | glm | GLM 官方 | https://open.bigmodel.cn/api/paas/v4 | openai | inline_chunk | inline_text | direct_api | internal_http | true | preserve |
@@ -2097,6 +2099,7 @@ AGY continuity 恢复是后端自动行为（#118）：普通发送遇到未决/
 
 supported_families:
 - gemini: (gemini)  
+- vertex: (gemini)
 - deepseek: (deepseek)  
 - openrouter: (openrouter, gemini, deepseek)  
 - glm: (glm)
