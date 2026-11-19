@@ -34,6 +34,8 @@ ExoCore-Desktop is a **monorepo** containing three independent V3 SPAs and the *
 > **Migration state (C1 + C3 PASS):** `packages/app` (`exo-app`, port **5176**, production `/app/`) owns ordinary Chat as **V4-primary** and now owns the accepted P3 `/app/river` surface: five-source River reading, Memo/thread/Tags, Task CRUD/source actions, Calendar companion, Diary/Heartbeat full reading, and Chronicle milestone/moment time reading. V3 `chat-core`/Chronicle remain buildable rollback and legacy-source references; `chronicle_highlight`/bookmark stays V3-primary until P4. The whole-product root still redirects to `/chat/` until P7; P2G GroupChat remains V3-primary/deferred, and no V3 surface is deleted before P8. The repo continues to host four SPA/PWA packages; `dev:app` is additive and independent from V3 dev commands. V4 never imports V3 page/components. Verdict: `Plan/V4_Phase_3_River_Memo_acceptance_report.md`.
 >
 > **Current V4 position (2026-10-28):** P4/C4 FINAL PASS on Alicia's daily-use confirmation; #61 closed at documentation closeout. P5/P6 move to the separate `Alicia/Igni` repository (design only, not implemented), not prerequisites for P7. ExoCore retains its MemoryPlasmid entry for register management. Next: P7 welcome page, section entrances and production-entry closeout; daily V4 Chat use is not C7 acceptance. No P8 deletion authorized. Current authority: `Plan/V4_Master_Implementation_Roadmap.md` opening decision; earlier migration notes are historical.
+>
+> **V3 freeze rule (2026-11-19, Alicia):** Future updates, bug fixes, lint, tests, and builds target V4 (`packages/app` / `exo-app`) only. Do **not** update, fix, or lint V3 packages (`chat-core`, `chronicle`, `council`) unless Alicia explicitly requests it. (Do not delete V3 packages unless explicitly authorized.)
 
 ## Architecture
 
@@ -67,10 +69,15 @@ ExoCore-Desktop is a **monorepo** containing three independent V3 SPAs and the *
 ## Commands
 
 ```bash
-pnpm install          # Install all workspace dependencies
-pnpm dev:chat         # Start chat-core dev server (:5173)
-pnpm dev:chronicle    # Start chronicle dev server (:5174)
-pnpm dev:council      # Start council dev server (:5175)
-pnpm dev:app          # Start V4 app dev server (:5176, strict port)
-pnpm build            # Build all packages
+pnpm install                     # Install all workspace dependencies
+pnpm dev:app                     # Start V4 app dev server (:5176, strict port)
+pnpm --filter exo-app lint       # Lint V4 app (use this; root `pnpm lint` runs frozen V3 packages)
+pnpm --filter exo-app test:run   # Run V4 app unit tests
+pnpm --filter exo-app build      # Typecheck + build V4 app (`packages/app/dist`)
+pnpm build                       # Build all workspace packages
+
+# Legacy V3 (frozen — do not maintain unless explicitly requested)
+pnpm dev:chat                    # Start chat-core dev server (:5173)
+pnpm dev:chronicle               # Start chronicle dev server (:5174)
+pnpm dev:council                 # Start council dev server (:5175)
 ```
