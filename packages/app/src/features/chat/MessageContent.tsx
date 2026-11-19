@@ -33,7 +33,14 @@ import { AudioPlayerBubble } from './audio/AudioPlayerBubble';
  * `file:///` / drive paths into an `exo-local:` marker; sanitize and the custom
  * `urlTransform` let only that marker through, and the `a` component renders it
  * as a preview entry (only when both ids are given) or a copy-only path.
+ *
+ * LifeUp links (#136): `lifeup:` URLs on `<a href>` are additionally allow-listed
+ * and passed through `urlTransform` verbatim (parameters are pre-percent-encoded
+ * by the backend), so clicking navigates directly to the system app handler.
  */
+
+const LIFEUP_PROTOCOL = 'lifeup';
+const LIFEUP_URL_RE = /^lifeup:/i;
 
 const RAW_HTML_SCHEMA: SanitizeSchema = {
   ...defaultSchema,
@@ -43,7 +50,7 @@ const RAW_HTML_SCHEMA: SanitizeSchema = {
   tagNames: [...(defaultSchema.tagNames ?? []), 'figure', 'figcaption', 'mark'],
   protocols: {
     ...defaultSchema.protocols,
-    href: [...(defaultSchema.protocols?.href ?? []), LOCAL_FILE_PROTOCOL],
+    href: [...(defaultSchema.protocols?.href ?? []), LOCAL_FILE_PROTOCOL, LIFEUP_PROTOCOL],
   },
   attributes: {
     ...defaultSchema.attributes,
@@ -234,8 +241,11 @@ const MD_COMPONENTS: Components = {
   },
 };
 
-const urlTransform: UrlTransform = (url) =>
-  fromLocalFileMarker(url) !== null ? url : defaultUrlTransform(url);
+const urlTransform: UrlTransform = (url, key) => {
+  if (fromLocalFileMarker(url) !== null) return url;
+  if (key === 'href' && LIFEUP_URL_RE.test(url)) return url;
+  return defaultUrlTransform(url);
+};
 
 export interface MessageContentProps {
   content: string;

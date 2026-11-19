@@ -2047,6 +2047,43 @@ Collection GC / recovery jobs 会直接查询这些表；缺表必须阻止启�
 
 ---
 
+## 第十四篇  LifeUp 人升接入（#136）
+
+### 14.1 `POST /api/lifeup/events/` — Tasker 完成回报（设备通道，非前端）
+
+手机上的 Tasker 收到人升完成广播 `app.lifeup.task.complete` 后调用。前端 SPA 不调用本接口，这里只为协议完整而列出。
+
+- **认证**：Cloudflare Access Service Token（隧道侧，仅覆盖 `/api/lifeup/*`）+ `Authorization: Bearer <LIFEUP_TOKEN>`。
+- **请求体**（JSON；Tasker 变量是字符串，id 与时间戳接受整数或十进制数字字符串）：
+
+| 字段 | 必填 | 说明 |
+|---|---|---|
+| `task_id` | 是 | 人升任务 id |
+| `task_gid` | 是 | 人升任务组 id |
+| `name` | 是 | 任务名，非空，≤500 字 |
+| `category_id` | 否 | 清单 id，可为 null |
+| `completed_at_ms` | 是 | 完成时刻，Unix 毫秒（Tasker `%TIMEMS`） |
+
+- **幂等**：`(task_id, completed_at)` 相同视为同一事件；Tasker 重发同一 body 不会重复记录。
+- **响应**：200，`Content-Type: text/plain; charset=utf-8`。正文每行一条待派发的 `lifeup://` 链接，没有待派发指令时为空正文。Tasker 只在 200 且正文非空时逐条打开。
+- **派发语义（at-most-once）**：链接写进某次响应即标记已派发，之后不再重发；响应丢失就丢，由阿莱重新派。
+
+| 场景 | HTTP | code |
+|---|---|---|
+| 服务端未配置 `LIFEUP_TOKEN` | 503 | `lifeup_not_configured` |
+| 缺 token / scheme 不是 `Bearer` / token 错 | 401 | `lifeup_unauthorized` |
+| 请求体校验失败（`details` 为字段错误） | 400 | `lifeup_invalid_payload` |
+
+错误信封为 `{"error": <message>, "code": <code>}`，400 额外带 `details`。
+
+### 14.2 `lifeup:` 链接协议（Desktop 渲染约定）
+
+阿莱的 `lifeup` 工具在 `link` 模式下，会在助手回复里写 Markdown 链接 `[文字](lifeup://api/<api>?k=v&...)`。
+
+- 前端必须把它渲染为 **href 原样保留**的 `<a>`，点击交给系统唤起人升 App。
+- 只额外放行 `lifeup` 协议，其余协议的过滤行为不变。
+- 本轮出现的端点：`add_task`、`reward`、`toast`。参数值已按 RFC 3986 百分号编码（空格为 `%20`），前端不要二次编码或解码。
+
 ## 附录 A — Typed Error Shape (§P1-11 commit 6)
 
 SSE 和 async polling 共用的稳定 error payload：
